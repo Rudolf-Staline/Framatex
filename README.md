@@ -31,7 +31,9 @@ Deux nouveaux modules sont accessibles en bas de la fiche de chaque **lancement 
 
 # Framatex — Dossier jaune numérique
 
-**MVP 0.11 — Prototype local du 17 octobre 2026.** Chaque dossier correspond à un **lancement de fabrication**, créé librement, avec identifiant technique indépendant de la référence ORLI. Les quatre sous-dossiers **Jaune, Rose, Bleu et Vert** sont générés automatiquement. Les exemples de démonstration sont entièrement fictifs.
+> **Nouveauté 0.14 :** publication client contrôlée et demandes documentaires fournisseurs en simulation locale, sans aucun accès externe. Voir [VERSION_0.14.md](VERSION_0.14.md).
+
+**MVP 0.14 — Prototype local du 17 octobre 2026.** Chaque dossier correspond à un **lancement de fabrication**, créé librement, avec identifiant technique indépendant de la référence ORLI. Les quatre sous-dossiers **Jaune, Rose, Bleu et Vert** sont générés automatiquement. Les exemples de démonstration sont entièrement fictifs.
 
 ## Installation
 
@@ -221,11 +223,3 @@ Voir [`VERSION_0.7.md`](VERSION_0.7.md) pour les opérations, la confidentialit�
 Le dossier de lancement contient désormais un espace **Traçabilité et rapprochement des matières**. On y définit les matières et leurs besoins prévus, on enregistre les quantités commandées et réceptionnées avec leurs justificatifs, puis on examine les écarts. Toutes les saisies sont manuelles, historisées et conservées en décimal ; aucun mouvement ORLI n'est créé. Les autorisations de lecture simultanées Jaune/Rose sont nécessaires pour consulter les totaux afin de ne pas dévoiler indirectement les mouvements de réception.
 
 **Avant mise à jour :** arrêter l'application et sauvegarder `data/` en intégralité. L'ajout de tables au démarrage par SQLAlchemy est une facilité de démonstration et ne remplace pas une migration versionnée. Consultez [`VERSION_0.12.md`](VERSION_0.12.md) pour les écrans, routes, limites et scénarios de test.
-
-## Version 0.13 — Circuits documentaires et notifications internes
-
-La version 0.13 ajoute des **circuits de validation séquentiels par rôle et par type documentaire**, ainsi qu'une **boîte de notifications internes** pour les demandes de validation et les alertes d'impact. Les étapes sont associées à des versions précises ; un remplacement de document rend l'approbation précédente obsolète. Les auteurs ne peuvent pas approuver leurs propres dépôts. L'administrateur configure les modèles, mais doit posséder le rôle de validation pour prendre la décision.
-
-Depuis **Administration**, créer un circuit pour une rubrique et un type exact, puis depuis un lancement le soumettre à l'examen des rôles désignés. La nouvelle navigation **Notifications** permet de traiter les demandes. Aucune notification externe n'est envoyée.
-
-Détails des scénarios, routes, limitations et sauvegarde avant mise à niveau : [`VERSION_0.13.md`](VERSION_0.13.md). Les nouveaux modèles ajoutent des tables SQLite automatiquement dans le prototype, sans migration versionnée ; ne pas utiliser cette procédure sur un serveur de production.

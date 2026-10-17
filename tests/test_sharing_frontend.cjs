@@ -1,0 +1,18 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+let app=fs.readFileSync('static/app.js','utf8');app=app.slice(0,app.lastIndexOf('(async function init(){'));
+const mod=fs.readFileSync('static/sharing.js','utf8');
+assert(fs.readFileSync('static/index.html','utf8').includes('sharing.js'));
+const ctx={document:{querySelector:()=>({})},window:{addEventListener:()=>{}},console,setTimeout,clearTimeout};
+vm.createContext(ctx);vm.runInContext(app,ctx);vm.runInContext(mod,ctx);
+const html=vm.runInContext(`(()=>{state.me={admin:true,permissions:[]};state.detail={id:'test-id',client_name:'Client test',folders:[{slug:'jaune',can_read:true,can_write:true,documents:[{id:'doc1',title:'Fiche de contrôle',doc_type:'Rapport de contrôle',latest:{id:'v1',number:1}}]},{slug:'rose',can_read:true,can_write:true,documents:[]}]};state.clientPublications={items:[{id:'pub1',document_title:'<img src=x onerror=alert(1)>',document_type:'Rapport de contrôle',folder:'jaune',version:1,client_name:'Client test',effective:true,status:'published',approval_current:true,stale:false,client_changed:false}]};state.supplierRequests={items:[{id:'r1',requested_title:'<svg onload=alert(1)>',supplier_name:'Fournisseur',expected_doc_type:'Bon de livraison',folder_slug:'rose',status:'requested'}]};return renderSharing()})()`,ctx);
+assert(html.includes('Publication client'));
+assert(html.includes('Demandes aux fournisseurs'));
+assert(html.includes('&lt;img')&&!html.includes('<img src=x'));
+assert(html.includes('&lt;svg')&&!html.includes('<svg onload'));
+assert(html.includes('data-supplier-resolve'));
+const noaccess=vm.runInContext(`(()=>{state.me={admin:false,permissions:[{action:'launch.read',folder:null},{action:'document.read',folder:'jaune'}]};state.detail.folders[0].can_write=false;state.detail.folders[1].can_read=false;state.detail.folders[1].can_write=false;return renderSharing()})()`,ctx);
+assert(!noaccess.includes('id="share-preview"'));
+assert(!noaccess.includes('id="supplier-create"'));
+assert(!noaccess.includes('data-supplier-resolve'));
+assert(mod.includes('Aucun email ou lien d’accès n’est envoyé'));
+console.log('0.14 : vues simulées, boutons conditionnels et échappement HTML OK');

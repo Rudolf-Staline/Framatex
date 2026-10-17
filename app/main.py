@@ -33,6 +33,7 @@ from .impact_sim_models import ImpactSimulation
 from .orli_models import OrliImportBatch, OrliImportedLaunch, OrliLink
 from .material_models import MaterialLine, MaterialPlanRevision, MaterialMovement
 from .approval_models import ApprovalTemplate, ApprovalStage, ApprovalRun, ApprovalDecision, InternalNotification
+from .sharing_models import ClientPublication, SupplierDocumentRequest
 from .workflow import emit_document_impacts, latest_review
 
 FOLDERS = [("jaune", "Technique"), ("rose", "Réception"), ("bleu", "Douane"), ("vert", "Facturation")]
@@ -50,7 +51,7 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
     yield
 
-app = FastAPI(title="Framatex · Dossier jaune", version="0.13.0", lifespan=lifespan)
+app = FastAPI(title="Framatex · Dossier jaune", version="0.14.0", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
 @app.middleware("http")
@@ -144,7 +145,7 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.13.0"}
+    return {"status": "ok", "version": "0.14.0"}
 
 @app.post("/api/auth/login")
 def login(payload: LoginPayload, response: Response, db: Session = Depends(get_db)):
@@ -679,3 +680,7 @@ app.include_router(material_router)
 # 0.13 — circuits séquentiels de validation et notifications internes.
 from .approval_routes import router as approval_router
 app.include_router(approval_router)
+
+# 0.14 — Publications client et demandes fournisseurs simulées (accès uniquement interne).
+from .sharing_routes import router as sharing_router
+app.include_router(sharing_router)
