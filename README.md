@@ -1,7 +1,149 @@
 # Framatex — Dossier jaune numérique
 
-MVP interne de gestion documentaire par lancement de fabrication.
+**MVP 0.4 — Prototype local du 17 octobre 2026.** Chaque dossier correspond à un **lancement de fabrication**, créé librement, avec identifiant technique indépendant de la référence ORLI. Les quatre sous-dossiers **Jaune, Rose, Bleu et Vert** sont générés automatiquement. Les exemples de démonstration sont entièrement fictifs.
 
-La version 0.5 (socle, complétude, validations, impacts, cohérence Excel, OCR et classement assisté) sera importée dans ce dépôt.
+## Installation
 
-> Prototype étudiant, pas prêt à accueillir des données réelles de Framatex sans validation et audit de sécurité.
+**Prérequis :** Python 3.11 ou ultérieur et accès Internet pour installer les dépendances. Aucun gestionnaire Node.js n'est nécessaire pour lancer l'interface.
+
+Sous **Linux/macOS**, dans le dossier `framat-mvp` :
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m app.bootstrap_admin --email admin@exemple.local
+python -m app.seed_demo                 # facultatif : 3 lancements fictifs
+python -m app.seed_completeness_demo    # facultatif : après seed_demo
+python -m app.seed_workflow_demo        # facultatif : après seed_demo
+python -m app.seed_quality_demo         # facultatif : après seed_demo
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Sous **Windows PowerShell** :
+
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m app.bootstrap_admin --email admin@exemple.local
+python -m app.seed_demo
+python -m app.seed_completeness_demo
+python -m app.seed_workflow_demo
+python -m app.seed_quality_demo
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Si l'activation PowerShell échoue, utilisez directement `.venv\Scripts\python.exe` à la place de `python` pour les commandes suivantes. Le programme demande un mot de passe de 12 caractères minimum pour le premier administrateur : **aucun mot de passe par défaut n'est fourni**.
+
+Ouvrez **http://127.0.0.1:8000** puis connectez-vous. L'API documentée est disponible sur **http://127.0.0.1:8000/docs**.
+
+## Fonctions effectivement disponibles
+
+| Volet | Fonctionnalités |
+|---|---|
+| Socle | Dossier par lancement, création sans ORLI, quatre sous-dossiers, recherche et tableau de bord |
+| Documents | Dépôt PDF/DOCX/XLSX/images/TXT/EML (20 Mo max), versions conservées, SHA-256, téléchargement des anciennes versions |
+| Utilisateurs | Administrateur, création de rôles et comptes, permissions par action et sous-dossier, contrôle côté serveur |
+| Complétude 0.2 | Profils/règles par étape et type de document, cinq états, validations de règles, exceptions justifiées |
+| Décisions 0.3 | Approuver / refuser / demander une reprise **par version**, commentaire, auteur et historique |
+| Valeurs 0.3 | Consommation matière, quantité, besoin matière et prix unitaire, avec **unité**, document et version source, historique des révisions |
+| Impacts 0.3 | Règles administrées sur changements de valeur ou nouvelles versions ; alertes par sous-dossier cible ; accusé de prise en compte, action nécessaire ou sans impact |
+| Cohérence 0.4 | Comparaisons configurables de deux types documentaires (valeurs, unités, tolérance, qualification motivée), sans conversion implicite |
+| Excel 0.4 | Inspection automatique des XLSX déposés : formules supprimées, modifiées et références `#REF!` ; historique des versions |
+| Audit | Journal des opérations de création, mise à jour, dépôt, consultation et décisions |
+
+**Les valeurs utilisées pour la comparaison inter-documents sont relevées manuellement ; les formules Excel sont inspectées automatiquement et ne sont jamais exécutées.** Cette livraison ne contient pas encore d'OCR, de recalcul du besoin matière ni d'IA générative. Les alertes indiquent un **impact possible**, elles ne modifient pas les fichiers, le calcul des prix ou les données ORLI. Les règles et statuts de démonstration ne sont pas des règles officiellement validées par Framatex.
+
+### Tester le parcours de démonstration
+
+1. Dans **Dossiers jaunes**, ouvrez **« Chemises manches longues · pilote B »**.
+2. Dans **Décisions et impacts métier**, consultez les deux révisions de consommation (1,8 → 1,9 m/pièce) et leurs documents sources.
+3. Ouvrez les deux alertes créées par les règles d'exemple, puis enregistrez une décision motivée pour l'une d'elles.
+4. Examinez la version actuelle de la fiche d'emploi : l'approbation de la version précédente ne s'applique pas automatiquement.
+5. Dans **Administration**, désactivez ou créez une règle de propagation et attribuez à un rôle les autorisations `document.review`, `value.write` et `impact.review` selon les sous-dossiers.
+
+Dans la section « Fiabilité documentaire » du lancement pilote B, le script `seed_quality_demo` crée un écart explicite (1 500 contre 1 450 pièces) et un fichier Excel dont une formule a été remplacée par une constante.
+
+Sans les scripts de démonstration, le moteur ne génère **aucune règle ni alerte par défaut**. Consultez `VERSION_0.2.md` et `VERSION_0.3.md` pour les comportements détaillés et leurs limites.
+
+## Architecture
+
+```text
+app/
+  core.py                   SQLite, authentification et sessions
+  models.py                 Lancements, sous-dossiers, documents, rôles, utilisateurs
+  completeness_models.py    Règles de complétude et exceptions
+  completeness.py           Évaluation contextuelle des pièces attendues
+  workflow_models.py        Décisions, révisions de valeurs, règles et alertes
+  workflow.py               Déclencheurs et constantes métier
+  workflow_routes.py        API des fonctions 0.3
+  quality_models.py         Valeurs documentaires, règles de comparaison, inspections Excel
+  quality.py                Moteur de comparaison et inspection Excel statique
+  quality_routes.py         API des fonctions 0.4
+  main.py                   API FastAPI et fonctions de base
+  bootstrap_admin.py        Création du premier administrateur
+  seed_demo.py              Trois lancements fictifs
+  seed_completeness_demo.py Jeu fictif de complétude
+  seed_workflow_demo.py     Jeu fictif de valeurs et d'alertes
+  seed_quality_demo.py      Deux scénarios fictifs de qualité 0.4
+static/
+  index.html                Point d'entrée web
+  app.js                    Interface documentaire et complétude
+  workflow.js               Interface des décisions, valeurs et impacts
+  quality.js                Interface des comparaisons et constats Excel
+  styles.css                Styles responsive
+ tests/                     Tests API et tests de fragments frontend
+```
+
+**Stack utilisée pour cette étape :** FastAPI, SQLAlchemy et SQLite, frontend JavaScript et CSS fournis sans compilation. PostgreSQL et React/TypeScript restent possibles, mais **ne sont pas intégrés** au prototype actuellement livré.
+
+## Tests
+
+Après installation des dépendances :
+
+```bash
+python -m pip install pytest httpx
+python -m pytest -q
+```
+
+Avec Node.js installé (facultatif), vous pouvez aussi vérifier le rendu des fragments frontend :
+
+```bash
+node tests/test_frontend_render.cjs
+node tests/test_workflow_frontend.cjs
+node tests/test_quality_frontend.cjs
+```
+
+## Mise à niveau depuis 0.3
+
+Arrêtez l'application, puis **sauvegardez entièrement le dossier `data/`** avant de remplacer les fichiers sources. Ne remplacez ni n'effacez votre répertoire `data/` lors de la mise à jour. Au prochain démarrage, SQLAlchemy crée les quatre tables complémentaires de 0.4 pour les contrôles tout en conservant celles de 0.1 à 0.3. Ce mécanisme ne remplace **pas** une vraie migration versionnée (Alembic) ; la restauration doit être testée avant exploitation durable. Les rôles personnalisés précédents n'obtiennent pas automatiquement les nouvelles permissions.
+
+## Précautions avant un pilote en entreprise
+
+**Ce MVP est conçu pour une démonstration locale, pas pour un déploiement avec des documents confidentiels réels.** Ne l'ouvrez pas sur Internet et n'importez pas de données sensibles de Framatex sans accord et revue de sécurité.
+
+Restent notamment à concevoir ou à valider : permissions **par lancement et type documentaire**, habilitations nominatives des services, séparation entre auteur et approbateur, authentification renforcée, journal d'audit immuable, protection antivirus et examen approfondi des fichiers bureautiques, stockage sécurisé, chiffrement, sauvegarde/restauration, migrations, hébergement HTTPS sur réseau interne, tests de sécurité, politique de conservation, connexion éventuelle à ORLI. L'interface expose les quatre sous-dossiers avec droits de lecture configurables, mais **pas encore de circuit de validation à plusieurs étapes avec échéances et suppléants**.
+
+`ROADMAP.md` présente les prochains modules envisagés, dont l’OCR/extraction structurée, le classement assisté et la numérisation par QR code.
+
+## Limites de la version 0.5
+
+- La comparaison inter-documents fonctionne sur **des valeurs explicitement relevées** et enregistrées par les utilisateurs ; il ne s’agit pas encore d’une extraction OCR. Si plusieurs documents satisfont au même type, la règle affiche « Source ambiguë » plutôt que de choisir arbitrairement. Seules les versions courantes sont comparées.
+- Le contrôle Excel est **statique** : il ne recalcule pas les formules, ne vérifie pas les résultats financiers et n’ouvre aucun lien externe. Le premier classeur sert de référence, sans pouvoir détecter qu’une formule manquait déjà. Taille d’inspection plafonnée à 5 Mo et 40 000 cellules ; les autres fichiers restent archivés mais leur inspection est marquée comme limitée.
+- Aucune correction automatique de fichier, de prix, de besoin matière ou de donnée ORLI n’est réalisée. Les changements de type documentaire doivent être configurés à partir des intitulés réellement utilisés.
+- Le serveur reste un **prototype local**. Les traitements de fichiers reçus depuis l’extérieur devront être isolés et soumis à une revue de sécurité avant un déploiement dans le système d’information de Framatex.
+
+
+## Version 0.5 — lecture et classement assistés
+
+Deux innovations ajoutées :
+
+- Aperçu avant dépôt (`POST /api/launches/{id}/intake/preview`) : classement proposé par indices de nom et contenu, lecture de texte et extraction de champs métier. Aucun dépôt automatique.
+- Lecture d’une version déjà conservée (`GET /api/document-versions/{id}/intake`) et confirmation manuelle de chaque champ (`POST /api/document-versions/{id}/intake/confirm`). Une version ultérieure n’hérite pas des champs confirmés.
+
+Le moteur utilise en priorité les textes de PDF, DOCX, XLSX, TXT et EML. Pour les scans/images, il emploie Tesseract localement (langues française et anglaise), avec une analyse limitée à trois pages pour les PDF. L'installation de `tesseract-ocr`, `tesseract-ocr-fra`, `tesseract-ocr-eng` est nécessaire pour les scans ; si le moteur est absent, la fonctionnalité signale la limite sans inventer de texte.
+
+Le classement repose sur des règles explicables, pas sur un modèle appris : toutes les propositions peuvent être corrigées. Les données confirmées restent distinctes des valeurs utilisées dans les calculs et ne sont jamais synchronisées automatiquement avec ORLI. Aucune information n'est envoyée à un fournisseur externe. Un environnement de production requiert une revue de sécurité, une file d'analyse isolée, un antivirus et des contrôles de performance.
+
+Tests : `PYTHONPATH=. python -m pytest -q` (22 tests).

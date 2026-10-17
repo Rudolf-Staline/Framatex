@@ -1,0 +1,1 @@
+"""Framatex Dossier Jaune MVP."""

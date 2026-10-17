@@ -1,0 +1,12 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+let a=fs.readFileSync('static/app.js','utf8');a=a.slice(0,a.lastIndexOf('(async function init(){'));
+const q=fs.readFileSync('static/quality.js','utf8');
+const ctx={document:{querySelector:()=>({})},window:{addEventListener:()=>{}},console,setTimeout,clearTimeout};
+vm.createContext(ctx);vm.runInContext(a,ctx);vm.runInContext(q,ctx);
+const html=vm.runInContext(`(()=>{state.me={admin:true,permissions:[]};state.detail={id:'example',folders:[]};
+state.qualityReport={rows:[{rule_id:'r1',name:'<img src=x onerror=alert(1)>',status:'difference',left_doc_type:'Commande',right_doc_type:'Fiche',tolerance:'0',pair:[{document_title:'Provisoire',version:1,value:'1500',unit:'pièce'},{document_title:'Définitif',version:1,value:'1450',unit:'pièce'}],reason:'Contrôle requis',can_review:true}]};
+state.excelInspections=[{document_title:'Excel',version:2,inspection:{status:'reviewed',scanned_cells:5,formula_count:1,findings:[{sheet:'Besoins',cell:'A2',message:'Formule remplacée'}]}}];
+return renderQuality()})()`,ctx);
+for(const x of ['Fiabilité documentaire','Cohérence entre documents','Système immunitaire Excel','1500','1450','Formule remplacée'])assert(html.includes(x),x);
+assert(html.includes('&lt;img')&&!html.includes('<img src=x'));
+console.log('Frontend 0.4 : panneaux, chiffres et échappement HTML OK.');
