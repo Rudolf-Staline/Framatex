@@ -1,6 +1,6 @@
 # Suite du développement — proposition à discuter
 
-Le MVP 0.2 comprend le **socle documentaire et une première implémentation de la complétude contextuelle** : il est démontrable mais ne prétend pas couvrir les 24 innovations décrites dans les fiches de cadrage. Il ne convient pas encore au déploiement opérationnel dans l'entreprise.
+Le MVP 0.5 comprend le **socle documentaire et une première implémentation de la complétude contextuelle** : il est démontrable mais ne prétend pas couvrir les 24 innovations décrites dans les fiches de cadrage. Il ne convient pas encore au déploiement opérationnel dans l'entreprise.
 
 ## Incrément 0.2 · Première réalisation (implémentée)
 
@@ -34,14 +34,23 @@ Le MVP 0.2 comprend le **socle documentaire et une première implémentation de 
 - [x] Justification humaine d’un écart, invalidée en cas de nouvelle version.
 - [x] Inspection XLSX statique automatique : formules supprimées/remplacées, changements de formules, références #REF!.
 - [x] Filtrage serveur des données par droits d’accès aux sous-dossiers.
-- [ ] Extraction OCR et rapprochement automatique des valeurs brutes (étape suivante).
+- [x] Extraction locale de champs candidats depuis PDF/Office/scans (0.5, confirmation humaine).
+- [ ] Rapprochement automatique des champs OCR confirmés avec les valeurs métier suivies (étape suivante).
 
-## Étape suivante · Acquisition intelligente
+## Incrément 0.5 · Deux modules livrés : OCR et classement assisté
 
-- OCR de quelques documents-types anonymisés, restitution de la zone source, niveau de confiance et validation humaine.
-- Comparaison de deux fichiers Excel de même famille, inspection des formules et des cellules clés, sans réparation automatique.
-- Classement documentaire assisté (type et sous-dossier), puis QR pour rattachement à l'UUID du dossier.
-- Critère d'acceptation : aucune valeur incertaine ne modifie une fiche métier sans confirmation humaine.
+- [x] Prévisualisation avant dépôt avec proposition de classement et extraction de champs structurés.
+- [x] OCR local des images et des PDF scannés quand Tesseract est disponible, avec limitation du nombre de pages.
+- [x] Justificatif textuel par champ et validation explicite sur une version documentaire précise.
+- [x] Refus de présenter comme disponibles les rubriques interdites à l'utilisateur.
+- [ ] Évaluation du taux de reconnaissance sur un jeu d'essai anonymisé validé par Framatex.
+
+## Étape suivante · Passerelle papier-numérique et traçabilité avancée
+
+- QR code vers le dossier technique interne, jamais un jeton de connexion.
+- Capture mobile de pièces papier et lien avec le bon lancement de fabrication.
+- Liens explicites entre champs OCR confirmés, exigences client et règles de cohérence.
+- Limites à traiter : traitements asynchrones, protection des uploads et qualité des scans.
 
 ## Préparation indispensable à un pilote Framatex
 
