@@ -20,7 +20,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .core import Base, COOKIE, DATA_DIR, ROOT, engine, get_current_user, get_db, hash_password, check_password, make_token
+from .core import Base, COOKIE, DATA_DIR, ROOT, engine, get_current_user, get_db, hash_password, check_password, make_token, login_limit_key, login_attempt_allowed, record_login_failure, clear_login_failures
 from .models import AuditEvent, Document, DocumentVersion, Folder, Launch, LaunchMember, Role, RolePermission, User
 from .completeness_models import CompletenessProfile, RequirementRule, LaunchCompleteness, RequirementValidation, RequirementException
 from .completeness import PHASES, PHASE_RANK, evaluate
@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
     migrate()
     yield
 
-app = FastAPI(title="Framatex · Dossier jaune", version="0.15.0", lifespan=lifespan)
+app = FastAPI(title="Framatex · Dossier jaune", version="0.16.0", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
 @app.middleware("http")
@@ -67,6 +67,23 @@ async def request_header_guard(request: Request, call_next):
             return denied
     return await call_next(request)
 
+
+@app.middleware("http")
+async def response_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "same-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    if request.url.path == "/" or request.url.path.startswith("/api/"):
+        response.headers.setdefault("Cache-Control", "no-store")
+    if request.url.path == "/":
+        response.headers.setdefault("Content-Security-Policy",
+            "default-src 'self'; base-uri 'none'; object-src 'none'; "
+            "frame-ancestors 'none'; form-action 'self'; "
+            "script-src 'self'; connect-src 'self'; img-src 'self' data:; "
+            "style-src 'self' 'unsafe-inline'")
+    return response
 
 def is_admin(user: User) -> bool:
     return any(role.name == "Administrateur" for role in user.roles)
@@ -151,13 +168,19 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.15.0"}
+    return {"status": "ok", "version": "0.16.0"}
 
 @app.post("/api/auth/login")
-def login(payload: LoginPayload, response: Response, db: Session = Depends(get_db)):
+def login(payload: LoginPayload, response: Response, request: Request, db: Session = Depends(get_db)):
+    ip = request.client.host if request.client else "unknown"
+    key = login_limit_key(ip, payload.email)
+    if not login_attempt_allowed(key):
+        raise HTTPException(429, "Trop de tentatives : réessayez dans quelques minutes")
     user = db.scalar(select(User).where(User.email == payload.email.strip().lower()))
     if not user or not user.active or not check_password(user.password_hash, payload.password):
+        record_login_failure(key)
         raise HTTPException(401, "Identifiants incorrects")
+    clear_login_failures(key)
     response.set_cookie(COOKIE, make_token(user.id), max_age=8*3600, httponly=True, secure=os.getenv("FRAMATEX_COOKIE_SECURE") == "1", samesite="strict", path="/")
     audit(db, user, "session.login", "user", user.id)
     db.commit()

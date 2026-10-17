@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import os
 import secrets
+import time
+from threading import Lock
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -44,6 +46,46 @@ def secret_key() -> str:
 SECRET_KEY = secret_key()
 PASSWORDS = PasswordHasher(time_cost=2, memory_cost=32768, parallelism=2)
 COOKIE = "framat_session"
+
+# Local pilot protection against repeated password guesses. This deliberately
+# remains process-local; a production multi-worker setup needs a shared store.
+_LOGIN_FAILURES: dict[tuple[str, str], list[float]] = {}
+_LOGIN_FAILURE_LOCK = Lock()
+LOGIN_WINDOW_SECONDS = 300
+LOGIN_MAX_FAILURES = 5
+
+
+def login_limit_key(ip: str, email: str) -> tuple[str, str]:
+    # Do not trust X-Forwarded-For unless a trusted proxy is configured.
+    return (ip, email.strip().lower()[:254])
+
+
+def login_attempt_allowed(key: tuple[str, str]) -> bool:
+    current = time.monotonic()
+    with _LOGIN_FAILURE_LOCK:
+        recent = [t for t in _LOGIN_FAILURES.get(key, ()) if t > current - LOGIN_WINDOW_SECONDS]
+        if recent:
+            _LOGIN_FAILURES[key] = recent
+        else:
+            _LOGIN_FAILURES.pop(key, None)
+        return len(recent) < LOGIN_MAX_FAILURES
+
+
+def record_login_failure(key: tuple[str, str]):
+    current = time.monotonic()
+    with _LOGIN_FAILURE_LOCK:
+        # Bound the number of tracked pairs to limit memory abuse.
+        if len(_LOGIN_FAILURES) > 4000:
+            for pair, times in list(_LOGIN_FAILURES.items()):
+                if all(t < current - LOGIN_WINDOW_SECONDS for t in times):
+                    _LOGIN_FAILURES.pop(pair, None)
+        if len(_LOGIN_FAILURES) <= 5000 or key in _LOGIN_FAILURES:
+            _LOGIN_FAILURES.setdefault(key, []).append(current)
+
+
+def clear_login_failures(key: tuple[str, str]):
+    with _LOGIN_FAILURE_LOCK:
+        _LOGIN_FAILURES.pop(key, None)
 
 
 def hash_password(password: str) -> str:

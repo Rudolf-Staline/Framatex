@@ -1,3 +1,11 @@
+# Framatex — Dossier jaune numérique (MVP 0.16)
+
+> **Version 0.16 – stabilisation et recette du pilote local.** Sécurité HTTP, limitation locale des tentatives de connexion, navigation par rubriques, déconnexion mobile et suppression du débordement horizontal. Détails : [VERSION_0.16.md](VERSION_0.16.md) et [RECETTE_PILOTE.md](RECETTE_PILOTE.md).
+
+**À lancer après sauvegarde du répertoire `data/` :** `python -m app.migrate upgrade`, puis `python -m uvicorn app.main:app --host 127.0.0.1 --port 8000`. N'ouvrez pas ce prototype sur Internet et ne chargez pas de données réelles sans autorisation de Framatex.
+
+---
+
 > **MVP 0.11** — Import contrôlé d’exports ORLI et rapprochement manuel : voir [VERSION_0.11.md](VERSION_0.11.md).
 
 > **MVP 0.10** — Graphe des dépendances métier et simulation indicative des impacts : voir [VERSION_0.10.md](VERSION_0.10.md).
