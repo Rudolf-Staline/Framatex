@@ -1,0 +1,18 @@
+'use strict';
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const src=fs.readFileSync('static/materials.js','utf8');
+const ctx={console,Intl};vm.createContext(ctx);vm.runInContext(src,ctx);
+ctx.e=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ctx.can=()=>true;
+ctx.niceDate=()=> '17 oct. 2026';
+ctx.state={detail:{id:'launch-1',folders:[{slug:'jaune',documents:[{title:'Fiche technique',versions:[{id:'v-tech',number:1,original_name:'fiche.txt'}]}]},{slug:'rose',documents:[]}]},materials:{lines:[{id:'mat-1',label:'<script>alert(1)</script>',reference:'TIS-42',unit:'m',planned:'2700.000',ordered:'2800.000',received:'1300.000',to_receive:'1500.000',flags:['commande_supérieure_au_prévu'],plan_history:[{quantity:'2700.000',source_version_id:'v-tech',note:'Document original',recorded_at:'2026-10-17'}],movements:[]}]}};
+const html=vm.runInContext('renderMaterialReport()',ctx);
+assert(html.includes('Traçabilité et rapprochement des matières'));
+assert(html.includes('Réceptionné'));
+assert(html.includes('2 800')||html.includes('2 800'));
+assert(html.includes('Commande partielle')===false);
+assert(!html.includes('<script>'));
+assert(html.includes('&lt;script&gt;'));
+assert(html.includes('data-material-entry'));
+assert(src.includes('source_version_id'));
+console.log('Frontend 0.12 : suivi matière, sécurité HTML et actions OK');
