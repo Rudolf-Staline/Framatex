@@ -102,6 +102,7 @@ static/
   quality.js                Interface des comparaisons et constats Excel
   intake.js                 Aperçu OCR, classement et confirmation des champs
   paper.js                  Étiquette QR et visualisation des passeports
+  spec.js                   Exigences client et ambiguïtés
   styles.css                Styles responsive
  tests/                     Tests API et tests de fragments frontend
 ```
@@ -169,3 +170,14 @@ Deux innovations ont été ajoutées ensemble :
 Installer la nouvelle dépendance `qrcode` via `pip install -r requirements.txt`. Par défaut, le QR code encode `http://127.0.0.1:8000`, qui n’est **pas accessible depuis un téléphone**. L’option `FRAMATEX_PUBLIC_BASE_URL` permet d'indiquer une origine approuvée du réseau interne ; ne l’utilisez pas pour exposer le prototype sur Internet. Voir `VERSION_0.6.md`.
 
 Test ajouté : `tests/test_paper.py` et `tests/test_paper_frontend.cjs`. **26 tests Python** passent.
+
+## Version 0.7 — Exigences client et ambiguïtés documentaires
+
+Deux fonctionnalités utilisables depuis la fiche d'un lancement :
+
+- **Couverture des exigences client** : repérer des phrases candidates dans un document technique, enregistrer les exigences après confirmation, associer une preuve d'une version précise et faire enregistrer son examen par un responsable. Une source ou une preuve remplacée doit être réévaluée.
+- **Détection des ambiguïtés** : repérer certains passages imprécis, confirmer les questions de clarification, suivre les résolutions motivées et réexaminer les passages après remplacement de la source.
+
+Le repérage est **lexical, local et limité**. Il ne détecte pas toutes les exigences ni toutes les ambiguïtés, et ne garantit pas la conformité. Aucun statut n'est validé automatiquement. Des droits distincts `requirement.review` et `ambiguity.review` sont disponibles pour les rôles personnalisés, en plus des droits documentaires. Les compteurs sont calculés sur les éléments réellement accessibles.
+
+Voir [`VERSION_0.7.md`](VERSION_0.7.md) pour les opérations, la confidentialité, les endpoints et les limites. Le projet contient **33 tests API** et des tests de fragments JavaScript.

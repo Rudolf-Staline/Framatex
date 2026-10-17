@@ -114,3 +114,25 @@ svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke
 .paper-passport .info-pair{padding:12px 0;border-bottom:1px solid #edf0ed}
 .paper-passport .info-pair label{display:block;margin-bottom:7px}
 @media(max-width:750px){.paper-panel{grid-template-columns:1fr;padding:20px}}
+/* 0.7 — Matrice d'exigences et points à clarifier */
+.spec-section{margin-top:38px;padding-top:16px;border-top:1px solid var(--line)}
+.spec-section .section-heading h3{font-size:16px;margin:0;color:#314c3b}
+.spec-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:17px 0 18px}
+.spec-summary>div{background:#fff;border:1px solid #e7ece7;border-radius:13px;padding:17px 20px;display:flex;flex-direction:column;gap:9px}
+.spec-summary strong{font-size:27px;letter-spacing:-.6px;color:#245c46}
+.spec-summary span{font-size:12px;color:#7b8d80}
+.spec-toolbar{padding:18px 22px;display:flex;justify-content:space-between;align-items:center;gap:24px}
+.spec-toolbar p{max-width:600px;margin:0;font-size:12px;color:#708277;line-height:1.65}
+.spec-buttons,.spec-actions{display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0}
+.spec-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.spec-list{min-height:120px}.spec-item{padding:17px 21px;border-bottom:1px solid #eef1ed}
+.spec-item:last-child{border-bottom:0}.spec-item-title{display:flex;gap:12px;justify-content:space-between;align-items:start}
+.spec-item-title strong{font-size:13px;line-height:1.55;color:#314538}
+.spec-item p{line-height:1.65;font-size:12px;color:#586a5c;margin:10px 0}
+.spec-item blockquote{border-left:3px solid #d8cba6;background:#fbfaf6;margin:12px 0;padding:10px 13px;font-size:12px;line-height:1.6;color:#665c44}
+.spec-actions{margin-top:8px}.spec-evidence{font-size:11px;margin:8px 0;color:#526c5e;background:#f4f8f4;padding:9px;border-radius:8px;line-height:1.5}
+.spec-detected{border-top:1px solid #e8eee8;margin-top:22px;padding-top:14px}.spec-detected h3{font-size:15px;margin:22px 0 10px}
+.spec-suggestion{border:1px solid #e6ede6;border-radius:10px;padding:14px;margin:9px 0}.spec-suggestion strong{font-size:12px;color:#3d634d}
+.spec-suggestion p{font-size:12px;line-height:1.65;color:#566d5c}
+@media(max-width:950px){.spec-grid{grid-template-columns:1fr}.spec-toolbar{flex-direction:column;align-items:flex-start}}
+@media(max-width:620px){.spec-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.spec-item-title{flex-direction:column}}

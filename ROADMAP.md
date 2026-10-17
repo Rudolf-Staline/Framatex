@@ -71,3 +71,16 @@ Le MVP 0.6 comprend le **socle documentaire et une première implémentation de 
 - Mettre en place les migrations versionnées, une base PostgreSQL si retenue, des tests de restauration, de charge et de sécurité ; formaliser la politique de conservation des données.
 
 **À ne pas faire sans accord :** connecter ORLI en écriture, aspirer des boîtes email, utiliser des fournisseurs externes d'IA/OCR sur des fichiers internes, ouvrir le portail client, envoyer des notifications externes ou publier automatiquement un document.
+
+## Incrément 0.7 · Exigences et ambiguïtés livré
+
+- [x] Extraction locale de propositions d'exigences avec extrait et confirmation humaine.
+- [x] Matrice traçable : exigence → version source → preuve → vérification par responsable.
+- [x] Détection explicable de formulations imprécises ; suivi d'une clarification motivée.
+- [x] Réexamen des exigences et ambiguïtés lorsque le document source est remplacé.
+- [x] Permissions de lecture et de contrôle métier, refus des preuves issues d'un autre lancement.
+- [x] Interface intégrée au détail du dossier et tests API / JavaScript.
+- [ ] Extraire les exigences de l'intégralité des tableaux, schémas et images d'un tech pack complexe (non implémenté).
+- [ ] Évaluer rappels, dates d'échéance et circuit de validation des clarifications avec Framatex.
+
+**Prochain binôme possible :** archivage des emails sans impression + registre intelligent des engagements email. À ce stade, l'import manuel de `.eml` devra précéder toute interconnexion à une messagerie professionnelle ; aucune collecte automatique sans autorisation de Framatex.
