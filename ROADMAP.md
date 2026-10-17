@@ -122,3 +122,14 @@ Le MVP 0.6 comprend le **socle documentaire et une première implémentation de 
 - [x] Interface d’import et de validation intégrée ; tests API + interface.
 - [ ] Valider les colonnes de vrais exports anonymisés, la règle d’unicité et les modalités d’échanges avec l’ERP.
 - [ ] Migrer la base via migrations SQL versionnées et tester restauration avant pilote réel.
+
+## Livré dans le MVP 0.12 (17 octobre 2026)
+
+- [x] Référentiel des matières lié à chaque lancement avec unité stable et pièce justificative Jaune.
+- [x] Révisions de quantités prévues historisées sans écrasement.
+- [x] Commandes et réceptions associées à des versions de documents Jaune/Rose, avec historique, annulation justifiée et auteur.
+- [x] Rapprochement prévu / commandé / reçu, indicateurs explicables et alertes de vérification.
+- [x] Contrôles de permissions sur Jaune et Rose et provenance d'une version appartenant au bon lancement.
+- [x] Affichage des justificatifs et avertissement lorsque leur version a été remplacée.
+- [ ] Vérifier les unités, taux de pertes, réceptions partielles et pièces probantes avec Framatex.
+- [ ] Établir une correspondance contrôlée entre des champs d'exports ORLI validés et les lignes matière.

@@ -215,3 +215,9 @@ Deux fonctionnalités utilisables depuis la fiche d'un lancement :
 Le repérage est **lexical, local et limité**. Il ne détecte pas toutes les exigences ni toutes les ambiguïtés, et ne garantit pas la conformité. Aucun statut n'est validé automatiquement. Des droits distincts `requirement.review` et `ambiguity.review` sont disponibles pour les rôles personnalisés, en plus des droits documentaires. Les compteurs sont calculés sur les éléments réellement accessibles.
 
 Voir [`VERSION_0.7.md`](VERSION_0.7.md) pour les opérations, la confidentialité, les endpoints et les limites. Le projet contient **33 tests API** et des tests de fragments JavaScript.
+
+## Version 0.12 — Suivi des matières et rapprochement des quantités
+
+Le dossier de lancement contient désormais un espace **Traçabilité et rapprochement des matières**. On y définit les matières et leurs besoins prévus, on enregistre les quantités commandées et réceptionnées avec leurs justificatifs, puis on examine les écarts. Toutes les saisies sont manuelles, historisées et conservées en décimal ; aucun mouvement ORLI n'est créé. Les autorisations de lecture simultanées Jaune/Rose sont nécessaires pour consulter les totaux afin de ne pas dévoiler indirectement les mouvements de réception.
+
+**Avant mise à jour :** arrêter l'application et sauvegarder `data/` en intégralité. L'ajout de tables au démarrage par SQLAlchemy est une facilité de démonstration et ne remplace pas une migration versionnée. Consultez [`VERSION_0.12.md`](VERSION_0.12.md) pour les écrans, routes, limites et scénarios de test.
