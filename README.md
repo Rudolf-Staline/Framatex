@@ -1,6 +1,6 @@
 # Framatex — Dossier jaune numérique
 
-**MVP 0.5 — Prototype local du 17 octobre 2026.** Chaque dossier correspond à un **lancement de fabrication**, créé librement, avec identifiant technique indépendant de la référence ORLI. Les quatre sous-dossiers **Jaune, Rose, Bleu et Vert** sont générés automatiquement. Les exemples de démonstration sont entièrement fictifs.
+**MVP 0.6 — Prototype local du 17 octobre 2026.** Chaque dossier correspond à un **lancement de fabrication**, créé librement, avec identifiant technique indépendant de la référence ORLI. Les quatre sous-dossiers **Jaune, Rose, Bleu et Vert** sont générés automatiquement. Les exemples de démonstration sont entièrement fictifs.
 
 ## Installation
 
@@ -53,6 +53,8 @@ Ouvrez **http://127.0.0.1:8000** puis connectez-vous. L'API documentée est disp
 | Excel 0.4 | Inspection automatique des XLSX déposés : formules supprimées, modifiées et références `#REF!` ; historique des versions |
 | Lecture 0.5 | Lecture de texte et OCR local (Tesseract optionnel), propositions de champs avec provenance, confirmation humaine par version |
 | Classement 0.5 | Suggestions explicables de type et sous-dossier avant dépôt, choix final par un utilisateur habilité |
+| QR papier 0.6 | Étiquette imprimable par lancement, lien sans secret et connexion obligatoire |
+| Passeports 0.6 | Métadonnées par version, empreinte SHA-256 conservée et recalculée, auteur, décisions et état d’intégrité |
 | Audit | Journal des opérations de création, mise à jour, dépôt, consultation et décisions |
 
 **Les valeurs utilisées dans le moteur de cohérence restent relevées manuellement ; les champs OCR confirmés ne sont pas injectés dans ce moteur automatiquement.** Les formules Excel sont inspectées sans exécution. L'OCR local est disponible en option pour les images et PDF scannés ; cette version ne recalcule pas les besoins matière et n'utilise pas d'IA générative. Les alertes indiquent un **impact possible**, elles ne modifient pas les fichiers, le calcul des prix ou les données ORLI. Les règles et statuts de démonstration ne sont pas des règles officiellement validées par Framatex.
@@ -86,6 +88,7 @@ app/
   intake.py                 Lecture, OCR, classification et extraction bornées
   intake_models.py          Champs confirmés par document et version
   intake_routes.py          API et autorisations du module 0.5
+  paper_routes.py           QR papier, étiquette et passeport avec vérification de fichier
   main.py                   API FastAPI et fonctions de base
   bootstrap_admin.py        Création du premier administrateur
   seed_demo.py              Trois lancements fictifs
@@ -98,6 +101,7 @@ static/
   workflow.js               Interface des décisions, valeurs et impacts
   quality.js                Interface des comparaisons et constats Excel
   intake.js                 Aperçu OCR, classement et confirmation des champs
+  paper.js                  Étiquette QR et visualisation des passeports
   styles.css                Styles responsive
  tests/                     Tests API et tests de fragments frontend
 ```
@@ -153,3 +157,15 @@ Le moteur utilise en priorité les textes de PDF, DOCX, XLSX, TXT et EML. Pour l
 Le classement repose sur des règles explicables, pas sur un modèle appris : toutes les propositions peuvent être corrigées. Les données confirmées restent distinctes des valeurs utilisées dans les calculs et ne sont jamais synchronisées automatiquement avec ORLI. Aucune information n'est envoyée à un fournisseur externe. Un environnement de production requiert une revue de sécurité, une file d'analyse isolée, un antivirus et des contrôles de performance.
 
 Tests : `PYTHONPATH=. python -m pytest -q` (22 tests).
+
+
+## Nouveautés de la version 0.6 — QR et passeports
+
+Deux innovations ont été ajoutées ensemble :
+
+1. **Passerelle papier-numérique** : depuis la page d’un lancement, ouvrir l’étiquette QR imprimable, la coller sur la chemise papier, scanner pour retrouver le dossier après authentification. Le dépôt continue à passer par les contrôles de permissions et par le classement humain.
+2. **Passeport numérique de chaque version** : depuis « Passerelle papier et passeports numériques », vérifier le hash SHA-256 effectivement recalculé sur le fichier stocké, l’auteur, la provenance de version et les décisions. Le statut « intact » ne certifie ni le contenu métier ni l’immuabilité de la base.
+
+Installer la nouvelle dépendance `qrcode` via `pip install -r requirements.txt`. Par défaut, le QR code encode `http://127.0.0.1:8000`, qui n’est **pas accessible depuis un téléphone**. L’option `FRAMATEX_PUBLIC_BASE_URL` permet d'indiquer une origine approuvée du réseau interne ; ne l’utilisez pas pour exposer le prototype sur Internet. Voir `VERSION_0.6.md`.
+
+Test ajouté : `tests/test_paper.py` et `tests/test_paper_frontend.cjs`. **26 tests Python** passent.

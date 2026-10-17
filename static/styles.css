@@ -102,3 +102,15 @@ svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke
 @media(max-width:900px){.quality-grid{grid-template-columns:1fr}}
 /* Lecture documentaire 0.5 : même langage visuel que les modules précédents. */
 .intake-section{margin-top:32px}.intake-panel{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:22px}.intake-panel h3{font-size:16px;margin-bottom:7px}.intake-panel p{font-size:13px;line-height:1.6;color:#56625b;margin:8px 0 14px}.intake-docs{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.intake-analysis{margin-top:22px;border-top:1px solid #e5e9e5;padding-top:18px}.intake-analysis h3{margin:15px 0 9px;font-size:15px}.intake-candidates{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}.intake-candidate{border:1px solid #e5e9e5;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:5px}.intake-candidate strong{font-size:11px;text-transform:capitalize;color:#53645b}.intake-candidate span{font-size:14px;font-weight:700}.intake-candidate small{font-size:11px;color:#647169;overflow-wrap:anywhere}.intake-field-row{border-top:1px solid #e5e9e5;padding:12px 0;display:flex;flex-wrap:wrap;align-items:center;gap:8px}.intake-field-row input{min-width:200px;flex:1}@media(max-width:800px){.intake-panel{grid-template-columns:1fr}}
+
+/* 0.6 — Lisibilité du QR et empreintes sur écran étroit */
+.paper-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:30px;padding:26px}
+.paper-panel h3{margin-top:0}
+.paper-panel p{color:#66736b;line-height:1.65}
+.paper-qr-content{text-align:center}
+.paper-qr-image{width:min(260px,80%);height:auto;display:block;margin:14px auto}
+.paper-qr-content code{font-size:12px;overflow-wrap:anywhere}
+.paper-digest{font-size:12px;overflow-wrap:anywhere;word-break:break-word}
+.paper-passport .info-pair{padding:12px 0;border-bottom:1px solid #edf0ed}
+.paper-passport .info-pair label{display:block;margin-bottom:7px}
+@media(max-width:750px){.paper-panel{grid-template-columns:1fr;padding:20px}}
