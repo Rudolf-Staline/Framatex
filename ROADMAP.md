@@ -145,3 +145,17 @@ Le MVP 0.6 comprend le **socle documentaire et une première implémentation de 
 - [x] 52 tests Python et contrôles JS réussis localement.
 - [ ] Valider les circuits réels, le droit de délégation et la séparation des tâches avec Framatex.
 - [ ] Prévoir des migrations de schéma versionnées, puis tests de montée en charge et audit de sécurité avant pilote métier.
+
+
+## Livré dans le MVP 0.14 (17 octobre 2026)
+
+- [x] Publication simulée d'une version exacte après approbation et justification, uniquement par administrateur.
+- [x] Types autorisés en liste fermée, exclusion des catégories financières et des noms explicitement sensibles.
+- [x] Aperçu client local sans téléchargement, suspension automatique en cas de remplacement de version ou de modification du client.
+- [x] Retrait motivé, état historique et journal d'audit des actions.
+- [x] Demandes documentaires fournisseurs internes, suivies par lancement, catégorie et échéance facultative.
+- [x] Clôture avec preuve documentaire du même lancement / rubrique / type, ou annulation justifiée.
+- [x] Contrôles serveur des droits Jaune/Rose ; 5 tests métier et test de rendu JS ajoutés.
+- [ ] **Avant ouverture externe :** conception d'une identité client/fournisseur isolée, chiffrement, contrôle des accès par destinataire, journaux de consultation, liens temporaires et évaluation des risques.
+- [ ] Faire valider par Framatex les types communicables, la classification du contenu et la politique de conservation.
+- [ ] Mettre en place des migrations de base versionnées et un environnement de préproduction sécurisé.
