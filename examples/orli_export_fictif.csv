@@ -1,0 +1,3 @@
+Numero lancement;Numero commande;Client;Designation;Quantite;Statut
+ORLI-DEMO-001;CMD-42;Client fictif;Vestes de test;1500;Préparation
+ORLI-DEMO-002;CMD-43;Client fictif;Chemises de test;900;Planifié

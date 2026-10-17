@@ -1,3 +1,5 @@
+> **MVP 0.11** — Import contrôlé d’exports ORLI et rapprochement manuel : voir [VERSION_0.11.md](VERSION_0.11.md).
+
 > **MVP 0.10** — Graphe des dépendances métier et simulation indicative des impacts : voir [VERSION_0.10.md](VERSION_0.10.md).
 
 ## Version 0.9 — tableau de bord d'actions et assistant de navigation
@@ -29,7 +31,7 @@ Deux nouveaux modules sont accessibles en bas de la fiche de chaque **lancement 
 
 # Framatex — Dossier jaune numérique
 
-**MVP 0.9 — Prototype local du 17 octobre 2026.** Chaque dossier correspond à un **lancement de fabrication**, créé librement, avec identifiant technique indépendant de la référence ORLI. Les quatre sous-dossiers **Jaune, Rose, Bleu et Vert** sont générés automatiquement. Les exemples de démonstration sont entièrement fictifs.
+**MVP 0.11 — Prototype local du 17 octobre 2026.** Chaque dossier correspond à un **lancement de fabrication**, créé librement, avec identifiant technique indépendant de la référence ORLI. Les quatre sous-dossiers **Jaune, Rose, Bleu et Vert** sont générés automatiquement. Les exemples de démonstration sont entièrement fictifs.
 
 ## Installation
 

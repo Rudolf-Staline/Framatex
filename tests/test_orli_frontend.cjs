@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('assert'),fs=require('fs'),vm=require('vm');
+const source=fs.readFileSync('static/orli.js','utf8');
+const ctx={};vm.createContext(ctx);vm.runInContext(source,ctx);
+ctx.e=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ctx.state={me:{admin:true},detail:{id:'1',name:'Test',status:'À compléter'},orliReconciliation:{linked:null,candidates:[{id:'record',orli_ref:'OR-1<script>',order_ref:'CMD-2',client_name:'Client X',designation:'Test',matches:['commande'],conflicts:['client'],already_linked:false}],truncated:false}};
+ctx.can=()=>true;const html=vm.runInContext('renderOrliReconciliation()',ctx);
+assert(html.includes('Rapprochement ORLI'));assert(html.includes('data-orli-link'));assert(!html.includes('<script>'));assert(html.includes('&lt;script&gt;'));
+const table=vm.runInContext("orliRecordRows([{row_number:2,orli_ref:'x',designation:'<svg onload=alert(1)>',order_ref:'c',client_name:'client',errors:[]}])",ctx);
+assert(!table.includes('<svg'));assert(table.includes('&lt;svg'));
+assert(source.includes('confirmation:overlay.querySelector'));
+console.log('UI ORLI 0.11 : actions, confirmation et échappement HTML OK');
