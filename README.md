@@ -170,7 +170,7 @@ Arrêtez l'application, puis **sauvegardez entièrement le dossier `data/`** ava
 
 **Ce MVP est conçu pour une démonstration locale, pas pour un déploiement avec des documents confidentiels réels.** Ne l'ouvrez pas sur Internet et n'importez pas de données sensibles de Framatex sans accord et revue de sécurité.
 
-Restent notamment à concevoir ou à valider : permissions **par lancement et type documentaire**, habilitations nominatives des services, séparation entre auteur et approbateur, authentification renforcée, journal d'audit immuable, protection antivirus et examen approfondi des fichiers bureautiques, stockage sécurisé, chiffrement, sauvegarde/restauration, migrations, hébergement HTTPS sur réseau interne, tests de sécurité, politique de conservation, connexion éventuelle à ORLI. L'interface expose les quatre sous-dossiers avec droits de lecture configurables, mais **pas encore de circuit de validation à plusieurs étapes avec échéances et suppléants**.
+Restent notamment à concevoir ou à valider : permissions **par type documentaire** (droits par lancement ajoutés en 0.15), habilitations nominatives des services, séparation entre auteur et approbateur, authentification renforcée, journal d'audit immuable, protection antivirus et examen approfondi des fichiers bureautiques, stockage sécurisé, chiffrement, sauvegarde/restauration, migrations, hébergement HTTPS sur réseau interne, tests de sécurité, politique de conservation, connexion éventuelle à ORLI. L'interface expose les quatre sous-dossiers avec droits de lecture configurables, mais **pas encore de circuit de validation à plusieurs étapes avec échéances et suppléants**.
 
 `ROADMAP.md` présente les modules restant à développer, notamment la passerelle papier-numérique par QR code, les circuits d’approbation complets et la consolidation des champs OCR dans les contrôles métier.
 
@@ -223,3 +223,24 @@ Voir [`VERSION_0.7.md`](VERSION_0.7.md) pour les opérations, la confidentialit�
 Le dossier de lancement contient désormais un espace **Traçabilité et rapprochement des matières**. On y définit les matières et leurs besoins prévus, on enregistre les quantités commandées et réceptionnées avec leurs justificatifs, puis on examine les écarts. Toutes les saisies sont manuelles, historisées et conservées en décimal ; aucun mouvement ORLI n'est créé. Les autorisations de lecture simultanées Jaune/Rose sont nécessaires pour consulter les totaux afin de ne pas dévoiler indirectement les mouvements de réception.
 
 **Avant mise à jour :** arrêter l'application et sauvegarder `data/` en intégralité. L'ajout de tables au démarrage par SQLAlchemy est une facilité de démonstration et ne remplace pas une migration versionnée. Consultez [`VERSION_0.12.md`](VERSION_0.12.md) pour les écrans, routes, limites et scénarios de test.
+
+
+## Version 0.15 — migrations et confidentialité des lancements
+
+La mise à niveau 0.15 introduit un **migrateur SQLite versionné** et un périmètre d'accès configurable **par lancement**. La procédure, les commandes et les limites sont détaillées dans [VERSION_0.15.md](VERSION_0.15.md).
+
+**Mise à niveau de la 0.14 :** arrêter le serveur, sauvegarder intégralement le dossier `data/`, remplacer les fichiers sources, puis exécuter :
+
+```bash
+python -m app.migrate upgrade
+python -m app.migrate status
+uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Le système crée aussi une sauvegarde automatique datée avant d'ajouter des colonnes à une base SQLite 0.14. Les bases PostgreSQL **ne sont pas couvertes** par ce migrateur. La migration n'est pas un substitut à une politique de sauvegarde et de restauration éprouvée.
+
+Depuis la fiche d'un lancement, l'administrateur dispose du bouton **Gérer les accès** pour restreindre sa visibilité et attribuer des membres nommément. La restriction s'ajoute aux permissions par rôle et sous-dossier. Elle ne les remplace pas. Les anciennes fiches restent en mode ouvert pour préserver les collaborations actuelles : leur restriction est **à activer explicitement** avant tout pilote sensible.
+
+Si tous les nouveaux dossiers doivent être restreints dès leur création, définir `FRAMATEX_RESTRICT_NEW_LAUNCHES=1`.
+
+La version actuelle constitue encore un démonstrateur local. L'accès réel aux données Framatex reste subordonné à une validation technique, juridique et organisationnelle.

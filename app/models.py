@@ -49,6 +49,7 @@ class Launch(Base):
     created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+    restricted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0", nullable=False)
     folders: Mapped[list[Folder]] = relationship(back_populates="launch", cascade="all, delete-orphan")
 
 class Folder(Base):
@@ -96,3 +97,17 @@ class AuditEvent(Base):
     target_id: Mapped[str] = mapped_column(String(36))
     detail: Mapped[str] = mapped_column(Text, default="")
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class LaunchMember(Base):
+    """A user explicitly allowed to access a restricted manufacturing launch.
+
+    Role + folder permissions are still required for every action.
+    """
+    __tablename__ = "launch_members"
+    __table_args__ = (UniqueConstraint("launch_id", "user_id", name="uq_launch_member"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    launch_id: Mapped[str] = mapped_column(ForeignKey("launches.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    granted_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
