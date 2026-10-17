@@ -60,6 +60,11 @@ async def request_header_guard(request: Request, call_next):
     if request.url.path.startswith("/api/") and request.method in {"POST", "PUT", "PATCH", "DELETE"}:
         if request.headers.get("X-Framatex-Request") != "1":
             return Response("En-tête de protection manquant", status_code=403)
+    if request.url.path.startswith('/api/'):
+        from .access import guard_http_request
+        denied = guard_http_request(request)
+        if denied is not None:
+            return denied
     return await call_next(request)
 
 
@@ -693,7 +698,5 @@ app.include_router(sharing_router)
 from .access_routes import router as access_router
 app.include_router(access_router)
 
-# Appliquer les contrôles de portée à toutes les routes enregistrées, y compris
-# celles des modules historiques utilisant un identifiant de document/version.
-from .access import install_scope_guard
-install_scope_guard(app)
+# Le contrôle global de portée est effectué dans request_header_guard, avant
+# le dispatch FastAPI. Aucun routeur historique ne peut l'éviter.
