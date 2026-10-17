@@ -32,6 +32,7 @@ from .mail_models import ArchivedEmail, EmailCommitment
 from .impact_sim_models import ImpactSimulation
 from .orli_models import OrliImportBatch, OrliImportedLaunch, OrliLink
 from .material_models import MaterialLine, MaterialPlanRevision, MaterialMovement
+from .approval_models import ApprovalTemplate, ApprovalStage, ApprovalRun, ApprovalDecision, InternalNotification
 from .workflow import emit_document_impacts, latest_review
 
 FOLDERS = [("jaune", "Technique"), ("rose", "Réception"), ("bleu", "Douane"), ("vert", "Facturation")]
@@ -49,7 +50,7 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
     yield
 
-app = FastAPI(title="Framatex · Dossier jaune", version="0.12.0", lifespan=lifespan)
+app = FastAPI(title="Framatex · Dossier jaune", version="0.13.0", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
 @app.middleware("http")
@@ -143,7 +144,7 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.12.0"}
+    return {"status": "ok", "version": "0.13.0"}
 
 @app.post("/api/auth/login")
 def login(payload: LoginPayload, response: Response, db: Session = Depends(get_db)):
@@ -587,6 +588,14 @@ def validate_requirement(launch_id: str, rule_id: str, payload: ValidationPayloa
     if not doc.versions:
         raise HTTPException(422, "Document sans version")
     version = max(doc.versions, key=lambda v: v.number)
+    # Une exigence de complétude ne remplace pas le circuit métier configuré.
+    from .approval_routes import applicable_template
+    if applicable_template(db, doc):
+        from .approval_models import ApprovalRun
+        approved = db.scalar(select(ApprovalRun).where(
+            ApprovalRun.document_version_id == version.id, ApprovalRun.status == 'approved'))
+        if not approved:
+            raise HTTPException(409, 'Circuit de validation non achevé pour cette version')
     review_decision = latest_review(db, version.id)
     if review_decision and review_decision.decision in {'rejected', 'changes_requested'}:
         raise HTTPException(409, 'Version refusée ou à reprendre : le contrôle documentaire doit être régularisé')
@@ -666,3 +675,7 @@ app.include_router(orli_router)
 # 0.12 — matières documentées et rapprochements non destructifs.
 from .material_routes import router as material_router
 app.include_router(material_router)
+
+# 0.13 — circuits séquentiels de validation et notifications internes.
+from .approval_routes import router as approval_router
+app.include_router(approval_router)
