@@ -6,14 +6,12 @@ In restricted mode: admin OR creator OR an explicitly assigned member.
 Existing role / folder permissions remain mandatory independently.
 """
 from __future__ import annotations
-import jwt
-from fastapi import HTTPException, Request
-from fastapi.routing import APIRoute
-from fastapi.routing import request_response
-from starlette.responses import JSONResponse
+from fastapi import Depends, HTTPException, Request
+from fastapi.routing import APIRoute, request_response
+from fastapi.dependencies.utils import get_parameterless_sub_dependant
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from .core import COOKIE, SECRET_KEY, SessionLocal
+from .core import get_current_user, get_db
 from .models import User, Launch, LaunchMember, Document, DocumentVersion
 
 
@@ -84,33 +82,29 @@ GUARDED_PARAMS = {'launch_id', 'doc_id', 'version_id', 'run_id', 'alert_id',
                   'notification_id', 'publication_id', 'request_id'}
 
 
-def install_scope_guard(app):
-    """Protect all existing and future parameterized routes, not only the UI.
+def enforce_route_scope(request: Request, user: User = Depends(get_current_user),
+                        db: Session = Depends(get_db)):
+    """FastAPI dependency applied to each scoped endpoint, including old routers."""
+    launch_id = indirect_launch(db, request.path_params)
+    if launch_id:
+        must_access(db, user, launch_id)
 
-    Wrapping FastAPI's registered request handlers ensures the checks precede
-    endpoint execution for old module endpoints without bypassing their own
-    standard role and folder permission dependencies.
+
+def install_scope_guard(app):
+    """Add a FastAPI dependency to every route containing a scoped identifier.
+
+    Using the request dependency tree, not route internals such as
+    `param_convertors`, makes the protection independent of Starlette's
+    implementation of path converters. This also protects old routers
+    registered before v0.15 and preserves existing endpoint dependencies.
     """
     for route in app.routes:
         if not isinstance(route, APIRoute) or not route.path_format.startswith('/api/'):
             continue
-        if not GUARDED_PARAMS.intersection(route.param_convertors):
+        if not any('{' + param + '}' in route.path_format for param in GUARDED_PARAMS):
             continue
-        original = route.get_route_handler()
-        async def secured(request: Request, handler=original):
-            params = request.path_params
-            with SessionLocal() as db:
-                launch_id = indirect_launch(db, params)
-                if launch_id:
-                    token = request.cookies.get(COOKIE)
-                    try:
-                        sub = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])['sub'] if token else None
-                        user = db.get(User, sub) if sub else None
-                    except (jwt.InvalidTokenError, KeyError):
-                        user = None
-                    if not user or not user.active:
-                        return JSONResponse({'detail':'Connexion nécessaire'},status_code=401)
-                    if not accessible(db,user,db.get(Launch,launch_id)):
-                        return JSONResponse({'detail':'Lancement introuvable'},status_code=404)
-            return await handler(request)
-        route.app = request_response(secured)
+        guard = get_parameterless_sub_dependant(
+            depends=Depends(enforce_route_scope), path=route.path_format)
+        route.dependant.dependencies.insert(0, guard)
+        # Recompile the handler once with the additional dependency.
+        route.app = request_response(route.get_route_handler())
