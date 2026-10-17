@@ -1,0 +1,28 @@
+name: Test MVP Framatex
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  python-and-ui:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer les dépendances
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pytest httpx
+      - name: Tests API et fonctions métier
+        run: PYTHONPATH=. python -m pytest -q
+      - name: Tests de rendu JavaScript
+        run: |
+          for file in tests/*.cjs; do node "$file"; done
+          for file in static/*.js; do node --check "$file"; done
