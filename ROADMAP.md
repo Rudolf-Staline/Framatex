@@ -102,3 +102,12 @@ Le MVP 0.6 comprend le **socle documentaire et une première implémentation de 
 - [ ] Évaluer rappels, dates d'échéance et circuit de validation des clarifications avec Framatex.
 
 **Prochain binôme possible :** archivage des emails sans impression + registre intelligent des engagements email. À ce stade, l'import manuel de `.eml` devra précéder toute interconnexion à une messagerie professionnelle ; aucune collecte automatique sans autorisation de Framatex.
+
+
+## Livré dans le MVP 0.10 (17 octobre 2026)
+
+- Graphe explicable des dépendances de calcul et circuits de vérification réellement configurés.
+- Simulation de besoin et de coût matière, avec calcul exact Decimal, scénarios historiques facultatifs, sources et permissions.
+- Aucune écriture dans les données validées ni dans ORLI.
+
+À prévoir : validations des règles de consommation/pertes et des postes de coût avec Framatex ; adaptation du modèle aux tissus et lancements multi-composants ; règles d'accès plus fines par lancement ; migration versionnée des schémas avant une utilisation de production.
