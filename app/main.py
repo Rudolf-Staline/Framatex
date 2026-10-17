@@ -46,7 +46,7 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
     yield
 
-app = FastAPI(title="Framatex · Dossier jaune", version="0.8.0", lifespan=lifespan)
+app = FastAPI(title="Framatex · Dossier jaune", version="0.9.0", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
 @app.middleware("http")
@@ -140,7 +140,7 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.8.0"}
+    return {"status": "ok", "version": "0.9.0"}
 
 @app.post("/api/auth/login")
 def login(payload: LoginPayload, response: Response, db: Session = Depends(get_db)):
@@ -642,3 +642,6 @@ app.include_router(spec_router)
 # Module 0.8 — Emails .eml et engagements confirmés après lecture.
 from .mail_routes import router as mail_router
 app.include_router(mail_router)
+
+from .workspace_routes import router as workspace_router
+app.include_router(workspace_router)
