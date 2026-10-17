@@ -1,3 +1,13 @@
+## Livraison 0.9 — Pilotage et assistant de navigation
+
+- [x] Vue « Mes actions » et synthèse en page d'accueil, filtres par urgence.
+- [x] Agrégation des règles de complétude, impacts, exigences, ambiguïtés et engagements datés.
+- [x] Calcul des priorités sans score caché et sans urgence fictive pour les dates absentes.
+- [x] Assistant de navigation à procédures locales, accès contrôlé par les permissions.
+- [x] Tests du cloisonnement documentaire, des priorités et de l'interface.
+- [ ] Affectation nominative des tâches, préférences d'indicateurs et tableaux par service (hors 0.9).
+- [ ] Procédures de navigation validées par Framatex ; assistant génératif non prévu sans cadrage.
+
 ## Livraison 0.8 — Emails et engagements
 
 - [x] Archivage manuel de courriels `.eml` dans la rubrique Rose.

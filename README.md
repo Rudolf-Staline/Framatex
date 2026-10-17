@@ -1,3 +1,14 @@
+## Version 0.9 — tableau de bord d'actions et assistant de navigation
+
+- **Mes actions** : sur l'accueil et dans la rubrique dédiée, les anomalies documentaires visibles, validations en attente, alertes d'impact, exigences client non vérifiées, ambiguïtés ouvertes et engagements email à échéance sont regroupés. Les actions ouvrent le lancement et la rubrique concernés.
+- **Priorités explicites** : échéance dépassée = « urgent » ; document/écart/ambiguïté à examiner = « prioritaire » ; engagement arrivant dans les sept jours = « à suivre ». L'absence de date **ne crée pas** de retard fictif ; les dossiers clôturés sont exclus de la liste d'actions. Aucune décision automatique.
+- **Assistant de navigation** : le bouton de la barre latérale ouvre une aide fondée sur des procédures locales prédéfinies (dépôt des pièces, validations, exigences, emails, administration). Il tient compte du lancement affiché et des droits de lecture, et propose un lien interne. **Ce n'est pas un chatbot génératif** : en cas d'absence de réponse vérifiée ou de droit, il demande de reformuler.
+- **Confidentialité** : les actions sont calculées côté serveur à partir des seuls documents accessibles. Une vue agrégée ne doit jamais révéler une pièce, son titre ou son existence à un utilisateur non autorisé. Le service ne lit pas le contenu des fichiers pour répondre aux questions.
+
+**Essai rapide :** après lancement, ouvrez « Vue d'ensemble » ou « Mes actions », puis cliquez sur une action pour accéder au dossier. Utilisez « Assistant de navigation » pour demander « Où déposer une facture ? » ou « Comment vérifier une exigence client ? ».
+
+**Tests 0.9 :** `python -m pytest -q tests/test_workspace.py` et `node tests/test_workspace_frontend.cjs`. La suite complète est lancée par GitHub Actions.
+
 
 ## Version 0.8 — courriels et engagements
 
@@ -16,7 +27,7 @@ Deux nouveaux modules sont accessibles en bas de la fiche de chaque **lancement 
 
 # Framatex — Dossier jaune numérique
 
-**MVP 0.6 — Prototype local du 17 octobre 2026.** Chaque dossier correspond à un **lancement de fabrication**, créé librement, avec identifiant technique indépendant de la référence ORLI. Les quatre sous-dossiers **Jaune, Rose, Bleu et Vert** sont générés automatiquement. Les exemples de démonstration sont entièrement fictifs.
+**MVP 0.9 — Prototype local du 17 octobre 2026.** Chaque dossier correspond à un **lancement de fabrication**, créé librement, avec identifiant technique indépendant de la référence ORLI. Les quatre sous-dossiers **Jaune, Rose, Bleu et Vert** sont générés automatiquement. Les exemples de démonstration sont entièrement fictifs.
 
 ## Installation
 
@@ -71,6 +82,9 @@ Ouvrez **http://127.0.0.1:8000** puis connectez-vous. L'API documentée est disp
 | Classement 0.5 | Suggestions explicables de type et sous-dossier avant dépôt, choix final par un utilisateur habilité |
 | QR papier 0.6 | Étiquette imprimable par lancement, lien sans secret et connexion obligatoire |
 | Passeports 0.6 | Métadonnées par version, empreinte SHA-256 conservée et recalculée, auteur, décisions et état d’intégrité |
+| Emails 0.8 | Archivage manuel EML et suivi d’engagements confirmés par une personne habilitée |
+| Pilotage 0.9 | Vue priorisée des actions métier réellement visibles et de leurs échéances |
+| Guide 0.9 | Assistant de navigation déterministe fondé sur des procédures locales et les droits utilisateur |
 | Audit | Journal des opérations de création, mise à jour, dépôt, consultation et décisions |
 
 **Les valeurs utilisées dans le moteur de cohérence restent relevées manuellement ; les champs OCR confirmés ne sont pas injectés dans ce moteur automatiquement.** Les formules Excel sont inspectées sans exécution. L'OCR local est disponible en option pour les images et PDF scannés ; cette version ne recalcule pas les besoins matière et n'utilise pas d'IA générative. Les alertes indiquent un **impact possible**, elles ne modifient pas les fichiers, le calcul des prix ou les données ORLI. Les règles et statuts de démonstration ne sont pas des règles officiellement validées par Framatex.
