@@ -110,9 +110,12 @@ def reconcile(launch_id:str,user:User=Depends(get_current_user),db:Session=Depen
         conflicts=[]
         if launch.order_ref and row.order_ref and normalize_reference(launch.order_ref)!=normalize_reference(row.order_ref): conflicts.append('commande')
         if launch.client_name and row.client_name and normalize_reference(launch.client_name)!=normalize_reference(row.client_name): conflicts.append('client')
+        from .access import accessible
+        candidate_launch = db.get(Launch, used[row.id]) if row.id in used else None
+        public_link_id = candidate_launch.id if candidate_launch and accessible(db,user,candidate_launch) else None
         candidates.append({**record_out(row),'matches':evidence,'conflicts':conflicts,
                            'already_linked':row.id in used,
-                           'linked_launch_id':used.get(row.id)})
+                           'linked_launch_id':public_link_id})
     candidates.sort(key=lambda x:(0 if 'reference_orli' in x['matches'] else 1,
                                   0 if not x['conflicts'] else 1,x['batch_id'],x['row_number']))
     return {'launch_id':launch_id,'launch_orli_ref':launch.orli_ref,

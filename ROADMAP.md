@@ -159,3 +159,16 @@ Le MVP 0.6 comprend le **socle documentaire et une première implémentation de 
 - [ ] **Avant ouverture externe :** conception d'une identité client/fournisseur isolée, chiffrement, contrôle des accès par destinataire, journaux de consultation, liens temporaires et évaluation des risques.
 - [ ] Faire valider par Framatex les types communicables, la classification du contenu et la politique de conservation.
 - [ ] Mettre en place des migrations de base versionnées et un environnement de préproduction sécurisé.
+
+
+## Livré dans le MVP 0.15 (17 octobre 2026)
+
+- [x] Migration SQLite versionnée : initialisation, prise en charge d'une base historique 0.14 et réexécution idempotente.
+- [x] Sauvegarde SQLite automatique avant modification d'un schéma existant ; commande de contrôle des révisions.
+- [x] Dossier à portée restreinte configurable par administrateur avec membres nominatifs et révocation immédiate.
+- [x] Filtrage des dossiers, tableaux de bord, actions et notifications ; protection des URL directes et indirectes.
+- [x] Interface d'administration des accès depuis le dossier de fabrication, API et audit des décisions.
+- [x] Tests d'isolation et de migration + conservation de la suite de tests existante.
+- [ ] Avant pilote : faire passer les dossiers nécessaires en mode restreint et tester un véritable modèle d'habilitation.
+- [ ] Après la phase SQLite, concevoir des migrations Alembic si PostgreSQL est retenu et tester la restauration en conditions réelles.
+- [ ] Audit de sécurité externe, modèle de permissions par type de document, rotation des clés et tests de charge.

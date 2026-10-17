@@ -21,7 +21,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .core import Base, COOKIE, DATA_DIR, ROOT, engine, get_current_user, get_db, hash_password, check_password, make_token
-from .models import AuditEvent, Document, DocumentVersion, Folder, Launch, Role, RolePermission, User
+from .models import AuditEvent, Document, DocumentVersion, Folder, Launch, LaunchMember, Role, RolePermission, User
 from .completeness_models import CompletenessProfile, RequirementRule, LaunchCompleteness, RequirementValidation, RequirementException
 from .completeness import PHASES, PHASE_RANK, evaluate
 from .workflow_models import DocumentReview, BusinessValueRevision, ImpactRule, ImpactAlert
@@ -48,10 +48,11 @@ MIMES = {".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-off
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(engine)
+    from .migrate import migrate
+    migrate()
     yield
 
-app = FastAPI(title="Framatex · Dossier jaune", version="0.14.0", lifespan=lifespan)
+app = FastAPI(title="Framatex · Dossier jaune", version="0.15.0", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
 @app.middleware("http")
@@ -95,7 +96,7 @@ def user_out(u: User):
 
 
 def launch_out(l: Launch):
-    return {"id": l.id, "name": l.name, "order_ref": l.order_ref, "client_name": l.client_name, "orli_ref": l.orli_ref, "status": l.status, "created_at": l.created_at.isoformat(), "updated_at": l.updated_at.isoformat()}
+    return {"restricted": bool(l.restricted), "id": l.id, "name": l.name, "order_ref": l.order_ref, "client_name": l.client_name, "orli_ref": l.orli_ref, "status": l.status, "created_at": l.created_at.isoformat(), "updated_at": l.updated_at.isoformat()}
 
 
 def version_out(v: DocumentVersion):
@@ -145,7 +146,7 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.14.0"}
+    return {"status": "ok", "version": "0.15.0"}
 
 @app.post("/api/auth/login")
 def login(payload: LoginPayload, response: Response, db: Session = Depends(get_db)):
@@ -170,12 +171,13 @@ def me(user: User = Depends(get_current_user)):
 @app.get("/api/dashboard")
 def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.read")
-    launches = db.scalars(select(Launch)).all()
+    from .access import visible
+    launches = visible(db, user, db.scalars(select(Launch)).all())
     documents = db.scalars(select(Document).join(Folder)).all()
-    visible = [d for d in documents if permitted(user, "document.read", d.folder.slug)]
+    visible_documents = [d for d in documents if d.folder.launch_id in {l.id for l in launches} and permitted(user, "document.read", d.folder.slug)]
     completion = [evaluate(db, l, user, permitted) for l in launches]
     return {"launches": len(launches), "incomplete": sum(l.status == "À compléter" for l in launches),
-            "documents": len(visible), "versions": sum(len(d.versions) for d in visible),
+            "documents": len(visible_documents), "versions": sum(len(d.versions) for d in visible_documents),
             "completeness_actions": sum(c["counts"]["missing"] + c["counts"]["pending_validation"] for c in completion),
             "completeness_unconfigured": sum(not c["configured"] for c in completion),
             "recent": [launch_out(l) for l in sorted(launches, key=lambda l: l.created_at, reverse=True)[:5]]}
@@ -183,7 +185,8 @@ def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_
 @app.get("/api/launches")
 def launches(q: str = "", user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.read")
-    rows = db.scalars(select(Launch).order_by(Launch.created_at.desc())).all()
+    from .access import visible
+    rows = visible(db, user, db.scalars(select(Launch).order_by(Launch.created_at.desc())).all())
     term = q.strip().lower()
     if term:
         rows = [l for l in rows if term in " ".join((l.name, l.client_name or "", l.order_ref or "", l.orli_ref or "")).lower()]
@@ -192,7 +195,7 @@ def launches(q: str = "", user: User = Depends(get_current_user), db: Session = 
 @app.post("/api/launches", status_code=201)
 def create_launch(payload: LaunchPayload, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.create")
-    l = Launch(name=payload.name.strip(), client_name=payload.client_name or None, order_ref=payload.order_ref or None, orli_ref=payload.orli_ref or None, created_by=user.id)
+    l = Launch(name=payload.name.strip(), client_name=payload.client_name or None, order_ref=payload.order_ref or None, orli_ref=payload.orli_ref or None, restricted=os.getenv("FRAMATEX_RESTRICT_NEW_LAUNCHES", "0") == "1", created_by=user.id)
     db.add(l)
     db.flush()
     for slug, label in FOLDERS:
@@ -217,7 +220,7 @@ def launch_detail(launch_id: str, user: User = Depends(get_current_user), db: Se
         folder = next((f for f in l.folders if f.slug == slug), None)
         docs = [] if not folder or not permitted(user, "document.read", slug) else [doc_out(d) for d in folder.documents]
         folders.append({"slug": slug, "label": label, "can_read": permitted(user, "document.read", slug), "can_write": permitted(user, "document.write", slug), "documents": docs})
-    return {**launch_out(l), "folders": folders, "can_update": permitted(user, "launch.update")}
+    return {**launch_out(l), "folders": folders, "can_update": permitted(user, "launch.update"), "can_manage_access": is_admin(user)}
 
 @app.patch("/api/launches/{launch_id}")
 def update_launch(launch_id: str, payload: LaunchPatch, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -684,3 +687,13 @@ app.include_router(approval_router)
 # 0.14 — Publications client et demandes fournisseurs simulées (accès uniquement interne).
 from .sharing_routes import router as sharing_router
 app.include_router(sharing_router)
+
+
+# 0.15 — Gestion des accès d'un lancement par l'administrateur.
+from .access_routes import router as access_router
+app.include_router(access_router)
+
+# Appliquer les contrôles de portée à toutes les routes enregistrées, y compris
+# celles des modules historiques utilisant un identifiant de document/version.
+from .access import install_scope_guard
+install_scope_guard(app)

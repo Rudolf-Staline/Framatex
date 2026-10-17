@@ -64,7 +64,8 @@ def priorities(user: User = Depends(get_current_user), db: Session = Depends(get
     must(user, "launch.read")
     today = datetime.now(ZoneInfo("Africa/Casablanca")).date()
     horizon = today + timedelta(days=7)
-    launches = db.scalars(select(Launch).order_by(Launch.created_at.desc())).all()
+    from .access import visible
+    launches = visible(db, user, db.scalars(select(Launch).order_by(Launch.created_at.desc())).all())
     items = []
     visible_launches = [l for l in launches if l.status != "Clôturé"]
     for launch in visible_launches:
@@ -170,9 +171,8 @@ def guide(payload: GuideRequest, user: User = Depends(get_current_user), db: Ses
     must(user, "launch.read")
     launch = None
     if payload.launch_id:
-        launch = db.get(Launch, payload.launch_id)
-        if launch is None:
-            raise HTTPException(404, "Dossier inconnu")
+        from .access import must_access
+        launch = must_access(db, user, payload.launch_id)
     phrase = _normalize(payload.question)
     hits = [g for g in GUIDES if any(term in phrase for term in g[1])]
     for area, _, title, answer, permission, folder in hits:

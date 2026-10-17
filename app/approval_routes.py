@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .core import get_db, get_current_user, utcnow
-from .models import Document, DocumentVersion, Role, User
+from .models import Document, DocumentVersion, Role, User, Launch
 from .workflow_models import DocumentReview
 from .approval_models import ApprovalTemplate, ApprovalStage, ApprovalRun, ApprovalDecision, InternalNotification
 from .internal_notifications import emit_to_role, emit_to_user, permitted_now
@@ -285,7 +285,8 @@ def notifications(user: User = Depends(get_current_user), db: Session = Depends(
     must(user,'launch.read')
     records = db.scalars(select(InternalNotification).where(
         InternalNotification.recipient_id == user.id).order_by(InternalNotification.created_at.desc()).limit(250)).all()
-    visible = [notification_out(n) for n in records if notification_visible(user,n)]
+    from .access import accessible
+    visible = [notification_out(n) for n in records if notification_visible(user,n) and accessible(db,user,db.get(Launch,n.launch_id))]
     return {'items':visible,'unread':sum(n['read_at'] is None for n in visible), 'total':len(visible)}
 
 
