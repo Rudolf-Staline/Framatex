@@ -111,3 +111,14 @@ Le MVP 0.6 comprend le **socle documentaire et une première implémentation de 
 - Aucune écriture dans les données validées ni dans ORLI.
 
 À prévoir : validations des règles de consommation/pertes et des postes de coût avec Framatex ; adaptation du modèle aux tissus et lancements multi-composants ; règles d'accès plus fines par lancement ; migration versionnée des schémas avant une utilisation de production.
+
+
+## Livré dans le MVP 0.11 (17 octobre 2026)
+
+- [x] Lecture contrôlée CSV/XLSX avec correspondance des colonnes métier sans présumer du format réel ORLI.
+- [x] Instantanés traçables, SHA-256, contrôle des doublons, valeurs manquantes, droits administrateur.
+- [x] Rapprochement proposé par référence de lancement ou commande, jamais automatique.
+- [x] Confirmation et justification obligatoires ; prévention des associations concurrentes ou incohérentes.
+- [x] Interface d’import et de validation intégrée ; tests API + interface.
+- [ ] Valider les colonnes de vrais exports anonymisés, la règle d’unicité et les modalités d’échanges avec l’ERP.
+- [ ] Migrer la base via migrations SQL versionnées et tester restauration avant pilote réel.

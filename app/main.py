@@ -30,6 +30,7 @@ from .intake_models import ConfirmedField
 from .spec_models import ClientRequirement, SpecificationAmbiguity
 from .mail_models import ArchivedEmail, EmailCommitment
 from .impact_sim_models import ImpactSimulation
+from .orli_models import OrliImportBatch, OrliImportedLaunch, OrliLink
 from .workflow import emit_document_impacts, latest_review
 
 FOLDERS = [("jaune", "Technique"), ("rose", "Réception"), ("bleu", "Douane"), ("vert", "Facturation")]
@@ -47,7 +48,7 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
     yield
 
-app = FastAPI(title="Framatex · Dossier jaune", version="0.10.0", lifespan=lifespan)
+app = FastAPI(title="Framatex · Dossier jaune", version="0.11.0", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
 @app.middleware("http")
@@ -141,7 +142,7 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.10.0"}
+    return {"status": "ok", "version": "0.11.0"}
 
 @app.post("/api/auth/login")
 def login(payload: LoginPayload, response: Response, db: Session = Depends(get_db)):
@@ -222,6 +223,12 @@ def update_launch(launch_id: str, payload: LaunchPatch, user: User = Depends(get
     changes = payload.model_dump(exclude_unset=True)
     if "status" in changes and changes["status"] not in STATUSES:
         raise HTTPException(422, "Statut inconnu")
+    if "orli_ref" in changes and db.scalar(select(OrliLink).where(OrliLink.launch_id == l.id)):
+        current_ref = l.orli_ref or ''
+        requested_ref = changes['orli_ref'] or ''
+        from .orli_import import normalize_reference
+        if normalize_reference(current_ref) != normalize_reference(requested_ref):
+            raise HTTPException(409, "Référence rapprochée à ORLI : modification interdite sans procédure de déliaison")
     for field, value in changes.items():
         setattr(l, field, value.strip() if isinstance(value, str) else value)
     audit(db, user, "launch.update", "launch", l.id, {"fields": list(changes.keys())})
@@ -650,3 +657,7 @@ app.include_router(workspace_router)
 # 0.10 — graphe métier et estimations non destructives.
 from .impact_sim_routes import router as impact_sim_router
 app.include_router(impact_sim_router)
+
+# 0.11 — import ORLI read-only, décision de rapprochement explicite.
+from .orli_routes import router as orli_router
+app.include_router(orli_router)
