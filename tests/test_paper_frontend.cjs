@@ -1,0 +1,11 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const source=fs.readFileSync('static/paper.js','utf8');
+const ctx={console};vm.createContext(ctx);vm.runInContext(source,ctx);
+const valid='12345678-1234-1234-1234-123456789abc';
+assert.strictEqual(vm.runInContext(`paperTargetFromHash('#/launch/${valid}')`,ctx),valid);
+assert.strictEqual(vm.runInContext(`paperTargetFromHash('#/launch/${valid}/other')`,ctx),null);
+assert.strictEqual(vm.runInContext(`paperTargetFromHash('#/launch/nope')`,ctx),null);
+const html=vm.runInContext(`(()=>{state={detail:{id:'${valid}',folders:[{can_read:true,documents:[{title:'Doc A',latest:{id:'v1',number:1}}]}]}};e=x=>String(x);return renderPaper()})()`,ctx);
+assert(html.includes('papier')&&html.includes('Passeport')===false?html.includes('passeport'):html.includes('passeport'));
+assert(html.includes('data-paper-version="v1"'));
+console.log('Frontend 0.6 : QR, lien profond et passeport OK');

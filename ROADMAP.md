@@ -1,6 +1,6 @@
 # Suite du développement — proposition à discuter
 
-Le MVP 0.5 comprend le **socle documentaire et une première implémentation de la complétude contextuelle** : il est démontrable mais ne prétend pas couvrir les 24 innovations décrites dans les fiches de cadrage. Il ne convient pas encore au déploiement opérationnel dans l'entreprise.
+Le MVP 0.6 comprend le **socle documentaire et une première implémentation de la complétude contextuelle** : il est démontrable mais ne prétend pas couvrir les 24 innovations décrites dans les fiches de cadrage. Il ne convient pas encore au déploiement opérationnel dans l'entreprise.
 
 ## Incrément 0.2 · Première réalisation (implémentée)
 
@@ -45,10 +45,20 @@ Le MVP 0.5 comprend le **socle documentaire et une première implémentation de 
 - [x] Refus de présenter comme disponibles les rubriques interdites à l'utilisateur.
 - [ ] Évaluation du taux de reconnaissance sur un jeu d'essai anonymisé validé par Framatex.
 
-## Étape suivante · Passerelle papier-numérique et traçabilité avancée
+## Incrément 0.6 · QR et passeports livrés
 
-- QR code vers le dossier technique interne, jamais un jeton de connexion.
-- Capture mobile de pièces papier et lien avec le bon lancement de fabrication.
+- [x] QR code imprimable par dossier, indépendamment du numéro ORLI et sans aucun secret.
+- [x] Ouverture du lancement scanné après connexion et vérification des habilitations.
+- [x] Étiquette imprimable, origine configurable sans faire confiance aux en-têtes Host.
+- [x] Passeport par version : provenance, auteur, empreinte, historique et décisions.
+- [x] Contrôle d’intégrité par comparaison avec les octets présents sur le disque.
+- [ ] Test sur téléphone depuis un réseau **interne sécurisé** validé par Framatex.
+- [ ] Registre externe et immuable des empreintes, à évaluer pour une valeur probante plus forte.
+
+## Étape suivante · Deux innovations par incrément
+
+- Capture photo mobile plus guidée et rattachement explicite des pièces scannées.
+- Couverture des exigences client / détection des ambiguïtés (à choisir pour la prochaine paire).
 - Liens explicites entre champs OCR confirmés, exigences client et règles de cohérence.
 - Limites à traiter : traitements asynchrones, protection des uploads et qualité des scans.
 

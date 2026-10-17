@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
     yield
 
-app = FastAPI(title="Framatex · Dossier jaune", version="0.5.0", lifespan=lifespan)
+app = FastAPI(title="Framatex · Dossier jaune", version="0.6.0", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
 @app.middleware("http")
@@ -138,7 +138,7 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.5.0"}
+    return {"status": "ok", "version": "0.6.0"}
 
 @app.post("/api/auth/login")
 def login(payload: LoginPayload, response: Response, db: Session = Depends(get_db)):
@@ -628,3 +628,7 @@ app.include_router(quality_router)
 # Module 0.5 — suggestions sans classement automatique ni intégration ORLI.
 from .intake_routes import router as intake_router
 app.include_router(intake_router)
+
+# Module 0.6 — QR et passeports, sans contournement des habilitations.
+from .paper_routes import router as paper_router
+app.include_router(paper_router)
