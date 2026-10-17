@@ -14,6 +14,7 @@ VALUE_FIELDS = {
     'quantite_lancement': ('Quantité du lancement', 'pièce'),
     'besoin_matiere_total': ('Besoin matière total', 'm'),
     'prix_unitaire': ('Prix unitaire', 'MAD/pièce'),
+    'cout_matiere_unitaire': ('Coût matière par mètre', 'MAD/m'),
 }
 REVIEW_STATES = {'approved', 'rejected', 'changes_requested'}
 ALERT_STATES = {'acknowledged', 'action_required', 'not_applicable'}

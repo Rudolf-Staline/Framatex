@@ -1,3 +1,5 @@
+> **MVP 0.10** — Graphe des dépendances métier et simulation indicative des impacts : voir [VERSION_0.10.md](VERSION_0.10.md).
+
 ## Version 0.9 — tableau de bord d'actions et assistant de navigation
 
 - **Mes actions** : sur l'accueil et dans la rubrique dédiée, les anomalies documentaires visibles, validations en attente, alertes d'impact, exigences client non vérifiées, ambiguïtés ouvertes et engagements email à échéance sont regroupés. Les actions ouvrent le lancement et la rubrique concernés.
