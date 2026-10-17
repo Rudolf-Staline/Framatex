@@ -133,3 +133,15 @@ Le MVP 0.6 comprend le **socle documentaire et une première implémentation de 
 - [x] Affichage des justificatifs et avertissement lorsque leur version a été remplacée.
 - [ ] Vérifier les unités, taux de pertes, réceptions partielles et pièces probantes avec Framatex.
 - [ ] Établir une correspondance contrôlée entre des champs d'exports ORLI validés et les lignes matière.
+
+## Livré dans le MVP 0.13 (17 octobre 2026)
+
+- [x] Circuits documentaires configurables (type exact et sous-dossier), de une à six étapes attribuées à des rôles.
+- [x] Décisions séquentielles liées à la version, séparation auteur/valideur et historique des étapes.
+- [x] Contrôles de non-contournement des approbations directes et des complétudes soumises à circuit.
+- [x] Notifications internes destinées aux valideurs habilités et aux services impliqués par les alertes d'impact.
+- [x] Vérification des permissions lors de la création et de la consultation des notifications ; disparition des notifications devenues inaccessibles.
+- [x] Pages de validation par lancement, configuration des circuits et boîte de notifications.
+- [x] 52 tests Python et contrôles JS réussis localement.
+- [ ] Valider les circuits réels, le droit de délégation et la séparation des tâches avec Framatex.
+- [ ] Prévoir des migrations de schéma versionnées, puis tests de montée en charge et audit de sécurité avant pilote métier.

@@ -42,6 +42,12 @@ def emit_impacts(db: Session, *, launch_id: str, source_kind: str, source_key: s
         db.add(ImpactAlert(launch_id=launch_id, rule_id=rule.id,
                            source_ref_id=source_ref_id, old_value=old_value,
                            new_value=new_value))
+        # Prévenir uniquement les collaborateurs habilités sur la source et la cible.
+        from .internal_notifications import emit_to_folder
+        emit_to_folder(db, launch_id=launch_id, source_folder=source_folder,
+            target_folder=rule.target_folder, event_key=f'impact:{rule.id}:{source_ref_id}',
+            kind='impact', title='Modification à examiner',
+            message=rule.instruction, action='impact.review')
 
 
 def emit_document_impacts(db: Session, document: Document, version: DocumentVersion):

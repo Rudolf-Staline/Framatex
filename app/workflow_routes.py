@@ -110,7 +110,13 @@ def decide_document(doc_id: str, payload: ReviewPayload, user: User = Depends(ge
         raise HTTPException(422, 'Le document est vide')
     if payload.decision != 'approved' and len(payload.comment.strip()) < 12:
         raise HTTPException(422, 'La décision doit être motivée (12 caractères minimum)')
+    # Un circuit configuré ne peut pas être contourné par l'approbation simple.
+    from .approval_routes import applicable_template
     version = max(doc.versions, key=lambda v: v.number)
+    from .approval_models import ApprovalRun
+    if applicable_template(db, doc) or db.scalar(select(ApprovalRun.id).where(
+            ApprovalRun.document_version_id == version.id)):
+        raise HTTPException(409, 'Ce document relève d’un circuit de validation configuré')
     review = DocumentReview(document_version_id=version.id, decision=payload.decision,
                             comment=payload.comment.strip(), reviewed_by=user.id)
     db.add(review)
