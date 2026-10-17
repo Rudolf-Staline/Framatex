@@ -1,6 +1,6 @@
 # Framatex — Dossier jaune numérique
 
-**MVP 0.4 — Prototype local du 17 octobre 2026.** Chaque dossier correspond à un **lancement de fabrication**, créé librement, avec identifiant technique indépendant de la référence ORLI. Les quatre sous-dossiers **Jaune, Rose, Bleu et Vert** sont générés automatiquement. Les exemples de démonstration sont entièrement fictifs.
+**MVP 0.5 — Prototype local du 17 octobre 2026.** Chaque dossier correspond à un **lancement de fabrication**, créé librement, avec identifiant technique indépendant de la référence ORLI. Les quatre sous-dossiers **Jaune, Rose, Bleu et Vert** sont générés automatiquement. Les exemples de démonstration sont entièrement fictifs.
 
 ## Installation
 
@@ -51,9 +51,11 @@ Ouvrez **http://127.0.0.1:8000** puis connectez-vous. L'API documentée est disp
 | Impacts 0.3 | Règles administrées sur changements de valeur ou nouvelles versions ; alertes par sous-dossier cible ; accusé de prise en compte, action nécessaire ou sans impact |
 | Cohérence 0.4 | Comparaisons configurables de deux types documentaires (valeurs, unités, tolérance, qualification motivée), sans conversion implicite |
 | Excel 0.4 | Inspection automatique des XLSX déposés : formules supprimées, modifiées et références `#REF!` ; historique des versions |
+| Lecture 0.5 | Lecture de texte et OCR local (Tesseract optionnel), propositions de champs avec provenance, confirmation humaine par version |
+| Classement 0.5 | Suggestions explicables de type et sous-dossier avant dépôt, choix final par un utilisateur habilité |
 | Audit | Journal des opérations de création, mise à jour, dépôt, consultation et décisions |
 
-**Les valeurs utilisées pour la comparaison inter-documents sont relevées manuellement ; les formules Excel sont inspectées automatiquement et ne sont jamais exécutées.** Cette livraison ne contient pas encore d'OCR, de recalcul du besoin matière ni d'IA générative. Les alertes indiquent un **impact possible**, elles ne modifient pas les fichiers, le calcul des prix ou les données ORLI. Les règles et statuts de démonstration ne sont pas des règles officiellement validées par Framatex.
+**Les valeurs utilisées dans le moteur de cohérence restent relevées manuellement ; les champs OCR confirmés ne sont pas injectés dans ce moteur automatiquement.** Les formules Excel sont inspectées sans exécution. L'OCR local est disponible en option pour les images et PDF scannés ; cette version ne recalcule pas les besoins matière et n'utilise pas d'IA générative. Les alertes indiquent un **impact possible**, elles ne modifient pas les fichiers, le calcul des prix ou les données ORLI. Les règles et statuts de démonstration ne sont pas des règles officiellement validées par Framatex.
 
 ### Tester le parcours de démonstration
 
@@ -81,6 +83,9 @@ app/
   quality_models.py         Valeurs documentaires, règles de comparaison, inspections Excel
   quality.py                Moteur de comparaison et inspection Excel statique
   quality_routes.py         API des fonctions 0.4
+  intake.py                 Lecture, OCR, classification et extraction bornées
+  intake_models.py          Champs confirmés par document et version
+  intake_routes.py          API et autorisations du module 0.5
   main.py                   API FastAPI et fonctions de base
   bootstrap_admin.py        Création du premier administrateur
   seed_demo.py              Trois lancements fictifs
@@ -92,6 +97,7 @@ static/
   app.js                    Interface documentaire et complétude
   workflow.js               Interface des décisions, valeurs et impacts
   quality.js                Interface des comparaisons et constats Excel
+  intake.js                 Aperçu OCR, classement et confirmation des champs
   styles.css                Styles responsive
  tests/                     Tests API et tests de fragments frontend
 ```
@@ -125,11 +131,11 @@ Arrêtez l'application, puis **sauvegardez entièrement le dossier `data/`** ava
 
 Restent notamment à concevoir ou à valider : permissions **par lancement et type documentaire**, habilitations nominatives des services, séparation entre auteur et approbateur, authentification renforcée, journal d'audit immuable, protection antivirus et examen approfondi des fichiers bureautiques, stockage sécurisé, chiffrement, sauvegarde/restauration, migrations, hébergement HTTPS sur réseau interne, tests de sécurité, politique de conservation, connexion éventuelle à ORLI. L'interface expose les quatre sous-dossiers avec droits de lecture configurables, mais **pas encore de circuit de validation à plusieurs étapes avec échéances et suppléants**.
 
-`ROADMAP.md` présente les prochains modules envisagés, dont l’OCR/extraction structurée, le classement assisté et la numérisation par QR code.
+`ROADMAP.md` présente les modules restant à développer, notamment la passerelle papier-numérique par QR code, les circuits d’approbation complets et la consolidation des champs OCR dans les contrôles métier.
 
-## Limites de la version 0.5
+## Limites des contrôles 0.4 et de leur articulation avec 0.5
 
-- La comparaison inter-documents fonctionne sur **des valeurs explicitement relevées** et enregistrées par les utilisateurs ; il ne s’agit pas encore d’une extraction OCR. Si plusieurs documents satisfont au même type, la règle affiche « Source ambiguë » plutôt que de choisir arbitrairement. Seules les versions courantes sont comparées.
+- La comparaison inter-documents fonctionne sur **des valeurs explicitement relevées** et enregistrées par les utilisateurs ; les champs extraits par l'OCR 0.5 ne sont pas encore injectés automatiquement dans ces contrôles. Si plusieurs documents satisfont au même type, la règle affiche « Source ambiguë » plutôt que de choisir arbitrairement. Seules les versions courantes sont comparées.
 - Le contrôle Excel est **statique** : il ne recalcule pas les formules, ne vérifie pas les résultats financiers et n’ouvre aucun lien externe. Le premier classeur sert de référence, sans pouvoir détecter qu’une formule manquait déjà. Taille d’inspection plafonnée à 5 Mo et 40 000 cellules ; les autres fichiers restent archivés mais leur inspection est marquée comme limitée.
 - Aucune correction automatique de fichier, de prix, de besoin matière ou de donnée ORLI n’est réalisée. Les changements de type documentaire doivent être configurés à partir des intitulés réellement utilisés.
 - Le serveur reste un **prototype local**. Les traitements de fichiers reçus depuis l’extérieur devront être isolés et soumis à une revue de sécurité avant un déploiement dans le système d’information de Framatex.
