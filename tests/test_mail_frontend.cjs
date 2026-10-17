@@ -1,0 +1,11 @@
+const assert=require('assert'),fs=require('fs'),vm=require('vm');
+const src=fs.readFileSync('static/mail.js','utf8');
+const ctx={console};vm.createContext(ctx);vm.runInContext(src,ctx);
+const html=vm.runInContext(`(()=>{state={detail:{folders:[{slug:'rose',can_read:true,can_write:true}]},mailReport:{can_import:true,can_review:true,emails:[{id:'email-1',subject:'Confirmation <svg>',sender:'Fournisseur',sent_at_raw:'17 Oct',recipients:'Achats',body_excerpt:'Nous confirmerons',attachments:[]}],commitments:[{id:'commit-1',description:'Envoyer un certificat',responsible:'Fournisseur',due_date:'2026-10-20',status:'pending',condition:'',decision_note:''}]}};e=x=>String(x).replace(/</g,'&lt;').replace(/>/g,'&gt;');icon=()=>'';return renderMail()})()`,ctx);
+assert(html.includes('Emails et engagements'));
+assert(html.includes('data-mail-show="email-1"'));
+assert(html.includes('data-mail-progress="commit-1"'));
+assert(!html.includes('<svg>'));
+const hidden=vm.runInContext(`(()=>{state.detail.folders[0].can_read=false;return renderMail()})()`,ctx);
+assert(hidden==='');
+console.log('Frontend 0.8 : panneaux, actions et confidentialité OK');

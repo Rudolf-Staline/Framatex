@@ -28,11 +28,12 @@ from .workflow_models import DocumentReview, BusinessValueRevision, ImpactRule, 
 from .quality_models import DocumentDatum, CrossDocumentRule, QualityDecision, ExcelInspection
 from .intake_models import ConfirmedField
 from .spec_models import ClientRequirement, SpecificationAmbiguity
+from .mail_models import ArchivedEmail, EmailCommitment
 from .workflow import emit_document_impacts, latest_review
 
 FOLDERS = [("jaune", "Technique"), ("rose", "Réception"), ("bleu", "Douane"), ("vert", "Facturation")]
 SLUGS = {slug for slug, _ in FOLDERS}
-ACTIONS = {"launch.read", "launch.create", "launch.update", "document.read", "document.write", "audit.read", "completeness.review", "document.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review"}
+ACTIONS = {"launch.read", "launch.create", "launch.update", "document.read", "document.write", "audit.read", "completeness.review", "document.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"}
 STATUSES = {"À compléter", "En cours", "En validation", "Clôturé"}
 MAX_UPLOAD = 20 * 1024 * 1024
 STORAGE = DATA_DIR / "files"
@@ -45,7 +46,7 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
     yield
 
-app = FastAPI(title="Framatex · Dossier jaune", version="0.7.0", lifespan=lifespan)
+app = FastAPI(title="Framatex · Dossier jaune", version="0.8.0", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
 @app.middleware("http")
@@ -139,7 +140,7 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.7.0"}
+    return {"status": "ok", "version": "0.8.0"}
 
 @app.post("/api/auth/login")
 def login(payload: LoginPayload, response: Response, db: Session = Depends(get_db)):
@@ -363,7 +364,7 @@ def create_role(payload: RolePayload, user: User = Depends(get_current_user), db
     if payload.name.strip().lower() == "administrateur":
         raise HTTPException(422, "Ce rôle est réservé au système")
     for p in payload.permissions:
-        if p.action not in ACTIONS or p.folder not in (None, *SLUGS) or (p.folder and not (p.action.startswith("document.") or p.action in {"completeness.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review"})):
+        if p.action not in ACTIONS or p.folder not in (None, *SLUGS) or (p.folder and not (p.action.startswith("document.") or p.action in {"completeness.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"})):
             raise HTTPException(422, "Permission inconnue")
     role = Role(name=payload.name.strip())
     seen = set()
@@ -637,3 +638,7 @@ app.include_router(paper_router)
 # Module 0.7 — couverture des exigences et registre des ambiguïtés.
 from .spec_routes import router as spec_router
 app.include_router(spec_router)
+
+# Module 0.8 — Emails .eml et engagements confirmés après lecture.
+from .mail_routes import router as mail_router
+app.include_router(mail_router)

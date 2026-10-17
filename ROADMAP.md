@@ -1,3 +1,11 @@
+## Livraison 0.8 — Emails et engagements
+
+- [x] Archivage manuel de courriels `.eml` dans la rubrique Rose.
+- [x] Suggestion locale d'engagements et confirmation humaine.
+- [x] Suivi de statut et audit des décisions.
+- [x] Autorisations par sous-dossier et tests.
+- [ ] Intégration messagerie externe (validation Framatex requise).
+
 # Suite du développement — proposition à discuter
 
 Le MVP 0.6 comprend le **socle documentaire et une première implémentation de la complétude contextuelle** : il est démontrable mais ne prétend pas couvrir les 24 innovations décrites dans les fiches de cadrage. Il ne convient pas encore au déploiement opérationnel dans l'entreprise.

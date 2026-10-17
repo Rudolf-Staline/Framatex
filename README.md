@@ -1,3 +1,19 @@
+
+## Version 0.8 — courriels et engagements
+
+Deux nouveaux modules sont accessibles en bas de la fiche de chaque **lancement de fabrication** :
+
+1. **Archivage manuel des emails** : depuis un compte autorisé à lire et déposer dans le sous-dossier **Rose**, cliquer sur « Importer un email » et choisir un fichier `.eml`. Le fichier complet reste archivé comme document, avec son empreinte SHA-256 ; son objet, son expéditeur, sa date déclarée, le texte brut et la liste des pièces jointes sont consultables. Les pièces jointes elles-mêmes restent encapsulées dans l'original `.eml` ; aucune pièce jointe n'est déposée automatiquement comme document séparé.
+2. **Registre des engagements** : cliquer sur « Repérer des engagements », puis « Vérifier et enregistrer ». Un utilisateur habilité `commitment.review` peut confirmer responsable, date, condition et phrase source. Ensuite, il peut documenter une réalisation, un report ou une annulation. Toutes ces décisions sont historisées.
+
+**Important :** la détection repose sur des expressions régulières de portée limitée, **pas** sur une compréhension sémantique fiable. Une date relative comme « vendredi » n'est pas convertie en date absolue. Aucun email n'est envoyé, aucune boîte de messagerie n'est consultée, aucune tâche n'est créée automatiquement. Les formats `.msg` et HTML-only ne font pas partie de cette version. L'archivage n'équivaut pas à une validation juridique des engagements.
+
+**Autorisations :** `launch.read` et `document.read` sur **rose** pour consulter les emails ; en plus, `document.write` sur **rose** pour importer ; `commitment.review` sur **rose** pour confirmer et mettre à jour les engagements. L'administrateur peut attribuer ce droit dans la gestion des rôles. Les utilisateurs sans lecture sur **rose** ne peuvent pas voir les messages, leurs métadonnées ou leurs engagements.
+
+**Essai rapide :** se connecter avec l'administrateur de démonstration, créer un lancement, exporter un vrai courriel fictif en `.eml` et l'importer. Exemple de phrase en texte brut : « Nous vous transmettrons la confirmation le 20/10/2026, sous réserve du contrôle qualité. » Le module propose cette phrase ; la confirmer manuellement. Ne pas utiliser d'emails réels contenant des données clients avant autorisation de Framatex.
+
+**Tests de la tranche :** `python -m pytest -q tests/test_mail.py` et `node tests/test_mail_frontend.cjs`. Les tests globaux restent disponibles via `python -m pytest -q`.
+
 # Framatex — Dossier jaune numérique
 
 **MVP 0.6 — Prototype local du 17 octobre 2026.** Chaque dossier correspond à un **lancement de fabrication**, créé librement, avec identifiant technique indépendant de la référence ORLI. Les quatre sous-dossiers **Jaune, Rose, Bleu et Vert** sont générés automatiquement. Les exemples de démonstration sont entièrement fictifs.
