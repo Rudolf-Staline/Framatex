@@ -1,0 +1,10 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const src=fs.readFileSync('static/spec.js','utf8');
+const ctx={console};vm.createContext(ctx);vm.runInContext(src,ctx);
+const html=vm.runInContext(`(()=>{state={me:{admin:true},detail:{folders:[{can_read:true,can_write:true,slug:'jaune',documents:[{id:'doc-1',title:'TechPack',latest:{id:'v-1',number:1}}]}]},specReport:{requirements:[{id:'req-1',title:'Couleur bleue',category:'Couleur',description:'Couleur du tissu obligatoirement bleue',source_document:'TechPack',source_document_id:'doc-1',source_version:1,source_folder:'jaune',evidence_version_id:null,state:'uncovered',can_review:true}],ambiguities:[{id:'amb-1',excerpt:'plus ou moins bleu',kind:'intensite_imprecise',question:'Quelle couleur exacte ?',source_document:'TechPack',source_document_id:'doc-1',source_version:1,source_folder:'jaune',status:'open',can_review:true}],coverage:{visible_total:1,verified:0,uncovered:1,to_verify:0,recheck:0},open_ambiguities:1}}; e=x=>String(x);can=()=>true;return renderSpec()})()`,ctx);
+assert(html.includes('Couverture des exigences'));
+assert(html.includes('Points de clarification'));
+assert(html.includes('data-spec-evidence="req-1"'));
+assert(html.includes('data-spec-resolve="amb-1"'));
+assert(html.includes('exigence') || html.includes('Exigence'));
+console.log('Frontend 0.7 : sections et actions contextuelles OK');
