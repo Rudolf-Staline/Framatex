@@ -6,12 +6,13 @@ In restricted mode: admin OR creator OR an explicitly assigned member.
 Existing role / folder permissions remain mandatory independently.
 """
 from __future__ import annotations
-from fastapi import Depends, HTTPException, Request
-from fastapi.routing import APIRoute, request_response
-from fastapi.dependencies.utils import get_parameterless_sub_dependant
+import re
+import jwt
+from fastapi import HTTPException, Request
+from starlette.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from .core import get_current_user, get_db
+from .core import SessionLocal, COOKIE, SECRET_KEY
 from .models import User, Launch, LaunchMember, Document, DocumentVersion
 
 
@@ -78,33 +79,47 @@ def indirect_launch(db: Session, params: dict) -> str | None:
     return None
 
 
-GUARDED_PARAMS = {'launch_id', 'doc_id', 'version_id', 'run_id', 'alert_id',
-                  'notification_id', 'publication_id', 'request_id'}
+# Path matching happens in the HTTP middleware, before FastAPI resolves routes.
+# It therefore covers endpoints from every module and every supported FastAPI
+# release, including indirect document / publication / notification URLs.
+SCOPE_PATHS = [
+    (re.compile(r'^/api/launches/([^/]+)(?:/|$)'), 'launch_id'),
+    (re.compile(r'^/api/documents/([^/]+)(?:/|$)'), 'doc_id'),
+    (re.compile(r'^/api/document-versions/([^/]+)(?:/|$)'), 'version_id'),
+    (re.compile(r'^/api/approval-runs/([^/]+)(?:/|$)'), 'run_id'),
+    (re.compile(r'^/api/impacts/([^/]+)(?:/|$)'), 'alert_id'),
+    (re.compile(r'^/api/notifications/([^/]+)(?:/|$)'), 'notification_id'),
+    (re.compile(r'^/api/client-publications/([^/]+)(?:/|$)'), 'publication_id'),
+    (re.compile(r'^/api/supplier-requests/([^/]+)(?:/|$)'), 'request_id'),
+]
 
 
-def enforce_route_scope(request: Request, user: User = Depends(get_current_user),
-                        db: Session = Depends(get_db)):
-    """FastAPI dependency applied to each scoped endpoint, including old routers."""
-    launch_id = indirect_launch(db, request.path_params)
-    if launch_id:
-        must_access(db, user, launch_id)
+def guard_http_request(request: Request):
+    """Return a denial response when a URL points at an inaccessible launch.
 
-
-def install_scope_guard(app):
-    """Add a FastAPI dependency to every route containing a scoped identifier.
-
-    Using the request dependency tree, not route internals such as
-    `param_convertors`, makes the protection independent of Starlette's
-    implementation of path converters. This also protects old routers
-    registered before v0.15 and preserves existing endpoint dependencies.
+    Called for every /api/ request by the existing header-checking middleware.
+    Endpoints must still enforce role and folder permissions as before.
     """
-    for route in app.routes:
-        if not isinstance(route, APIRoute) or not route.path_format.startswith('/api/'):
-            continue
-        if not any('{' + param + '}' in route.path_format for param in GUARDED_PARAMS):
-            continue
-        guard = get_parameterless_sub_dependant(
-            depends=Depends(enforce_route_scope), path=route.path_format)
-        route.dependant.dependencies.insert(0, guard)
-        # Recompile the handler once with the additional dependency.
-        route.app = request_response(route.get_route_handler())
+    params = {}
+    for pattern, name in SCOPE_PATHS:
+        match = pattern.match(request.url.path)
+        if match:
+            params[name] = match.group(1)
+            break
+    if not params:
+        return None
+    token = request.cookies.get(COOKIE)
+    try:
+        subject = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])['sub'] if token else None
+    except (jwt.InvalidTokenError, KeyError):
+        subject = None
+    if not subject:
+        return JSONResponse({'detail':'Connexion nécessaire'},status_code=401)
+    with SessionLocal() as db:
+        user = db.get(User, subject)
+        if not user or not user.active:
+            return JSONResponse({'detail':'Connexion nécessaire'},status_code=401)
+        target_launch = indirect_launch(db,params)
+        if target_launch and not accessible(db,user,db.get(Launch,target_launch)):
+            return JSONResponse({'detail':'Lancement introuvable'},status_code=404)
+    return None
