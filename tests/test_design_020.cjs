@@ -32,7 +32,7 @@ for(let i=0;i<4;i++){
  const folder=['jaune','rose','bleu','vert'][i];
  assert(output[i].includes('data-folder="'+folder+'" aria-pressed="true"'));
  assert.equal((output[i].match(/class="preserved-module"/g)||[]).length,12);
- assert(output[i].indexOf('simple-document-section')<output[i].indexOf('simple-tools'));
+ assert(output[i].indexOf('simple-document-section')<output[i].indexOf('detail-view-tools'));
  assert(css.includes('data-folder-theme="'+folder+'"') || folder==='jaune'&&css.includes('data-folder-theme]{'));
 }
 assert(js.includes('data-folder-theme'));
