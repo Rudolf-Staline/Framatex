@@ -212,24 +212,24 @@ function installDetailNavigation(){
 
 const DETAIL_TOOL_GROUPS=[
  {label:'Qualité',tools:[
-  ['quality','Cohérence et Excel','shield','Écarts documentaires et vérifications Excel',renderQuality],
-  ['completeness','Complétude','check','Exigences documentaires selon le contexte',renderCompleteness],
-  ['workflow','Décisions et impacts','activity','Valeurs suivies et décisions humaines',renderWorkflow]
+  ['quality','Cohérence et Excel','shield','Écarts documentaires et vérifications Excel',()=>renderQuality()],
+  ['completeness','Complétude','check','Exigences documentaires selon le contexte',()=>renderCompleteness()],
+  ['workflow','Décisions et impacts','activity','Valeurs suivies et décisions humaines',()=>renderWorkflow()]
  ]},
  {label:'Documents',tools:[
-  ['intake','Lecture et OCR','file','Lire et classer les pièces',renderIntake],
-  ['paper','QR et versions','grid','Passerelle papier et traçabilité',renderPaper]
+  ['intake','Lecture et OCR','file','Lire et classer les pièces',()=>renderIntake()],
+  ['paper','QR et versions','grid','Passerelle papier et traçabilité',()=>renderPaper()]
  ]},
  {label:'Exigences',tools:[
-  ['spec','Exigences client','check','Couverture et ambiguïtés',renderSpec],
-  ['mail','Engagements e-mail','file','Engagements issus des échanges',renderMail]
+  ['spec','Exigences client','check','Couverture et ambiguïtés',()=>renderSpec()],
+  ['mail','Engagements e-mail','file','Engagements issus des échanges',()=>renderMail()]
  ]},
  {label:'Suivi',tools:[
-  ['sim','Simulation d’impact','activity','Conséquences potentielles des modifications',renderImpactSimulation],
-  ['orli','Rapprochement ORLI','file','Références et rapprochements',renderOrliReconciliation],
-  ['materials','Suivi matière','grid','Consommations et mouvements',renderMaterialReport],
-  ['approvals','Approbations','shield','Circuits de décision',renderApprovals],
-  ['sharing','Partage externe','users','Clients et fournisseurs',renderSharing]
+  ['sim','Simulation d’impact','activity','Conséquences potentielles des modifications',()=>renderImpactSimulation()],
+  ['orli','Rapprochement ORLI','file','Références et rapprochements',()=>renderOrliReconciliation()],
+  ['materials','Suivi matière','grid','Consommations et mouvements',()=>renderMaterialReport()],
+  ['approvals','Approbations','shield','Circuits de décision',()=>renderApprovals()],
+  ['sharing','Partage externe','users','Clients et fournisseurs',()=>renderSharing()]
  ]}
 ];
 function renderDetailToolWorkspace(){
