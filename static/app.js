@@ -233,52 +233,64 @@ const DETAIL_TOOL_GROUPS=[
  ]}
 ];
 function renderDetailToolWorkspace(){
- const tools=DETAIL_TOOL_GROUPS.flatMap(g=>g.tools);
- const selected=tools.find(t=>t[0]===state.detailTool)||tools[0];
- const active=selected[0];
- let navigation='<nav class="detail-tool-nav" aria-label="Fonctionnalités du dossier">';
- for(const group of DETAIL_TOOL_GROUPS){
-  const open=group.tools.some(t=>t[0]===active)?' open':'';
-  navigation+='<details class="detail-tool-group"'+open+'><summary>'+e(group.label)+'<span>'+group.tools.length+'</span></summary><div class="detail-tool-group-items">';
-  for(const [id,label,ico] of group.tools){
-    const current=id===active;
-    navigation+='<button type="button" class="detail-tool-choice'+(current?' is-current':'')+'" data-detail-tool="'+id+'" aria-pressed="'+String(current)+'" aria-controls="detail-tool-'+id+'">'+icon(ico)+'<span>'+e(label)+'</span>'+(current?icon('arrow'):'')+'</button>';
-  }
-  navigation+='</div></details>';
- }
- navigation+='</nav>';
- let panels='';
- for(const [id,label,ico,description,renderer] of tools){
-  panels+='<section id="detail-tool-'+id+'" class="detail-tool-panel" data-detail-tool-panel="'+id+'" role="region" aria-label="'+e(label)+'"'+(active===id?'':' hidden')+'>'+renderer()+'</section>';
- }
- return '<div class="detail-tool-workspace" id="detail-tool-workspace">'+navigation+
-  '<div class="detail-tool-stage" id="detail-tool-stage"><div class="detail-tool-stage-header">'+
-  '<span class="detail-tool-stage-mark">'+icon(selected[2])+'</span><div><h3 id="detail-tool-stage-title">'+e(selected[1])+'</h3><p id="detail-tool-stage-description">'+e(selected[3])+'</p></div></div>'+
-  '<div class="detail-tool-panel-container">'+panels+'</div></div></div>';
+ const tools=DETAIL_TOOL_GROUPS.flatMap(group=>group.tools);
+ const chosen=tools.find(tool=>tool[0]===state.detailTool)||tools[0];
+ const active=chosen[0];
+ const groups=DETAIL_TOOL_GROUPS.map(group=>
+  '<optgroup label="'+e(group.label)+'">'+group.tools.map(([id,label])=>
+   '<option value="'+id+'"'+(active===id?' selected':'')+'>'+e(label)+'</option>'
+  ).join('')+'</optgroup>'
+ ).join('');
+ const panels=tools.map(([id,label,ico,description,renderer])=>
+  '<section id="detail-tool-'+id+'" class="detail-tool-panel" data-detail-tool-panel="'+id+'" role="region" aria-label="'+e(label)+'"'+(active===id?'':' hidden')+'>'+
+   (renderer()||'<div class="detail-tool-unavailable">Aucune donnée accessible pour cette fonctionnalité.</div>')+
+  '</section>'
+ ).join('');
+ return '<section class="detail-tool-workspace" id="detail-tool-workspace" aria-label="Outils du lancement">'+
+  '<div class="detail-tool-toolbar"><div class="detail-tool-toolbar-heading"><h2>Contrôles et outils</h2></div>'+
+   '<label class="detail-tool-picker" for="detail-tool-select"><span>Fonctionnalité</span><select id="detail-tool-select">'+groups+'</select></label>'+
+  '</div><div class="detail-tool-panel-container">'+panels+'</div></section>';
 }
 function selectDetailTool(id){
- const selected=DETAIL_TOOL_GROUPS.flatMap(g=>g.tools).find(t=>t[0]===id);
- if(!selected)return;
+ const chosen=DETAIL_TOOL_GROUPS.flatMap(group=>group.tools).find(tool=>tool[0]===id);
+ if(!chosen)return;
  const container=app.querySelector('#detail-tool-workspace');
  if(!container)return;
  state.detailTool=id;
- container.querySelectorAll('[data-detail-tool]').forEach(button=>{
-  const active=button.dataset.detailTool===id;
-  button.classList.toggle('is-current',active);
-  button.setAttribute('aria-pressed',String(active));
- });
+ const select=container.querySelector('#detail-tool-select');
+ if(select)select.value=id;
  container.querySelectorAll('[data-detail-tool-panel]').forEach(panel=>{
   panel.hidden=panel.dataset.detailToolPanel!==id;
  });
- const title=container.querySelector('#detail-tool-stage-title');
- const description=container.querySelector('#detail-tool-stage-description');
- const mark=container.querySelector('.detail-tool-stage-mark');
- if(title)title.textContent=selected[1];
- if(description)description.textContent=selected[3];
- if(mark)mark.innerHTML=icon(selected[2]);
 }
 function bindDetailToolWorkspace(){
- app.querySelectorAll('[data-detail-tool]').forEach(button=>button.addEventListener('click',()=>selectDetailTool(button.dataset.detailTool)));
+ app.querySelector('#detail-tool-select')?.addEventListener('change',event=>selectDetailTool(event.target.value));
+}
+function switchDetailView(view){
+ if(!['documents','tools'].includes(view))return;
+ state.detailSection=view;
+ app.querySelectorAll('[data-detail-view]').forEach(button=>{
+  const active=button.dataset.detailView===view;
+  button.setAttribute('aria-selected',String(active));
+  button.tabIndex=active?0:-1;
+ });
+ app.querySelectorAll('[data-detail-view-panel]').forEach(panel=>{
+  panel.hidden=panel.dataset.detailViewPanel!==view;
+ });
+}
+function showLaunchInformation(){
+ const d=state.detail;
+ if(!d)return;
+ const rows=[
+  ['Client',d.client_name||'Non renseigné'],
+  ['Commande',d.order_ref||'Non renseignée'],
+  ['Référence ORLI',d.orli_ref||'Non renseignée'],
+  ['Dernière mise à jour',niceDate(d.updated_at)],
+  ['Identifiant technique',d.id]
+ ];
+ modal('Informations du lancement','<dl class="launch-information-list">'+rows.map(([label,value])=>
+  '<div><dt>'+e(label)+'</dt><dd>'+e(value)+'</dd></div>'
+ ).join('')+'</dl>');
 }
 
 function renderDetail(){
