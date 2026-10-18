@@ -26,8 +26,11 @@ if os.getenv("VERCEL"):
         raise RuntimeError("FRAMATEX_SECRET_KEY doit etre configure dans Vercel")
     if os.getenv("FRAMATEX_STORAGE_BACKEND") != "supabase":
         raise RuntimeError("Vercel exige un stockage documentaire persistant et prive")
-if DATABASE_URL.startswith(("postgresql://", "postgres://")):
-    raise RuntimeError("Utiliser le dialecte postgresql+psycopg:// pour le pilote")
+# Supabase exposes standard PostgreSQL URIs. Explicitly select psycopg for SQLAlchemy.
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgresql://"):]
+elif DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgres://"):]
 engine = create_engine(DATABASE_URL,
     connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
     poolclass=NullPool if DATABASE_URL.startswith("postgresql+psycopg://") else None,
