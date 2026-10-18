@@ -1,0 +1,16 @@
+*{box-sizing:border-box}body{margin:0;background:#fff;color:#18233a;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.shell{max-width:1160px;margin:0 auto;padding:34px 38px}.brand{display:flex;gap:12px;align-items:center;font-size:19px;letter-spacing:.07em}.brand .mark{width:42px;height:42px;border-radius:12px;background:#2463eb;color:#fff;display:grid;place-items:center;font-weight:800}.brand small{display:block;font-size:9px;font-weight:600;letter-spacing:.16em;color:#71809c;margin-top:3px}.form-card{max-width:550px;margin:60px auto 44px;border:1px solid #e5eaf2;border-radius:24px;padding:40px;box-shadow:0 12px 50px #22375f0b}.eyebrow{color:#235bd8;font-size:11px;font-weight:800;letter-spacing:.13em}h1{font-size:30px;line-height:1.2;letter-spacing:-.035em;margin:14px 0}p{line-height:1.55;color:#64718a;font-size:14px}form{display:grid;gap:10px;margin-top:24px}label{font-size:13px;color:#33415b;font-weight:650;margin-top:7px}input{width:100%;padding:12px 14px;border:1px solid #dce3ee;border-radius:10px;color:#18233a;font:inherit;font-size:14px;background:#fff}input:focus{outline:3px solid #2463eb28;border-color:#2463eb}button{margin-top:17px;border:0;background:#2563eb;color:#fff;padding:15px 18px;font:inherit;font-weight:700;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between}button:disabled{opacity:.6;cursor:wait}#status{min-height:1.7em;font-weight:600}#status.error{color:#b42336}#status.ok{color:#17694a}.note{padding:14px 16px;background:#f7f9fc;border:1px solid #e5eaf2;color:#59667f;font-size:12px;line-height:1.6;border-radius:10px;margin-top:15px}code{font-size:12px;color:#244fbb}footer{text-align:center;font-size:12px;color:#9aa5b7}@media(max-width:650px){.shell{padding:22px 16px}.form-card{padding:24px 19px;margin-top:32px;border-radius:17px}h1{font-size:26px}}
+
+/* Framatex 0.24 · Même identité jaune pour l'initialisation administrateur. */
+:root{--brand:#e5b43a;--brand-deep:#74520d;--brand-border:#ead49d;--brand-ring:rgba(198,142,20,.2)}
+body{color:#2c3039;background:#fff}
+.brand .mark{background:var(--brand);color:#30240b}
+.brand small{color:#88774e}
+.form-card{border-color:#eee7d9;box-shadow:0 12px 45px rgba(87,64,12,.055)}
+.eyebrow{color:var(--brand-deep)}
+input{border-color:#e8e2d6}
+input:focus{outline:3px solid var(--brand-ring);border-color:#bd8c1a}
+button{background:var(--brand);color:#30240b}
+button:hover{background:#d3a024}
+button:focus-visible{outline:2px solid #96680c;outline-offset:3px}
+.note{background:#fffaf0;border-color:#eee5ce}
+code{color:var(--brand-deep)}

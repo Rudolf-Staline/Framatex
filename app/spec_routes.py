@@ -137,7 +137,8 @@ def spec_suggestions(version_id:str,user:User=Depends(get_current_user),db:Sessi
     must(user,'document.read',folder)
     if not _current(version):
         raise HTTPException(409,'Analyser la version courante pour éviter des suggestions obsolètes')
-    path=storage/version.disk_name
+    from .cloud_storage import ensure_local
+    path=ensure_local(version.disk_name,storage)
     if not path.is_file():raise HTTPException(503,'Fichier indisponible')
     read=read_document(path,version.original_name)
     detected=analyze_text(read['text'])

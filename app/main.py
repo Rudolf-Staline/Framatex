@@ -35,6 +35,7 @@ from .material_models import MaterialLine, MaterialPlanRevision, MaterialMovemen
 from .approval_models import ApprovalTemplate, ApprovalStage, ApprovalRun, ApprovalDecision, InternalNotification
 from .sharing_models import ClientPublication, SupplierDocumentRequest
 from .workflow import emit_document_impacts, latest_review
+from .cloud_storage import upload_local as cloud_upload, ensure_local as cloud_file, remove as cloud_remove, assert_ready as storage_ready
 
 FOLDERS = [("jaune", "Technique"), ("rose", "Réception"), ("bleu", "Douane"), ("vert", "Facturation")]
 SLUGS = {slug for slug, _ in FOLDERS}
@@ -48,8 +49,15 @@ MIMES = {".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-off
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from .migrate import migrate
-    migrate()
+    storage_ready()
+    if engine.dialect.name == "sqlite":
+        from .migrate import migrate
+        migrate()
+    elif engine.dialect.name == "postgresql":
+        from .demo_postgres import assert_ready as postgres_ready
+        postgres_ready()
+    else:
+        raise RuntimeError("Base de donnees non prise en charge")
     yield
 
 app = FastAPI(title="Framatex · Dossier jaune", version="0.17.0", lifespan=lifespan)
@@ -77,7 +85,7 @@ async def response_security_headers(request: Request, call_next):
     response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
     if request.url.path == "/" or request.url.path.startswith("/api/"):
         response.headers.setdefault("Cache-Control", "no-store")
-    if request.url.path == "/":
+    if request.url.path in ("/", "/setup"):
         response.headers.setdefault("Content-Security-Policy",
             "default-src 'self'; base-uri 'none'; object-src 'none'; "
             "frame-ancestors 'none'; form-action 'self'; "
@@ -168,7 +176,51 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.17.0"}
+    # On serverless, prove the external PostgreSQL database is reachable.
+    # Return no credentials, connection strings, or database metadata.
+    if os.getenv("VERCEL"):
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    return {"status": "ok", "version": "0.19.0"}
+
+class FirstAdminSetup(BaseModel):
+    token: str = Field(min_length=32, max_length=256)
+    email: str = Field(min_length=3, max_length=254)
+    name: str = Field(default="Administrateur Démo", min_length=2, max_length=120)
+    password: str = Field(min_length=14, max_length=256)
+
+
+@app.get("/setup")
+def setup_screen():
+    return FileResponse(ROOT / "static" / "setup.html")
+
+
+@app.post("/api/setup/first-admin")
+def setup_first_admin(payload: FirstAdminSetup, db: Session = Depends(get_db)):
+    # Disabled by default and automatically blocked once any user exists.
+    # The owner supplies the token ONLY through Vercel's encrypted environment.
+    token = os.getenv("FRAMATEX_SETUP_TOKEN", "")
+    if len(token) < 32:
+        raise HTTPException(404, "Initialisation désactivée")
+    if not secrets.compare_digest(payload.token, token):
+        raise HTTPException(403, "Code d'initialisation invalide")
+    if db.scalar(select(User.id).limit(1)) is not None:
+        raise HTTPException(409, "Un compte existe déjà : initialisation définitivement fermée")
+    email = payload.email.strip().lower()
+    if not email or "@" not in email or " " in email:
+        raise HTTPException(422, "Adresse email invalide")
+    role = Role(name="Administrateur")
+    user = User(email=email, name=payload.name.strip(), password_hash=hash_password(payload.password), active=True)
+    user.roles.append(role)
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(409, "Initialisation simultanée ou compte existant") from exc
+    return {"ok": True, "email": email}
+
 
 @app.post("/api/auth/login")
 def login(payload: LoginPayload, response: Response, request: Request, db: Session = Depends(get_db)):
@@ -328,6 +380,7 @@ async def store_upload(file: UploadFile):
         if total == 0:
             raise HTTPException(422, "Fichier vide")
         verify_file(target, suffix)
+        cloud_upload(disk_name, target)
         return original_name, disk_name, total, sha.hexdigest(), MIMES[suffix]
     except Exception:
         target.unlink(missing_ok=True)
@@ -361,7 +414,7 @@ async def upload_document(launch_id: str, folder: str = Form(...), title: str = 
         return doc_out(doc)
     except Exception:
         db.rollback()
-        (STORAGE / disk_name).unlink(missing_ok=True)
+        cloud_remove(disk_name, STORAGE)
         raise
 
 @app.post("/api/documents/{doc_id}/versions", status_code=201)
@@ -382,11 +435,11 @@ async def new_version(doc_id: str, file: UploadFile = File(...), user: User = De
         return doc_out(d)
     except IntegrityError:
         db.rollback()
-        (STORAGE / disk_name).unlink(missing_ok=True)
+        cloud_remove(disk_name, STORAGE)
         raise HTTPException(409, "Conflit de version, recommencez le dépôt")
     except Exception:
         db.rollback()
-        (STORAGE / disk_name).unlink(missing_ok=True)
+        cloud_remove(disk_name, STORAGE)
         raise
 
 @app.get("/api/documents/{doc_id}/versions/{number}/download")
@@ -396,7 +449,7 @@ def download(doc_id: str, number: int, user: User = Depends(get_current_user), d
     version = next((v for v in doc.versions if v.number == number), None)
     if not version:
         raise HTTPException(404, "Version introuvable")
-    path = STORAGE / version.disk_name
+    path = cloud_file(version.disk_name, STORAGE)
     if not path.is_file():
         raise HTTPException(503, "Fichier indisponible dans le stockage")
     audit(db, user, "document.download", "document", doc.id, {"version": number})

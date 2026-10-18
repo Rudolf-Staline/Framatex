@@ -98,7 +98,8 @@ code{{word-break:break-all;font-size:12px}}p.note{{font-size:13px;color:#52625a}
 
 def _verify_file(version: DocumentVersion):
     from .main import STORAGE
-    path = STORAGE / version.disk_name
+    from .cloud_storage import ensure_local
+    path = ensure_local(version.disk_name, STORAGE)
     if not path.is_file():
         return {"status": "missing", "actual_sha256": None, "actual_size": None}
     digest = hashlib.sha256()

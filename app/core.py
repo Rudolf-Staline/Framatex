@@ -13,12 +13,28 @@ from argon2.exceptions import VerifyMismatchError, VerificationError
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = Path(os.getenv("FRAMATEX_DATA_DIR", str(ROOT / "data"))).resolve()
+DATA_DIR = Path(os.getenv("FRAMATEX_DATA_DIR", "/tmp/framat-data" if os.getenv("VERCEL") else str(ROOT / "data"))).resolve()
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / 'framat.db'}")
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}, pool_pre_ping=True)
+if os.getenv("VERCEL"):
+    if DATABASE_URL.startswith("sqlite"):
+        raise RuntimeError("Vercel exige une base PostgreSQL persistante")
+    if not os.getenv("FRAMATEX_SECRET_KEY"):
+        raise RuntimeError("FRAMATEX_SECRET_KEY doit etre configure dans Vercel")
+    if os.getenv("FRAMATEX_STORAGE_BACKEND") != "supabase":
+        raise RuntimeError("Vercel exige un stockage documentaire persistant et prive")
+# Supabase exposes standard PostgreSQL URIs. Explicitly select psycopg for SQLAlchemy.
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgresql://"):]
+elif DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgres://"):]
+engine = create_engine(DATABASE_URL,
+    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
+    poolclass=NullPool if DATABASE_URL.startswith("postgresql+psycopg://") else None,
+    pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 class Base(DeclarativeBase):

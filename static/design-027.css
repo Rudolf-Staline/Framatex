@@ -1,0 +1,476 @@
+/* Framatex · Finition produit 0.27
+ * Prolonge le langage de la page de connexion :
+ * surfaces blanches, papier crème, filets ocre, contraste anthracite.
+ * Les 4 teintes des rubriques documentaires restent intactes.
+ */
+.app-shell{
+  --workspace-text:#2b3038;
+  --workspace-subtle:#737a86;
+  --workspace-line:#ebe7df;
+  --workspace-tint:#fff9eb;
+  --workspace-radius:14px;
+}
+.app-shell .content{
+  width:100%;
+  min-width:0;
+}
+.app-shell .main{
+  color:var(--workspace-text);
+}
+.app-shell .topbar{
+  height:60px;
+  border-bottom:1px solid var(--workspace-line);
+  background:#fff;
+}
+.app-shell .topbar .breadcrumb{
+  font-size:12px;
+  letter-spacing:0;
+  gap:9px;
+}
+.app-shell .topbar .breadcrumb strong{
+  color:#595849;
+  font-weight:700;
+}
+.app-shell .topbar .topbar-search{
+  border-radius:10px;
+  transition:background-color .15s;
+}
+.app-shell .sidebar.sidebar-rail.sidebar-light{
+  border-color:var(--workspace-line);
+}
+.app-shell .sidebar-rail.sidebar-light .rail-brand{
+  padding-bottom:22px;
+  border-bottom:1px solid #f0ede6;
+  margin-bottom:18px;
+}
+.app-shell .sidebar-rail.sidebar-light .nav-btn{
+  font-weight:650;
+}
+.app-shell .sidebar-rail.sidebar-light .rail-management{
+  border-top-color:var(--workspace-line);
+}
+.app-shell .sidebar-rail.sidebar-light .sidebar-bottom.rail-account{
+  border-top-color:var(--workspace-line);
+}
+/* The restrained page banner echoes the login's dossier motif. */
+.app-shell .page-heading{
+  position:relative;
+  isolation:isolate;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+  padding:26px 28px;
+  margin:0 0 24px;
+  border:1px solid #eee7d9;
+  border-radius:var(--workspace-radius);
+  background:#fff;
+  overflow:hidden;
+}
+.app-shell .page-heading::before{
+  content:"";
+  position:absolute;
+  left:0;top:24px;bottom:24px;
+  border-left:3px solid #dfb239;
+  border-radius:2px;
+}
+.app-shell .page-heading::after{
+  content:"";
+  position:absolute;
+  width:110px;height:116px;
+  right:3%;top:-68px;
+  transform:rotate(-14deg);
+  border:1px solid rgba(200,155,40,.16);
+  border-radius:12px;
+  background:linear-gradient(165deg,rgba(255,245,216,.40),transparent 65%);
+  box-shadow:19px 16px 0 -1px rgba(242,215,149,.10);
+  z-index:-1;
+  pointer-events:none;
+}
+.app-shell .page-heading > *{position:relative;z-index:1;min-width:0}
+.app-shell .page-heading .page-kicker{
+  display:flex;align-items:center;gap:8px;
+  color:#917035;
+  font-size:10px;font-weight:800;letter-spacing:.09em;
+  margin:0 0 12px;
+}
+.app-shell .page-heading .page-kicker svg{width:15px;height:15px}
+.app-shell .page-heading .page-title{
+  margin:0;
+  font-family:Manrope,"DM Sans",Inter,sans-serif;
+  font-size:clamp(24px,2.6vw,33px);
+  font-weight:800;
+  letter-spacing:-1.05px;
+  line-height:1.23;
+  color:#252b34;
+}
+.app-shell .page-heading .page-lead{
+  color:#79808c;
+  font-size:12px;line-height:1.5;
+  margin:9px 0 0;
+}
+.app-shell .page-heading .primary{
+  min-height:42px;
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  flex-shrink:0;
+  white-space:nowrap;
+  padding:0 16px;
+  border-radius:9px;
+}
+.app-shell .page-heading .primary svg{width:16px;height:16px}
+/* Lists: one search input, readable table, no extra decoration. */
+.app-shell .toolbar{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:14px;
+  margin:0 0 16px;
+}
+.app-shell .toolbar .searchbar{
+  display:flex;align-items:center;gap:11px;
+  flex:1 1 auto;max-width:430px;
+  min-height:44px;
+  padding:0 14px;
+  border:1px solid #e7e3d9;border-radius:10px;
+  background:#fff;color:#8c836d;
+}
+.app-shell .toolbar .searchbar:focus-within{
+  border-color:#b88b1e;box-shadow:0 0 0 3px rgba(198,142,20,.13);
+}
+.app-shell .toolbar .searchbar svg{width:16px;height:16px}
+.app-shell .toolbar .searchbar input{
+  width:100%;
+  min-width:0;
+  border:0!important;box-shadow:none!important;
+  outline:none!important;
+  background:transparent;
+  color:#303842;
+  font-size:12px;
+}
+.app-shell .toolbar .muted{font-size:11px;color:#8a8c8e}
+.app-shell .panel{
+  border:1px solid #ebe7df;
+  border-radius:var(--workspace-radius);
+  background:#fff;
+  box-shadow:0 7px 26px rgba(62,50,21,.025);
+}
+.app-shell .panel.table-scroll,.app-shell .table-scroll{
+  max-width:100%;
+}
+.app-shell .panel thead th,.app-shell .panel th{
+  background:#fcfbf8;
+  color:#827b71;
+  font-weight:750;
+  font-size:11px;
+  letter-spacing:0;
+  padding:14px 17px;
+  border-bottom:1px solid #f0ece4;
+  vertical-align:middle;
+}
+.app-shell .panel tbody td,.app-shell .panel td{
+  padding:15px 17px;
+  border-bottom:1px solid #f3f0eb;
+  color:#596270;
+  font-size:12px;
+  vertical-align:middle;
+}
+.app-shell .panel tbody tr:last-child td{border-bottom:0}
+.app-shell .panel tbody tr.item-row{
+  cursor:pointer;
+  transition:background .13s ease;
+}
+.app-shell .panel tbody tr.item-row:hover,
+.app-shell .panel tbody tr.item-row:focus-visible{
+  background:#fffbf0;
+}
+.app-shell .panel tbody tr.item-row:focus-visible{
+  outline:2px solid #be8d1e;
+  outline-offset:-2px;
+}
+.app-shell .panel .row-title{
+  color:#2a3039;
+  font-weight:760;
+}
+.app-shell .panel .row-sub{
+  color:#97969a;
+  margin-top:4px;
+}
+.app-shell .panel .empty{
+  min-height:185px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;
+  font-size:12px;
+  line-height:1.6;
+  text-align:center;
+  padding:27px 17px;
+}
+.app-shell .panel .empty strong{font-size:14px;color:#363b43}
+.app-shell .panel .empty-icon{
+  display:grid;place-items:center;
+  height:48px;width:48px;
+  border-radius:13px;
+  background:#fff5dd;
+  color:#a47712;
+}
+.app-shell .panel .empty-icon svg{height:23px;width:23px}
+/* Section headers and advanced configuration on admin page. */
+.app-shell .section-heading{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:14px;
+  margin:28px 0 13px;
+}
+.app-shell .section-heading h2{
+  font-family:Manrope,"DM Sans",sans-serif;
+  color:#2b3038;
+  font-size:17px;
+  letter-spacing:-.3px;
+  margin:0;
+}
+.app-shell .section-heading button{white-space:nowrap;display:inline-flex;align-items:center;gap:7px}
+.app-shell .section-heading button svg{height:14px;width:14px}
+.app-shell .permission-lock{
+  padding:14px 2px 0;
+  margin:7px 0 18px;
+  color:#94918a;
+  font-size:11px;
+  line-height:1.5;
+}
+.app-shell .admin-advanced{
+  margin:23px 0 35px;
+  border:1px solid #eae5db;
+  border-radius:14px;
+  overflow:hidden;
+  background:#fff;
+}
+.app-shell .admin-advanced > summary{
+  list-style:none;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;
+  padding:20px 22px;
+  font-size:13px;
+  color:#31343c;
+}
+.app-shell .admin-advanced > summary::-webkit-details-marker{display:none}
+.app-shell .admin-advanced > summary:focus-visible{outline:2px solid #b58a1d;outline-offset:-3px}
+.app-shell .admin-advanced > summary::after{
+  content:"+";
+  color:#926910;
+  font-size:22px;font-weight:400;
+}
+.app-shell .admin-advanced[open] > summary::after{content:"−"}
+.app-shell .admin-advanced > summary:hover{background:#fffaf0}
+.app-shell .admin-advanced[open] > summary{
+  border-bottom:1px solid #eee7d8;background:#fffaf0;
+}
+.app-shell .admin-advanced-title{
+  display:inline-flex;align-items:center;gap:10px;
+  font-weight:790;min-width:0;
+}
+.app-shell .admin-advanced-title svg{
+  width:18px;height:18px;color:#9b7013
+}
+.app-shell .admin-advanced-hint{
+  flex:1;text-align:right;color:#96938e;
+  font-size:11px;font-weight:450;
+}
+.app-shell .admin-advanced-content{
+  padding:7px clamp(15px,2vw,25px) 28px;
+  min-width:0;
+}
+.app-shell .admin-advanced-content .section-heading{margin-top:27px}
+.app-shell .admin-advanced-content > :first-child{margin-top:20px}
+/* Details preserve their requested contextual folder identities. */
+.app-shell[data-folder-theme] .simple-detail-head{
+  border:1px solid var(--folder-stroke);
+  background:#fff;
+  border-radius:14px;
+  padding:22px 24px;
+  margin:0 0 20px;
+  position:relative;
+  overflow:hidden;
+}
+.app-shell[data-folder-theme] .simple-detail-head::before{
+  content:"";
+  position:absolute;left:0;top:19px;bottom:19px;
+  border-left:3px solid var(--folder-accent);
+}
+.app-shell[data-folder-theme] .simple-detail-head .page-title{
+  font-family:Manrope,"DM Sans",sans-serif;
+  font-size:clamp(24px,2.5vw,33px);
+  color:#272d35;
+}
+.app-shell[data-folder-theme] .simple-detail-head .secondary{
+  border:1px solid var(--folder-stroke);
+  background:#fff;
+  border-radius:9px;
+}
+.app-shell[data-folder-theme] .folder-tabs{
+  width:100%;
+  max-width:100%;
+  border-radius:12px;
+  margin-bottom:24px;
+  background:#fff;
+}
+.app-shell[data-folder-theme] .folder-tab{
+  justify-content:center;
+  border:1px solid transparent;
+  gap:9px;
+}
+.app-shell[data-folder-theme] .folder-tab.selected{
+  border-color:var(--folder-stroke);
+}
+.app-shell[data-folder-theme] .simple-document-section .panel{
+  box-shadow:0 6px 22px rgba(62,50,21,.025);
+}
+.app-shell[data-folder-theme] .simple-disclosure{
+  border-radius:12px;
+  box-shadow:none;
+}
+.app-shell[data-folder-theme] .simple-disclosure summary{
+  font-weight:720;
+}
+/* Avoid giant horizontal tables on smaller laptops. */
+.app-shell .table-scroll{
+  scrollbar-color:#d9cba6 transparent;
+  scrollbar-width:thin;
+}
+/* Modals: polished typography and calm spacing; functionality unchanged. */
+.modal-scrim{
+  background:rgba(34,35,34,.45);
+  backdrop-filter:blur(3px);
+}
+.modal{
+  background:#fff;
+  border:1px solid #eee6d7;
+  border-radius:18px;
+  box-shadow:0 25px 70px rgba(47,41,32,.19);
+}
+.modal-head{
+  padding:23px 25px;
+  border-bottom:1px solid #efebe4;
+}
+.modal-head h2{
+  color:#282e37;
+  font-family:Manrope,"DM Sans",sans-serif;
+  font-weight:790;
+  font-size:20px;
+  letter-spacing:-.5px;
+}
+.modal-head button{
+  border-radius:9px;
+  background:#f9f7f2;
+  color:#77766f;
+}
+.modal-head button:hover{background:#fff0cc;color:#6c4c0a}
+.modal-body{padding:23px 25px 27px;color:#5f6876}
+.modal .modal-desc{
+  margin:0 0 24px;
+  color:#81838a;
+  font-size:12px;
+  line-height:1.6;
+}
+.modal .field{min-width:0}
+.modal .field label{
+  color:#4c5059;
+  font-size:12px;
+  font-weight:700;
+}
+.modal .field input,.modal .field select,.modal .field textarea{
+  border-color:#e3ded4;
+  background:#fff;
+  color:#29313e;
+  border-radius:9px;
+}
+.modal .field input:focus,.modal .field select:focus,.modal .field textarea:focus{
+  border-color:#bc8d1d;
+  box-shadow:0 0 0 3px rgba(198,142,20,.14);
+}
+.modal .modal-actions{
+  padding-top:6px;
+  display:flex;gap:9px;
+}
+.modal .modal-actions button{
+  min-height:40px;
+  border-radius:9px;
+}
+.modal .version-row{
+  border-color:#eeeae1;
+}
+.modal .version-row:hover{
+  background:#fffdf7;
+}
+/* Cards produced by workflow, OCR and approval modules share one visual grammar. */
+.app-shell .pilot-card,
+.app-shell .workflow-card,
+.app-shell .quality-card,
+.app-shell .spec-card,
+.app-shell .intake-panel,
+.app-shell .mail-item,
+.app-shell .sharing-card,
+.app-shell .approval-item,
+.app-shell .approval-admin-item,
+.app-shell .sim-node,
+.app-shell .material-metrics>div{
+  border:1px solid #ece7df;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:none;
+}
+.app-shell .pilot-card h3,
+.app-shell .sharing-card-head h3,
+.app-shell .sim-node strong{
+  color:#313741;
+}
+.app-shell .priority-item{
+  border-top-color:#eee8db;
+}
+.app-shell .priority-item:hover{
+  background:#fffaf0;
+}
+.app-shell .priority-item:focus-visible{outline:2px solid #bd901e;outline-offset:-2px}
+/* Assistant: same rounded, pale parchment accents as the login, not a competing dashboard. */
+.floating-assistant-panel{
+  border-radius:19px;
+  border-color:#eee5d4;
+}
+.floating-assistant-head{
+  border-bottom-color:#f0eadf;
+}
+.floating-assistant-intro{border-radius:12px}
+.floating-assistant-trigger{border-radius:17px}
+/* Responsive refinement for laptop, tablet and mobile. */
+@media(max-width:1040px){
+  .app-shell .page-heading{padding:22px}
+  .app-shell .page-heading::after{opacity:.55}
+  .app-shell .page-heading .page-title{font-size:27px}
+}
+@media(max-width:760px){
+  .app-shell .sidebar-rail.sidebar-light .rail-brand{
+    padding-bottom:0;margin-bottom:0;border-bottom:0;
+  }
+  .app-shell .content{padding-inline:17px}
+  .app-shell .page-heading{padding:20px;margin-bottom:20px;flex-wrap:wrap;gap:14px}
+  .app-shell .page-heading .page-title{font-size:25px}
+  .app-shell .page-heading .primary{min-height:40px}
+  .app-shell .section-heading{margin-top:24px}
+  .app-shell .panel th,.app-shell .panel td{padding:12px 13px}
+  .app-shell[data-folder-theme] .simple-detail-head{padding:18px 19px}
+  .app-shell[data-folder-theme] .folder-tabs{margin-bottom:18px}
+}
+@media(max-width:480px){
+  .app-shell .page-heading{padding:20px 17px}
+  .app-shell .page-heading .page-lead{font-size:11px}
+  .app-shell .toolbar{align-items:stretch;flex-direction:column;gap:9px}
+  .app-shell .toolbar .searchbar{max-width:none;min-height:43px}
+  .app-shell .toolbar .muted{text-align:right}
+  .app-shell .section-heading{align-items:flex-start}
+  .app-shell .section-heading h2{font-size:16px}
+  .app-shell .admin-advanced > summary{padding:16px}
+  .app-shell .admin-advanced-hint{display:none}
+  .app-shell .simple-detail-head{gap:13px}
+  .modal-head{padding:19px 20px}
+  .modal-body{padding:20px}
+  .modal .modal-actions{flex-wrap:wrap;justify-content:flex-end}
+}
+@media(prefers-reduced-motion:reduce){
+  .app-shell .panel tbody tr.item-row,.app-shell .topbar .topbar-search{transition:none}
+}

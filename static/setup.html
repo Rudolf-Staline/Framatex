@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#ffffff">
+<title>Framatex · Initialiser la démonstration</title><link rel="stylesheet" href="/assets/setup.css"><script defer src="/assets/setup.js"></script></head>
+<body><main class="shell"><header class="brand"><span class="mark">F</span><span><strong>FRAMATEX</strong><small>DOSSIER JAUNE NUMÉRIQUE</small></span></header>
+<section class="form-card"><span class="eyebrow">CONFIGURATION INITIALE</span><h1>Créer le premier administrateur.</h1><p>Cette opération n'est possible que si aucun compte n'existe encore. Utilise le jeton que tu as défini dans les variables protégées de Vercel.</p>
+<form id="setup-form"><label for="token">Jeton d'initialisation</label><input required id="token" type="password" minlength="32" autocomplete="off" placeholder="FRAMATEX_SETUP_TOKEN">
+<label for="email">Email du compte</label><input required id="email" type="email" autocomplete="username" value="demo@framat.invalid">
+<label for="name">Nom affiché</label><input required id="name" type="text" maxlength="120" value="Administrateur Démo">
+<label for="password">Mot de passe (14 caractères minimum)</label><input required id="password" type="password" minlength="14" autocomplete="new-password">
+<label for="password-confirm">Confirmer le mot de passe</label><input required id="password-confirm" type="password" minlength="14" autocomplete="new-password">
+<button id="submit" type="submit">Créer le compte administrateur <span>→</span></button></form><p id="status" role="status" aria-live="polite"></p>
+<div class="note">Après la création, retire <code>FRAMATEX_SETUP_TOKEN</code> des variables Vercel. Le formulaire sera également bloqué par le serveur, même si tu oublies cette suppression.</div></section>
+<footer>Démo interne · Données fictives uniquement</footer></main></body></html>

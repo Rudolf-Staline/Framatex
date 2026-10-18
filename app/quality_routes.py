@@ -177,7 +177,8 @@ def auto_inspect_excel(db:Session,version:DocumentVersion, user_id:str):
     doc=db.get(Document,version.document_id)
     prev=next((v for v in doc.versions if v.number==version.number-1),None)
     baseline=prev if prev and Path(prev.original_name).suffix.lower()=='.xlsx' else None
-    result=analyze_workbook(STORAGE/version.disk_name,STORAGE/baseline.disk_name if baseline else None)
+    from .cloud_storage import ensure_local
+    result=analyze_workbook(ensure_local(version.disk_name,STORAGE),ensure_local(baseline.disk_name,STORAGE) if baseline else None)
     item=ExcelInspection(document_version_id=version.id,baseline_version_id=baseline.id if baseline else None,
          status=result['status'],scanned_cells=result['scanned_cells'],formula_count=result['formula_count'],
          findings_json=json.dumps(result['findings'],ensure_ascii=False),inspected_by=user_id)

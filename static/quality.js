@@ -3,22 +3,60 @@
 function qualityStatus(s){return ({consistent:'Cohérent',difference:'Écart à examiner',unavailable:'À renseigner',ambiguous:'Source ambiguë',unit_mismatch:'Unités à vérifier'})[s]||s}
 function qualityTag(s){return `<span class="tag ${s==='consistent'?'green':s==='difference'||s==='unit_mismatch'?'orange':'blue'}">${e(qualityStatus(s))}</span>`}
 function renderQuality(){
- const results=state.qualityReport?.rows||[], inspections=state.excelInspections||[];
+ const results=state.qualityReport?.rows||[],inspections=state.excelInspections||[];
  const differences=results.filter(r=>r.status==='difference'&&!r.decision).length;
- const flags=inspections.filter(x=>x.inspection).reduce((n,x)=>n+x.inspection.findings.filter(f=>f.type!=='inspection_limit').length,0);
+ const flags=inspections.reduce((n,x)=>n+(x.inspection?.findings||[]).filter(f=>f.type!=='inspection_limit').length,0);
  const docs=(state.detail?.folders||[]).filter(f=>f.can_read&&f.can_write).flatMap(f=>f.documents).filter(d=>d.latest);
- return `<section class="quality-root" aria-label="Contrôles de fiabilité">
-  <div class="section-heading workflow-head"><div><h2>Fiabilité documentaire</h2><small>Deux contrôles : cohérence inter-documents et intégrité des classeurs Excel</small></div><span class="tag">Version 0.4</span></div>
-  <div class="workflow-stats"><div class="workflow-stat"><span>${results.length}</span><div>Règles consultables</div></div><div class="workflow-stat"><span>${differences}</span><div>Écarts non traités</div></div><div class="workflow-stat"><span>${flags}</span><div>Signaux Excel</div></div></div>
-  <div class="quality-grid"><div class="panel quality-card">
-    <div class="section-heading workflow-subheading"><h3>Cohérence entre documents</h3>${docs.length?`<button id="quality-add-data" class="secondary tiny">${icon('plus')} Relever une valeur</button>`:''}</div>
-    <p class="workflow-help">Compare deux types de pièces d’un même lancement. Les valeurs doivent être relevées depuis les versions exactes.</p>
-    ${results.length?results.map(r=>`<div class="quality-item"><div class="quality-row"><strong>${e(r.name)}</strong>${qualityTag(r.status)}</div><div class="workflow-meta">${e(r.left_doc_type)} · ${e(r.right_doc_type)} · tolérance ${e(r.tolerance)}</div>${r.pair.length?`<div class="quality-pair">${r.pair.map(p=>`<div><span>${e(p.document_title)} · v${p.version}</span><strong>${p.value!==null?`${e(p.value)} ${e(p.unit)}`:'Valeur absente'}</strong></div>`).join('')}</div>`:''}<p class="workflow-help">${e(r.reason)}</p>${r.decision?`<div class="workflow-note">${e(r.decision.status==='justified'?'Écart justifié':'Correction demandée')} : ${e(r.decision.note)}</div>`:''}${r.status==='difference'&&r.can_review?`<button class="secondary tiny" data-quality-decision="${e(r.rule_id)}">Consigner la vérification</button>`:''}</div>`).join(''):`<div class="workflow-empty">Aucune comparaison définie ou visible. ${state.me?.admin?'Configurez une règle pour démarrer.':''}</div>`}
-    ${state.me?.admin?`<button class="link" id="quality-new-rule" style="margin-top:12px">${icon('plus')} Configurer une comparaison</button>`:''}
-  </div><div class="panel quality-card"><div class="section-heading workflow-subheading"><h3>Système immunitaire Excel</h3><span class="tag">Analyse statique</span></div>
-  <p class="workflow-help">Inspection lors du dépôt d’un .xlsx ; comparaison des formules entre deux versions du même document. Aucun calcul Excel n’est exécuté.</p>
-  ${inspections.length?inspections.map(x=>`<div class="quality-item"><div class="quality-row"><strong>${e(x.document_title)} · v${x.version}</strong><span class="tag ${x.inspection?.findings?.length?'orange':'green'}">${x.inspection?.status==='limited'?'Analyse limitée':x.inspection?.status==='first_version'?'Référence initiale':x.inspection?'Inspecté':'Non inspecté'}</span></div>${x.inspection?`<div class="workflow-meta">${x.inspection.formula_count} formule(s) · ${x.inspection.scanned_cells} cellules analysées</div>${x.inspection.findings.length?`<ul class="quality-findings">${x.inspection.findings.slice(0,12).map(f=>`<li><strong>${e([f.sheet,f.cell].filter(Boolean).join(' ! '))}</strong> ${e(f.message)}</li>`).join('')}</ul>${x.inspection.findings.length>12?`<p class="workflow-meta">${x.inspection.findings.length-12} signalements supplémentaires disponibles via l’API</p>`:''}`:'<p class="workflow-help">Aucune anomalie détectée par les contrôles disponibles.</p>'}`:'<p class="workflow-help">Inspection non disponible pour cette version.</p>'}</div>`).join(''):`<div class="workflow-empty">Aucun fichier Excel dans les sous-dossiers accessibles.</div>`}
-  </div></div><p class="workflow-foot">Les divergences et signaux Excel demandent une vérification humaine. Ils ne prouvent pas à eux seuls une erreur métier.</p></section>`;
+ let rulesMarkup='';
+ for(const r of results){
+  const pairs=(r.pair||[]).map(p=>'<div><span>'+e(p.document_title)+' · v'+e(p.version)+'</span><strong>'+(p.value!==null&&p.value!==undefined?e(p.value)+' '+e(p.unit):'Valeur absente')+'</strong></div>').join('');
+  rulesMarkup+='<article class="quality-item"><div class="quality-row"><strong>'+e(r.name)+'</strong>'+qualityTag(r.status)+'</div>'+
+   '<div class="workflow-meta">'+e(r.left_doc_type)+' · '+e(r.right_doc_type)+' · tolérance '+e(r.tolerance)+'</div>'+
+   (pairs?'<div class="quality-pair">'+pairs+'</div>':'')+
+   (r.reason?'<p class="workflow-help">'+e(r.reason)+'</p>':'')+
+   (r.decision?'<div class="workflow-note">'+e(r.decision.status==='justified'?'Écart justifié':'Correction demandée')+' : '+e(r.decision.note)+'</div>':'')+
+   (r.status==='difference'&&r.can_review?'<button class="secondary tiny" data-quality-decision="'+e(r.rule_id)+'">Consigner la vérification</button>':'')+
+  '</article>';
+ }
+ let excelMarkup='';
+ for(const x of inspections){
+  const ins=x.inspection,findings=ins?.findings||[];
+  const status=ins?.status==='limited'?'Analyse limitée':ins?.status==='first_version'?'Référence initiale':ins?'Inspecté':'Non inspecté';
+  excelMarkup+='<article class="quality-item"><div class="quality-row"><strong>'+e(x.document_title)+' · v'+e(x.version)+'</strong>'+
+   '<span class="tag '+(findings.length?'orange':'green')+'">'+status+'</span></div>'+
+   (ins?'<div class="workflow-meta">'+e(ins.formula_count)+' formule(s) · '+e(ins.scanned_cells)+' cellules analysées</div>'+
+    (findings.length?'<ul class="quality-findings">'+findings.slice(0,12).map(v=>'<li><strong>'+e([v.sheet,v.cell].filter(Boolean).join(' ! '))+'</strong> '+e(v.message)+'</li>').join('')+'</ul>':
+     '<p class="workflow-help">Aucune anomalie détectée par les contrôles disponibles.</p>')+
+    (findings.length>12?'<p class="workflow-meta">'+(findings.length-12)+' autres signalements disponibles via l’API</p>':''):
+    '<p class="workflow-help">Inspection non disponible pour cette version.</p>')+
+  '</article>';
+ }
+ const counts=results.length+differences+flags>0?'<div class="quality-signal-strip">'+
+  '<span>'+results.length+' règle(s)</span>'+
+  '<span class="'+(differences?'has-warning':'')+'">'+differences+' écart(s) à traiter</span>'+
+  '<span class="'+(flags?'has-warning':'')+'">'+flags+' signalement(s) Excel</span>'+
+  '</div>':'';
+ return `<section class="quality-root quality-simple" aria-label="Fiabilité documentaire">
+  <div class="quality-simple-intro"><h3>Fiabilité documentaire</h3><p>Deux contrôles indépendants, avec décision humaine.</p></div>
+  ${counts}
+  <div class="quality-simple-list">
+   <section class="quality-simple-row">
+    <div class="quality-simple-row-head">
+     <div><h4>Cohérence entre documents</h4><p>Comparer les informations entre deux versions.</p></div>
+     <div class="quality-simple-actions">
+      ${state.me?.admin?'<button type="button" class="secondary tiny" id="quality-new-rule">Configurer</button>':''}
+      ${docs.length?'<button type="button" class="secondary tiny" id="quality-add-data">Relever une valeur</button>':''}
+     </div>
+    </div>
+    ${rulesMarkup||'<p class="quality-simple-empty">Aucune comparaison configurée pour ce lancement.</p>'}
+   </section>
+   <section class="quality-simple-row">
+    <div class="quality-simple-row-head"><div><h4>Système immunitaire Excel</h4><p>Contrôles des fichiers .xlsx déposés.</p></div><span class="quality-simple-count">${inspections.length} fichier(s)</span></div>
+    ${excelMarkup||'<p class="quality-simple-empty">Aucun classeur Excel analysé.</p>'}
+   </section>
+  </div>
+  ${differences||flags?'<p class="quality-simple-note">Les alertes sont des points à vérifier, pas des erreurs établies.</p>':''}
+ </section>`;
 }
 function bindQuality(){
  app.querySelector('#quality-add-data')?.addEventListener('click',qualityRecordData);
