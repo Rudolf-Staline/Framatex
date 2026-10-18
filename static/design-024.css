@@ -326,3 +326,72 @@ input:focus,textarea:focus,select:focus{
 .assistant-msg-avatar{background:#fff2d2;color:#97680e}
 .assistant-msg-user .assistant-bubble{background:#f5e4b0;color:#4e3a10;border-color:#efd38e}
 .dash-priority-dot.normal{background:#b3a179}
+
+
+/* Login 0.25 — formulaire seul, sans illustration ni contenus promotionnels. */
+.login-page.login-minimal{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  min-height:100dvh;
+  background:#fff;
+  place-items:center;
+  margin:0;
+}
+.login-minimal .login-form-wrap{
+  display:flex;
+  width:100%;
+  max-width:100%;
+  justify-content:center;
+  align-items:center;
+  padding:clamp(20px,5vw,48px);
+  background:#fff;
+}
+.login-minimal .login-form{
+  width:min(100%,390px);
+  max-width:390px;
+  padding:clamp(25px,4vw,39px);
+  border:1px solid #ece7dc;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 12px 42px rgba(60,47,23,.055);
+}
+.login-minimal .login-form .field{margin:0 0 19px}
+.login-minimal .login-form .field label{
+  display:block;
+  margin-bottom:8px;
+  color:#3e424a;
+  font-size:12px;
+  font-weight:700;
+}
+.login-minimal .login-form .field input{
+  width:100%;
+  height:46px;
+  border:1px solid #e6dfd0;
+  border-radius:9px;
+  padding:0 13px;
+  background:#fff;
+  color:#232833;
+  font-size:14px;
+}
+.login-minimal .login-form .field input:focus{
+  border-color:#b88716;
+  box-shadow:0 0 0 3px var(--brand-ring);
+  outline:0;
+}
+.login-minimal .login-form .primary{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  min-height:47px;
+  margin:5px 0 0;
+  border-radius:9px;
+  font-size:13px;
+  color:#30240b;
+}
+.login-minimal #login-error:empty{display:none}
+.login-minimal #login-error:not(:empty){margin:0 0 18px}
+@media(max-width:520px){
+  .login-minimal .login-form-wrap{padding:18px}
+  .login-minimal .login-form{padding:25px 20px;border-radius:14px}
+}
