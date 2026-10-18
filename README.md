@@ -1,4 +1,6 @@
-# Framatex — Dossier jaune numérique (MVP 0.17)
+# Framatex — Dossier jaune numérique (MVP 0.18)
+
+> **Version 0.18 — refonte visuelle sombre inspirée des interfaces documentaires SaaS.** Tableau de bord restructuré, barre latérale, fiches et assistant conversationnel (toujours fondé sur des règles locales). [Détails](VERSION_0.18.md). Aucune migration supplémentaire.
 
 > **Version 0.17 — retours de recette dans l’application et révocation des sessions.** [Détails](VERSION_0.17.md). Les ateliers avec les collaborateurs de Framatex restent à organiser.
 
