@@ -98,3 +98,111 @@ input:focus,textarea:focus,select:focus{border-color:#75a4f5}.field label{color:
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 @media(max-width:760px){.hero-art{display:none}.command-hero{background:#fff}}
+
+/* Framatex — Typographic rhythm and spacing refinement (October 2026).
+   A single reading scale for navigation, forms, tables, dashboard and assistants. */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+:root{
+  --font-ui:'IBM Plex Sans','Segoe UI',Arial,sans-serif;
+  --font-heading:'Plus Jakarta Sans','IBM Plex Sans',sans-serif;
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;
+  --space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;
+  font-family:var(--font-ui);
+}
+html,body,button,input,textarea,select{font-family:var(--font-ui)}
+body{font-size:14px;line-height:1.5;letter-spacing:0}
+h1,h2,h3,h4,.page-title,.command-hero h1,.dashboard-strip-title h2,
+.premium-section-head h2,.assistant-page-heading h1,.executive-number{
+  font-family:var(--font-heading);letter-spacing:-.035em;
+}
+.page-title{font-size:clamp(28px,2.6vw,38px);line-height:1.2}
+.command-hero h1{font-size:clamp(30px,2.8vw,43px);line-height:1.17;letter-spacing:-.045em}
+.dashboard-strip-title h2,.premium-section-head h2{font-size:19px;line-height:1.3}
+.section-index,.page-kicker,.nav-label,.executive-card-top,.breadcrumb-home,.hero-eyebrow{
+  font-size:11px;letter-spacing:.055em;line-height:1.35;
+}
+.sidebar{padding:26px 16px 20px}
+.brand{padding-bottom:22px;margin-bottom:18px}
+.brand-name{font-family:var(--font-heading);font-size:16px;letter-spacing:-.04em}
+.brand-sub{font-size:10px;letter-spacing:.045em}
+.nav-label{margin:16px 0 10px;padding:0 12px;font-weight:600}
+.nav-label-tools{margin-top:28px}
+.sidebar-nav{gap:5px}
+.nav-btn{min-height:43px;padding:10px 12px;gap:11px;font-size:13px;line-height:1.35;font-weight:500}
+.nav-btn.active{font-weight:700}
+.user-name,.logout{font-size:12px}
+.user-role{font-size:11px}
+.topbar{height:70px}
+.breadcrumb{font-size:12px;gap:10px}
+.topbar-search,.topbar-environment{font-size:12px}
+.content{padding-top:30px;padding-bottom:80px}
+.page-heading{margin-bottom:32px}
+.page-lead{font-size:14px;line-height:1.6}
+.home-grid{gap:24px}
+.command-hero-content{padding:36px 34px}
+.command-hero p{font-size:14px;line-height:1.65;max-width:435px;margin-bottom:22px}
+.hero-eyebrow{font-weight:600}
+.dashboard-strip-title{margin:32px 0 16px}
+.dashboard-strip-note{font-size:12px}
+.executive-grid{gap:14px;margin-bottom:26px}
+.executive-card{padding:20px 18px 16px}
+.executive-card-top{font-weight:600;font-size:10px}
+.executive-number{font-size:31px;margin:16px 0 13px}
+.executive-number small{font-family:var(--font-ui);font-size:11px}
+.executive-card-foot{padding-top:13px;font-size:11px;line-height:1.45}
+.premium-section-head{margin:26px 0 14px}
+.premium-table th{padding:13px 14px;font-size:11px;letter-spacing:.025em;font-weight:600}
+.premium-table td{padding:15px 14px;font-size:13px;line-height:1.45}
+.premium-table .row-title{font-size:13px;font-weight:600}
+.premium-table .row-sub{font-size:11px;line-height:1.5}
+.premium-table .tag{font-size:11px}
+.text-arrow,.primary,.secondary,.hero-cta,.hero-secondary{font-size:13px}
+.hero-cta,.hero-secondary{min-height:44px;padding:11px 16px}
+.panel th{font-weight:600}
+.panel td{line-height:1.5}
+.field label{font-size:12px;line-height:1.4}
+input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{
+ font-size:14px;line-height:1.5;
+}
+.assistant-bubble,.assistant-bubble strong{font-size:13px;line-height:1.6}
+.assistant-msg .assistant-bubble{font-size:13px}
+.assistant-bubble small,.assistant-composer-sticky>small,.rail-composer>small{font-size:11px}
+.assistant-page-heading h1{font-size:29px}
+.assistant-page-heading p{font-size:13px}
+.assistant-page-heading{padding:30px 30px 22px}
+.assistant-thread{gap:18px;padding:14px 30px 28px}
+.assistant-thread .assistant-bubble{font-size:13px;line-height:1.65}
+.assistant-quick-chip,.rail-quick button{font-size:11px}
+.assistant-context-card{padding:20px}
+.assistant-context-links button{padding:13px}
+.assistant-context-links button strong{font-size:13px}
+.assistant-context-links button small,.assistant-context-help p{font-size:12px}
+.rail-composer label,.home-rail-header h2{font-size:12px}
+.rail-input input{font-size:13px}
+.rail-composer{padding:16px}
+.inline-chat{padding:18px 16px;gap:15px}
+@media(max-width:1350px){
+ .sidebar{padding:22px 12px}
+ .content{padding:26px 24px 70px}
+ .home-grid{gap:17px}
+ .executive-card{padding:16px 13px}
+ .command-hero-content{padding:30px 25px}
+}
+@media(max-width:760px){
+ .sidebar{padding:12px 14px}
+ .nav-btn{min-height:41px;font-size:12px}
+ .topbar{height:57px}
+ .content{padding:22px 16px 64px}
+ .command-hero-content{padding:27px 23px}
+ .command-hero h1{font-size:33px}
+ .executive-grid{gap:10px}
+ .assistant-page-heading{padding:22px 18px}
+ .assistant-thread{padding:14px 18px}
+}
+@media(max-width:460px){
+ .command-hero-content{padding:23px 19px 27px}
+ .command-hero h1{font-size:30px}
+ .premium-table th,.premium-table td{padding:12px 9px}
+ .executive-card{padding:14px 12px}
+ .dashboard-strip-title{margin:26px 0 13px}
+}
