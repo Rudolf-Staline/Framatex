@@ -1,7 +1,7 @@
 'use strict';
 // 0.9 — navigation et priorisation, sans décision automatique.
 const PRIORITY_LABELS={urgent:'Échéance dépassée',high:'À examiner',normal:'À suivre'};
-const AREA_TARGETS={documents:'.detail-layout',workflow:'.workflow-root',spec:'.spec-section',mail:'.mail-section'};
+const AREA_TARGETS={documents:'.simple-document-section',workflow:'.workflow-root',spec:'.spec-section',mail:'.mail-section'};
 
 function priorityCard(item){
  const label=PRIORITY_LABELS[item.priority]||'À suivre';
@@ -21,7 +21,14 @@ function bindPriorityWidget(){
  }));
 }
 function focusWorkspaceArea(area){
- const target=app.querySelector(AREA_TARGETS[area]||'.detail-layout');
+ // Contextual links from tasks and Framatex Assist must reveal hidden modules.
+ const moduleByArea={workflow:'workflow',spec:'spec',mail:'mail'};
+ if(state.view==='detail'&&moduleByArea[area]){
+  const drawer=app.querySelector('#detail-tools');
+  if(drawer)drawer.open=true;
+  selectDetailTool(moduleByArea[area]);
+ }
+ const target=app.querySelector(AREA_TARGETS[area]||'.simple-document-section');
  target?.scrollIntoView?.({behavior:'smooth',block:'start'});
 }
 async function workspaceActions(){
