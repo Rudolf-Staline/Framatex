@@ -1,3 +1,19 @@
+# Feuille de route — état après MVP 0.17
+
+## Livré et vérifié sur données fictives
+
+- 0.16 : stabilisation HTTP, tests de parcours navigateur, ergonomie mobile.
+- 0.17 : collecte et traitement des retours de recette dans l’application, révocation persistante des jetons après déconnexion, migration SQLite non destructive.
+
+## Encore nécessaire avant un pilote métier
+
+- Ateliers de tests avec des utilisateurs Framatex et collecte des constats ; aucun retour métier réel n'est encore consigné.
+- Validation des rôles, étapes, justificatifs attendus et formats ORLI.
+- Revue indépendante de la sécurité des fichiers, sessions, sauvegardes, réseau et architecture.
+- Sauvegarde et restauration sur un second poste, documentation d'exploitation, décision formelle de Framatex.
+
+---
+
 ## Livraison 0.9 — Pilotage et assistant de navigation
 
 - [x] Vue « Mes actions » et synthèse en page d'accueil, filtres par urgence.

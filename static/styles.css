@@ -184,3 +184,15 @@ main.content [id^="section-"]{scroll-margin-top:92px}
  .detail-side{grid-template-columns:minmax(0,1fr)}
  .detail-layout .table-scroll{overflow-x:auto}
 }
+
+/* MVP 0.17 — suivi des retours de recette */
+.pilot-notice{padding:14px 18px;background:#f5f8f3;border:1px solid #dbe7dc;border-radius:11px;font-size:13px;line-height:1.7;color:#3d5b49;margin:20px 0}
+.pilot-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}
+.pilot-summary>div{background:#fff;border:1px solid #e1e9e3;border-radius:12px;padding:17px;display:grid;gap:6px;min-width:0}
+.pilot-summary strong{font-size:25px;color:#286044}.pilot-summary span{font-size:12px;color:#6b7c70}
+.pilot-list{display:grid;gap:12px}.pilot-card{padding:20px}.pilot-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}.pilot-card h3{font-size:16px;color:#284937;margin:8px 0 14px;overflow-wrap:anywhere}
+.pilot-tags{display:flex;gap:7px;flex-wrap:wrap}.pilot-card details{margin:9px 0 16px}.pilot-card summary{font-size:13px;color:#2b6847;font-weight:700;cursor:pointer}
+.pilot-detail{display:grid;grid-template-columns:165px minmax(0,1fr);gap:10px 16px;margin:14px 0;font-size:13px;line-height:1.6}
+.pilot-detail dt{font-weight:700;color:#506655}.pilot-detail dd{margin:0;overflow-wrap:anywhere;white-space:pre-wrap;color:#405a48}
+.pilot-empty{padding:22px;color:#596e60;font-size:13px}
+@media(max-width:750px){.pilot-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.pilot-detail{grid-template-columns:1fr}.pilot-card-head{flex-direction:column}}
