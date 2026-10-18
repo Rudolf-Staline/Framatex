@@ -50,4 +50,5 @@ def test_mobile_logout_and_detail_navigation_are_present():
     assert '.sidebar-bottom{display:flex' in css
     assert 'folder-tabs' in js
     assert 'data-folder-theme' in js
-    assert 'simple-disclosure' in js
+    assert 'detail-main-tabs' in js
+    assert 'launch-info' in js
