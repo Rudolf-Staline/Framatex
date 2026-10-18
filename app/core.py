@@ -103,7 +103,7 @@ def check_password(digest: str, plain: str) -> bool:
 
 def make_token(user_id: str) -> str:
     now = datetime.now(timezone.utc)
-    return jwt.encode({"sub": user_id, "iat": now, "exp": now + timedelta(hours=8)}, SECRET_KEY, algorithm="HS256")
+    return jwt.encode({"sub": user_id, "iat": now, "exp": now + timedelta(hours=8), "jti": secrets.token_hex(16)}, SECRET_KEY, algorithm="HS256")
 
 
 def utcnow():
@@ -117,6 +117,16 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(401, "Connexion nécessaire")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        session_id = payload.get("jti")
+        if not isinstance(session_id, str) or len(session_id) != 32:
+            raise HTTPException(401, "Session précédente expirée : veuillez vous reconnecter")
+        from .models import AuditEvent
+        from sqlalchemy import select
+        revoked = db.scalar(select(AuditEvent.id).where(
+            AuditEvent.action == "session.logout",
+            AuditEvent.target_id == session_id).limit(1))
+        if revoked is not None:
+            raise HTTPException(401, "Session révoquée : veuillez vous reconnecter")
         user = db.get(User, payload["sub"])
     except (jwt.InvalidTokenError, KeyError):
         raise HTTPException(401, "Session expirée ou invalide")

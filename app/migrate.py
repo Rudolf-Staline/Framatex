@@ -16,7 +16,7 @@ from .core import Base, engine
 # Import every registered model before inspecting metadata.
 from . import models, completeness_models, workflow_models, quality_models, intake_models  # noqa: F401
 from . import spec_models, mail_models, impact_sim_models, orli_models, material_models # noqa: F401
-from . import approval_models, sharing_models # noqa: F401
+from . import approval_models, sharing_models, pilot_models # noqa: F401
 
 # Include the migration ledger in SQLAlchemy metadata so test databases that
 # reset Base.metadata also reset this ledger; production upgrades remain explicit.
@@ -24,7 +24,7 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
                         Column('version', String(80), primary_key=True),
                         Column('applied_at', String(50), nullable=False), extend_existing=True)
 
-REVISIONS = ('0001_baseline', '0002_launch_scope')
+REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports')
 
 
 def _versions(conn):
@@ -37,9 +37,13 @@ def migrate():
         raise RuntimeError('Le migrateur MVP gère SQLite seulement. Ne pas démarrer sur une base PostgreSQL sans migrations spécifiques.')
     # Back up the real SQLite database before any legacy ALTER TABLE.
     with engine.connect() as probe:
-        legacy = ('launches' in inspect(probe).get_table_names() and
+        tables = set(inspect(probe).get_table_names())
+        legacy = ('launches' in tables and
                   'restricted' not in {c['name'] for c in inspect(probe).get_columns('launches')})
-    if legacy:
+        has_migrations = 'schema_migrations' in tables
+        pending_pilot = has_migrations and '0003_pilot_reports' not in {
+            v for v, in probe.execute(text('SELECT version FROM schema_migrations'))}
+    if legacy or pending_pilot:
         saved = backup_sqlite()
         if saved:
             print('Sauvegarde automatique avant migration :', saved)
@@ -79,6 +83,10 @@ def migrate():
             conn.execute(text('CREATE INDEX IF NOT EXISTS ix_launch_members_user_id ON launch_members (user_id)'))
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                         {'v':'0002_launch_scope','d':datetime.now(timezone.utc).isoformat()})
+        if '0003_pilot_reports' not in done:
+            Base.metadata.tables['pilot_reports'].create(bind=conn, checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0003_pilot_reports','d':datetime.now(timezone.utc).isoformat()})
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
         cols = {c['name'] for c in inspect(conn).get_columns('launches')}
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():

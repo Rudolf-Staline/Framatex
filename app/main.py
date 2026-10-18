@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
     migrate()
     yield
 
-app = FastAPI(title="Framatex · Dossier jaune", version="0.16.0", lifespan=lifespan)
+app = FastAPI(title="Framatex · Dossier jaune", version="0.17.0", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
 @app.middleware("http")
@@ -168,7 +168,7 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.16.0"}
+    return {"status": "ok", "version": "0.17.0"}
 
 @app.post("/api/auth/login")
 def login(payload: LoginPayload, response: Response, request: Request, db: Session = Depends(get_db)):
@@ -187,7 +187,15 @@ def login(payload: LoginPayload, response: Response, request: Request, db: Sessi
     return user_out(user)
 
 @app.post("/api/auth/logout")
-def logout(response: Response, user: User = Depends(get_current_user)):
+def logout(response: Response, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    # Deleting a cookie alone does not invalidate a copied signed JWT.
+    # Record its unique identifier server-side so reuse is denied immediately.
+    import jwt
+    from .core import SECRET_KEY
+    token = request.cookies.get(COOKIE)
+    payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+    audit(db, user, "session.logout", "session", payload["jti"])
+    db.commit()
     response.delete_cookie(COOKIE, path="/")
     return {"ok": True}
 
@@ -720,6 +728,10 @@ app.include_router(sharing_router)
 # 0.15 — Gestion des accès d'un lancement par l'administrateur.
 from .access_routes import router as access_router
 app.include_router(access_router)
+
+# 0.17 — Signalements pilotes anonymisés vis-à-vis des autres collaborateurs.
+from .pilot_routes import router as pilot_router
+app.include_router(pilot_router)
 
 # Le contrôle global de portée est effectué dans request_header_guard, avant
 # le dispatch FastAPI. Aucun routeur historique ne peut l'éviter.
