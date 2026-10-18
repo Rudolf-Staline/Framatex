@@ -10,7 +10,7 @@ const FRAMAT_GUIDE_QUICK = [
 ];
 let assistantThread = [];
 let assistantContextLaunch = null;
-function openGuide(){return assistantPage()}
+function openGuide(){return openFloatingAssistant()}
 function assistantQuickButtons(className='assistant-quick-chip'){
  return FRAMAT_GUIDE_QUICK.map(([question,label,ico])=>`<button type="button" class="${className}" data-assistant-question="${e(question)}">${icon(ico)} ${e(label)}</button>`).join('');
 }
