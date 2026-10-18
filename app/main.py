@@ -35,6 +35,7 @@ from .material_models import MaterialLine, MaterialPlanRevision, MaterialMovemen
 from .approval_models import ApprovalTemplate, ApprovalStage, ApprovalRun, ApprovalDecision, InternalNotification
 from .sharing_models import ClientPublication, SupplierDocumentRequest
 from .workflow import emit_document_impacts, latest_review
+from .cloud_storage import upload_local as cloud_upload, ensure_local as cloud_file, remove as cloud_remove, assert_ready as storage_ready
 
 FOLDERS = [("jaune", "Technique"), ("rose", "Réception"), ("bleu", "Douane"), ("vert", "Facturation")]
 SLUGS = {slug for slug, _ in FOLDERS}
@@ -48,8 +49,15 @@ MIMES = {".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-off
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from .migrate import migrate
-    migrate()
+    storage_ready()
+    if engine.dialect.name == "sqlite":
+        from .migrate import migrate
+        migrate()
+    elif engine.dialect.name == "postgresql":
+        from .demo_postgres import assert_ready as postgres_ready
+        postgres_ready()
+    else:
+        raise RuntimeError("Base de donnees non prise en charge")
     yield
 
 app = FastAPI(title="Framatex · Dossier jaune", version="0.17.0", lifespan=lifespan)
@@ -328,6 +336,7 @@ async def store_upload(file: UploadFile):
         if total == 0:
             raise HTTPException(422, "Fichier vide")
         verify_file(target, suffix)
+        cloud_upload(disk_name, target)
         return original_name, disk_name, total, sha.hexdigest(), MIMES[suffix]
     except Exception:
         target.unlink(missing_ok=True)
@@ -361,7 +370,7 @@ async def upload_document(launch_id: str, folder: str = Form(...), title: str = 
         return doc_out(doc)
     except Exception:
         db.rollback()
-        (STORAGE / disk_name).unlink(missing_ok=True)
+        cloud_remove(disk_name, STORAGE)
         raise
 
 @app.post("/api/documents/{doc_id}/versions", status_code=201)
@@ -382,11 +391,11 @@ async def new_version(doc_id: str, file: UploadFile = File(...), user: User = De
         return doc_out(d)
     except IntegrityError:
         db.rollback()
-        (STORAGE / disk_name).unlink(missing_ok=True)
+        cloud_remove(disk_name, STORAGE)
         raise HTTPException(409, "Conflit de version, recommencez le dépôt")
     except Exception:
         db.rollback()
-        (STORAGE / disk_name).unlink(missing_ok=True)
+        cloud_remove(disk_name, STORAGE)
         raise
 
 @app.get("/api/documents/{doc_id}/versions/{number}/download")
@@ -396,7 +405,7 @@ def download(doc_id: str, number: int, user: User = Depends(get_current_user), d
     version = next((v for v in doc.versions if v.number == number), None)
     if not version:
         raise HTTPException(404, "Version introuvable")
-    path = STORAGE / version.disk_name
+    path = cloud_file(version.disk_name, STORAGE)
     if not path.is_file():
         raise HTTPException(503, "Fichier indisponible dans le stockage")
     audit(db, user, "document.download", "document", doc.id, {"version": number})

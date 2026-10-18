@@ -58,7 +58,8 @@ def version_intake(version_id:str,user:User=Depends(get_current_user),db:Session
     doc=get_doc(db,v.document_id)
     must(user,'launch.read')
     must(user,'document.read',doc.folder.slug)
-    path=STORAGE/v.disk_name
+    from .cloud_storage import ensure_local
+    path=ensure_local(v.disk_name,STORAGE)
     if not path.exists(): raise HTTPException(503,'Fichier indisponible')
     # Analyse demandée explicitement par l'utilisateur. Aucune extraction poussée vers l'ERP.
     result=preview(path,v.original_name)
