@@ -35,7 +35,7 @@ async function workspaceActions(){
  app.querySelector('#workspace-all')?.addEventListener('click',()=>app.querySelector('#priority-filter')?.focus());
 }
 let guideHistory=[];
-function openGuide(){
+function openGuideDrawer(){
  const existing=overlay.querySelector('.assistant-drawer');
  if(existing){closeModal();return;}
  const current=state.detail?.id||null;
