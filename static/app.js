@@ -26,7 +26,7 @@ const ICON = {
 };
 function icon(name){return `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[name]||ICON.file}</svg>`}
 function e(s){return String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function niceDate(s){if(!s)return '—';const d=new Date(s.endsWith('Z')?s:s+'Z');return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}
+function niceDate(value){if(!value)return '—';const s=String(value).trim();const hasZone=/(?:Z|[+-]\d{2}:?\d{2})$/i.test(s);const normalized=/^\d{4}-\d\d-\d\dT/.test(s)&&!hasZone?s+'Z':s;const date=new Date(normalized);if(Number.isNaN(date.getTime()))return '—';return date.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}
 function sizeText(n){return n>=1024*1024?`${(n/1024/1024).toFixed(1)} Mo`:`${Math.max(1,Math.ceil(n/1024))} Ko`}
 const app=document.querySelector('#app'), overlay=document.querySelector('#overlay-root');
 const state={me:null,view:'home',priorities:null,launches:[],dashboard:null,detail:null,completeness:null,completionProfiles:[],completenessPhases:[{code:'preparation',label:'Préparation'},{code:'approvisionnement',label:'Approvisionnement'},{code:'fabrication',label:'Fabrication'},{code:'expedition',label:'Expédition'},{code:'cloture',label:'Clôture'}],folder:'jaune',roles:[],users:[],audit:[],workflowReviews:[],workflowValues:[],workflowImpacts:[],workflowFields:[],workflowRules:[],qualityReport:null,excelInspections:[],specReport:null,mailReport:null,simGraph:null,simHistory:[],orliReconciliation:null,orliBatches:[],materials:null,approvalOverview:null,clientPublications:null,supplierRequests:null,approvalTemplates:[],approvalRoles:[],notifications:null,query:''};
