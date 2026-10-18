@@ -30,7 +30,7 @@ assert(app.includes('class="admin-advanced-content"'));
 assert(app.includes('Paramètres avancés'));
 assert(!app.includes('Journal d’activité<span class="brand-accent">'));
 assert(app.includes('Un dossier par lancement de fabrication.'));
-assert(app.includes('data-launch="\${e(l.id)}" tabindex="0"'));
+assert(app.includes('data-launch="${e(l.id)}" tabindex="0"'));
 assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length,'Malformed CSS braces');
 // Minimal rendering check for the redesigned launch listing with live mocked results.
 const root={innerHTML:'',querySelector:()=>({addEventListener(){},onclick:null}),querySelectorAll:()=>[]};
