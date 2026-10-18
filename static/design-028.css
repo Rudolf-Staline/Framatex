@@ -1,0 +1,371 @@
+/* Framatex 0.28 — un outil actif à la fois, sans cascade de grands panneaux. */
+.app-shell .simple-tools .detail-tools-body{
+  padding:0;
+  min-width:0;
+}
+.app-shell .simple-tools[open]>summary{
+  background:#fffaf0;
+  border-bottom:1px solid #eee6d6;
+}
+.app-shell .simple-tools[open]>summary span{
+  color:#9a8870;
+}
+.app-shell .detail-tool-workspace{
+  display:grid;
+  grid-template-columns:210px minmax(0,1fr);
+  align-items:stretch;
+  min-height:330px;
+  background:#fff;
+  border-radius:0 0 12px 12px;
+}
+.app-shell .detail-tool-nav{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+  padding:17px 11px 20px;
+  background:#fffdf9;
+  border-right:1px solid #eee8dc;
+}
+.app-shell .detail-tool-group{
+  border:0;
+  padding:0;
+  margin:0 0 5px;
+  min-width:0;
+}
+.app-shell .detail-tool-group>summary{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  cursor:pointer;
+  padding:10px 11px;
+  min-height:38px;
+  font-size:10px;
+  font-weight:820;
+  text-transform:uppercase;
+  letter-spacing:.075em;
+  color:#87785f;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  list-style:none;
+  user-select:none;
+}
+.app-shell .detail-tool-group>summary::-webkit-details-marker{display:none}
+.app-shell .detail-tool-group>summary:before{
+  content:"";
+  display:none;
+}
+.app-shell .detail-tool-group[open]>summary,
+.app-shell .detail-tool-group>summary:hover{
+  color:#77540b;
+  background:#fff5dc;
+  border:0;
+}
+.app-shell .detail-tool-group>summary>span,
+.app-shell .simple-tools[open] .detail-tool-group>summary>span{
+  margin-left:auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:22px;
+  height:22px;
+  border:1px solid #e8dfc9;
+  border-radius:7px;
+  color:#908167;
+  background:#fff;
+  font-size:10px;
+  letter-spacing:0;
+}
+.app-shell .detail-tool-group>summary:focus-visible{
+  outline:2px solid #b78415;
+  outline-offset:-2px;
+}
+.app-shell .detail-tool-group-items{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  padding:4px 0 8px;
+}
+.app-shell .detail-tool-choice{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  text-align:left;
+  width:100%;
+  min-height:42px;
+  padding:9px 10px;
+  border:1px solid transparent;
+  border-radius:9px;
+  background:transparent;
+  color:#657082;
+  font-weight:650;
+  font-size:11px;
+  line-height:1.35;
+  cursor:pointer;
+  transition:background .12s ease,border-color .12s ease;
+}
+.app-shell .detail-tool-choice svg{
+  width:16px;
+  height:16px;
+  flex-shrink:0;
+  stroke-width:1.8;
+}
+.app-shell .detail-tool-choice span{
+  flex:1;
+  min-width:0;
+}
+.app-shell .detail-tool-choice>svg:last-child:not(:first-child){
+  width:13px;height:13px;
+}
+.app-shell .detail-tool-choice:hover{
+  background:#fff8e6;
+  color:#624a17;
+}
+.app-shell .detail-tool-choice.is-current{
+  color:#6b4c0c;
+  background:#fff0c8;
+  border-color:#eed89d;
+  font-weight:780;
+}
+.app-shell .detail-tool-choice.is-current svg{
+  color:#926816;
+}
+.app-shell .detail-tool-choice:focus-visible{
+  outline:2px solid #aa770f;
+  outline-offset:2px;
+}
+.app-shell .detail-tool-stage{
+  min-width:0;
+  padding:0;
+  background:#fff;
+}
+.app-shell .detail-tool-stage-header{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-height:88px;
+  padding:20px clamp(18px,2.3vw,29px);
+  border-bottom:1px solid #f0ece5;
+}
+.app-shell .detail-tool-stage-mark{
+  display:grid;
+  place-items:center;
+  width:43px;
+  height:43px;
+  min-width:43px;
+  border-radius:12px;
+  background:#fff2d0;
+  color:#8b6110;
+}
+.app-shell .detail-tool-stage-mark svg{
+  height:21px;width:21px;
+  stroke-width:1.9;
+}
+.app-shell .detail-tool-stage-header h3{
+  margin:0;
+  font-size:17px;
+  font-family:Manrope,"DM Sans",Inter,sans-serif;
+  font-weight:800;
+  letter-spacing:-.35px;
+  color:#2d3037;
+}
+.app-shell .detail-tool-stage-header p{
+  margin:5px 0 0;
+  font-size:11px;
+  color:#84868b;
+  line-height:1.4;
+}
+.app-shell .detail-tool-panel-container{
+  min-width:0;
+  padding:15px clamp(15px,2.3vw,27px) 25px;
+}
+.app-shell .detail-tool-panel[hidden]{
+  display:none!important;
+}
+.app-shell .detail-tool-panel{
+  min-width:0;
+  max-width:100%;
+}
+/* Repetition is removed: the workspace header replaces per-module version headers. */
+.app-shell .detail-tool-panel .section-heading.workflow-head{
+  display:none;
+}
+.app-shell .detail-tool-panel > section > .section-heading:first-child{
+  margin-top:0;
+}
+.app-shell .detail-tool-panel .workflow-stats{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:9px;
+  margin:0 0 20px;
+}
+.app-shell .detail-tool-panel .workflow-stat{
+  border:1px solid #f0ebdf;
+  border-radius:10px;
+  background:#fffdf9;
+  min-height:71px;
+  padding:12px 13px;
+  box-shadow:none;
+}
+.app-shell .detail-tool-panel .workflow-stat>span{
+  font-size:22px;
+  color:#343b44;
+  font-weight:790;
+}
+.app-shell .detail-tool-panel .workflow-stat>div{
+  margin-top:4px;
+  color:#83858a;
+  font-size:10px;
+}
+.app-shell .detail-tool-panel .quality-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.app-shell .detail-tool-panel .quality-card{
+  padding:18px;
+  border:1px solid #ece6dc;
+  border-radius:12px;
+  min-width:0;
+  background:#fff;
+  box-shadow:none;
+}
+.app-shell .detail-tool-panel .quality-card .workflow-subheading{
+  margin:0 0 11px;
+  gap:10px;
+}
+.app-shell .detail-tool-panel .quality-card h3{
+  font-size:13px;
+  color:#323842;
+}
+.app-shell .detail-tool-panel .workflow-help{
+  font-size:11px;
+  color:#81838b;
+  line-height:1.55;
+}
+.app-shell .detail-tool-panel .workflow-empty{
+  font-size:11px;
+  padding:20px 11px;
+  line-height:1.6;
+  color:#8c8d8c;
+}
+.app-shell .detail-tool-panel .workflow-foot{
+  font-size:10px;
+  line-height:1.5;
+  color:#97948c;
+  margin-top:13px;
+}
+.app-shell .detail-tool-panel .quality-item{
+  border-color:#f0eadf;
+}
+.app-shell .detail-tool-panel .intake-panel,
+.app-shell .detail-tool-panel .paper-panel{
+  border:1px solid #eee7db;
+  border-radius:12px;
+  box-shadow:none;
+}
+.app-shell .detail-tool-panel .intake-panel>div,
+.app-shell .detail-tool-panel .paper-panel>div{
+  padding:16px;
+}
+.app-shell .detail-tool-panel .intake-panel h3,
+.app-shell .detail-tool-panel .paper-panel h3{
+  font-size:13px;
+  color:#303640;
+}
+.app-shell .detail-tool-panel .intake-panel p,
+.app-shell .detail-tool-panel .paper-panel p{
+  font-size:11px;
+  color:#81858c;
+  line-height:1.6;
+}
+.app-shell .detail-tool-panel .section-heading:not(.workflow-head){
+  margin-top:17px;
+  margin-bottom:11px;
+}
+.app-shell .detail-tool-panel .section-heading h2{
+  font-size:17px;
+}
+.app-shell .detail-tool-panel .section-heading h3{
+  font-size:13px;
+}
+.app-shell .detail-tool-panel .tag{
+  letter-spacing:0;
+  font-size:10px;
+}
+/* Some modules have their own first headings with action buttons: keep those. */
+.app-shell .detail-tool-panel .sim-section>.section-heading:first-child,
+.app-shell .detail-tool-panel .orli-reconciliation>.section-heading:first-child,
+.app-shell .detail-tool-panel .material-section>.section-heading:first-child{
+  margin:0 0 13px;
+}
+.app-shell .detail-tool-panel .sim-section>.section-heading:first-child h2,
+.app-shell .detail-tool-panel .orli-reconciliation>.section-heading:first-child h2,
+.app-shell .detail-tool-panel .material-section>.section-heading:first-child h2{
+  font-size:14px;
+}
+/* Maintain compact use on tablets without a second full-width pile of cards. */
+@media(max-width:1100px){
+  .app-shell .detail-tool-workspace{
+    grid-template-columns:185px minmax(0,1fr);
+  }
+  .app-shell .detail-tool-choice{
+    font-size:10px;padding-inline:8px;gap:7px;
+  }
+}
+@media(max-width:760px){
+  .app-shell .detail-tool-workspace{
+    grid-template-columns:minmax(0,1fr);
+  }
+  .app-shell .detail-tool-nav{
+    border-right:0;
+    border-bottom:1px solid #eee8dc;
+    padding:12px;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:5px 9px;
+  }
+  .app-shell .detail-tool-group>summary{
+    font-size:10px;
+  }
+  .app-shell .detail-tool-group-items{
+    padding-bottom:3px;
+  }
+  .app-shell .detail-tool-choice{
+    min-height:39px;
+  }
+  .app-shell .detail-tool-stage-header{
+    min-height:72px;
+    padding:16px;
+  }
+  .app-shell .detail-tool-panel-container{
+    padding:12px 15px 20px;
+  }
+  .app-shell .detail-tool-panel .quality-grid{
+    grid-template-columns:minmax(0,1fr);
+  }
+}
+@media(max-width:430px){
+  .app-shell .detail-tool-nav{
+    grid-template-columns:minmax(0,1fr);
+  }
+  .app-shell .detail-tool-stage-header h3{
+    font-size:15px;
+  }
+  .app-shell .detail-tool-panel .workflow-stats{
+    gap:5px;
+  }
+  .app-shell .detail-tool-panel .workflow-stat{
+    padding:9px;
+    min-height:68px;
+  }
+  .app-shell .detail-tool-panel .workflow-stat>span{
+    font-size:18px;
+  }
+  .app-shell .detail-tool-panel .workflow-stat>div{
+    font-size:9px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .app-shell .detail-tool-choice{transition:none}
+}
