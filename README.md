@@ -1,4 +1,6 @@
-# Framatex — Dossier jaune numérique (MVP 0.18)
+# Framatex — Dossier jaune numérique (MVP 0.19)
+
+> **Version 0.19 — interface blanche, accents bleus et nouvel espace Framatex Assist.** Tableau de bord, navigation, bibliothèque documentaire et assistant harmonisés. [Détails](VERSION_0.19.md). Aucune migration supplémentaire.
 
 > **Version 0.18 — refonte visuelle sombre inspirée des interfaces documentaires SaaS.** Tableau de bord restructuré, barre latérale, fiches et assistant conversationnel (toujours fondé sur des règles locales). [Détails](VERSION_0.18.md). Aucune migration supplémentaire.
 
@@ -21,7 +23,7 @@
 - **Assistant de navigation** : le bouton de la barre latérale ouvre une aide fondée sur des procédures locales prédéfinies (dépôt des pièces, validations, exigences, emails, administration). Il tient compte du lancement affiché et des droits de lecture, et propose un lien interne. **Ce n'est pas un chatbot génératif** : en cas d'absence de réponse vérifiée ou de droit, il demande de reformuler.
 - **Confidentialité** : les actions sont calculées côté serveur à partir des seuls documents accessibles. Une vue agrégée ne doit jamais révéler une pièce, son titre ou son existence à un utilisateur non autorisé. Le service ne lit pas le contenu des fichiers pour répondre aux questions.
 
-**Essai rapide :** après lancement, ouvrez « Vue d'ensemble » ou « Mes actions », puis cliquez sur une action pour accéder au dossier. Utilisez « Assistant de navigation » pour demander « Où déposer une facture ? » ou « Comment vérifier une exigence client ? ».
+**Essai rapide :** après lancement, ouvrez « Vue d'ensemble » ou « Mes actions », puis cliquez sur une action pour accéder au dossier. Utilisez « Framatex Assist » pour demander « Où déposer une facture ? » ou « Comment vérifier une exigence client ? ».
 
 **Tests 0.9 :** `python -m pytest -q tests/test_workspace.py` et `node tests/test_workspace_frontend.cjs`. La suite complète est lancée par GitHub Actions.
 

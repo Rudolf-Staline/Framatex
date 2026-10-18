@@ -1,6 +1,9 @@
-# Feuille de route — état après MVP 0.17
+# Feuille de route — état après MVP 0.19
 
 ## Livré et vérifié sur données fictives
+
+- 0.18 : réorganisation visuelle de l’application et de l’assistant (ancienne palette sombre).
+- **0.19 : nouvelle direction artistique avec fond blanc et accents bleus, assistant en page dédiée et panneau dans l’accueil ; aucune migration.**
 
 - 0.16 : stabilisation HTTP, tests de parcours navigateur, ergonomie mobile.
 - 0.17 : collecte et traitement des retours de recette dans l’application, révocation persistante des jetons après déconnexion, migration SQLite non destructive.
