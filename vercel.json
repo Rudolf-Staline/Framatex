@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "fastapi",
+  "env": {
+    "SUPABASE_URL": "https://qwutrmdghvqntzruscvl.supabase.co",
+    "SUPABASE_STORAGE_BUCKET": "framat-documents",
+    "FRAMATEX_STORAGE_BACKEND": "supabase",
+    "FRAMATEX_COOKIE_SECURE": "1",
+    "FRAMATEX_RESTRICT_NEW_LAUNCHES": "1",
+    "FRAMATEX_PUBLIC_BASE_URL": "https://framat-demo.vercel.app"
+  }
+}
