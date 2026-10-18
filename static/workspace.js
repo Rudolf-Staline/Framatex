@@ -34,41 +34,5 @@ async function workspaceActions(){
  select.addEventListener('change',draw);draw();
  app.querySelector('#workspace-all')?.addEventListener('click',()=>app.querySelector('#priority-filter')?.focus());
 }
-let guideHistory=[];
-function openGuideDrawer(){
- const existing=overlay.querySelector('.assistant-drawer');
- if(existing){closeModal();return;}
- const current=state.detail?.id||null;
- overlay.innerHTML=`<div class="assistant-overlay"><button class="assistant-backdrop" aria-label="Fermer l’assistant"></button><aside class="assistant-drawer" role="dialog" aria-modal="true" aria-labelledby="assistant-title"><header class="assistant-drawer-head"><div class="assistant-drawer-symbol">${icon('layers')}</div><div><span>VOTRE ASSISTANT DOCUMENTAIRE</span><h2 id="assistant-title">Framatex Assist <i class="chat-online"></i></h2></div><button type="button" class="assistant-close" aria-label="Fermer">${icon('x')}</button></header><div class="assistant-conversation" id="assistant-conversation" aria-live="polite"><div class="assistant-day-label">SESSION ACTUELLE</div><div class="assistant-msg assistant-msg-bot"><span class="assistant-msg-avatar">${icon('layers')}</span><div class="assistant-bubble"><strong>Bonjour !</strong><p>Je peux vous guider dans Framatex, retrouver une rubrique ou expliquer une procédure. Que souhaitez-vous faire ?</p></div></div></div><div class="assistant-suggestion-wrap"><span>QUESTIONS FRÉQUENTES</span><div class="assistant-suggestions"><button type="button" data-guide-example="Où déposer une facture ?">Déposer une facture ${icon('arrow')}</button><button type="button" data-guide-example="Voir les priorités">Mes priorités ${icon('arrow')}</button><button type="button" data-guide-example="Comment vérifier une exigence client ?">Exigences client ${icon('arrow')}</button></div></div><form id="guide-form" class="assistant-composer"><label for="guide-question">Votre question</label><div class="assistant-input-line"><input id="guide-question" type="text" maxlength="500" minlength="2" required placeholder="Écrivez votre question…" autocomplete="off"/><button type="submit" aria-label="Envoyer la question">${icon('arrow')}</button></div><small>Réponses basées sur les procédures locales, sans IA générative.</small></form></aside></div>`;
- const wrapper=overlay.querySelector('.assistant-overlay');
- const close=()=>{overlay.innerHTML='';document.removeEventListener('keydown',onKey)};
- const onKey=(event)=>{if(event.key==='Escape')close()};
- document.addEventListener('keydown',onKey);
- wrapper.querySelector('.assistant-close').addEventListener('click',close);
- wrapper.querySelector('.assistant-backdrop').addEventListener('click',close);
- const conversation=wrapper.querySelector('#assistant-conversation');
- const addMessage=(kind,content)=>{
-   const row=document.createElement('div');row.className='assistant-msg assistant-msg-'+kind;
-   if(kind==='bot'){const avatar=document.createElement('span');avatar.className='assistant-msg-avatar';avatar.innerHTML=icon('layers');row.appendChild(avatar)}
-   const bubble=document.createElement('div');bubble.className='assistant-bubble';
-   bubble.innerHTML=content;row.appendChild(bubble);conversation.appendChild(row);conversation.scrollTop=conversation.scrollHeight;
-   return row;
- };
- const ask=async(question)=>{
-   const q=question.trim();if(q.length<2)return;
-   addMessage('user',`<p>${e(q)}</p>`);
-   const waiting=addMessage('bot','<p>Je recherche la procédure correspondante…</p>');
-   const form=wrapper.querySelector('#guide-form');const field=wrapper.querySelector('#guide-question');
-   field.disabled=true;form.querySelector('button[type=submit]').disabled=true;
-   try{
-     const response=await api('/api/assistant/guide',{method:'POST',body:JSON.stringify({question:q,launch_id:current})});
-     const bubble=waiting.querySelector('.assistant-bubble');
-     bubble.innerHTML=`<strong>${e(response.title)}</strong><p>${e(response.answer)}</p><small>${e(response.source)}</small>${response.destination?`<button class="assistant-followup" type="button">Ouvrir la rubrique ${icon('arrow')}</button>`:''}`;
-     bubble.querySelector('.assistant-followup')?.addEventListener('click',async()=>{try{close();if(response.destination==='detail'&&response.launch_id){await openLaunch(response.launch_id,response.folder||state.folder);focusWorkspaceArea(response.area)}else await navigate(response.destination)}catch(err){showErr(err)}});
-   }catch(err){waiting.querySelector('.assistant-bubble').innerHTML=`<p class="assistant-error">${e(err.message)}</p>`}
-   finally{field.disabled=false;form.querySelector('button[type=submit]').disabled=false;conversation.scrollTop=conversation.scrollHeight;field.focus()}
- };
- wrapper.querySelectorAll('[data-guide-example]').forEach(button=>button.addEventListener('click',()=>ask(button.dataset.guideExample)));
- wrapper.querySelector('#guide-form').addEventListener('submit',event=>{event.preventDefault();const field=wrapper.querySelector('#guide-question');const question=field.value;field.value='';ask(question)});
- wrapper.querySelector('#guide-question').focus();
-}
+// Backward compatibility for existing assistance actions.
+function openGuideDrawer(){return openFloatingAssistant()}
