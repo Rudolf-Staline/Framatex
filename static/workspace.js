@@ -21,14 +21,18 @@ function bindPriorityWidget(){
  }));
 }
 function focusWorkspaceArea(area){
- // Contextual links from tasks and Framatex Assist must reveal hidden modules.
+ // Workspace links select the correct tab and tool before scrolling.
  const moduleByArea={workflow:'workflow',spec:'spec',mail:'mail'};
- if(state.view==='detail'&&moduleByArea[area]){
-  const drawer=app.querySelector('#detail-tools');
-  if(drawer)drawer.open=true;
-  selectDetailTool(moduleByArea[area]);
+ if(state.view==='detail'){
+  if(moduleByArea[area]){
+   switchDetailView('tools');
+   selectDetailTool(moduleByArea[area]);
+  }else{
+   switchDetailView('documents');
+  }
  }
- const target=app.querySelector(AREA_TARGETS[area]||'.simple-document-section');
+ const selector=AREA_TARGETS[area]||'.simple-document-section';
+ const target=app.querySelector(selector);
  target?.scrollIntoView?.({behavior:'smooth',block:'start'});
 }
 async function workspaceActions(){
