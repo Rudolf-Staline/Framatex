@@ -46,14 +46,25 @@ function topbar(label){
  return `<header class="topbar"><div class="breadcrumb">${icon('arrow')}<strong>${e(label)}</strong></div><div class="topbar-actions"><button type="button" class="topbar-search" id="global-search" title="Rechercher un dossier">${icon('search')}</button></div></header>`;
 }
 function sidebar(){
- const primary=[['home','grid','Vue d’ensemble'],['launches','folder','Dossiers jaunes'],['actions','activity','Mes actions'],['notifications','clock','Notifications'],['assistant','layers','Assistant']];
+ const primary=[['home','grid','Accueil'],['launches','folder','Dossiers jaunes'],['actions','activity','Mes actions'],['notifications','clock','Notifications'],['assistant','layers','Assistant']];
  const tools=[['pilot','info','Recette pilote'],...(state.me.admin?[['orli','file','Imports ORLI'],['admin','users','Administration'],['audit','shield','Journal d’activité']]:[])];
- const items=(list)=>list.map(([view,ico,label])=>`<button class="nav-btn ${state.view===view||(state.view==='detail'&&view==='launches')?'active':''}" data-view="${view}" aria-current="${state.view===view?'page':'false'}">${icon(ico)}<span>${label}</span>${state.view===view?'<span class="nav-current"></span>':''}</button>`).join('');
- return `<aside class="sidebar"><div class="brand"><div class="brand-logo">${icon('layers')}</div><div><div class="brand-name">FRAMA<span>TEX</span><span class="brand-period">.</span></div></div></div><div class="sidebar-divider"></div><nav class="sidebar-nav" aria-label="Navigation principale">${items(primary)}</nav><div class="nav-label nav-label-tools">Gestion</div><nav class="sidebar-nav" aria-label="Gestion et contrôle">${items(tools)}</nav><div class="sidebar-bottom"><div class="user"><div class="avatar">${e(state.me.name.slice(0,2).toUpperCase())}</div><div><div class="user-name">${e(state.me.name)}</div><div class="user-role">${e(state.me.roles.join(', '))}</div></div></div><button class="logout" id="logout">${icon('out')} <span>Déconnexion</span></button></div></aside>`;
+ const active=view=>state.view===view||(state.view==='detail'&&view==='launches');
+ const items=list=>list.map(([view,ico,label])=>`<button type="button" class="nav-btn ${active(view)?'active':''}" data-view="${view}" title="${label}" aria-current="${active(view)?'page':'false'}">${icon(ico)}<span class="nav-text">${label}</span></button>`).join('');
+ const toolsOpen=!!state.sidebarAdminOpen||tools.some(([view])=>active(view));
+ return `<aside class="sidebar sidebar-rail" aria-label="Barre latérale Framatex">
+   <div class="rail-brand"><div class="rail-logo" aria-hidden="true">${icon('layers')}</div><span class="rail-brand-name">FRAMATEX</span></div>
+   <nav class="sidebar-nav rail-primary" aria-label="Navigation principale">${items(primary)}</nav>
+   <details class="rail-management" ${toolsOpen?'open':''}><summary title="Outils de gestion">${icon('users')}<span class="nav-text">Gestion</span><span class="rail-chevron" aria-hidden="true">⌄</span></summary>
+     <nav class="sidebar-nav rail-management-links" aria-label="Gestion et contrôle">${items(tools)}</nav>
+   </details>
+   <div class="sidebar-bottom rail-account"><div class="user"><div class="avatar" aria-hidden="true">${e(state.me.name.slice(0,2).toUpperCase())}</div><span class="user-name" title="${e(state.me.name)}">${e(state.me.name)}</span></div>
+     <button type="button" class="logout" id="logout" title="Déconnexion" aria-label="Déconnexion">${icon('out')}<span>Quitter</span></button></div>
+ </aside>`;
 }
 function mount(html,label){
  app.innerHTML=`<div class="app-shell"${state.view==='detail'&&['jaune','rose','bleu','vert'].includes(state.folder)?` data-folder-theme="${state.folder}"`:''}>${sidebar()}<div class="main">${topbar(label)}<main class="content">${html}</main></div></div>`;
  app.querySelectorAll('[data-view]').forEach(n=>n.addEventListener('click',()=>navigate(n.dataset.view)));
+ app.querySelector('.rail-management')?.addEventListener('toggle',event=>{state.sidebarAdminOpen=event.currentTarget.open});
  app.querySelector('#guide-open')?.addEventListener('click',openGuide);
  app.querySelector('#global-search')?.addEventListener('click',async()=>{await navigate('launches');app.querySelector('#launch-search')?.focus()});
  app.querySelector('#logout').addEventListener('click',async()=>{try{await api('/api/auth/logout',{method:'POST'})}catch{}state.me=null;state.detail=null;renderLogin()});
