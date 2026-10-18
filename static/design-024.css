@@ -305,3 +305,24 @@ input:focus,textarea:focus,select:focus{
 @media(prefers-reduced-motion:reduce){
   .floating-assistant-trigger,.floating-assistant-panel{transition:none;animation:none}
 }
+
+/* Remaining historic blue highlights in auxiliary screens become warm and neutral.
+   The Bleu folder and informational status tags above intentionally keep their blue. */
+.folder-card.selected{border-color:#d1a13b;box-shadow:0 0 0 2px #fff1cd}
+.priority-label,.executive-card-foot>span,.executive-card-top svg,
+.premium-table .item-row svg,.home-primary .completion-dashboard-banner svg,
+.quiet-symbol,.art-point svg{
+  color:#88600e;
+}
+.pilot-card summary,.material-card details summary,
+.assistant-context-links button>svg:last-child,.assistant-context-help>svg{
+  color:#765411;
+}
+.rail-expand:hover,.rail-quick button:hover{color:#77520d}
+.rail-input:focus-within{border-color:#bb8b1d;box-shadow:0 0 0 3px var(--brand-ring)}
+.rail-input button{background:var(--brand);color:var(--brand-ink)}
+.rail-input button:hover{background:var(--brand-hover)}
+.assistant-followup{background:#fff3d2;color:#6f4b0a}
+.assistant-msg-avatar{background:#fff2d2;color:#97680e}
+.assistant-msg-user .assistant-bubble{background:#f5e4b0;color:#4e3a10;border-color:#efd38e}
+.dash-priority-dot.normal{background:#b3a179}
