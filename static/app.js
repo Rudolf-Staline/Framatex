@@ -327,7 +327,19 @@ function renderDetail(){
  app.querySelector('#back-launches').onclick=()=>navigate('launches');
  app.querySelector('#launch-info')?.addEventListener('click',showLaunchInformation);
  app.querySelector('#edit-launch')?.addEventListener('click',openEditLaunch);
- app.querySelectorAll('[data-detail-view]').forEach(button=>button.addEventListener('click',()=>switchDetailView(button.dataset.detailView)));
+ app.querySelectorAll('[data-detail-view]').forEach(button=>{
+  button.addEventListener('click',()=>switchDetailView(button.dataset.detailView));
+  button.addEventListener('keydown',event=>{
+   if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+   event.preventDefault();
+   const order=['documents','tools'];
+   const current=order.indexOf(button.dataset.detailView);
+   const next=event.key==='Home'?0:event.key==='End'?order.length-1:
+     (current+(event.key==='ArrowRight'?1:-1)+order.length)%order.length;
+   switchDetailView(order[next]);
+   app.querySelector('[data-detail-view="'+order[next]+'"]')?.focus();
+  });
+ });
  app.querySelectorAll('[data-folder]').forEach(el=>el.addEventListener('click',()=>{state.folder=el.dataset.folder;state.detailSection='documents';renderDetail()}));
  switchDetailView(state.detailSection==='tools'?'tools':'documents');
  app.querySelector('#upload-doc')?.addEventListener('click',openUpload);
