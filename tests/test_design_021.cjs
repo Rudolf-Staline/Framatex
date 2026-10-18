@@ -3,10 +3,10 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const assert=require('node:assert/strict');
 const js=fs.readFileSync('static/app.js','utf8');
-const css=fs.readFileSync('static/design-021.css','utf8');
+const css=fs.readFileSync('static/design-022.css','utf8');
 const html=fs.readFileSync('static/index.html','utf8');
-assert(html.indexOf('design-021.css')>html.indexOf('design-020.css'));
-assert(css.includes('linear-gradient(165deg,#5188ed'));
+assert(html.indexOf('design-022.css')>html.indexOf('design-021.css'));
+assert(css.includes('background:#fff') && css.includes('sidebar-light'));
 assert(css.includes('position:sticky') && css.includes('@media(max-width:760px)'));
 assert(css.includes('data-folder-theme'));
 const ctx={window:{addEventListener:()=>{}},document:{querySelector:()=>({})},console,setTimeout,clearTimeout};
@@ -31,11 +31,11 @@ for(const view of ['home','launches','actions','notifications','assistant']){
  assert(output.normal.includes('data-view="'+view+'"'));
 }
 assert(output.normal.includes('data-view="home" title="Accueil" aria-current="page"'));
-assert(output.inside.includes('data-view="launches" title="Dossiers jaunes" aria-current="page"'));
+assert(output.inside.includes('data-view="launches" title="Lancements" aria-current="page"'));
 assert(output.admin.includes('class="rail-management" open'));
 assert(output.normal.includes('data-view="audit"'));
 assert(!output.limited.includes('data-view="audit"'));
 assert(!output.limited.includes('data-view="admin"'));
 assert(output.normal.includes('id="logout"'));
 assert(!output.normal.includes('sidebar-assistant'));
-console.log('Sidebar bleue 0.21 : navigation, permissions, actif et responsive valides');
+console.log('Sidebar blanche: navigation, permissions, actif et responsive valides');
