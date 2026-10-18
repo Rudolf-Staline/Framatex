@@ -10,7 +10,7 @@ from app import cloud_storage as cs
 def fake_config(monkeypatch):
     monkeypatch.setenv("FRAMATEX_STORAGE_BACKEND", "supabase")
     monkeypatch.setenv("SUPABASE_URL", "https://fake-demo.supabase.co")
-    monkeypatch.setenv("SUPABASE_SECRET_KEY", "private-test-secret")
+    monkeypatch.setenv("SUPABASE_SECRET_KEY", "sb_secret_demo-test-key")
     monkeypatch.setenv("SUPABASE_STORAGE_BUCKET", "framat-documents")
     return monkeypatch
 
@@ -28,7 +28,7 @@ def test_upload_and_private_download(fake_config, tmp_path, monkeypatch):
     traces = []
 
     def handler(request):
-        traces.append((request.method, request.url.path, request.headers.get("authorization")))
+        traces.append((request.method, request.url.path, request.headers.get("authorization"), request.headers.get("apikey")))
         if request.method == "POST":
             assert request.content == payload
             assert request.headers.get("x-upsert") == "false"
@@ -47,9 +47,10 @@ def test_upload_and_private_download(fake_config, tmp_path, monkeypatch):
     assert found.read_bytes() == payload
     cs.remove(key, found.parent)
     assert not found.exists()
-    assert [method for method, _, _ in traces] == ["POST", "GET", "DELETE"]
-    assert all(path.endswith("/framat-documents/" + key) for _, path, _ in traces)
-    assert all(authorization == "Bearer private-test-secret" for _, _, authorization in traces)
+    assert [method for method, _, _, _ in traces] == ["POST", "GET", "DELETE"]
+    assert all(path.endswith("/framat-documents/" + key) for _, path, _, _ in traces)
+    assert all(authorization is None and apikey == "sb_secret_demo-test-key"
+               for _, _, authorization, apikey in traces)
 
 
 def test_missing_secret_refuses_cloud_access(fake_config, monkeypatch, tmp_path):
@@ -65,3 +66,16 @@ def test_file_not_found_is_not_silently_created(fake_config, monkeypatch, tmp_pa
     key = "c" * 48
     path = cs.ensure_local(key, tmp_path)
     assert not path.exists()
+
+
+def test_legacy_service_role_jwt_compatibility(fake_config, monkeypatch):
+    monkeypatch.setenv("SUPABASE_SECRET_KEY", "legacy-service-role-jwt")
+    _, headers = cs._endpoint("d" * 48)
+    assert headers == {"apikey": "legacy-service-role-jwt",
+                       "Authorization": "Bearer legacy-service-role-jwt"}
+
+
+def test_public_key_cannot_be_used_as_server_secret(fake_config, monkeypatch):
+    monkeypatch.setenv("SUPABASE_SECRET_KEY", "sb_publishable_public")
+    with pytest.raises(RuntimeError, match="publique"):
+        cs._endpoint("e" * 48)
