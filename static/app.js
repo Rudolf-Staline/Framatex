@@ -209,6 +209,78 @@ function installDetailNavigation(){
  nav.querySelector('#detail-go-top').addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
 }
 
+
+const DETAIL_TOOL_GROUPS=[
+ {label:'Qualité',tools:[
+  ['quality','Cohérence et Excel','shield','Écarts documentaires et vérifications Excel',renderQuality],
+  ['completeness','Complétude','check','Exigences documentaires selon le contexte',renderCompleteness],
+  ['workflow','Décisions et impacts','activity','Valeurs suivies et décisions humaines',renderWorkflow]
+ ]},
+ {label:'Documents',tools:[
+  ['intake','Lecture et OCR','file','Lire et classer les pièces',renderIntake],
+  ['paper','QR et versions','grid','Passerelle papier et traçabilité',renderPaper]
+ ]},
+ {label:'Exigences',tools:[
+  ['spec','Exigences client','check','Couverture et ambiguïtés',renderSpec],
+  ['mail','Engagements e-mail','file','Engagements issus des échanges',renderMail]
+ ]},
+ {label:'Suivi',tools:[
+  ['sim','Simulation d’impact','activity','Conséquences potentielles des modifications',renderImpactSimulation],
+  ['orli','Rapprochement ORLI','file','Références et rapprochements',renderOrliReconciliation],
+  ['materials','Suivi matière','grid','Consommations et mouvements',renderMaterialReport],
+  ['approvals','Approbations','shield','Circuits de décision',renderApprovals],
+  ['sharing','Partage externe','users','Clients et fournisseurs',renderSharing]
+ ]}
+];
+function renderDetailToolWorkspace(){
+ const tools=DETAIL_TOOL_GROUPS.flatMap(g=>g.tools);
+ const selected=tools.find(t=>t[0]===state.detailTool)||tools[0];
+ const active=selected[0];
+ let navigation='<nav class="detail-tool-nav" aria-label="Fonctionnalités du dossier">';
+ for(const group of DETAIL_TOOL_GROUPS){
+  const open=group.tools.some(t=>t[0]===active)?' open':'';
+  navigation+='<details class="detail-tool-group"'+open+'><summary>'+e(group.label)+'<span>'+group.tools.length+'</span></summary><div class="detail-tool-group-items">';
+  for(const [id,label,ico] of group.tools){
+    const current=id===active;
+    navigation+='<button type="button" class="detail-tool-choice'+(current?' is-current':'')+'" data-detail-tool="'+id+'" aria-pressed="'+String(current)+'" aria-controls="detail-tool-'+id+'">'+icon(ico)+'<span>'+e(label)+'</span>'+(current?icon('arrow'):'')+'</button>';
+  }
+  navigation+='</div></details>';
+ }
+ navigation+='</nav>';
+ let panels='';
+ for(const [id,label,ico,description,renderer] of tools){
+  panels+='<section id="detail-tool-'+id+'" class="detail-tool-panel" data-detail-tool-panel="'+id+'" role="region" aria-label="'+e(label)+'"'+(active===id?'':' hidden')+'>'+renderer()+'</section>';
+ }
+ return '<div class="detail-tool-workspace" id="detail-tool-workspace">'+navigation+
+  '<div class="detail-tool-stage" id="detail-tool-stage"><div class="detail-tool-stage-header">'+
+  '<span class="detail-tool-stage-mark">'+icon(selected[2])+'</span><div><h3 id="detail-tool-stage-title">'+e(selected[1])+'</h3><p id="detail-tool-stage-description">'+e(selected[3])+'</p></div></div>'+
+  '<div class="detail-tool-panel-container">'+panels+'</div></div></div>';
+}
+function selectDetailTool(id){
+ const selected=DETAIL_TOOL_GROUPS.flatMap(g=>g.tools).find(t=>t[0]===id);
+ if(!selected)return;
+ const container=app.querySelector('#detail-tool-workspace');
+ if(!container)return;
+ state.detailTool=id;
+ container.querySelectorAll('[data-detail-tool]').forEach(button=>{
+  const active=button.dataset.detailTool===id;
+  button.classList.toggle('is-current',active);
+  button.setAttribute('aria-pressed',String(active));
+ });
+ container.querySelectorAll('[data-detail-tool-panel]').forEach(panel=>{
+  panel.hidden=panel.dataset.detailToolPanel!==id;
+ });
+ const title=container.querySelector('#detail-tool-stage-title');
+ const description=container.querySelector('#detail-tool-stage-description');
+ const mark=container.querySelector('.detail-tool-stage-mark');
+ if(title)title.textContent=selected[1];
+ if(description)description.textContent=selected[3];
+ if(mark)mark.innerHTML=icon(selected[2]);
+}
+function bindDetailToolWorkspace(){
+ app.querySelectorAll('[data-detail-tool]').forEach(button=>button.addEventListener('click',()=>selectDetailTool(button.dataset.detailTool)));
+}
+
 function renderDetail(){
  const d=state.detail;
  const f=d.folders.find(x=>x.slug===state.folder)||d.folders[0];
@@ -225,7 +297,7 @@ function renderDetail(){
  ${f.can_write?`<button class="primary" id="upload-doc">${icon('upload')} Déposer</button>`:''}</div>
  <div class="panel">${!f.can_read?`<div class="denied">${icon('lock')}<p>Vous n’avez pas accès à cette rubrique.</p></div>`:docs.length?`<div class="table-scroll"><table><thead><tr><th>Document</th><th>Type</th><th>Version</th><th>Action</th></tr></thead><tbody>${docs.map(doc=>`<tr><td><div class="file-name"><div class="doc-icon">${icon('file')}</div><div><div class="row-title">${e(doc.title)}</div><div class="row-sub">${e(doc.latest.original_name)} · ${sizeText(doc.latest.size)}</div></div></div></td><td class="small">${e(doc.doc_type)}</td><td><span class="tag">v${doc.latest.number}</span></td><td><div class="doc-actions"><button class="link" data-history="${e(doc.id)}">${icon('clock')} Historique</button><button class="link" data-download="${e(doc.id)}" data-ver="${doc.latest.number}" title="Télécharger" aria-label="Télécharger ${e(doc.title)}">${icon('download')}</button></div></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty"><div class="empty-icon">${icon('file')}</div><strong>Ce sous-dossier est vide</strong>${f.can_write?'Déposez un premier document pour commencer.':'Aucun document pour le moment.'}</div>`}</div></section>
  <details class="simple-disclosure"><summary>Informations du lancement <span>Références et historique</span></summary><div class="simple-disclosure-body"><div class="info-pair"><label>IDENTIFIANT TECHNIQUE</label><span class="technical-id">${e(d.id)}</span></div><div class="info-pair"><label>RÉFÉRENCE ORLI</label><span>${e(d.orli_ref||'Non renseignée')}</span></div><div class="info-pair"><label>COMMANDE</label><span>${e(d.order_ref||'Non renseignée')}</span></div><div class="info-pair"><label>CLIENT</label><span>${e(d.client_name||'Non renseigné')}</span></div><div class="info-pair"><label>DERNIÈRE MISE À JOUR</label><span>${niceDate(d.updated_at)}</span></div></div></details>
- <details class="simple-disclosure simple-tools" id="detail-tools"><summary>Contrôles et outils <span>Complétude, validations, OCR et autres fonctions</span></summary><div class="simple-disclosure-body detail-tools-body">${renderCompleteness()}${renderWorkflow()}${renderQuality()}${renderIntake()}${renderPaper()}${renderSpec()}${renderMail()}${renderImpactSimulation()}${renderOrliReconciliation()}${renderMaterialReport()}${renderApprovals()}${renderSharing()}</div></details>
+ <details class="simple-disclosure simple-tools" id="detail-tools"><summary>Contrôles et outils <span>Complétude, validations, OCR et autres fonctions</span></summary><div class="simple-disclosure-body detail-tools-body">${renderDetailToolWorkspace()}</div></details>
  </div>`,'Dossiers jaunes / '+d.name);
  app.querySelector('#back-launches').onclick=()=>navigate('launches');
  app.querySelector('#edit-launch')?.addEventListener('click',openEditLaunch);
@@ -234,6 +306,7 @@ function renderDetail(){
  app.querySelectorAll('[data-history]').forEach(el=>el.addEventListener('click',()=>openVersions(el.dataset.history)));
  app.querySelectorAll('[data-download]').forEach(el=>el.addEventListener('click',()=>download(el.dataset.download,+el.dataset.ver)));
  bindCompleteness();bindWorkflow();bindQuality();bindIntake();bindPaper();bindSpec();bindMail();bindImpactSimulation();bindOrliReconciliation();bindMaterialReport();bindApprovals();bindSharing();
+ bindDetailToolWorkspace();
 }
 function modal(title,content,wide=false){overlay.innerHTML=`<div class="modal-scrim"><div class="modal ${wide?'wide':''}" role="dialog" aria-modal="true" aria-label="${e(title)}"><div class="modal-head"><h2>${e(title)}</h2><button id="close-modal" aria-label="Fermer">${icon('x')}</button></div><div class="modal-body">${content}</div></div></div>`;overlay.querySelector('#close-modal').onclick=closeModal;overlay.querySelector('.modal-scrim').addEventListener('click',evt=>{if(evt.target.classList.contains('modal-scrim'))closeModal()})}
 function closeModal(){overlay.innerHTML=''}
