@@ -84,7 +84,7 @@ let chosen=null;
 const target={scrollIntoView(){this.called=true}};
 app.querySelector=selector=>selector==='#detail-tools'?detailDisclosure:(selector==='.spec-section'?target:null);
 ctx.selectDetailTool=id=>{chosen=id};
-ctx.state.view='detail';
+vm.runInContext("state.view='detail'",ctx);
 vm.runInContext("focusWorkspaceArea('spec')",ctx);
 assert.equal(detailDisclosure.open,true);
 assert.equal(chosen,'spec');
