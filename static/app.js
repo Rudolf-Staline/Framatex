@@ -300,20 +300,36 @@ function renderDetail(){
  const folderNames={jaune:'Jaune',rose:'Rose',bleu:'Bleu',vert:'Vert'};
  const count=f.can_read?docs.length:0;
  mount(`<div class="simple-detail">
- <header class="detail-head simple-detail-head"><div><button class="link" id="back-launches">${icon('back')} Tous les dossiers</button>
- <h1 class="page-title">${e(d.name)}</h1><div class="detail-sub">${statusTag(d.status)}${d.client_name?`<span>${e(d.client_name)}</span>`:''}${d.orli_ref?`<span>${e(d.orli_ref)}</span>`:''}</div></div>
- ${d.can_update?`<button class="secondary" id="edit-launch">${icon('pencil')} Modifier</button>`:''}</header>
+ <header class="detail-head simple-detail-head detail-compact-header">
+  <div class="detail-identity"><button type="button" class="detail-back" id="back-launches" title="Tous les dossiers" aria-label="Revenir aux lancements">${icon('back')}</button><div>
+  <h1 class="page-title">${e(d.name)}</h1><div class="detail-inline-meta">${statusTag(d.status)}${d.client_name?`<span>${e(d.client_name)}</span>`:''}${d.order_ref?`<span>Commande ${e(d.order_ref)}</span>`:''}</div>
+  </div></div>
+  <div class="detail-header-actions"><button type="button" class="secondary" id="launch-info">${icon('info')} Informations</button>
+  ${d.can_update?`<button type="button" class="secondary" id="edit-launch">${icon('pencil')} Modifier</button>`:''}</div>
+ </header>
+ <nav class="detail-main-tabs" role="tablist" aria-label="Vue du dossier">
+  <button type="button" role="tab" id="detail-tab-documents" data-detail-view="documents" aria-controls="detail-view-documents" aria-selected="${state.detailSection==='tools'?'false':'true'}">Documents</button>
+  <button type="button" role="tab" id="detail-tab-tools" data-detail-view="tools" aria-controls="detail-view-tools" aria-selected="${state.detailSection==='tools'?'true':'false'}">Contrôles et outils</button>
+ </nav>
+ <section class="detail-view-panel" data-detail-view-panel="documents" id="detail-view-documents" role="tabpanel" aria-labelledby="detail-tab-documents" ${state.detailSection==='tools'?'hidden':''}>
+
  <nav class="folder-tabs" aria-label="Sous-dossiers du lancement">${d.folders.map(folder=>`<button type="button" class="folder-tab folder-${e(folder.slug)} ${folder.slug===state.folder?'selected':''}" data-folder="${e(folder.slug)}" aria-pressed="${folder.slug===state.folder?'true':'false'}">
  <span class="folder-tab-dot" aria-hidden="true"></span><span class="folder-tab-title">${folderNames[folder.slug]||e(folder.slug)}</span><span class="folder-tab-count">${folder.can_read?folder.documents.length:'—'}</span></button>`).join('')}</nav>
  <section class="simple-document-section"><div class="simple-section-heading"><div><span class="section-index">${e(folderNames[f.slug]||f.slug)} · ${e(f.label)}</span><h2>Documents <span class="document-count">${count}</span></h2></div>
  ${f.can_write?`<button class="primary" id="upload-doc">${icon('upload')} Déposer</button>`:''}</div>
  <div class="panel">${!f.can_read?`<div class="denied">${icon('lock')}<p>Vous n’avez pas accès à cette rubrique.</p></div>`:docs.length?`<div class="table-scroll"><table><thead><tr><th>Document</th><th>Type</th><th>Version</th><th>Action</th></tr></thead><tbody>${docs.map(doc=>`<tr><td><div class="file-name"><div class="doc-icon">${icon('file')}</div><div><div class="row-title">${e(doc.title)}</div><div class="row-sub">${e(doc.latest.original_name)} · ${sizeText(doc.latest.size)}</div></div></div></td><td class="small">${e(doc.doc_type)}</td><td><span class="tag">v${doc.latest.number}</span></td><td><div class="doc-actions"><button class="link" data-history="${e(doc.id)}">${icon('clock')} Historique</button><button class="link" data-download="${e(doc.id)}" data-ver="${doc.latest.number}" title="Télécharger" aria-label="Télécharger ${e(doc.title)}">${icon('download')}</button></div></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty"><div class="empty-icon">${icon('file')}</div><strong>Ce sous-dossier est vide</strong>${f.can_write?'Déposez un premier document pour commencer.':'Aucun document pour le moment.'}</div>`}</div></section>
- <details class="simple-disclosure"><summary>Informations du lancement <span>Références et historique</span></summary><div class="simple-disclosure-body"><div class="info-pair"><label>IDENTIFIANT TECHNIQUE</label><span class="technical-id">${e(d.id)}</span></div><div class="info-pair"><label>RÉFÉRENCE ORLI</label><span>${e(d.orli_ref||'Non renseignée')}</span></div><div class="info-pair"><label>COMMANDE</label><span>${e(d.order_ref||'Non renseignée')}</span></div><div class="info-pair"><label>CLIENT</label><span>${e(d.client_name||'Non renseigné')}</span></div><div class="info-pair"><label>DERNIÈRE MISE À JOUR</label><span>${niceDate(d.updated_at)}</span></div></div></details>
- <details class="simple-disclosure simple-tools" id="detail-tools"><summary>Contrôles et outils <span>Complétude, validations, OCR et autres fonctions</span></summary><div class="simple-disclosure-body detail-tools-body">${renderDetailToolWorkspace()}</div></details>
+
+ </section>
+ <section class="detail-view-panel" data-detail-view-panel="tools" id="detail-view-tools" role="tabpanel" aria-labelledby="detail-tab-tools" ${state.detailSection==='tools'?'':'hidden'}>
+   ${renderDetailToolWorkspace()}
+ </section>
  </div>`,'Dossiers jaunes / '+d.name);
  app.querySelector('#back-launches').onclick=()=>navigate('launches');
+ app.querySelector('#launch-info')?.addEventListener('click',showLaunchInformation);
  app.querySelector('#edit-launch')?.addEventListener('click',openEditLaunch);
- app.querySelectorAll('[data-folder]').forEach(el=>el.addEventListener('click',()=>{state.folder=el.dataset.folder;renderDetail()}));
+ app.querySelectorAll('[data-detail-view]').forEach(button=>button.addEventListener('click',()=>switchDetailView(button.dataset.detailView)));
+ app.querySelectorAll('[data-folder]').forEach(el=>el.addEventListener('click',()=>{state.folder=el.dataset.folder;state.detailSection='documents';renderDetail()}));
+ switchDetailView(state.detailSection==='tools'?'tools':'documents');
  app.querySelector('#upload-doc')?.addEventListener('click',openUpload);
  app.querySelectorAll('[data-history]').forEach(el=>el.addEventListener('click',()=>openVersions(el.dataset.history)));
  app.querySelectorAll('[data-download]').forEach(el=>el.addEventListener('click',()=>download(el.dataset.download,+el.dataset.ver)));
