@@ -27,10 +27,12 @@ const output=vm.runInContext(`(()=>{
 })()`,ctx);
 assert(output.normal.includes('sidebar-rail'));
 assert(output.normal.includes('aria-label="Navigation principale"'));
-for(const view of ['home','launches','actions','notifications','assistant']){
+for(const view of ['home','launches','actions','notifications']){
  assert(output.normal.includes('data-view="'+view+'"'));
 }
 assert(output.normal.includes('data-view="home" title="Accueil" aria-current="page"'));
+assert(!output.normal.includes('data-view="assistant"'));
+assert(js.includes("else if(view==='assistant')openFloatingAssistant()"));
 assert(output.inside.includes('data-view="launches" title="Lancements" aria-current="page"'));
 assert(output.admin.includes('class="rail-management" open'));
 assert(output.normal.includes('data-view="audit"'));
