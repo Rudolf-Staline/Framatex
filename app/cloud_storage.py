@@ -29,6 +29,8 @@ def _config():
     bucket = os.environ.get("SUPABASE_STORAGE_BUCKET", "framat-documents")
     if not url.startswith("https://") or not key or not re.fullmatch(r"[a-z0-9-]{3,60}", bucket):
         raise RuntimeError("Supabase Storage: SUPABASE_URL, SUPABASE_SECRET_KEY et bucket prive requis")
+    if key.startswith("sb_publishable_"):
+        raise RuntimeError("Une cle Supabase publique ne peut pas etre utilisee cote serveur")
     return url, key, bucket
 
 
@@ -37,8 +39,13 @@ def _endpoint(key: str, authenticated: bool = False) -> tuple[str, dict]:
         raise ValueError("Identifiant de document non conforme")
     base, secret, bucket = _config()
     section = "authenticated/" if authenticated else ""
-    return (f"{base}/storage/v1/object/{section}{quote(bucket)}/{key}",
-            {"Authorization": f"Bearer {secret}", "apikey": secret})
+    headers = {"apikey": secret}
+    # Modern sb_secret keys are NOT JWTs. Sending one as a Bearer token
+    # causes Supabase to reject it with `Invalid JWT`. Legacy service-role
+    # JWTs are still supported for backwards compatibility.
+    if not secret.startswith("sb_secret_"):
+        headers["Authorization"] = f"Bearer {secret}"
+    return f"{base}/storage/v1/object/{section}{quote(bucket)}/{key}", headers
 
 
 def upload_local(key: str, path: Path):
