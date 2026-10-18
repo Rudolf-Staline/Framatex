@@ -1,0 +1,141 @@
+/* Framatex · Navigation rail — visual reference: narrow blue client-portal sidebar.
+   Only the navigation shell changes; folder-specific page colors remain independent. */
+.app-shell{grid-template-columns:132px minmax(0,1fr)}
+.app-shell .sidebar.sidebar-rail{
+ position:sticky;top:0;align-self:start;
+ width:132px;height:100dvh;min-height:0;
+ padding:22px 10px 14px;gap:0;
+ display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;
+ background:linear-gradient(165deg,#5188ed 0%,#4277e6 52%,#3c68da 100%);
+ border:0;scrollbar-width:thin;scrollbar-color:#ffffff66 transparent;color:#fff;
+}
+.sidebar-rail .rail-brand{
+ display:flex;align-items:center;flex-direction:column;justify-content:center;gap:10px;
+ padding:3px 0 22px;margin:0 0 8px;border-bottom:1px solid #ffffff32;
+}
+.sidebar-rail .rail-logo{
+ height:56px;width:56px;border-radius:50%;display:grid;place-items:center;
+ background:#fff;box-shadow:0 5px 16px #173b8526;color:#346cda;
+}
+.sidebar-rail .rail-logo svg{height:29px;width:29px;stroke-width:2}
+.sidebar-rail .rail-brand-name{font-size:9px;font-weight:800;letter-spacing:.14em;color:#fff;line-height:1}
+.app-shell .sidebar-rail .sidebar-nav{display:flex;flex-direction:column;gap:4px;overflow:visible;min-width:0}
+.app-shell .sidebar-rail .nav-btn{
+ display:flex;align-items:center;text-align:left;justify-content:flex-start;
+ min-height:47px;width:100%;border:1px solid transparent;border-radius:7px;
+ background:transparent;color:#f5f9ff;box-shadow:none;
+ gap:8px;padding:9px 8px;font-size:10.5px;line-height:1.25;font-weight:600;
+ letter-spacing:0;white-space:normal;transition:background-color .14s ease,border-color .14s ease;
+}
+.app-shell .sidebar-rail .nav-btn svg{width:17px;height:17px;stroke-width:1.8;flex-shrink:0}
+.sidebar-rail .nav-btn .nav-text{flex:1;min-width:0;overflow-wrap:normal}
+.app-shell .sidebar-rail .nav-btn:hover,.app-shell .sidebar-rail .nav-btn:focus-visible{
+ color:#fff;background:#ffffff24;border-color:#ffffff18
+}
+.app-shell .sidebar-rail .nav-btn.active,
+.app-shell[data-folder-theme] .sidebar.sidebar-rail .nav-btn.active{
+ background:#2558bd78;color:#fff;border-color:#ffffff20;font-weight:800;
+}
+.app-shell .sidebar-rail .nav-btn:focus-visible,
+.sidebar-rail .rail-management summary:focus-visible,
+.sidebar-rail .logout:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.sidebar-rail .rail-management{border-top:1px solid #ffffff36;margin-top:18px;padding-top:12px;width:100%}
+.sidebar-rail .rail-management summary{
+ list-style:none;display:flex;align-items:center;gap:8px;border-radius:7px;
+ color:#f5f9ff;font-size:10.5px;font-weight:650;padding:10px 8px;cursor:pointer;
+ min-height:42px;user-select:none
+}
+.sidebar-rail .rail-management summary::-webkit-details-marker{display:none}
+.sidebar-rail .rail-management summary:hover{background:#ffffff24}
+.sidebar-rail .rail-management summary svg{width:17px;height:17px}
+.sidebar-rail .rail-management summary .rail-chevron{font-size:16px;line-height:12px;opacity:.75;margin-left:auto;transition:transform .15s}
+.sidebar-rail .rail-management[open] .rail-chevron{transform:rotate(180deg)}
+.app-shell .sidebar-rail .rail-management-links{
+ margin:3px 0 0;padding:6px 0 3px;border-left:1px solid #ffffff4d;
+}
+.app-shell .sidebar-rail .rail-management-links .nav-btn{
+ min-height:38px;padding:7px 6px;font-size:10px;gap:6px
+}
+.sidebar-rail .rail-management-links .nav-btn svg{height:14px;width:14px}
+.app-shell .sidebar-rail .sidebar-bottom.rail-account{
+ margin-top:auto;padding:17px 3px 0;border-top:1px solid #ffffff38;
+ display:flex;flex-direction:column;gap:10px;color:#fff
+}
+.sidebar-rail .user{display:flex;align-items:center;gap:7px;min-width:0;margin:0}
+.sidebar-rail .user .avatar{
+ background:#ffffffee;border:0;color:#3166d2;width:28px;height:28px;min-width:28px;
+ border-radius:50%;font-size:10px;font-weight:800
+}
+.sidebar-rail .user .user-name{
+ flex:1;min-width:0;color:#fff;font-size:10px;font-weight:650;line-height:1.3;
+ white-space:normal;overflow-wrap:anywhere;max-height:3.9em;overflow:hidden
+}
+.app-shell .sidebar-rail .logout{
+ display:flex;align-items:center;justify-content:flex-start;gap:7px;
+ border:1px solid #ffffff2a;border-radius:7px;color:#fff;background:#ffffff12;
+ width:100%;padding:9px 8px;font-size:10px;font-weight:700
+}
+.app-shell .sidebar-rail .logout:hover{background:#ffffff2b}
+.sidebar-rail .logout svg{height:15px;width:15px}
+.app-shell[data-folder-theme] .sidebar.sidebar-rail{
+ background:linear-gradient(165deg,#5188ed 0%,#4277e6 52%,#3c68da 100%);
+}
+/* No loss of room on laptop screens: labels remain compact. */
+@media(max-width:1080px) and (min-width:761px){
+ .app-shell{grid-template-columns:116px minmax(0,1fr)}
+ .app-shell .sidebar.sidebar-rail{width:116px;padding:19px 8px 13px}
+ .app-shell .sidebar-rail .nav-btn{font-size:10px;gap:7px;padding:8px 6px}
+}
+/* Mobile: same blue identity, horizontal menu with no hidden destinations. */
+@media(max-width:760px){
+ .app-shell{display:block;grid-template-columns:none}
+ .app-shell .sidebar.sidebar-rail{
+  position:relative;height:auto;min-height:0;overflow:visible;width:100%;max-width:100%;
+  padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"brand account" "primary primary" "manage manage";
+  align-items:center;gap:5px 9px;border:0
+ }
+ .sidebar-rail .rail-brand{
+  grid-area:brand;flex-direction:row;justify-content:flex-start;gap:8px;
+  border:0;margin:0;padding:1px 0
+ }
+ .sidebar-rail .rail-logo{width:29px;height:29px;box-shadow:none}
+ .sidebar-rail .rail-logo svg{width:16px;height:16px}
+ .sidebar-rail .rail-brand-name{font-size:10px}
+ .app-shell .sidebar-rail .rail-primary{
+  grid-area:primary;display:flex;flex-direction:row;gap:4px;min-width:0;
+  overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;
+  scrollbar-color:#ffffff77 transparent;white-space:nowrap;padding:3px 0 5px
+ }
+ .app-shell .sidebar-rail .rail-primary .nav-btn{
+  flex:0 0 auto;white-space:nowrap;min-height:37px;width:auto;padding:8px 10px;
+  font-size:10px;gap:7px
+ }
+ .app-shell .sidebar-rail .rail-primary .nav-btn svg{height:15px;width:15px}
+ .sidebar-rail .rail-management{grid-area:manage;border-top:1px solid #ffffff32;margin:0;padding:0}
+ .sidebar-rail .rail-management summary{min-height:30px;padding:6px 8px;width:max-content}
+ .app-shell .sidebar-rail .rail-management-links{
+  display:flex;flex-direction:row;gap:4px;overflow-x:auto;border-left:0;padding:0 0 5px
+ }
+ .app-shell .sidebar-rail .rail-management-links .nav-btn{
+  white-space:nowrap;flex:0 0 auto;width:auto;min-height:34px;padding:6px 9px
+ }
+ .app-shell .sidebar-rail .sidebar-bottom.rail-account{
+  grid-area:account;display:flex;flex-direction:row;gap:7px;align-items:center;
+  justify-content:flex-end;border:0;margin:0;padding:0
+ }
+ .sidebar-rail .user{margin:0}
+ .sidebar-rail .user .avatar{width:29px;height:29px;min-width:29px}
+ .sidebar-rail .user .user-name{display:none}
+ .app-shell .sidebar-rail .logout{
+  border:0;padding:6px;height:30px;width:30px;justify-content:center
+ }
+ .sidebar-rail .logout span{display:none}
+ .app-shell .sidebar-rail .topbar{background:#fff}
+}
+@media(max-width:375px){
+ .app-shell .sidebar-rail .rail-primary .nav-btn{padding:8px 7px;font-size:9.5px}
+}
+@media(prefers-reduced-motion:reduce){
+ .app-shell .sidebar-rail .nav-btn,.sidebar-rail .rail-management summary .rail-chevron{transition:none}
+}
