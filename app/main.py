@@ -176,7 +176,13 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.17.0"}
+    # On serverless, prove the external PostgreSQL database is reachable.
+    # Return no credentials, connection strings, or database metadata.
+    if os.getenv("VERCEL"):
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    return {"status": "ok", "version": "0.19.0"}
 
 @app.post("/api/auth/login")
 def login(payload: LoginPayload, response: Response, request: Request, db: Session = Depends(get_db)):
