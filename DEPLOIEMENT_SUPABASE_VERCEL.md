@@ -1,10 +1,30 @@
 # Préparation Framatex Demo — Vercel + Supabase
 
-**État : prêt pour une phase d'essai avec un nouveau projet Supabase VIDE, mais non déployé.**
+**État : base et stockage Supabase provisionnés, projet Vercel lié à GitHub ; déploiement non effectué faute des secrets serveur.**
 
-## Blocage du 18 octobre 2026
+## Provisionnement effectue le 18 octobre 2026
 
-La création de « Framatex Demo » dans l'organisation Supabase existante a été refusée : deux projets gratuits actifs sont déjà présents (**ECC Laundry** et **Horizon**). Aucune de ces bases n'a été modifiée ou suspendue. **Ne jamais lancer ces scripts contre un de ces deux projets.**
+- Supabase « Framatex Demo » cree en `eu-west-1`, projet `qwutrmdghvqntzruscvl` (organisation personnelle existante).
+- ECC Laundry temporairement suspendu pour liberer un emplacement gratuit ; Horizon reste actif.
+- Bucket `framat-documents` cree en mode **private**, limite 20 Mo par objet.
+- Les **43 tables** metier de la demo ont ete creees en PostgreSQL ; chacune possede RLS active et aucun acces `anon` / `authenticated` direct. Les tables sont **actuellement vides**.
+- Projet Vercel `framat-demo` cree, GitHub `Rudolf-Staline/Framatex` associe, authentification Vercel active pour tous les deploiements. **Pas de deploiement fonctionnel a cette date.**
+- La connexion effective Vercel -> Supabase n'est PAS etablie : les identifiants secrets et l'hote exact du pooler manquent. L'API Vercel refuse la creation de variables d'environnement (HTTP 403). Les secrets doivent etre ajoutes par le proprietaire depuis son tableau de bord.
+
+**IMPORTANT : ne pas executer `python -m app.demo_postgres init` sur ce projet deja initialise.** La commande refuse toute base qui contient deja des tables. Verifier le schema avec `python -m app.demo_postgres status` une fois la connexion configuree.
+
+## Variables a ajouter manuellement dans Vercel
+
+Dans `framat-demo` > Settings > Environment Variables, enregistrer **Production et Preview** :
+
+1. `DATABASE_URL` : copier la chaine exacte **Transaction pooler** depuis `Supabase > Connect`, remplacer le placeholder du mot de passe, convertir `postgresql://` en `postgresql+psycopg://` et conserver le port `6543`. Ajouter `?sslmode=require` si absent. Ne jamais inventer le sous-domaine du pooler.
+2. `SUPABASE_SECRET_KEY` : cle serveur moderne `sb_secret_...` depuis `Supabase > Project Settings > API Keys`. Ne la placer ni dans le navigateur, ni dans GitHub, ni dans les messages de discussion.
+3. `FRAMATEX_SECRET_KEY` : secret genere aleatoirement de plus de 32 caracteres pour signer les sessions Framatex.
+4. `FRAMATEX_PUBLIC_BASE_URL` : definir avec l'URL Vercel definitive apres attribution du domaine pour les QR codes.
+
+Deja preconfigures sur Vercel : `FRAMATEX_STORAGE_BACKEND=supabase`, `SUPABASE_URL=https://qwutrmdghvqntzruscvl.supabase.co`, `SUPABASE_STORAGE_BUCKET=framat-documents`, `FRAMATEX_COOKIE_SECURE=1`, `FRAMATEX_RESTRICT_NEW_LAUNCHES=1`.
+
+Le secret Supabase moderne `sb_secret_...` est transmis **uniquement dans l'en-tete HTTP `apikey`**. L'en-tete `Authorization: Bearer` ne s'utilise que pour les anciennes cles JWT `service_role`.
 
 ## Choix techniques
 
@@ -15,28 +35,18 @@ La création de « Framatex Demo » dans l'organisation Supabase existante a ét
 - Aucun accès public ni lien signé vers les documents ; les téléchargements passent par la route FastAPI existante.
 - Les traitements OCR nécessitant des exécutables locaux doivent être désactivés ou vérifiés séparément sur Vercel ; ne pas considérer Tesseract comme opérationnel.
 
-## Configuration après disponibilité d'un nouveau projet gratuit
+## Validation avant le premier déploiement
 
-1. Créer un **nouveau projet Supabase**, non utilisé par une autre application, et attendre sa mise en service.
-2. Créer le bucket `framat-documents` en mode **PRIVATE** dans Storage ; garder les accès publics désactivés.
-3. Configurer les variables d'environnement `DATABASE_URL`, `FRAMATEX_SECRET_KEY`, `FRAMATEX_STORAGE_BACKEND`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_STORAGE_BUCKET`, `FRAMATEX_COOKIE_SECURE=1`, `FRAMATEX_PUBLIC_BASE_URL` et `FRAMATEX_RESTRICT_NEW_LAUNCHES=1` (voir `.env.example`). **Ne jamais commiter ces secrets.**
-4. Sur un poste de développement sécurisé, confirmer qu'il s'agit d'une base **neuve et vide** puis exécuter le bootstrap **une seule fois** :
-
-   ```bash
-   export FRAMATEX_CONFIRM_EMPTY_DEMO_DB=I_CONFIRM_NEW_EMPTY_FRAMATEX_DATABASE
-   python -m app.demo_postgres init
-   python -m app.demo_postgres status
-   python -m app.bootstrap_admin --email admin@example.invalid
-   ```
-
-   Le bootstrap refuse une base contenant déjà des tables publiques. Il initialise le schéma et active RLS sur les tables Framatex, sans créer de politiques Data API accessibles aux clients. L'API FastAPI garde ses propres contrôles de droits ; la connexion PostgreSQL serveur est privilégiée et **ne doit jamais être exposée au navigateur**.
-5. Connecter le dépôt GitHub à un projet Vercel **protégé** pour une prévisualisation. Les migrations et la création du compte doivent être effectuées **avant** d'ouvrir la démo ; Vercel ne les réalise pas à chaque requête.
-6. Vérifier les téléchargements, le remplacement de versions, les permissions administrateur/collaborateur, le revocation des sessions, puis les journaux Vercel. N'utiliser **que des données fictives**.
+- Confirmer `python -m app.demo_postgres status` ; **ne pas** recréer les tables déjà présentes.
+- Créer un compte administrateur fictif avec un mot de passe fort (sans partager ce mot de passe dans le dépôt), puis alimenter des dossiers d'essai avec des documents fictifs.
+- Terminer la revue de la PR #15 et les tests CI, puis déployer une prévisualisation Vercel protégée.
+- Tester la connexion, les téléversements, les téléchargements, les habilitations et la révocation des sessions sur le vrai serveur.
+- Garder à l'esprit la fenêtre de restauration simplifiée de 90 jours pour ECC Laundry suspendu.
 
 ## Contraintes et travaux restants
 
-- Ce dépôt ne contient **aucune** URL réelle Supabase, aucune clé, ni aucun mot de passe. Il ne crée aucun projet payant.
-- La base Supabase n'existe pas encore : l'intégration distant PostgreSQL et Storage n'est **pas testée en conditions réelles**. Les tests automatisés SQLite restent le filet de non-régression.
+- Ce dépôt peut mentionner l’URL publique du projet Supabase, mais ne doit contenir **aucune clé secrète ni aucun mot de passe**. Le nouveau projet est annoncé à 0 $/mois.
+- La base Supabase est initialisée, mais l’intégration PostgreSQL/Storage depuis Vercel n’est **pas encore testée en conditions réelles**, faute de secrets serveur. Les tests SQLite restent le filet de non-régression.
 - Le bootstrap PostgreSQL convient à une nouvelle démo seulement ; il **ne remplace pas** un vrai système de migrations PostgreSQL pour les versions ultérieures.
 - Les anciens scripts de données fictives peuvent écrire des fichiers localement sans les pousser dans le bucket. Pour un test en ligne, créer les dossiers depuis l'interface et téléverser les fichiers par l'API.
 - Plusieurs modules Python dépendants de Tesseract/PyMuPDF/OpenPyXL doivent être évalués en conditions Vercel (ressources, durée, froid) avant de les considérer opérationnels.
