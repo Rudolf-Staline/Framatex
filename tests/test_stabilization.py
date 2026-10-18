@@ -48,6 +48,6 @@ def test_mobile_logout_and_detail_navigation_are_present():
     css=(root/'static/styles.css').read_text()
     js=(root/'static/app.js').read_text()
     assert '.sidebar-bottom{display:flex' in css
-    assert 'installDetailNavigation();' in js
-    assert 'detail-section-select' in js
-    assert 'detail-go-top' in js
+    assert 'folder-tabs' in js
+    assert 'data-folder-theme' in js
+    assert 'simple-disclosure' in js
