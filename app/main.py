@@ -85,7 +85,7 @@ async def response_security_headers(request: Request, call_next):
     response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
     if request.url.path == "/" or request.url.path.startswith("/api/"):
         response.headers.setdefault("Cache-Control", "no-store")
-    if request.url.path == "/":
+    if request.url.path in ("/", "/setup"):
         response.headers.setdefault("Content-Security-Policy",
             "default-src 'self'; base-uri 'none'; object-src 'none'; "
             "frame-ancestors 'none'; form-action 'self'; "
@@ -183,6 +183,44 @@ def health():
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
     return {"status": "ok", "version": "0.19.0"}
+
+class FirstAdminSetup(BaseModel):
+    token: str = Field(min_length=32, max_length=256)
+    email: str = Field(min_length=3, max_length=254)
+    name: str = Field(default="Administrateur Démo", min_length=2, max_length=120)
+    password: str = Field(min_length=14, max_length=256)
+
+
+@app.get("/setup")
+def setup_screen():
+    return FileResponse(ROOT / "static" / "setup.html")
+
+
+@app.post("/api/setup/first-admin")
+def setup_first_admin(payload: FirstAdminSetup, db: Session = Depends(get_db)):
+    # Disabled by default and automatically blocked once any user exists.
+    # The owner supplies the token ONLY through Vercel's encrypted environment.
+    token = os.getenv("FRAMATEX_SETUP_TOKEN", "")
+    if len(token) < 32:
+        raise HTTPException(404, "Initialisation désactivée")
+    if not secrets.compare_digest(payload.token, token):
+        raise HTTPException(403, "Code d'initialisation invalide")
+    if db.scalar(select(User.id).limit(1)) is not None:
+        raise HTTPException(409, "Un compte existe déjà : initialisation définitivement fermée")
+    email = payload.email.strip().lower()
+    if not email or "@" not in email or " " in email:
+        raise HTTPException(422, "Adresse email invalide")
+    role = Role(name="Administrateur")
+    user = User(email=email, name=payload.name.strip(), password_hash=hash_password(payload.password), active=True)
+    user.roles.append(role)
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(409, "Initialisation simultanée ou compte existant") from exc
+    return {"ok": True, "email": email}
+
 
 @app.post("/api/auth/login")
 def login(payload: LoginPayload, response: Response, request: Request, db: Session = Depends(get_db)):
