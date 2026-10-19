@@ -118,7 +118,7 @@ def test_pilot_frontend_is_discoverable_and_data_is_escaped():
     app_js=(root/'static/app.js').read_text()
     pilot_js=(root/'static/pilot.js').read_text()
     index=(root/'static/index.html').read_text()
-    assert 'Recette pilote' in app_js and "await pilotPage()" in app_js
+    assert 'Aide & retours' in app_js and "await pilotPage()" in app_js
     assert 'pilot.js' in index
     assert "${e(r.title)}" in pilot_js
     assert "${e(r.steps)}" in pilot_js
