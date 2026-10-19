@@ -50,7 +50,7 @@ vm.runInContext([
  await vm.runInContext('home()',ctx);
  const out=ctx.renderedDashboard;
  assert(out.includes('simple-home dashboard-022'));
- assert(out.includes('Mes lancements')&&out.includes('À suivre'));
+ assert(out.includes('Vos dossiers récents')&&out.includes('À traiter'));
  assert(out.includes('<strong>2</strong>')&&out.includes('<strong>7</strong>'));
  assert(out.includes('data-home-tab="incomplete"'));
  assert(out.includes('Veste technique')&&out.includes('Pantalon cargo'));
