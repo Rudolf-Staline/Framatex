@@ -14,26 +14,26 @@ vm.createContext(ctx);
 vm.runInContext(js.slice(0,js.lastIndexOf('(async function init(){')),ctx);
 const output=vm.runInContext(`(()=>{
  state.me={name:'Administratrice Démo',roles:['Administrateur'],admin:true};
- state.view='home';
+ state.view='dossier';
  const normal=sidebar();
  state.view='detail';state.folder='rose';
  const inside=sidebar();
  state.view='admin';
  const admin=sidebar();
  state.me={name:'Opérateur',roles:['Employé'],admin:false};
- state.view='home';
+ state.view='dossier';
  const limited=sidebar();
  return {normal,inside,admin,limited};
 })()`,ctx);
 assert(output.normal.includes('sidebar-rail'));
 assert(output.normal.includes('aria-label="Navigation principale"'));
-for(const view of ['home','launches','actions','notifications']){
+for(const view of ['dossier','actions','notifications']){
  assert(output.normal.includes('data-view="'+view+'"'));
 }
-assert(output.normal.includes('data-view="home" title="Accueil" aria-current="page"'));
+assert(output.normal.includes('data-view="dossier" title="Dossier Jaune" aria-current="page"'));
 assert(!output.normal.includes('data-view="assistant"'));
 assert(js.includes("else if(view==='assistant')openFloatingAssistant()"));
-assert(output.inside.includes('data-view="launches" title="Dossiers" aria-current="page"'));
+assert(output.inside.includes('data-view="launches" title="Anciens lancements" aria-current="page"'));
 assert(output.admin.includes('class="rail-management" open'));
 assert(output.normal.includes('data-view="audit"'));
 assert(!output.limited.includes('data-view="audit"'));
