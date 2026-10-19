@@ -29,7 +29,7 @@ assert(app.includes('class="admin-advanced"'));
 assert(app.includes('class="admin-advanced-content"'));
 assert(app.includes('Paramètres avancés'));
 assert(!app.includes('Journal d’activité<span class="brand-accent">'));
-assert(app.includes('lancement(s) enregistré(s)'));
+assert(app.includes('lancement${state.launches.length===1?'));
 assert(app.includes('data-launch="${e(l.id)}" tabindex="0"'));
 assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length,'Malformed CSS braces');
 // Minimal rendering check for the redesigned launch listing with live mocked results.
@@ -47,7 +47,7 @@ vm.runInContext([
 (async()=>{
  await vm.runInContext('launchList()',ctx);
  assert(root.innerHTML.includes('Tous les dossiers'));
- assert(root.innerHTML.includes('lancement(s) enregistré(s)'));
+ assert(root.innerHTML.includes('1 lancement enregistré'));
  assert(root.innerHTML.includes('Lancement fictif'));
  assert(root.innerHTML.includes('tabindex="0"'));
  console.log('Framatex 0.27: coherent pages, collapsed admin, live list, themed folders, responsive layout OK');
