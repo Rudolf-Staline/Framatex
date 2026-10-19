@@ -50,9 +50,11 @@ vm.runInContext([
  await vm.runInContext('home()',ctx);
  const out=ctx.renderedDashboard;
  assert(out.includes('simple-home dashboard-022'));
- assert(out.includes('Mes lancements')&&out.includes('À suivre'));
+ assert(out.includes('Mes lancements')&&out.includes('Points d’attention'));
  assert(out.includes('<strong>2</strong>')&&out.includes('<strong>7</strong>'));
  assert(out.includes('data-home-tab="incomplete"'));
+ assert(out.includes('Rechercher et filtrer'));
+ assert(out.includes('Votre espace de travail'));
  assert(out.includes('Veste technique')&&out.includes('Pantalon cargo'));
  assert(out.includes('data-quick-folder="jaune"')&&out.includes('data-quick-folder="vert"'));
  assert(out.includes('id="quick-launch"')&&out.includes('ORLI-4'));
