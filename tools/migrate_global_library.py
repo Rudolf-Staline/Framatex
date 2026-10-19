@@ -38,54 +38,58 @@ def count_invalid(conn: Connection) -> tuple[int, int]:
     return document_count, document_count - valid
 
 
-def apply_upgrade(engine: Engine) -> dict:
-    """All metadata additions and backfill occur in one transaction."""
-    with engine.begin() as conn:
-        required = {"launches", "folders", "documents", "document_versions"}
-        if not required.issubset(set(inspect(conn).get_table_names())):
-            raise RuntimeError("Schéma ancien incomplet : migration annulée")
-        total, invalid = count_invalid(conn)
-        if invalid:
-            raise RuntimeError(f"{invalid} documents sans rubrique ou lancement valide")
-        GlobalFolder.__table__.create(bind=conn, checkfirst=True)
-        GlobalDocumentEntry.__table__.create(bind=conn, checkfirst=True)
-        GlobalLibraryConfig.__table__.create(bind=conn, checkfirst=True)
-        present = set(conn.scalars(select(GlobalFolder.slug)).all())
-        for slug, label in COLORS:
-            if slug not in present:
-                conn.execute(insert(GlobalFolder).values(slug=slug, label=label))
-        # A migration replay never rewrites a user-corrected ORLI reference.
-        existing = set(conn.scalars(select(GlobalDocumentEntry.document_id)).all())
-        added = 0
-        rows = conn.execute(
-            select(Document.id, Folder.slug, Folder.id, Launch.id, Launch.orli_ref)
-            .join(Folder, Document.folder_id == Folder.id)
-            .join(Launch, Folder.launch_id == Launch.id)
-        )
-        for document_id, slug, folder_id, launch_id, orli in rows:
-            if document_id in existing:
-                continue
-            conn.execute(insert(GlobalDocumentEntry).values(
-                document_id=document_id,
-                folder_slug=slug,
-                orli_ref=(orli.strip() or None) if orli else None,
-                orli_overridden=False,
-                legacy_folder_id=folder_id,
-                legacy_launch_id=launch_id,
-            ))
-            added += 1
-        final = conn.scalar(select(func.count(GlobalDocumentEntry.document_id))) or 0
-        if final != total:
-            raise RuntimeError(f"Contrôle nombre documents : {total} != {final}")
-        return {
-            "source_documents": total,
-            "indexed_documents": final,
-            "added": added,
-            "rubriques": len(COLORS),
-            "legacy_documents_unchanged": True,
-            "storage_files_unchanged": True,
-        }
+def apply_to_connection(conn: Connection) -> dict:
+    """Perform the backfill on an existing DB transaction."""
+    required = {"launches", "folders", "documents", "document_versions"}
+    if not required.issubset(set(inspect(conn).get_table_names())):
+        raise RuntimeError("Schéma ancien incomplet : migration annulée")
+    total, invalid = count_invalid(conn)
+    if invalid:
+        raise RuntimeError(f"{invalid} documents sans rubrique ou lancement valide")
+    GlobalFolder.__table__.create(bind=conn, checkfirst=True)
+    GlobalDocumentEntry.__table__.create(bind=conn, checkfirst=True)
+    GlobalLibraryConfig.__table__.create(bind=conn, checkfirst=True)
+    present = set(conn.scalars(select(GlobalFolder.slug)).all())
+    for slug, label in COLORS:
+        if slug not in present:
+            conn.execute(insert(GlobalFolder).values(slug=slug, label=label))
+    # A migration replay never rewrites a user-corrected ORLI reference.
+    existing = set(conn.scalars(select(GlobalDocumentEntry.document_id)).all())
+    added = 0
+    rows = conn.execute(
+        select(Document.id, Folder.slug, Folder.id, Launch.id, Launch.orli_ref)
+        .join(Folder, Document.folder_id == Folder.id)
+        .join(Launch, Folder.launch_id == Launch.id)
+    )
+    for document_id, slug, folder_id, launch_id, orli in rows:
+        if document_id in existing:
+            continue
+        conn.execute(insert(GlobalDocumentEntry).values(
+            document_id=document_id,
+            folder_slug=slug,
+            orli_ref=(orli.strip() or None) if orli else None,
+            orli_overridden=False,
+            legacy_folder_id=folder_id,
+            legacy_launch_id=launch_id,
+        ))
+        added += 1
+    final = conn.scalar(select(func.count(GlobalDocumentEntry.document_id))) or 0
+    if final != total:
+        raise RuntimeError(f"Contrôle nombre documents : {total} != {final}")
+    return {
+        "source_documents": total,
+        "indexed_documents": final,
+        "added": added,
+        "rubriques": len(COLORS),
+        "legacy_documents_unchanged": True,
+        "storage_files_unchanged": True,
+    }
 
+
+
+def apply_upgrade(engine: Engine) -> dict:
+    with engine.begin() as conn:
+        return apply_to_connection(conn)
 
 def run() -> int:
     parser = argparse.ArgumentParser(description="Migration additive Dossier Jaune global")
