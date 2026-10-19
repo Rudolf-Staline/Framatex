@@ -27,16 +27,16 @@ const app={querySelector:node,querySelectorAll:()=>[]};
 const ctx={window:{addEventListener(){}},document:{querySelector:s=>s==='#app'?app:node(s)},console,setTimeout,clearTimeout};
 vm.createContext(ctx);
 vm.runInContext(js.slice(0,js.lastIndexOf('(async function init(){')),ctx);
-const sidebar=vm.runInContext(\`(()=>{
+const sidebar=vm.runInContext(`(()=>{
  state.view='home';state.me={admin:true,name:'Agent test',roles:['Administrateur'],permissions:[]};
  return sidebar();
-})()\`,ctx);
+})()`,ctx);
 assert(sidebar.includes('atelier-logo-letter'));
 assert(sidebar.includes('atelier-brand-sub'));
 assert(sidebar.includes('data-view="actions"'));
 assert(sidebar.includes('Comprendre Framatex'));
 ctx.fakeItems=[{id:'1',name:'Pantalon prototype',client_name:'Client Test',status:'À compléter',created_at:'2026-10-19T10:00:00Z'}];
-vm.runInContext(\`(
+vm.runInContext(`(
  ()=>{
  mount=(s)=>{globalThis.viewHtml=s};
  api=async path=>{
@@ -46,7 +46,7 @@ vm.runInContext(\`(
   throw new Error('Bad API path '+path);
  };
  bindLaunchRows=()=>{};bindPriorityWidget=()=>{};
-})()\`,ctx);
+})()`,ctx);
 (async()=>{
  await vm.runInContext('home()',ctx);
  const view=ctx.viewHtml;
@@ -59,6 +59,6 @@ vm.runInContext(\`(
  assert(view.includes('Pantalon prototype'));
  assert(view.includes('data-quick-folder="vert"'));
  assert(!view.includes('FM-2024-001'),'no invented production data');
- assert(js.includes('id="ux-tool-description">\${e(chosen[3])}'),'tool explanation must interpolate');
+ assert(js.includes('id="ux-tool-description">${e(chosen[3])}'),'tool explanation must interpolate');
  console.log('Framatex Atelier 0.32: navigation, folder tabs, dashboard, typography and responsive CSS OK');
 })().catch(err=>{console.error(err);process.exitCode=1});
