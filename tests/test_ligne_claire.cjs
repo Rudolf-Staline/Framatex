@@ -53,7 +53,7 @@ vm.runInContext([
   'for(const method of ["bindCompleteness","bindWorkflow","bindQuality","bindIntake","bindPaper","bindSpec","bindMail","bindImpactSimulation","bindOrliReconciliation","bindMaterialReport","bindApprovals","bindSharing"])globalThis[method]=()=>{};',
   'state.view="detail";',
   'state.detail={id:"L",name:"Lot chemises",status:"En cours",can_update:true,folders:["jaune","rose","bleu","vert"].map(slug=>({slug,label:slug,can_read:true,can_write:true,documents:slug==="jaune"?[{id:"d1",title:"Fiche emploi",doc_type:"Fiche d’emploi",latest:{number:2,original_name:"fiche.pdf",size:6000}}]:[]}))};',
-  'state.approvalOverview={items:[{document_id:"d1",document_title:"Fiche emploi",folder:"jaune",version:2,previous:[],run:{status:"approved"}}]};',
+  'state.approvalOverview={items:[{document_id:"d1",document_title:"Fiche emploi",folder:"jaune",version:2,previous:[],run:{id:"r1",status:"approved",version:2,stages:[],can_decide:false,current_position:null}}]};',
   'renderDetail();'
  ].join('\n'),ctx);
  assert(ctx.lastHtml.includes('lc-documents-layout'));
