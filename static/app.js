@@ -194,12 +194,12 @@ function installDetailNavigation(){
 
 const DETAIL_TOOL_GROUPS=[
  {label:'Qualité',tools:[
-  ['quality','Cohérence et Excel','shield','Écarts documentaires et vérifications Excel',()=>renderQuality()],
-  ['completeness','Complétude','check','Exigences documentaires selon le contexte',()=>renderCompleteness()],
-  ['workflow','Décisions et impacts','activity','Valeurs suivies et décisions humaines',()=>renderWorkflow()]
+  ['quality','Cohérence des documents','shield','Écarts documentaires et vérifications Excel',()=>renderQuality()],
+  ['completeness','Documents attendus','check','Exigences documentaires selon le contexte',()=>renderCompleteness()],
+  ['workflow','Modifications et décisions','activity','Valeurs suivies et décisions humaines',()=>renderWorkflow()]
  ]},
  {label:'Documents',tools:[
-  ['intake','Lecture et OCR','file','Lire et classer les pièces',()=>renderIntake()],
+  ['intake','Lire ou classer un document','file','Lire et classer les pièces',()=>renderIntake()],
   ['paper','QR et versions','grid','Passerelle papier et traçabilité',()=>renderPaper()]
  ]},
  {label:'Exigences',tools:[
@@ -210,8 +210,8 @@ const DETAIL_TOOL_GROUPS=[
   ['sim','Simulation d’impact','activity','Conséquences potentielles des modifications',()=>renderImpactSimulation()],
   ['orli','Rapprochement ORLI','file','Références et rapprochements',()=>renderOrliReconciliation()],
   ['materials','Suivi matière','grid','Consommations et mouvements',()=>renderMaterialReport()],
-  ['approvals','Faire valider un document','shield','Consulter et suivre les validations par version',()=>renderApprovals()],
-  ['sharing','Partage externe','users','Clients et fournisseurs',()=>renderSharing()]
+  ['approvals','Validation des documents','shield','Consulter et suivre les validations par version',()=>renderApprovals()],
+  ['sharing','Partage avec des tiers','users','Clients et fournisseurs',()=>renderSharing()]
  ]}
 ];
 function renderDetailToolWorkspace(){
@@ -229,8 +229,8 @@ function renderDetailToolWorkspace(){
   '</section>'
  ).join('');
  return '<section class="detail-tool-workspace" id="detail-tool-workspace" aria-label="Outils du lancement">'+
-  '<div class="detail-tool-toolbar"><div class="detail-tool-toolbar-heading"><h2>Contrôles et outils</h2></div>'+
-   '<label class="detail-tool-picker" for="detail-tool-select"><span>Fonctionnalité</span><select id="detail-tool-select">'+groups+'</select></label>'+
+  '<div class="detail-tool-toolbar"><div class="detail-tool-toolbar-heading"><h2>Suivi du dossier</h2><p class="iw-tool-desc">Choisissez le contrôle à effectuer. Les données enregistrées restent inchangées.</p></div>'+
+   '<label class="detail-tool-picker" for="detail-tool-select"><span>Vérification</span><select id="detail-tool-select">'+groups+'</select></label>'+
   '</div><div class="detail-tool-panel-container">'+panels+'</div></section>';
 }
 function selectDetailTool(id){
@@ -276,25 +276,10 @@ function showLaunchInformation(){
 }
 
 function renderDossierSummary(folder,docs){
- const records=(state.approvalOverview?.items||[]).filter(x=>x.folder===folder.slug && docs.some(doc=>doc.id===x.document_id));
- const pending=records.filter(x=>x.run?.status==='pending');
- const approved=records.filter(x=>x.run?.status==='approved');
- const list=records.filter(x=>x.run||x.template).slice(0,3);
- return `<aside class="lc-detail-summary" aria-label="Suivi du sous-dossier">
- <section class="lc-summary-card"><div class="lc-summary-head"><h3>État du sous-dossier</h3></div>
-  <div class="lc-summary-figure"><strong>${docs.length}</strong><span>document(s) accessible(s)</span></div>
-  <div class="lc-summary-pair"><span>Versions approuvées</span><strong>${approved.length}</strong></div>
-  <div class="lc-summary-pair"><span>Validations en cours</span><strong>${pending.length}</strong></div>
-  <p class="lc-helper-note">Les validations concernent une version précise. Ce décompte ne mesure pas la complétude du dossier.</p></section>
- <section class="lc-summary-card"><div class="lc-summary-head"><h3>Circuits de validation</h3></div>
-  ${list.length?`<div class="lc-approval-peek">${list.map(x=>`<div class="lc-peek-row"><span class="lc-peek-icon">${icon('file')}</span><div><strong>${e(x.document_title)}</strong><small>${x.run?.status==='approved'?'Approuvée':x.run?.status==='pending'?'Validation en cours':x.run?.status==='changes_requested'?'Corrections demandées':x.run?.status==='rejected'?'Refusée':x.run?.status==='stale'?'Ancienne version':'Demande non lancée'}</small></div></div>`).join('')}</div>`:'<p class="lc-summary-empty">Aucun circuit configuré pour les documents visibles.</p>'}
-  <button type="button" class="secondary lc-summary-action" id="lc-open-validations">${icon('check')} Voir les validations ${icon('arrow')}</button></section>
- <section class="lc-summary-card lc-summary-info"><h3>Informations</h3>
-  <div class="lc-summary-pair"><span>Sous-dossier</span><strong>${e(folder.label)}</strong></div>
-  <div class="lc-summary-pair"><span>Lecture</span><strong>${folder.can_read?'Autorisée':'Limitée'}</strong></div>
-  <div class="lc-summary-pair"><span>Dépôt</span><strong>${folder.can_write?'Autorisé':'Non autorisé'}</strong></div>
-  <button type="button" class="link" id="lc-show-info">Informations du lancement ${icon('arrow')}</button></section>
- </aside>`;
+ const records=(state.approvalOverview?.items||[]).filter(x=>x.folder===folder.slug&&docs.some(d=>d.id===x.document_id));
+ const active=records.filter(x=>x.run?.status==='pending').length;
+ const approved=records.filter(x=>x.run?.status==='approved').length;
+ return `<div class="iw-folder-status" aria-label="État documentaire"><span>${docs.length} pièce${docs.length===1?'':'s'}</span><span>${active} validation${active===1?'':'s'} en cours</span><span>${approved} version${approved===1?'':'s'} approuvée${approved===1?'':'s'}</span><button type="button" class="link" id="lc-open-validations">Suivre les validations ${icon('arrow')}</button></div>`;
 }
 function renderDetail(){
  const d=state.detail;
@@ -302,7 +287,7 @@ function renderDetail(){
  const docs=f.can_read?f.documents:[];
  const folderNames={jaune:'Jaune',rose:'Rose',bleu:'Bleu',vert:'Vert'};
  const count=f.can_read?docs.length:0;
- mount(`<div class="simple-detail">
+ mount(`<div class="simple-detail iw-detail">
  <header class="detail-head simple-detail-head detail-compact-header lc-detail-header">
   <div class="detail-identity"><button type="button" class="detail-back" id="back-launches" title="Tous les dossiers" aria-label="Revenir aux lancements">${icon('back')}</button><div>
   <h1 class="page-title">${e(d.name)}</h1><div class="detail-inline-meta">${statusTag(d.status)}${d.client_name?`<span>${e(d.client_name)}</span>`:''}${d.order_ref?`<span>Commande ${e(d.order_ref)}</span>`:''}</div>
@@ -312,17 +297,17 @@ function renderDetail(){
  </header>
  <nav class="detail-main-tabs" role="tablist" aria-label="Vue du dossier">
   <button type="button" role="tab" id="detail-tab-documents" data-detail-view="documents" aria-controls="detail-view-documents" aria-selected="${state.detailSection==='tools'?'false':'true'}">Documents</button>
-  <button type="button" role="tab" id="detail-tab-tools" data-detail-view="tools" aria-controls="detail-view-tools" aria-selected="${state.detailSection==='tools'?'true':'false'}">Contrôles et outils</button>
+  <button type="button" role="tab" id="detail-tab-tools" data-detail-view="tools" aria-controls="detail-view-tools" aria-selected="${state.detailSection==='tools'?'true':'false'}">Vérifications</button>
  </nav>
  <section class="detail-view-panel lc-documents-layout" data-detail-view-panel="documents" id="detail-view-documents" role="tabpanel" aria-labelledby="detail-tab-documents" ${state.detailSection==='tools'?'hidden':''}>
 
  <nav class="folder-tabs" aria-label="Sous-dossiers du lancement">${d.folders.map(folder=>`<button type="button" class="folder-tab folder-${e(folder.slug)} ${folder.slug===state.folder?'selected':''}" data-folder="${e(folder.slug)}" aria-pressed="${folder.slug===state.folder?'true':'false'}">
- <span class="lc-folder-symbol" aria-hidden="true">${icon('folder')}</span><span class="folder-tab-title">${folderNames[folder.slug]||e(folder.slug)}</span><span class="folder-tab-count">${folder.can_read?folder.documents.length:'—'}</span></button>`).join('')}</nav>
- <section class="simple-document-section"><div class="simple-section-heading"><div><span class="section-index">${e(folderNames[f.slug]||f.slug)} · ${e(f.label)}</span><h2>Documents — ${e(folderNames[f.slug]||f.slug)} <span class="document-count">${count}</span></h2></div>
- ${f.can_write?`<button class="primary" id="upload-doc">${icon('plus')} Ajouter un document</button>`:''}</div>
- <div class="panel">${!f.can_read?`<div class="denied">${icon('lock')}<p>Vous n’avez pas accès à cette rubrique.</p></div>`:docs.length?`<div class="table-scroll"><table><thead><tr><th>Document</th><th>Type</th><th>Version</th><th>Validation</th><th>Action</th></tr></thead><tbody>${docs.map(doc=>`<tr><td><div class="file-name"><div class="doc-icon">${icon('file')}</div><div><div class="row-title">${e(doc.title)}</div><div class="row-sub">${e(doc.latest.original_name)} · ${sizeText(doc.latest.size)}</div></div></div></td><td class="small">${e(doc.doc_type)}</td><td><span class="tag">v${doc.latest.number}</span></td><td>${(()=>{const record=(state.approvalOverview?.items||[]).find(x=>x.document_id===doc.id);const approval=record?.run?.status;const status=approval==='approved'?'Approuvée':approval==='pending'?'En validation':approval==='changes_requested'?'À corriger':approval==='rejected'?'Refusée':approval==='stale'?'Version remplacée':'Non soumise';return `<span class="lc-document-status ${approval==='approved'?'approved':approval==='pending'?'pending':'neutral'}">${status}</span>`})()}</td><td><div class="doc-actions"><button class="link" data-history="${e(doc.id)}">${icon('clock')} Historique</button><button class="link" data-download="${e(doc.id)}" data-ver="${doc.latest.number}" title="Télécharger" aria-label="Télécharger ${e(doc.title)}">${icon('download')}</button></div></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty"><div class="empty-icon">${icon('file')}</div><strong>Ce sous-dossier est vide</strong>${f.can_write?'Déposez un premier document pour commencer.':'Aucun document pour le moment.'}</div>`}</div></section>
-
+ <span class="folder-tab-title">${folderNames[folder.slug]||e(folder.slug)}</span><span class="folder-tab-count">${folder.can_read?folder.documents.length:'—'}</span></button>`).join('')}</nav>
  ${f.can_read?renderDossierSummary(f,docs):''}
+ <section class="simple-document-section"><div class="simple-section-heading"><div><span class="section-index">${e(f.label)}</span><h2>Documents <span class="document-count">${count}</span></h2></div>
+ ${f.can_write?`<button class="primary" id="upload-doc">${icon('plus')} Ajouter un document</button>`:''}</div>
+ <div class="panel">${!f.can_read?`<div class="denied">${icon('lock')}<p>Vous n’avez pas accès à cette rubrique.</p></div>`:docs.length?`<div class="table-scroll"><table><thead><tr><th>Document</th><th>Type</th><th>Version</th><th>Validation</th><th>Action</th></tr></thead><tbody>${docs.map(doc=>`<tr><td><div class="file-name"><div class="doc-icon">${icon('file')}</div><div><div class="row-title">${e(doc.title)}</div><div class="row-sub">${e(doc.latest.original_name)} · ${sizeText(doc.latest.size)}</div></div></div></td><td class="small">${e(doc.doc_type)}</td><td><span class="tag">v${doc.latest.number}</span></td><td>${(()=>{const record=(state.approvalOverview?.items||[]).find(x=>x.document_id===doc.id);const approval=record?.run?.status;const status=approval==='approved'?'Approuvée':approval==='pending'?'En validation':approval==='changes_requested'?'À corriger':approval==='rejected'?'Refusée':approval==='stale'?'Version remplacée':record?.template?'À soumettre':'Sans circuit';return `<span class="lc-document-status ${approval==='approved'?'approved':approval==='pending'?'pending':'neutral'}">${status}</span>`})()}</td><td><div class="doc-actions"><button class="link" data-history="${e(doc.id)}">${icon('clock')} Historique</button><button class="link" data-download="${e(doc.id)}" data-ver="${doc.latest.number}" title="Télécharger" aria-label="Télécharger ${e(doc.title)}">${icon('download')}</button></div></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty"><div class="empty-icon">${icon('file')}</div><strong>Ce sous-dossier est vide</strong>${f.can_write?'Déposez un premier document pour commencer.':'Aucun document pour le moment.'}</div>`}</div></section>
+
  </section>
  <section class="detail-view-panel" data-detail-view-panel="tools" id="detail-view-tools" role="tabpanel" aria-labelledby="detail-tab-tools" ${state.detailSection==='tools'?'':'hidden'}>
    ${renderDetailToolWorkspace()}
