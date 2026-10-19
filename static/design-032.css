@@ -1,0 +1,504 @@
+/* FRAMATEX / ATELIER — editorial document workspace, 0.32.
+   Industrial graphite, archival paper, saffron folios and coloured folder tabs.
+   Visual layer only: keep all native controls and role-based interactions. */
+:root{
+ --ux-font:"IBM Plex Sans","Segoe UI",Arial,sans-serif;
+ --ux-heading:"Space Grotesk","Arial",sans-serif;
+ --ux-mono:"IBM Plex Mono",Consolas,ui-monospace,monospace;
+ --font-ui:var(--ux-font);--font-heading:var(--ux-heading);
+ --atelier-ink:#202820;--atelier-muted:#697168;
+ --atelier-charcoal:#222923;--atelier-paper:#F7F7F2;
+ --atelier-border:#E2E5DB;--atelier-yellow:#F2CD50;--atelier-ochre:#BA9026;
+ --atelier-mark:#5A5E4B;--ux-ink:var(--atelier-ink);--ux-paper:#fff;
+ --ux-line:var(--atelier-border);--ux-focus:#AA7C1A;
+}
+body,.app-shell,.modal,.login-page,
+button,input,select,textarea{font-family:var(--ux-font)}
+body{background:var(--atelier-paper);color:var(--atelier-ink)}
+.app-shell,.app-shell:not([data-folder-theme]),
+.app-shell:not([data-folder-theme]) .main{
+ background:var(--atelier-paper);
+}
+.app-shell[data-folder-theme] .main{background:var(--folder-bg,var(--atelier-paper))}
+.app-shell .content,.app-shell .content:has(.dashboard-022){
+ max-width:1530px;padding:32px clamp(24px,3.2vw,58px) 95px
+}
+
+/* Navigation — a dark cover and visible yellow folio, not another white card. */
+.app-shell{grid-template-columns:230px minmax(0,1fr)}
+.app-shell .sidebar.sidebar-rail.sidebar-light,
+.app-shell[data-folder-theme] .sidebar.sidebar-rail.sidebar-light{
+ width:230px;min-width:230px;height:100dvh;min-height:0;
+ padding:29px 17px 20px;background:var(--atelier-charcoal);
+ color:#F8F8EE;border-right:1px solid #1D241D;box-shadow:inset 5px 0 0 #EEC646
+}
+.app-shell .sidebar-rail.sidebar-light .rail-brand{
+ flex-direction:row;align-items:center;justify-content:flex-start;
+ gap:11px;margin:1px 0 33px;padding:0 4px 23px;
+ border-bottom:1px solid #495147
+}
+.app-shell .sidebar-rail.sidebar-light .rail-logo{
+ width:42px;height:42px;flex:0 0 42px;
+ display:grid;place-items:center;border:0;border-radius:11px 11px 11px 3px;
+ background:var(--atelier-yellow);color:#252920;box-shadow:none
+}
+.atelier-logo-letter{
+ display:inline-block;font:750 25px/1 var(--ux-heading);letter-spacing:-.095em
+}
+.atelier-logo-letter span{font-weight:600;color:#8F6720}
+.atelier-brand-text{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+.app-shell .sidebar-rail.sidebar-light .rail-brand-name{
+ font:680 18px/1.1 var(--ux-heading);letter-spacing:-.042em;
+ text-transform:none;color:#FAFAF2
+}
+.atelier-brand-sub{
+ font-size:10px;font-weight:500;letter-spacing:.02em;color:#AEB7A8
+}
+.app-shell .sidebar-rail.sidebar-light .sidebar-nav{gap:4px}
+.app-shell .sidebar-rail.sidebar-light .nav-btn,
+.app-shell .sidebar-rail.sidebar-light .rail-management-links .nav-btn{
+ min-height:45px;padding:11px 13px;gap:12px;
+ font:520 13px/1.45 var(--ux-font);color:#CDD5C8;
+ border:1px solid transparent;border-radius:8px;letter-spacing:0;
+}
+.app-shell .sidebar-rail.sidebar-light .nav-btn svg{color:#ACB6A8}
+.app-shell .sidebar-rail.sidebar-light .nav-btn:hover,
+.app-shell .sidebar-rail.sidebar-light .rail-management summary:hover{
+ background:#343E34;border-color:transparent;color:#fff
+}
+.app-shell .sidebar-rail.sidebar-light .nav-btn:hover svg{color:#F4D369}
+.app-shell .sidebar-rail.sidebar-light .nav-btn.active,
+.app-shell[data-folder-theme] .sidebar.sidebar-rail.sidebar-light .nav-btn.active{
+ background:var(--atelier-yellow);color:#292B20;
+ border-color:#F2D56C;box-shadow:none;font-weight:690
+}
+.app-shell .sidebar-rail.sidebar-light .nav-btn.active svg{color:#342D16;stroke:#342D16}
+.app-shell .sidebar-rail.sidebar-light .nav-current,
+.app-shell[data-folder-theme] .sidebar.sidebar-rail.sidebar-light .nav-current{color:#5B4815}
+.app-shell .sidebar-rail.sidebar-light .rail-management{
+ margin-top:25px;padding:14px 0 0;border-top:1px solid #495147
+}
+.app-shell .sidebar-rail.sidebar-light .rail-management summary{
+ min-height:43px;padding:9px 12px;color:#C2CCBF;
+ background:transparent;font:560 12px/1.45 var(--ux-font)
+}
+.app-shell .sidebar-rail.sidebar-light .rail-management-links{
+ border-left-color:#596355;margin:7px 0 0 19px
+}
+.app-shell .sidebar-rail.sidebar-light .rail-management-links .nav-btn{
+ font-size:12px;min-height:40px;padding:9px
+}
+.app-shell .sidebar-rail.sidebar-light .sidebar-bottom.rail-account{
+ border-top-color:#485146;color:#EAECE5
+}
+.app-shell .sidebar-rail.sidebar-light .user .user-name{font-size:12px;color:#F0F2EB}
+.app-shell .sidebar-rail.sidebar-light .user .avatar{
+ color:#222922;background:#E7C964;border:0
+}
+.app-shell .sidebar-rail.sidebar-light .logout{font-size:12px;color:#D6DDD2}
+.app-shell .sidebar-rail.sidebar-light .logout:hover{color:white;background:#343F33}
+.app-shell .sidebar-rail.sidebar-light .ux-help-button{
+ background:transparent;border:1px solid #6F7256;
+ color:#F6D777;min-height:44px;border-radius:8px;
+ font-size:12px;font-weight:570;margin-top:22px
+}
+.app-shell .sidebar-rail.sidebar-light .ux-help-button:hover{
+ background:#353D2B;color:#FFE394;border-color:#C9AC54
+}
+.app-shell .sidebar-rail.sidebar-light .nav-btn:focus-visible,
+.app-shell .sidebar-rail.sidebar-light .rail-management summary:focus-visible,
+.app-shell .sidebar-rail.sidebar-light .logout:focus-visible,
+.app-shell .sidebar-rail.sidebar-light .ux-help-button:focus-visible{
+ outline:2px solid #FBE58D;outline-offset:2px
+}
+
+/* Topbar: small index rather than a heavy toolbar */
+.app-shell .topbar{
+ height:65px;padding-inline:clamp(24px,3.2vw,58px);
+ background:#fff;border-bottom:1px solid var(--atelier-border)
+}
+.app-shell .topbar .breadcrumb strong{
+ font:590 12px/1.3 var(--ux-font);color:#424B41
+}
+.app-shell .topbar .breadcrumb svg{color:#B7A367}
+.app-shell .topbar .topbar-search{
+ color:#4A5249;border-color:#DDE2D7;background:#F9FAF5;border-radius:8px
+}
+.app-shell .topbar .topbar-search:hover{background:#FFF5CE;color:#534018}
+
+/* Editorial home cover with a physical-paper saffron panel */
+.app-shell .dash-welcome.atelier-home-cover{
+ isolation:isolate;position:relative;overflow:hidden;
+ min-height:196px;display:flex;align-items:center;justify-content:space-between;
+ gap:25px;margin:0 0 19px;padding:31px clamp(24px,3vw,44px);
+ border:1px solid #E4E2D8;border-radius:14px 14px 14px 3px;
+ background:#FFFFFF;box-shadow:none
+}
+.app-shell .dash-welcome.atelier-home-cover::before{
+ content:"";position:absolute;z-index:-1;inset:0 0 0 auto;width:31%;
+ background:var(--atelier-yellow);
+ clip-path:polygon(20% 0,100% 0,100% 100%,0 100%)
+}
+.app-shell .dash-welcome.atelier-home-cover::after{
+ content:"";position:absolute;right:34px;bottom:-65px;
+ width:186px;height:186px;border-radius:50%;pointer-events:none;
+ border:1px solid #9B7F2D66;box-shadow:0 0 0 31px #E4BB39AA,0 0 0 32px #9B7F2D44;
+ z-index:-1
+}
+.atelier-home-intro{position:relative;max-width:650px;min-width:0}
+.atelier-overline{
+ display:block;margin-bottom:17px;font:670 11px/1.4 var(--ux-mono);
+ color:#786421;letter-spacing:.055em
+}
+.atelier-overline span{margin:0 8px;color:#B1A06F}
+.app-shell .dash-welcome.atelier-home-cover h1{
+ font:680 clamp(33px,3.2vw,49px)/1.09 var(--ux-heading);
+ letter-spacing:-.063em;color:#222B23;margin:0 0 13px
+}
+.app-shell .dash-welcome.atelier-home-cover p{
+ max-width:45ch;color:#5A665B;font:440 14px/1.6 var(--ux-font)
+}
+.app-shell .dash-welcome.atelier-home-cover .dash-create{
+ position:relative;z-index:1;flex:0 0 auto;white-space:nowrap;
+ min-height:45px;border:1px solid #263029;border-radius:8px;
+ background:#252D26;color:#FAF8ED;
+ padding:11px 17px;font:640 13px/1.4 var(--ux-font)
+}
+.app-shell .dash-welcome.atelier-home-cover .dash-create:hover{
+ background:#3A473B;color:#fff;border-color:#3A473B
+}
+.app-shell .dash-welcome.atelier-home-cover .dash-create svg{stroke:#F1C949}
+
+/* Sequential ledger: numbers dominate, icons support. */
+.app-shell .dash-stats.atelier-ledger{
+ counter-reset:atelier-stat;
+ display:grid;grid-template-columns:1.14fr 1fr 1fr;
+ gap:11px;margin:0 0 20px
+}
+.app-shell .dash-stats.atelier-ledger article{
+ counter-increment:atelier-stat;position:relative;
+ min-width:0;min-height:119px;padding:18px 20px;
+ border:1px solid #E2E6DB;border-radius:9px;background:#fff;
+ box-shadow:none;align-items:center;gap:17px;overflow:hidden
+}
+.app-shell .dash-stats.atelier-ledger article:first-child{
+ background:#F7E9B7;border-color:#EBD996
+}
+.app-shell .dash-stats.atelier-ledger article::after{
+ content:"0" counter(atelier-stat);position:absolute;top:13px;right:17px;
+ color:#8A8F80;font:550 10px/1 var(--ux-mono)
+}
+.app-shell .dash-stats.atelier-ledger article:first-child::after{color:#8B6B26}
+.app-shell .dash-stats.atelier-ledger article+article{border-left:1px solid #E2E6DB}
+.app-shell .dash-stats.atelier-ledger .dash-metric-icon{
+ width:43px;height:43px;flex:0 0 43px;border-radius:9px;
+ background:#ECF0E7;color:#475C42
+}
+.app-shell .dash-stats.atelier-ledger .dash-gold{background:#F1D783;color:#524018}
+.app-shell .dash-stats.atelier-ledger .dash-blue{background:#E7EBE3;color:#3F5743}
+.app-shell .dash-stats.atelier-ledger .dash-amber{background:#F6EEE0;color:#775F2B}
+.app-shell .dash-stats.atelier-ledger article>div{display:flex;flex-direction:column-reverse;gap:7px}
+.app-shell .dash-stats.atelier-ledger article span:not(.dash-metric-icon){
+ font:540 12px/1.45 var(--ux-font);color:#61695E
+}
+.app-shell .dash-stats.atelier-ledger article strong{
+ font:680 33px/1 var(--ux-heading);letter-spacing:-.052em;
+ color:#212A21;font-variant-numeric:tabular-nums
+}
+
+/* Sheets of the binder: asymmetric, restrained, no floating SaaS cards. */
+.app-shell .dashboard-022.simple-home{max-width:none}
+.app-shell .dash-main-grid{
+ display:grid;grid-template-columns:minmax(0,1.7fr) minmax(310px,.8fr);
+ gap:18px;align-items:start
+}
+.app-shell .dash-card.atelier-paper-card,.app-shell .panel{
+ background:#fff;border:1px solid var(--atelier-border);
+ border-radius:11px 11px 11px 3px;box-shadow:none
+}
+.app-shell .dash-card.atelier-paper-card{position:relative;overflow:visible}
+.app-shell .dash-card.atelier-paper-card::before{
+ content:"";display:block;position:absolute;top:-1px;left:23px;
+ width:54px;height:4px;background:#E9C64C;border-radius:0 0 2px 2px
+}
+.app-shell .dash-card-head{padding:24px 24px 16px}
+.app-shell .dash-card-head h2{
+ font:660 19px/1.25 var(--ux-heading);letter-spacing:-.038em;
+ color:#273128
+}
+.app-shell .dash-link{color:#695220;font:620 12px/1.4 var(--ux-font)}
+.app-shell .dash-link:hover{text-decoration:underline;text-underline-offset:3px}
+.app-shell .dash-filter-bar{border-bottom:1px solid #E9EBE4;padding:0 23px 16px}
+.app-shell .dash-segments{gap:17px}
+.app-shell .dash-segments button{color:#7A837B;font:530 12px/1.4 var(--ux-font)}
+.app-shell .dash-segments button.selected{color:#302C20;font-weight:680}
+.app-shell .dash-segments button.selected::after{background:#D5AD37;height:3px}
+.app-shell .dash-table thead{background:#F7F8F4}
+.app-shell .dash-table thead th{
+ padding:13px 15px;color:#6D776E;
+ font:560 11px/1.5 var(--ux-font);letter-spacing:.01em
+}
+.app-shell .dash-table tbody td{font-size:13px;color:#59665B;padding:17px 15px}
+.app-shell .dash-table tbody td strong{
+ font:630 13px/1.42 var(--ux-font);letter-spacing:-.015em;
+ color:#2B392E;max-width:300px
+}
+.app-shell .dash-table tbody td small{font-size:11px;color:#7B857A}
+.app-shell .dash-table tbody tr:hover{background:#FFFDF5}
+.app-shell .dash-table-foot{border-top:1px solid #E9ECE5;background:#FAFAF7}
+.app-shell .dash-access .ux-home-tip{
+ margin:0 22px 15px;max-width:33ch;line-height:1.6;font-size:12px
+}
+.app-shell .dash-access .dash-choose-label{
+ color:#697369;font:550 11px/1.4 var(--ux-font)
+}
+.app-shell .dash-access .dash-choose-label+select{
+ height:41px;background:#FBFBF8;border:1px solid #DCE2D8;
+ font:550 13px/1.4 var(--ux-font);border-radius:8px
+}
+
+/* Folder previews: paper tabs with readable labels and restrained colours. */
+.app-shell .dash-folder-links{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:10px;padding:0 21px 23px
+}
+.app-shell .dash-folder-link{
+ --atelier-folder:#D4AC41;
+ --atelier-folder-pale:#FCF5DC;
+ isolation:isolate;position:relative;min-height:89px;
+ overflow:hidden;display:flex;align-items:flex-start;
+ background:var(--atelier-folder-pale);
+ border:1px solid color-mix(in srgb,var(--atelier-folder) 30%,#E2E5DE);
+ border-radius:9px 13px 7px 7px;
+ gap:10px;padding:16px 12px 10px;color:#2B3329;box-shadow:none;
+ transition:border-color .15s ease,transform .15s ease
+}
+.app-shell .dash-folder-link::before{
+ content:"";position:absolute;top:0;left:0;height:5px;width:43%;
+ background:var(--atelier-folder);
+ border-radius:0 0 5px 0
+}
+.app-shell .dash-folder-rose{--atelier-folder:#C9809A;--atelier-folder-pale:#FFF1F5}
+.app-shell .dash-folder-bleu{--atelier-folder:#7B9EB9;--atelier-folder-pale:#EEF6FA}
+.app-shell .dash-folder-vert{--atelier-folder:#74A283;--atelier-folder-pale:#EEF8F0}
+.app-shell .dash-folder-link .dash-folder-symbol{
+ width:auto;min-width:23px;height:auto;display:block;flex:0 0 auto;
+ font:560 12px/1.5 var(--ux-mono);color:#72766B;
+ padding-top:1px
+}
+.app-shell .dash-folder-link strong{
+ color:#293329;font:660 14px/1.35 var(--ux-heading);
+ letter-spacing:-.025em
+}
+.app-shell .dash-folder-link small{
+ color:#697369;font:510 11px/1.4 var(--ux-font);opacity:1;margin-top:4px
+}
+.app-shell .dash-folder-link>svg:last-child{align-self:flex-end;color:#465246;opacity:.8}
+.app-shell .dash-folder-link:hover:not(:disabled){
+ transform:translateY(-2px);filter:none;border-color:var(--atelier-folder);
+ box-shadow:0 5px 15px #292F2410
+}
+.app-shell .dash-folder-link:disabled{opacity:.48;transform:none}
+.app-shell .dash-priority-row strong{font:630 13px/1.42 var(--ux-font);color:#2C3B2E}
+.app-shell .dash-priority-row small{font-size:11px;color:#78847A}
+.app-shell .dash-priority-row:hover{background:#FFFCF1}
+.app-shell .dash-empty-actions{font-size:12px;color:#677568}
+
+/* Folder interior — tabs are cut from the same visual vocabulary. */
+.app-shell[data-folder-theme] .simple-detail-head.detail-compact-header.atelier-dossier-cover{
+ position:relative;min-height:130px;
+ padding:26px 29px;margin-bottom:21px;
+ border:1px solid var(--folder-stroke,#E2E5DA);
+ border-radius:11px 11px 11px 3px;background:#fff;
+ box-shadow:inset 6px 0 0 var(--folder-accent,#D5AC37)
+}
+.app-shell[data-folder-theme] .atelier-dossier-cover::before{display:none}
+.app-shell[data-folder-theme] .detail-compact-header .page-title{
+ font:670 clamp(23px,2.45vw,33px)/1.17 var(--ux-heading);
+ letter-spacing:-.048em;color:#242D26
+}
+.app-shell .detail-inline-meta{gap:8px 14px;color:#69736A}
+.app-shell .detail-main-tabs{
+ gap:6px;margin-bottom:23px;padding:0;
+ border-bottom:1px solid #DADFD5
+}
+.app-shell .detail-main-tabs button{
+ border:0;border-radius:9px 9px 0 0;
+ min-height:46px;padding:11px 21px;
+ font:590 13px/1.4 var(--ux-font);color:#59675D
+}
+.app-shell .detail-main-tabs button[aria-selected="true"]{
+ background:#fff;border:1px solid #DEE3D9;border-bottom-color:#fff;
+ color:#283229;font-weight:690
+}
+.app-shell .detail-main-tabs button[aria-selected="true"]::after{
+ left:14px;right:14px;bottom:auto;top:0;height:3px;
+ background:var(--folder-accent,#D1AE3D);border-radius:0 0 3px 3px
+}
+.app-shell[data-folder-theme] .detail-view-panel .folder-tabs{
+ gap:10px;margin:0 0 22px
+}
+.app-shell[data-folder-theme] .detail-view-panel .folder-tab{
+ position:relative;overflow:hidden;flex:1 1 152px;min-height:56px;
+ padding:14px 15px 12px;border:1px solid #E1E5DB;
+ border-radius:8px 13px 5px 5px;background:#fff;
+ font:580 13px/1.3 var(--ux-font);color:#5C695E;
+}
+.app-shell[data-folder-theme] .detail-view-panel .folder-tab::before{
+ content:"";position:absolute;inset:0 auto auto 0;width:43%;height:4px;
+ background:var(--folder-stroke,#D5B03A)
+}
+.app-shell[data-folder-theme] .detail-view-panel .folder-tab.selected{
+ border-color:var(--folder-stroke);background:var(--folder-panel);
+ color:var(--folder-accent);font-weight:720;
+ box-shadow:0 4px 11px #4A453009
+}
+.app-shell .detail-tool-toolbar{padding-bottom:22px;border-bottom:1px solid #E2E6DD}
+.app-shell .detail-tool-toolbar-heading h2{
+ font:650 21px/1.22 var(--ux-heading);letter-spacing:-.04em
+}
+.app-shell .detail-tool-panel-container{
+ border-radius:10px;border:1px solid #E3E6DE;background:#fff
+}
+
+/* Common controls — designer's restraint rather than heavy yellow everywhere. */
+.app-shell .page-heading{border:1px solid var(--atelier-border);background:#fff}
+.app-shell .page-heading .page-title{
+ font:680 clamp(27px,2.5vw,36px)/1.19 var(--ux-heading);
+ letter-spacing:-.046em
+}
+.app-shell .section-heading h2{font:650 21px/1.3 var(--ux-heading)}
+.app-shell :is(.primary,.dash-create),.modal .primary{
+ background:#EBC348;border-color:#D9B53C;color:#282A1F;
+ border-radius:8px;font:650 13px/1.4 var(--ux-font)
+}
+.app-shell .primary:hover,.modal .primary:hover{
+ background:#DFB439;border-color:#CCA32D;color:#25271C
+}
+.app-shell .secondary,.modal .secondary{
+ background:white;border:1px solid #DDE3D9;color:#3E5142
+}
+.app-shell .panel tbody tr.item-row:hover{background:#FFFDF4}
+.app-shell .panel .row-title{font-size:13px;font-weight:640;color:#27352B}
+.app-shell .tag{border-radius:6px;font-weight:570}
+.app-shell .ux-explainer,.app-shell .ux-admin-context{
+ border-left-color:#D1AE40;background:#FFFDF5;border-color:#EAE3CC
+}
+.app-shell .ux-task-tabs button.selected{background:#F7E9B7;color:#3C3320}
+.app-shell .ux-task-metrics strong{font-family:var(--ux-heading)}
+.modal .modal-head h2,.login-rebalanced h1{
+ font-family:var(--ux-heading);font-weight:670;letter-spacing:-.04em
+}
+.login-rebalanced .login-form-brand strong{font-family:var(--ux-heading);font-weight:680}
+.login-rebalanced .login-form .field label,
+.login-rebalanced .login-form .field input{font-family:var(--ux-font)}
+.login-rebalanced .login-form .primary{
+ font-family:var(--ux-font);font-weight:650;
+ border-radius:8px;box-shadow:none
+}
+.app-shell :is(.dash-table .dash-date,.priority-date,.detail-inline-meta){
+ font-variant-numeric:tabular-nums
+}
+.app-shell :is(a,button,select,input,textarea,summary):focus-visible{
+ outline:2px solid #BB8D23;outline-offset:3px
+}
+
+/* Adapt the editorial grid before the table becomes crowded. */
+@media(max-width:1350px) and (min-width:1051px){
+ .app-shell .dash-main-grid{grid-template-columns:minmax(0,1.55fr) minmax(285px,.8fr)}
+ .app-shell .dash-folder-links{gap:8px;padding-inline:15px}
+ .app-shell .dash-folder-link{padding-inline:10px}
+}
+@media(max-width:1050px) and (min-width:761px){
+ .app-shell{grid-template-columns:210px minmax(0,1fr)}
+ .app-shell .sidebar.sidebar-rail.sidebar-light{width:210px;min-width:210px;padding-inline:12px}
+ .app-shell .dash-main-grid{grid-template-columns:minmax(0,1fr)}
+ .app-shell .dash-side-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+ .app-shell .dash-welcome.atelier-home-cover{padding-right:22px}
+ .app-shell .dash-welcome.atelier-home-cover::before{width:27%}
+}
+@media(max-width:760px){
+ .app-shell{display:block;grid-template-columns:none}
+ .app-shell .sidebar.sidebar-rail.sidebar-light,
+ .app-shell[data-folder-theme] .sidebar.sidebar-rail.sidebar-light{
+  width:100%;min-width:0;max-width:100%;height:auto;min-height:0;
+  padding:11px 15px 9px;box-shadow:inset 0 4px 0 #F0CA48;
+  grid-template-areas:"brand account" "primary primary" "manage manage" "help help";
+ }
+ .app-shell .sidebar-rail.sidebar-light .rail-brand{
+  grid-area:brand;margin:0;padding:0;border:0;gap:9px
+ }
+ .app-shell .sidebar-rail.sidebar-light .rail-logo{
+  height:33px;width:33px;flex-basis:33px;border-radius:8px
+ }
+ .app-shell .sidebar-rail.sidebar-light .atelier-logo-letter{font-size:19px}
+ .app-shell .sidebar-rail.sidebar-light .rail-brand-name{font-size:15px}
+ .atelier-brand-sub{display:none}
+ .app-shell .sidebar-rail.sidebar-light .rail-primary{grid-area:primary;gap:6px}
+ .app-shell .sidebar-rail.sidebar-light .rail-primary .nav-btn{
+  min-height:38px;font-size:12px;white-space:nowrap;padding:8px 11px
+ }
+ .app-shell .sidebar-rail.sidebar-light .rail-management{grid-area:manage;border:0;margin:0;padding:0}
+ .app-shell .sidebar-rail.sidebar-light .rail-management summary{
+  width:max-content;min-height:31px;padding:6px 9px;color:#D1DCCC
+ }
+ .app-shell .sidebar-rail.sidebar-light .rail-management-links{border:0;margin:0;padding:0;gap:6px}
+ .app-shell .sidebar-rail.sidebar-light .rail-management-links .nav-btn{
+  width:auto;min-height:35px;font-size:11px
+ }
+ .app-shell .sidebar-rail.sidebar-light .sidebar-bottom.rail-account{
+  grid-area:account;border:0;margin:0;padding:0
+ }
+ .app-shell .sidebar-rail.sidebar-light .logout{color:#D5DFD0}
+ .app-shell .sidebar-rail.sidebar-light .ux-help-button{
+  grid-area:help;margin:5px 0 2px;width:100%;min-height:35px;justify-content:center
+ }
+ .app-shell .topbar{height:50px;padding-inline:16px}
+ .app-shell .content,.app-shell .content:has(.dashboard-022){padding:18px 16px 70px}
+ .app-shell .dash-welcome.atelier-home-cover{
+  min-height:0;display:flex;align-items:flex-start;flex-direction:column;
+  gap:20px;padding:25px 23px;margin-bottom:13px
+ }
+ .app-shell .dash-welcome.atelier-home-cover::before{width:23%;opacity:.72}
+ .app-shell .dash-welcome.atelier-home-cover::after{right:-78px;bottom:-99px;opacity:.42}
+ .app-shell .dash-welcome.atelier-home-cover h1{font-size:34px}
+ .app-shell .dash-welcome.atelier-home-cover p{font-size:13px;max-width:38ch}
+ .app-shell .dash-welcome.atelier-home-cover .dash-create{min-height:42px}
+ .app-shell .dash-stats.atelier-ledger{gap:8px}
+ .app-shell .dash-stats.atelier-ledger article{
+  flex-direction:column;gap:9px;align-items:flex-start;
+  min-height:104px;padding:12px 11px;text-align:left
+ }
+ .app-shell .dash-stats.atelier-ledger article>div{align-items:flex-start;text-align:left}
+ .app-shell .dash-stats.atelier-ledger article strong{font-size:25px}
+ .app-shell .dash-stats.atelier-ledger article span:not(.dash-metric-icon){font-size:11px}
+ .app-shell .dash-stats.atelier-ledger article::after{right:9px;top:9px}
+ .app-shell .dash-stats.atelier-ledger .dash-metric-icon{
+  height:34px;width:34px;flex-basis:34px;border-radius:8px
+ }
+ .app-shell .dash-main-grid{display:grid;grid-template-columns:1fr;gap:14px}
+ .app-shell .dash-side-panels{display:grid;grid-template-columns:1fr;gap:14px}
+ .app-shell .dash-folder-link{min-height:81px}
+ .app-shell .dash-card-head{padding:19px 18px 14px}
+ .app-shell .dash-filter-bar{padding-inline:18px}
+ .app-shell .dash-card-head h2{font-size:18px}
+ .app-shell[data-folder-theme] .simple-detail-head.detail-compact-header.atelier-dossier-cover{
+  padding:21px 19px
+ }
+ .app-shell[data-folder-theme] .detail-view-panel .folder-tab{flex:1 1 calc(50% - 8px)}
+ .app-shell .detail-main-tabs button{padding-inline:15px;font-size:12px}
+}
+@media(max-width:420px){
+ .app-shell .dash-stats.atelier-ledger article{
+  padding:11px 9px;gap:8px
+ }
+ .app-shell .dash-stats.atelier-ledger article strong{font-size:24px}
+ .app-shell .dash-stats.atelier-ledger article span:not(.dash-metric-icon){font-size:10.5px}
+ .app-shell .dash-folder-links{padding-inline:15px;gap:8px}
+ .app-shell .dash-folder-link{padding:13px 9px 10px;gap:7px}
+ .app-shell .detail-main-tabs{gap:2px}
+ .app-shell .detail-main-tabs button{padding-inline:11px}
+}
+@media(prefers-reduced-motion:reduce){
+ .app-shell .dash-folder-link{transition:none;transform:none!important}
+}
