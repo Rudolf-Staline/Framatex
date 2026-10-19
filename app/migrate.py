@@ -16,7 +16,7 @@ from .core import Base, engine
 # Import every registered model before inspecting metadata.
 from . import models, completeness_models, workflow_models, quality_models, intake_models  # noqa: F401
 from . import spec_models, mail_models, impact_sim_models, orli_models, material_models # noqa: F401
-from . import approval_models, sharing_models, pilot_models # noqa: F401
+from . import approval_models, sharing_models, pilot_models, global_library_models  # noqa: F401
 
 # Include the migration ledger in SQLAlchemy metadata so test databases that
 # reset Base.metadata also reset this ledger; production upgrades remain explicit.
@@ -24,7 +24,7 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
                         Column('version', String(80), primary_key=True),
                         Column('applied_at', String(50), nullable=False), extend_existing=True)
 
-REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports')
+REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_global_library')
 
 
 def _versions(conn):
@@ -41,8 +41,9 @@ def migrate():
         legacy = ('launches' in tables and
                   'restricted' not in {c['name'] for c in inspect(probe).get_columns('launches')})
         has_migrations = 'schema_migrations' in tables
-        pending_pilot = has_migrations and '0003_pilot_reports' not in {
-            v for v, in probe.execute(text('SELECT version FROM schema_migrations'))}
+        pending_pilot = has_migrations and ('0003_pilot_reports' not in {
+            v for v, in probe.execute(text('SELECT version FROM schema_migrations'))} or
+            '0004_global_library' not in {v for v, in probe.execute(text('SELECT version FROM schema_migrations'))})
     if legacy or pending_pilot:
         saved = backup_sqlite()
         if saved:
@@ -59,7 +60,7 @@ def migrate():
                 if not expected.issubset(existing):
                     raise RuntimeError('Schéma existant partiel : migration interrompue pour éviter une perte de données')
                 # Old 0.14 installations must contain the complete pre-0.15 schema.
-                missing = (set(Base.metadata.tables) - {'schema_migrations', 'launch_members'}) - existing
+                missing = (set(Base.metadata.tables) - {'schema_migrations', 'launch_members', 'global_folders', 'global_document_entries', 'global_library_config'}) - existing
                 if missing:
                     raise RuntimeError('Base antérieure incomplète : tables manquantes : ' + ', '.join(sorted(missing)))
             else:
@@ -87,6 +88,11 @@ def migrate():
             Base.metadata.tables['pilot_reports'].create(bind=conn, checkfirst=True)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0003_pilot_reports','d':datetime.now(timezone.utc).isoformat()})
+        if '0004_global_library' not in done:
+            from tools.migrate_global_library import apply_to_connection
+            apply_to_connection(conn)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0004_global_library','d':datetime.now(timezone.utc).isoformat()})
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
         cols = {c['name'] for c in inspect(conn).get_columns('launches')}
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():
