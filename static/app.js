@@ -52,7 +52,7 @@ function sidebar(){
  const items=list=>list.map(([view,ico,label])=>`<button type="button" class="nav-btn ${active(view)?'active':''}" data-view="${view}" title="${label}" aria-current="${active(view)?'page':'false'}">${icon(ico)}<span class="nav-text">${label}</span>${active(view)?'<span class="nav-current" aria-hidden="true">›</span>':''}</button>`).join('');
  const toolsOpen=!!state.sidebarAdminOpen||tools.some(([view])=>active(view));
  return `<aside class="sidebar sidebar-rail sidebar-light" aria-label="Navigation Framatex">
-   <div class="rail-brand"><div class="rail-logo" aria-hidden="true">${icon('folder')}</div><span class="rail-brand-name">Framatex</span></div>
+   <div class="rail-brand"><div class="rail-logo" aria-hidden="true"><span class="atelier-logo-letter">F<span>.</span></span></div><div class="atelier-brand-text"><span class="rail-brand-name">Framatex</span><span class="atelier-brand-sub">Dossiers jaunes</span></div></div>
    <nav class="sidebar-nav rail-primary" aria-label="Navigation principale">${items(primary)}</nav>
    <details class="rail-management" ${toolsOpen?'open':''}><summary title="Options complémentaires">${icon('users')}<span class="nav-text">Plus d’options</span><span class="rail-chevron" aria-hidden="true">⌄</span></summary>
      <nav class="sidebar-nav rail-management-links" aria-label="Gestion et contrôle">${items(tools)}</nav>
@@ -111,15 +111,15 @@ async function home(){
  const accessible=folders.filter(([slug])=>can('document.read',slug));
  const priorityPreview=(priorities.items||[]).slice(0,3);
  mount(`<div class="simple-home dashboard-022">
-  <header class="dash-welcome"><div><h1>Votre espace de travail</h1><p>Choisissez un dossier ou consultez les points nécessitant votre attention.</p></div>
+  <header class="dash-welcome atelier-home-cover"><div class="atelier-home-intro"><span class="atelier-overline">Dossiers jaunes <span aria-hidden="true">/</span> Accueil</span><h1>Votre espace de travail</h1><p>Retrouvez un lancement, ses documents et les points qui demandent votre attention.</p></div>
   ${can('launch.create')?`<button class="primary dash-create" id="create-launch">${icon('plus')} Nouveau lancement</button>`:''}</header>
-  <section class="simple-stats dash-stats" aria-label="Indicateurs de vos lancements">
+  <section class="simple-stats dash-stats atelier-ledger" aria-label="Indicateurs de vos lancements">
    <article><span class="dash-metric-icon dash-gold">${icon('folder')}</span><div><span>Lancements</span><strong>${d.launches}</strong></div></article>
    <article><span class="dash-metric-icon dash-blue">${icon('file')}</span><div><span>Documents accessibles</span><strong>${d.documents}</strong></div></article>
    <article><span class="dash-metric-icon dash-amber">${icon('clock')}</span><div><span>Interventions possibles</span><strong>${priorities.actionable_count??priorities.items.filter(x=>x.can_act===true).length}</strong></div></article>
   </section>
   <div class="dash-main-grid">
-   <section class="dash-card dash-launches" aria-labelledby="dash-launch-heading">
+   <section class="dash-card dash-launches atelier-paper-card" aria-labelledby="dash-launch-heading">
     <div class="dash-card-head"><h2 id="dash-launch-heading">Mes lancements</h2><button type="button" class="dash-link" id="all-launches">Voir tous ${icon('arrow')}</button></div>
     <div class="dash-filter-bar"><div class="dash-segments" aria-label="Filtrer les lancements">
       <button type="button" data-home-tab="all" class="selected" aria-pressed="true">Tous</button>
@@ -135,13 +135,13 @@ async function home(){
     <div class="dash-table-foot"><span id="home-result-count">${Math.min(8,launches.length)} lancement(s) affiché(s)</span></div>
    </section>
    <aside class="dash-side-panels" aria-label="Raccourcis et actions">
-    <section class="dash-card dash-access"><div class="dash-card-head"><h2>Accès rapide</h2></div>
+    <section class="dash-card dash-access atelier-paper-card"><div class="dash-card-head"><h2>Ouvrir un sous-dossier</h2></div>
      <p class="ux-home-tip">Sélectionnez d’abord le lancement concerné, puis la couleur du sous-dossier à ouvrir.</p><label class="dash-choose-label" for="quick-launch">Lancement concerné</label>
      <select id="quick-launch" ${launches.length?'':'disabled'} aria-label="Choisir le lancement à ouvrir">${launches.length?launches.map(l=>`<option value="${e(l.id)}" ${l.id===state.quickLaunchId?'selected':''}>${e(l.name)}</option>`).join(''):'<option>Aucun lancement</option>'}</select>
-     <div class="dash-folder-links">${accessible.map(([slug,name,desc])=>`<button type="button" class="dash-folder-link dash-folder-${slug}" data-quick-folder="${slug}" ${launches.length?'':'disabled'}>
-       <span class="dash-folder-symbol">${icon('folder')}</span><span><strong>${name}</strong><small>${desc}</small></span>${icon('arrow')}</button>`).join('')||'<p class="dash-muted">Aucun sous-dossier accessible.</p>'}</div>
+     <div class="dash-folder-links">${accessible.map(([slug,name,desc],index)=>`<button type="button" class="dash-folder-link dash-folder-${slug}" data-quick-folder="${slug}" ${launches.length?'':'disabled'}>
+       <span class="dash-folder-symbol" aria-hidden="true">${String(index+1).padStart(2,'0')}</span><span><strong>${name}</strong><small>${desc}</small></span>${icon('arrow')}</button>`).join('')||'<p class="dash-muted">Aucun sous-dossier accessible.</p>'}</div>
     </section>
-    <section class="dash-card dash-to-do"><div class="dash-card-head"><h2>Points d’attention</h2><button type="button" class="dash-link" id="workspace-all-hero">Tout voir ${icon('arrow')}</button></div>
+    <section class="dash-card dash-to-do atelier-paper-card"><div class="dash-card-head"><h2>Points d’attention</h2><button type="button" class="dash-link" id="workspace-all-hero">Tout voir ${icon('arrow')}</button></div>
       ${priorityPreview.length?`<div class="dash-priority-list">${priorityPreview.map(item=>`<button type="button" class="dash-priority-row" data-workspace-launch="${e(item.launch_id)}" data-workspace-area="${e(item.area)}" data-workspace-folder="${e(item.folder||'')}">
         <span class="dash-priority-dot ${e(item.priority)}"></span><span><strong>${e(item.title)}</strong><small>${e(item.launch_name)}</small></span>${icon('arrow')}</button>`).join('')}</div>`:'<div class="dash-empty-actions">Aucune action en attente.</div>'}
     </section>
@@ -249,7 +249,7 @@ function renderDetailToolWorkspace(){
   '</section>'
  ).join('');
  return '<section class="detail-tool-workspace" id="detail-tool-workspace" aria-label="Outils du lancement">'+
-  '<div class="detail-tool-toolbar"><div class="detail-tool-toolbar-heading"><h2>Que souhaitez-vous faire ?</h2><p class="ux-tool-lead" id="ux-tool-description">${e(chosen[3])}</p></div>'+
+  `<div class="detail-tool-toolbar"><div class="detail-tool-toolbar-heading"><h2>Que souhaitez-vous faire ?</h2><p class="ux-tool-lead" id="ux-tool-description">${e(chosen[3])}</p></div>`+
    '<label class="detail-tool-picker" for="detail-tool-select"><span>Choisir une opération</span><select id="detail-tool-select">'+groups+'</select></label>'+
   '</div><div class="detail-tool-panel-container">'+panels+'</div></section>';
 }
@@ -304,7 +304,7 @@ function renderDetail(){
  const folderNames={jaune:'Jaune',rose:'Rose',bleu:'Bleu',vert:'Vert'};
  const count=f.can_read?docs.length:0;
  mount(`<div class="simple-detail">
- <header class="detail-head simple-detail-head detail-compact-header">
+ <header class="detail-head simple-detail-head detail-compact-header atelier-dossier-cover">
   <div class="detail-identity"><button type="button" class="detail-back" id="back-launches" title="Tous les dossiers" aria-label="Revenir aux lancements">${icon('back')}</button><div>
   <h1 class="page-title">${e(d.name)}</h1><div class="detail-inline-meta">${statusTag(d.status)}${d.client_name?`<span>${e(d.client_name)}</span>`:''}${d.order_ref?`<span>Commande ${e(d.order_ref)}</span>`:''}</div>
   </div></div>
