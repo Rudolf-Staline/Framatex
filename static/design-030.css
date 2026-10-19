@@ -1,5 +1,4 @@
 /* Framatex UX — interface lisible, contextuelle et progressive. */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 :root{
   --ux-text:#24303B;--ux-muted:#68727D;--ux-border:#E8E6E1;
   --ux-yellow:#E2B731;--ux-yellow-soft:#FFF9E9;
