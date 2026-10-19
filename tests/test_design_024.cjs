@@ -6,8 +6,8 @@ const html=fs.readFileSync('static/index.html','utf8');
 const css=fs.readFileSync('static/design-024.css','utf8');
 const setup=fs.readFileSync('static/setup.css','utf8');
 const legacy=fs.readFileSync('static/design-023.css','utf8');
-assert(html.includes('/assets/design-024.css'));
-assert(html.indexOf('design-024.css')>html.indexOf('design-023.css'),
+assert(html.includes('/assets/ui-foundation.css'));
+assert(html.indexOf('design-030.css')>html.indexOf('ui-foundation.css'),
  'Yellow overrides must follow the previous blue theme');
 assert(css.includes('--brand:#e5b43a'));
 assert(css.includes('--brand-ink:#30240b'));

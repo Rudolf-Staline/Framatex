@@ -7,8 +7,8 @@ const css=fs.readFileSync('static/design-027.css','utf8');
 const html=fs.readFileSync('static/index.html','utf8');
 const loginCss=fs.readFileSync('static/design-026.css','utf8');
 const folderCss=fs.readFileSync('static/design-024.css','utf8');
-assert(html.includes('/assets/design-027.css'));
-assert(html.indexOf('/assets/design-027.css')>html.indexOf('/assets/design-026.css'));
+assert(html.includes('/assets/ui-foundation.css'));
+assert(html.indexOf('/assets/design-030.css')>html.indexOf('/assets/ui-foundation.css'));
 assert(css.includes('.app-shell .page-heading'));
 assert(css.includes('.app-shell .toolbar .searchbar'));
 assert(css.includes('.app-shell .panel tbody tr.item-row:focus-visible'));
@@ -29,7 +29,7 @@ assert(app.includes('class="admin-advanced"'));
 assert(app.includes('class="admin-advanced-content"'));
 assert(app.includes('Paramètres avancés'));
 assert(!app.includes('Journal d’activité<span class="brand-accent">'));
-assert(app.includes('Un dossier par lancement de fabrication.'));
+assert(app.includes('lancement${state.launches.length===1?'));
 assert(app.includes('data-launch="${e(l.id)}" tabindex="0"'));
 assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length,'Malformed CSS braces');
 // Minimal rendering check for the redesigned launch listing with live mocked results.
@@ -46,8 +46,8 @@ vm.runInContext([
 // The DOM mock need only support event registration for list rendering.
 (async()=>{
  await vm.runInContext('launchList()',ctx);
- assert(root.innerHTML.includes('Dossiers jaunes'));
- assert(root.innerHTML.includes('Un dossier par lancement de fabrication.'));
+ assert(root.innerHTML.includes('Tous les dossiers'));
+ assert(root.innerHTML.includes('1 lancement enregistré'));
  assert(root.innerHTML.includes('Lancement fictif'));
  assert(root.innerHTML.includes('tabindex="0"'));
  console.log('Framatex 0.27: coherent pages, collapsed admin, live list, themed folders, responsive layout OK');

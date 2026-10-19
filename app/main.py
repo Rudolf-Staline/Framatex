@@ -90,7 +90,8 @@ async def response_security_headers(request: Request, call_next):
             "default-src 'self'; base-uri 'none'; object-src 'none'; "
             "frame-ancestors 'none'; form-action 'self'; "
             "script-src 'self'; connect-src 'self'; img-src 'self' data:; "
-            "style-src 'self' 'unsafe-inline'")
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com")
     return response
 
 def is_admin(user: User) -> bool:
