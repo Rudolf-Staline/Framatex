@@ -15,7 +15,7 @@ assert(css.includes('--blue:#125feb'));
 assert(css.includes('@media(max-width:760px)'));
 assert(css.includes('prefers-reduced-motion'));
 assert(app.includes('class="simple-home dashboard-022"'));
-assert(app.includes('class="simple-stats dash-stats"'));
+assert(app.includes('class="simple-stats dash-stats atelier-ledger"'));
 assert(!app.includes('class="command-hero"'));
 assert(!app.includes('class="home-rail"'));
 assert(app.includes('data-view="${view}"'));

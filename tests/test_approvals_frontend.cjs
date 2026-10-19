@@ -5,7 +5,7 @@ assert(fs.readFileSync('static/index.html','utf8').includes('approvals.js'));
 const ctx={document:{querySelector:()=>({})},window:{addEventListener:()=>{}},console,setTimeout,clearTimeout};
 vm.createContext(ctx);vm.runInContext(app,ctx);vm.runInContext(jsmod,ctx);
 const rendered=vm.runInContext(`(()=>{state.me={admin:true,permissions:[]};state.approvalOverview={items:[{document_id:'doc',document_title:'<img src=x onerror=alert(1)>',folder:'jaune',version:2,template:{id:'t',name:'Double contrôle'},can_start:false,previous:[],run:{id:'r',status:'pending',can_decide:true,version:2,current_position:1,stages:[{name:'Technique',position:1,role_name:'Bureau',decision:null,comment:null},{name:'Qualité',position:2,role_name:'Qualité',decision:null,comment:null}]}}]};return renderApprovals()})()`,ctx);
-assert(rendered.includes('Circuits de validation'));
+assert(rendered.includes('Faire valider un document'));
 assert(rendered.includes('Double contrôle'));
 assert(rendered.includes('&lt;img')&&!rendered.includes('<img src=x'));
 assert(rendered.includes('data-approval-decide'));

@@ -60,6 +60,8 @@ def test_workspace_priorities_and_access():
         assert {x['kind'] for x in items}>={'missing','requirement','ambiguity','commitment'}
         assert items[0]['kind']=='commitment' and items[0]['priority']=='urgent'
         assert overview.json()['counts']['urgent']==1
+        assert overview.json()['actionable_count']==len(items)
+        assert all(x['can_act'] and x['next_step'] for x in items)
         assert all(x['action']=='open_launch' and x['launch_id']==launch_id for x in items)
         assert all(not x['title'].startswith('Stock') for x in items)
         # Comptage et métadonnées strictement filtrés, même sans droit à traiter les pièces.
@@ -68,6 +70,9 @@ def test_workspace_priorities_and_access():
         assert limited.status_code==200,limited.text
         names={x['kind'] for x in limited.json()['items']}
         assert names=={'missing','commitment'},names
+        assert limited.json()['actionable_count']==0
+        assert limited.json()['followup_count']==limited.json()['total']
+        assert all(x['can_act'] is False for x in limited.json()['items'])
         assert 'Couleur tissu' not in str(limited.json())
         # L'assistant ne suggère jamais d'ouvrir un sous-dossier non autorisé.
         denied=c.post('/api/assistant/guide',json={'question':'Ou deposer une facture ?', 'launch_id':launch_id},headers=HEADERS)

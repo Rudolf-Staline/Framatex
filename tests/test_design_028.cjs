@@ -41,7 +41,7 @@ assert.equal((markup.match(/<option value="/g)||[]).length,12);
 assert.equal((markup.match(/data-detail-tool-panel="/g)||[]).length,12);
 assert.equal((markup.match(/class="preserved-module"/g)||[]).length,12);
 assert.equal((markup.match(/data-detail-tool-panel="[^"]+" role="region" aria-label="[^"]+" hidden/g)||[]).length,11);
-assert(markup.includes('<option value="quality" selected>Cohérence et Excel</option>'));
+assert(markup.includes('<option value="quality" selected>Contrôler les écarts et les fichiers Excel</option>'));
 assert(markup.indexOf('simple-document-section')<markup.indexOf('id="detail-view-tools"'));
 
 const select={value:'quality'};

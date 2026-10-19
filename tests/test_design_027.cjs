@@ -27,9 +27,9 @@ assert(folderCss.includes('data-folder-theme="bleu"'));
 assert(folderCss.includes('data-folder-theme="vert"'));
 assert(app.includes('class="admin-advanced"'));
 assert(app.includes('class="admin-advanced-content"'));
-assert(app.includes('Paramètres avancés'));
+assert(app.includes('Règles métier — configuration'));
 assert(!app.includes('Journal d’activité<span class="brand-accent">'));
-assert(app.includes('Un dossier par lancement de fabrication.'));
+assert(app.includes('Chaque dossier rassemble les documents d’un lancement de fabrication.'));
 assert(app.includes('data-launch="${e(l.id)}" tabindex="0"'));
 assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length,'Malformed CSS braces');
 // Minimal rendering check for the redesigned launch listing with live mocked results.
@@ -47,7 +47,7 @@ vm.runInContext([
 (async()=>{
  await vm.runInContext('launchList()',ctx);
  assert(root.innerHTML.includes('Dossiers jaunes'));
- assert(root.innerHTML.includes('Un dossier par lancement de fabrication.'));
+ assert(root.innerHTML.includes('Chaque dossier rassemble les documents d’un lancement de fabrication.'));
  assert(root.innerHTML.includes('Lancement fictif'));
  assert(root.innerHTML.includes('tabindex="0"'));
  console.log('Framatex 0.27: coherent pages, collapsed admin, live list, themed folders, responsive layout OK');

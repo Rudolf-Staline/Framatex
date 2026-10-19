@@ -42,7 +42,8 @@ def _source_folder(db: Session, version_id: str | None) -> str | None:
 
 
 def _add(out: list, launch: Launch, *, kind: str, title: str, description: str, rank: int,
-         area: str, action: str, item_id: str, deadline: str | None = None):
+         area: str, action: str, item_id: str, deadline: str | None = None,
+         can_act: bool = False, next_step: str = '', folder: str | None = None):
     out.append({"id": f"{kind}:{item_id}", "launch_id": launch.id,
                 "launch_name": launch.name, "kind": kind, "title": title,
                 "description": description, "rank": rank,
@@ -50,7 +51,8 @@ def _add(out: list, launch: Launch, *, kind: str, title: str, description: str, 
                 "priority_reason": ("Échéance dépassée" if rank == 0 else
                     "Vérification documentaire ou métier requise" if rank == 1 else
                     "Action à suivre"),
-                "area": area, "action": action, "deadline": deadline})
+                "area": area, "action": action, "deadline": deadline,
+                "can_act": can_act, "next_step": next_step, "folder": folder})
 
 
 @router.get("/api/workspace/priorities")
@@ -77,7 +79,10 @@ def priorities(user: User = Depends(get_current_user), db: Session = Depends(get
             _add(items, launch, kind=kind,
                  title=("Pièce manquante : " if kind == "missing" else "Validation à obtenir : ") + row["title"],
                  description=f"Sous-dossier {row['folder'].capitalize()} · {row['document_type']}",
-                 rank=1, area="documents", action="open_launch", item_id=row["id"])
+                 rank=1, area="documents" if kind == "missing" else "completeness",
+                 action="open_launch", item_id=row["id"], folder=row["folder"],
+                 can_act=permitted(user, "document.write" if kind == "missing" else "completeness.review", row["folder"]),
+                 next_step="Ajouter la pièce attendue dans le bon sous-dossier." if kind == "missing" else "Contrôler et confirmer la pièce si vous y êtes habilité.")
         alerts = db.scalars(select(ImpactAlert).where(ImpactAlert.launch_id == launch.id,
                                                       ImpactAlert.status == "to_review")).all()
         for alert in alerts:
@@ -86,8 +91,10 @@ def priorities(user: User = Depends(get_current_user), db: Session = Depends(get
                                 and permitted(user,"document.read",rule.target_folder)):
                 continue
             _add(items, launch, kind="impact", title="Modification à examiner : " + rule.name,
-                 description=rule.instruction[:210], rank=1, area="workflow",
-                 action="open_launch", item_id=alert.id)
+                 description=rule.instruction[:210], rank=1, area="workflow", folder=rule.target_folder,
+                 action="open_launch", item_id=alert.id,
+                 can_act=permitted(user, "impact.review", rule.target_folder),
+                 next_step="Examiner les conséquences de la modification et enregistrer une décision.")
         for req in db.scalars(select(ClientRequirement).where(ClientRequirement.launch_id == launch.id)).all():
             source_folder = _source_folder(db, req.source_version_id)
             evidence_folder = _source_folder(db, req.evidence_version_id)
@@ -101,7 +108,9 @@ def priorities(user: User = Depends(get_current_user), db: Session = Depends(get
             _add(items, launch, kind="requirement", title="Exigence à vérifier : " + req.title,
                  description={"uncovered":"Justificatif absent", "to_verify":"Preuve à examiner",
                               "source_changed":"Document source modifié", "evidence_changed":"Preuve remplacée"}.get(state,"À examiner"),
-                 rank=1, area="spec", action="open_launch", item_id=req.id)
+                 rank=1, area="spec", action="open_launch", item_id=req.id, folder=source_folder,
+                 can_act=permitted(user, "requirement.review", source_folder),
+                 next_step="Vérifier la preuve associée à cette exigence.")
         for amb in db.scalars(select(SpecificationAmbiguity).where(SpecificationAmbiguity.launch_id == launch.id)).all():
             source_folder = _source_folder(db, amb.source_version_id)
             clarification_folder = _source_folder(db, amb.clarification_version_id)
@@ -113,7 +122,9 @@ def priorities(user: User = Depends(get_current_user), db: Session = Depends(get
             if state not in ("open", "source_changed"):
                 continue
             _add(items, launch, kind="ambiguity", title="Clarification requise",
-                 description=amb.question[:210], rank=1, area="spec", action="open_launch", item_id=amb.id)
+                 description=amb.question[:210], rank=1, area="spec", action="open_launch", item_id=amb.id, folder=source_folder,
+                 can_act=permitted(user, "ambiguity.review", source_folder),
+                 next_step="Formuler ou traiter la demande de clarification.")
         if permitted(user,"document.read","rose"):
             for commitment in db.scalars(select(EmailCommitment).where(
                     EmailCommitment.launch_id == launch.id,
@@ -130,13 +141,17 @@ def priorities(user: User = Depends(get_current_user), db: Session = Depends(get
                 _add(items, launch, kind="commitment", title=commitment.description[:120],
                      description=f"Engagement {('en retard' if overdue else 'à suivre')} · {commitment.responsible[:100]}",
                      rank=0 if overdue else 2, area="mail", action="open_launch",
-                     item_id=commitment.id, deadline=commitment.due_date)
+                     item_id=commitment.id, deadline=commitment.due_date, folder="rose",
+                     can_act=permitted(user, "commitment.review", "rose"),
+                     next_step="Consulter cet engagement et enregistrer son suivi si vous y êtes habilité.")
     items.sort(key=lambda row: (row["rank"], row["deadline"] or "9999-12-31",
                                 row["launch_name"].casefold(),row["id"]))
     counts = {"urgent":sum(i["priority"] == "urgent" for i in items),
               "high":sum(i["priority"] == "high" for i in items),
               "normal":sum(i["priority"] == "normal" for i in items)}
-    return {"total":len(items), "counts":counts, "items":items[:100],
+    return {"total":len(items), "counts":counts,
+            "actionable_count":sum(row["can_act"] for row in items),
+            "followup_count":sum(not row["can_act"] for row in items), "items":items[:100],
             "truncated":len(items)>100,"launches_considered":len(visible_launches),
             "method":"Urgent : engagement dépassé ; prioritaire : écart ou vérification ; à suivre : échéance dans 7 jours.",
             "as_of":today.isoformat()}
