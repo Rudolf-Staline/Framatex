@@ -43,10 +43,10 @@ function showErr(err){toast(err.message||String(err))}
 function can(action,folder=null){return !!state.me?.admin||state.me?.permissions?.some(p=>p.action===action&&(folder?p.folder===null||p.folder===folder:p.folder===null))}
 function statusTag(s){return `<span class="tag ${s==='À compléter'?'orange':s==='Clôturé'?'green':s==='En validation'?'blue':''}">${e(s)}</span>`}
 function topbar(label){
- return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher un dossier">${icon('search')}<span>Rechercher un dossier, un document…</span></button><div class="topbar-actions"><button type="button" class="lc-notification-btn" id="top-notifications" title="Notifications" aria-label="Consulter les notifications">${icon('clock')}</button><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
+ return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher un dossier">${icon('search')}<span>Rechercher un dossier</span></button><div class="topbar-actions"><button type="button" class="lc-notification-btn" id="top-notifications" title="Notifications" aria-label="Consulter les notifications">${icon('clock')}</button><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
 }
 function sidebar(){
- const primary=[['home','grid','Accueil'],['launches','folder','Dossiers'],['actions','clock','À traiter'],['notifications','info','Notifications']];
+ const primary=[['home','grid','Accueil'],['launches','folder','Dossiers'],['actions','clock','Suivi'],['notifications','info','Notifications']];
  const tools=[['pilot','info','Aide & retours'],...(state.me.admin?[['orli','file','Imports ORLI'],['admin','users','Administration'],['audit','shield','Journal d’activité']]:[])];
  const active=view=>state.view===view||(state.view==='detail'&&view==='launches');
  const items=list=>list.map(([view,ico,label])=>`<button type="button" class="nav-btn ${active(view)?'active':''}" data-view="${view}" title="${label}" aria-current="${active(view)?'page':'false'}">${icon(ico)}<span class="nav-text">${label}</span>${active(view)?'<span class="nav-current" aria-hidden="true">›</span>':''}</button>`).join('');
@@ -93,9 +93,9 @@ function bindLaunchRows(){
  });
 }
 function dashboardLaunchRows(list){
- if(!list.length)return `<div class="dash-no-results">${icon('folder')}<strong>Aucun lancement à afficher</strong><p>Essayez un autre filtre ou créez votre premier lancement.</p></div>`;
- return `<div class="dash-table-scroll"><table class="dash-table"><thead><tr><th>Lancement</th><th>Client</th><th>Référence ORLI</th><th>Statut</th><th>Dernière activité</th><th><span class="sr-only">Ouvrir</span></th></tr></thead><tbody>${list.map(l=>`<tr class="item-row" data-launch="${e(l.id)}" tabindex="0" aria-label="Ouvrir ${e(l.name)}">
- <td><strong><span class="lc-table-folder" aria-hidden="true">${icon('folder')}</span>${e(l.name)}</strong><small>${e(l.order_ref||'Lancement de fabrication')}</small></td>
+ if(!list.length)return `<div class="dash-no-results"><strong>Aucun dossier correspondant</strong><p>Modifiez la recherche ou les filtres.</p></div>`;
+ return `<div class="dash-table-scroll"><table class="dash-table"><thead><tr><th>Lancement</th><th>Client</th><th>ORLI</th><th>État</th><th>Modification</th><th><span class="sr-only">Ouvrir</span></th></tr></thead><tbody>${list.map(l=>`<tr class="item-row" data-launch="${e(l.id)}" tabindex="0" aria-label="Ouvrir ${e(l.name)}">
+ <td><strong>${e(l.name)}</strong><small>${e(l.order_ref||'Commande non renseignée')}</small></td>
  <td>${e(l.client_name||'—')}</td><td>${l.orli_ref?e(l.orli_ref):'<span class="muted">Non attribuée</span>'}</td>
  <td>${statusTag(l.status)}</td><td class="dash-date">${niceDate(l.updated_at||l.created_at)}</td><td class="dash-row-arrow">${icon('arrow')}</td>
  </tr>`).join('')}</tbody></table></div>`;
@@ -117,19 +117,17 @@ async function home(){
     <div class="dash-card-head"><h2 id="dash-launch-heading">Lancements</h2><button type="button" class="dash-link" id="all-launches">Voir tous ${icon('arrow')}</button></div>
     <div class="dash-filter-bar"><div class="dash-segments" aria-label="Filtrer les lancements">
       <button type="button" data-home-tab="all" class="selected" aria-pressed="true">Tous</button>
-      <button type="button" data-home-tab="recent" aria-pressed="false">Récents</button>
+      <button type="button" data-home-tab="active" aria-pressed="false">En cours</button>
       <button type="button" data-home-tab="incomplete" aria-pressed="false">À compléter</button>
     </div><div class="dash-filter-tools">
-      <label class="dash-filter-search">${icon('search')}<input id="home-search" type="search" placeholder="Rechercher..." autocomplete="off" aria-label="Rechercher un lancement" /></label>
-      <select id="home-status" aria-label="Filtrer par statut"><option value="all">Tous les statuts</option>
-        <option value="À compléter">À compléter</option><option value="En cours">En cours</option>
-        <option value="En validation">En validation</option><option value="Clôturé">Clôturé</option></select>
+      <label class="dash-filter-search">${icon('search')}<input id="home-search" type="search" placeholder="Nom, client, commande ou ORLI" autocomplete="off" aria-label="Rechercher un lancement" /></label>
+
     </div></div>
-    <div id="home-launch-table">${dashboardLaunchRows(launches.slice(0,8))}</div>
-    <div class="dash-table-foot"><span id="home-result-count">${Math.min(8,launches.length)} lancement(s) affiché(s)</span></div>
+    <div id="home-launch-table">${dashboardLaunchRows(launches.slice(0,12))}</div>
+    <div class="dash-table-foot"><span id="home-result-count">${Math.min(12,launches.length)} dossiers affichés</span></div>
    </section>
    <aside class="dash-side-panels" aria-label="Raccourcis et actions">
-    <section class="dash-card dash-to-do"><div class="dash-card-head"><h2>Points signalés</h2><button type="button" class="dash-link" id="workspace-all-hero">Tout voir ${icon('arrow')}</button></div>
+    <section class="dash-card dash-to-do"><div class="dash-card-head"><h2>Points signalés</h2><button type="button" class="dash-link" id="workspace-all-hero">Voir le suivi ${icon('arrow')}</button></div>
       <p class="iw-attention-note">Documents à vérifier, échéances et points de suivi. Ils ne sont pas nécessairement attribués à votre compte.</p>
       ${priorityPreview.length?`<div class="dash-priority-list">${priorityPreview.map(item=>`<button type="button" class="dash-priority-row" data-workspace-launch="${e(item.launch_id)}" data-workspace-area="${e(item.area)}" data-workspace-folder="${e(item.folder||'')}">
         <span class="dash-priority-dot ${e(item.priority)}"></span><span><strong>${e(item.title)}</strong><small>${e(item.launch_name)}</small></span>${icon('arrow')}</button>`).join('')}</div>`:'<div class="dash-empty-actions">Aucun point signalé.</div>'}
@@ -141,15 +139,13 @@ async function home(){
  const draw=()=>{
    let result=[...state.launches];
    const active=app.querySelector('[data-home-tab].selected')?.dataset.homeTab||'all';
-   if(active==='recent')result=result.slice(0,5);
+   if(active==='active')result=result.filter(l=>l.status!=='Clôturé'&&l.status!=='À compléter');
    if(active==='incomplete')result=result.filter(l=>l.status==='À compléter');
-   const status=app.querySelector('#home-status')?.value||'all';
-   if(status!=='all')result=result.filter(l=>l.status===status);
    const query=(app.querySelector('#home-search')?.value||'').trim().toLocaleLowerCase('fr');
    if(query)result=result.filter(l=>[l.name,l.order_ref,l.orli_ref,l.client_name].join(' ').toLocaleLowerCase('fr').includes(query));
-   const shown=result.slice(0,8);
+   const shown=result.slice(0,12);
    app.querySelector('#home-launch-table').innerHTML=dashboardLaunchRows(shown);
-   app.querySelector('#home-result-count').textContent=`${shown.length} sur ${result.length} lancement(s)`;
+   app.querySelector('#home-result-count').textContent=`${shown.length} sur ${result.length} dossiers`;
    bindLaunchRows();
  };
  app.querySelectorAll('[data-home-tab]').forEach(button=>button.addEventListener('click',()=>{
@@ -157,7 +153,6 @@ async function home(){
    draw();
  }));
  app.querySelector('#home-search').addEventListener('input',draw);
- app.querySelector('#home-status').addEventListener('change',draw);
  app.querySelector('#all-launches')?.addEventListener('click',()=>navigate('launches'));
  app.querySelector('#create-launch')?.addEventListener('click',openNewLaunch);
  app.querySelector('#workspace-all-hero')?.addEventListener('click',()=>navigate('actions'));
@@ -165,7 +160,7 @@ async function home(){
  bindLaunchRows();
 }
 
-async function launchList(){state.view='launches';state.launches=await api('/api/launches');mount(`<div class="page-heading"><div><div class="page-kicker">${icon('folder')} DOSSIERS DE FABRICATION</div><h1 class="page-title">Dossiers jaunes</h1><p class="page-lead">Un dossier par lancement de fabrication. Retrouvez les documents et leur suivi au même endroit.</p></div>${can('launch.create')?`<button class="primary" id="create-launch">${icon('plus')} Nouveau dossier</button>`:''}</div><div class="toolbar"><label class="searchbar">${icon('search')}<input id="launch-search" value="${e(state.query)}" placeholder="Rechercher par client, lancement, ORLI..." aria-label="Rechercher des dossiers" /></label><span class="muted small">${state.launches.length} dossier(s) au total</span></div><div class="panel" id="launches-table">${tableLaunches(state.launches)}</div>`,'Dossiers jaunes');bindLaunchRows();app.querySelector('#create-launch')?.addEventListener('click',openNewLaunch);app.querySelector('#launch-search').addEventListener('input',ev=>{state.query=ev.target.value;const term=state.query.toLowerCase();document.querySelector('#launches-table').innerHTML=tableLaunches(state.launches.filter(l=>[l.name,l.client_name,l.orli_ref,l.order_ref].join(' ').toLowerCase().includes(term)));bindLaunchRows()})}
+async function launchList(){state.view='launches';state.launches=await api('/api/launches');mount(`<div class="page-heading"><div><div class="page-kicker">${icon('folder')} DOSSIERS DE FABRICATION</div><h1 class="page-title">Tous les dossiers</h1><p class="page-lead">${state.launches.length} lancement(s) enregistré(s)</p></div>${can('launch.create')?`<button class="primary" id="create-launch">${icon('plus')} Nouveau dossier</button>`:''}</div><div class="toolbar"><label class="searchbar">${icon('search')}<input id="launch-search" value="${e(state.query)}" placeholder="Rechercher par client, lancement, ORLI..." aria-label="Rechercher des dossiers" /></label><span class="muted small">${state.launches.length} dossier(s) au total</span></div><div class="panel" id="launches-table">${tableLaunches(state.launches)}</div>`,'Dossiers jaunes');bindLaunchRows();app.querySelector('#create-launch')?.addEventListener('click',openNewLaunch);app.querySelector('#launch-search').addEventListener('input',ev=>{state.query=ev.target.value;const term=state.query.toLowerCase();document.querySelector('#launches-table').innerHTML=tableLaunches(state.launches.filter(l=>[l.name,l.client_name,l.orli_ref,l.order_ref].join(' ').toLowerCase().includes(term)));bindLaunchRows()})}
 async function openLaunch(id,folder=state.folder){const keepSection=state.view==='detail'&&state.detail?.id===id;const [detail,completeness,reviews,values,impacts,fields,quality,excels,specs,mails,simGraph,simHistory,orliReconciliation,materials,approvalOverview]=await Promise.all([api('/api/launches/'+encodeURIComponent(id)),api('/api/launches/'+encodeURIComponent(id)+'/completeness'),api('/api/launches/'+encodeURIComponent(id)+'/reviews'),api('/api/launches/'+encodeURIComponent(id)+'/values'),api('/api/launches/'+encodeURIComponent(id)+'/impacts'),api('/api/business-value-fields'),api('/api/launches/'+encodeURIComponent(id)+'/quality'),api('/api/launches/'+encodeURIComponent(id)+'/excel-inspections'),api('/api/launches/'+encodeURIComponent(id)+'/specifications'),can('document.read','rose')?api('/api/launches/'+encodeURIComponent(id)+'/emails'):Promise.resolve(null),api('/api/launches/'+encodeURIComponent(id)+'/dependency-graph'),can('document.read','jaune')?api('/api/launches/'+encodeURIComponent(id)+'/impact-simulations'):Promise.resolve([]),api('/api/launches/'+encodeURIComponent(id)+'/orli-reconciliation'),can('document.read','jaune')&&can('document.read','rose')?api('/api/launches/'+encodeURIComponent(id)+'/materials'):Promise.resolve(null),api('/api/launches/'+encodeURIComponent(id)+'/approval-overview')]);[state.clientPublications,state.supplierRequests]=await Promise.all([api(`/api/launches/${encodeURIComponent(id)}/client-publications`),api(`/api/launches/${encodeURIComponent(id)}/supplier-requests`)]);state.approvalOverview=approvalOverview;state.materials=materials;state.orliReconciliation=orliReconciliation;state.simGraph=simGraph;state.simHistory=simHistory;state.mailReport=mails;state.specReport=specs;state.qualityReport=quality;state.excelInspections=excels;state.detail=detail;state.completeness=completeness;state.workflowReviews=reviews;state.workflowValues=values;state.workflowImpacts=impacts;state.workflowFields=fields;state.view='detail';state.folder=folder;state.detailSection=keepSection?state.detailSection:'documents';renderDetail()}
 function installDetailNavigation(){
  const content=app.querySelector('main.content');if(!content)return;
