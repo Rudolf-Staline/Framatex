@@ -35,6 +35,10 @@ def assert_ready():
         insecure = sorted(name for name, enabled in rows if name in Base.metadata.tables and not enabled)
         if insecure:
             raise RuntimeError(f"RLS requis pour les tables Framatex : {', '.join(insecure)}")
+        colors = set(conn.execute(text("SELECT slug FROM public.global_folders")).scalars())
+        if colors != {"jaune", "rose", "bleu", "vert"}:
+            raise RuntimeError("Indexation du Dossier Jaune non initialisee : migration V2 requise")
+
 
 
 def bootstrap():
