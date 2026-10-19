@@ -297,6 +297,27 @@ function showLaunchInformation(){
  ).join('')+'</dl>');
 }
 
+function renderDossierSummary(folder,docs){
+ const records=(state.approvalOverview?.items||[]).filter(x=>x.folder===folder.slug && docs.some(doc=>doc.id===x.document_id));
+ const pending=records.filter(x=>x.run?.status==='pending');
+ const approved=records.filter(x=>x.run?.status==='approved');
+ const list=records.filter(x=>x.run||x.template).slice(0,3);
+ return `<aside class="lc-detail-summary" aria-label="Suivi du sous-dossier">
+ <section class="lc-summary-card"><div class="lc-summary-head"><h3>État du sous-dossier</h3></div>
+  <div class="lc-summary-figure"><strong>${docs.length}</strong><span>document(s) accessible(s)</span></div>
+  <div class="lc-summary-pair"><span>Versions approuvées</span><strong>${approved.length}</strong></div>
+  <div class="lc-summary-pair"><span>Validations en cours</span><strong>${pending.length}</strong></div>
+  <p class="lc-helper-note">Les validations concernent une version précise. Ce décompte ne mesure pas la complétude du dossier.</p></section>
+ <section class="lc-summary-card"><div class="lc-summary-head"><h3>Circuits de validation</h3></div>
+  ${list.length?`<div class="lc-approval-peek">${list.map(x=>`<div class="lc-peek-row"><span class="lc-peek-icon">${icon('file')}</span><div><strong>${e(x.document_title)}</strong><small>${x.run?.status==='approved'?'Approuvée':x.run?.status==='pending'?'Validation en cours':x.run?.status==='changes_requested'?'Corrections demandées':x.run?.status==='rejected'?'Refusée':x.run?.status==='stale'?'Ancienne version':'Demande non lancée'}</small></div></div>`).join('')}</div>`:'<p class="lc-summary-empty">Aucun circuit configuré pour les documents visibles.</p>'}
+  <button type="button" class="secondary lc-summary-action" id="lc-open-validations">${icon('check')} Voir les validations ${icon('arrow')}</button></section>
+ <section class="lc-summary-card lc-summary-info"><h3>Informations</h3>
+  <div class="lc-summary-pair"><span>Sous-dossier</span><strong>${e(folder.label)}</strong></div>
+  <div class="lc-summary-pair"><span>Lecture</span><strong>${folder.can_read?'Autorisée':'Limitée'}</strong></div>
+  <div class="lc-summary-pair"><span>Dépôt</span><strong>${folder.can_write?'Autorisé':'Non autorisé'}</strong></div>
+  <button type="button" class="link" id="lc-show-info">Informations du lancement ${icon('arrow')}</button></section>
+ </aside>`;
+}
 function renderDetail(){
  const d=state.detail;
  const f=d.folders.find(x=>x.slug===state.folder)||d.folders[0];
@@ -304,25 +325,26 @@ function renderDetail(){
  const folderNames={jaune:'Jaune',rose:'Rose',bleu:'Bleu',vert:'Vert'};
  const count=f.can_read?docs.length:0;
  mount(`<div class="simple-detail">
- <header class="detail-head simple-detail-head detail-compact-header">
+ <header class="detail-head simple-detail-head detail-compact-header lc-detail-header">
   <div class="detail-identity"><button type="button" class="detail-back" id="back-launches" title="Tous les dossiers" aria-label="Revenir aux lancements">${icon('back')}</button><div>
   <h1 class="page-title">${e(d.name)}</h1><div class="detail-inline-meta">${statusTag(d.status)}${d.client_name?`<span>${e(d.client_name)}</span>`:''}${d.order_ref?`<span>Commande ${e(d.order_ref)}</span>`:''}</div>
   </div></div>
   <div class="detail-header-actions"><button type="button" class="secondary" id="launch-info">${icon('info')} Informations</button>
-  ${d.can_update?`<button type="button" class="secondary" id="edit-launch">${icon('pencil')} Modifier</button>`:''}</div>
+  ${d.can_update?`<button type="button" class="secondary" id="edit-launch">${icon('pencil')} Modifier</button>`:''}<button type="button" class="secondary" id="lc-header-validations">${icon('check')} Validations</button></div>
  </header>
  <nav class="detail-main-tabs" role="tablist" aria-label="Vue du dossier">
   <button type="button" role="tab" id="detail-tab-documents" data-detail-view="documents" aria-controls="detail-view-documents" aria-selected="${state.detailSection==='tools'?'false':'true'}">Documents</button>
   <button type="button" role="tab" id="detail-tab-tools" data-detail-view="tools" aria-controls="detail-view-tools" aria-selected="${state.detailSection==='tools'?'true':'false'}">Contrôles et outils</button>
  </nav>
- <section class="detail-view-panel" data-detail-view-panel="documents" id="detail-view-documents" role="tabpanel" aria-labelledby="detail-tab-documents" ${state.detailSection==='tools'?'hidden':''}>
+ <section class="detail-view-panel lc-documents-layout" data-detail-view-panel="documents" id="detail-view-documents" role="tabpanel" aria-labelledby="detail-tab-documents" ${state.detailSection==='tools'?'hidden':''}>
 
  <nav class="folder-tabs" aria-label="Sous-dossiers du lancement">${d.folders.map(folder=>`<button type="button" class="folder-tab folder-${e(folder.slug)} ${folder.slug===state.folder?'selected':''}" data-folder="${e(folder.slug)}" aria-pressed="${folder.slug===state.folder?'true':'false'}">
- <span class="folder-tab-dot" aria-hidden="true"></span><span class="folder-tab-title">${folderNames[folder.slug]||e(folder.slug)}</span><span class="folder-tab-count">${folder.can_read?folder.documents.length:'—'}</span></button>`).join('')}</nav>
- <section class="simple-document-section"><div class="simple-section-heading"><div><span class="section-index">${e(folderNames[f.slug]||f.slug)} · ${e(f.label)}</span><h2>Documents <span class="document-count">${count}</span></h2></div>
- ${f.can_write?`<button class="primary" id="upload-doc">${icon('upload')} Déposer</button>`:''}</div>
- <div class="panel">${!f.can_read?`<div class="denied">${icon('lock')}<p>Vous n’avez pas accès à cette rubrique.</p></div>`:docs.length?`<div class="table-scroll"><table><thead><tr><th>Document</th><th>Type</th><th>Version</th><th>Action</th></tr></thead><tbody>${docs.map(doc=>`<tr><td><div class="file-name"><div class="doc-icon">${icon('file')}</div><div><div class="row-title">${e(doc.title)}</div><div class="row-sub">${e(doc.latest.original_name)} · ${sizeText(doc.latest.size)}</div></div></div></td><td class="small">${e(doc.doc_type)}</td><td><span class="tag">v${doc.latest.number}</span></td><td><div class="doc-actions"><button class="link" data-history="${e(doc.id)}">${icon('clock')} Historique</button><button class="link" data-download="${e(doc.id)}" data-ver="${doc.latest.number}" title="Télécharger" aria-label="Télécharger ${e(doc.title)}">${icon('download')}</button></div></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty"><div class="empty-icon">${icon('file')}</div><strong>Ce sous-dossier est vide</strong>${f.can_write?'Déposez un premier document pour commencer.':'Aucun document pour le moment.'}</div>`}</div></section>
+ <span class="lc-folder-symbol" aria-hidden="true">${icon('folder')}</span><span class="folder-tab-title">${folderNames[folder.slug]||e(folder.slug)}</span><span class="folder-tab-count">${folder.can_read?folder.documents.length:'—'}</span></button>`).join('')}</nav>
+ <section class="simple-document-section"><div class="simple-section-heading"><div><span class="section-index">${e(folderNames[f.slug]||f.slug)} · ${e(f.label)}</span><h2>Documents — ${e(folderNames[f.slug]||f.slug)} <span class="document-count">${count}</span></h2></div>
+ ${f.can_write?`<button class="primary" id="upload-doc">${icon('plus')} Ajouter un document</button>`:''}</div>
+ <div class="panel">${!f.can_read?`<div class="denied">${icon('lock')}<p>Vous n’avez pas accès à cette rubrique.</p></div>`:docs.length?`<div class="table-scroll"><table><thead><tr><th>Document</th><th>Type</th><th>Version</th><th>Validation</th><th>Action</th></tr></thead><tbody>${docs.map(doc=>`<tr><td><div class="file-name"><div class="doc-icon">${icon('file')}</div><div><div class="row-title">${e(doc.title)}</div><div class="row-sub">${e(doc.latest.original_name)} · ${sizeText(doc.latest.size)}</div></div></div></td><td class="small">${e(doc.doc_type)}</td><td><span class="tag">v${doc.latest.number}</span></td><td>${(()=>{const record=(state.approvalOverview?.items||[]).find(x=>x.document_id===doc.id);const approval=record?.run?.status;const status=approval==='approved'?'Approuvée':approval==='pending'?'En validation':approval==='changes_requested'?'À corriger':approval==='rejected'?'Refusée':approval==='stale'?'Version remplacée':'Non soumise';return `<span class="lc-document-status ${approval==='approved'?'approved':approval==='pending'?'pending':'neutral'}">${status}</span>`})()}</td><td><div class="doc-actions"><button class="link" data-history="${e(doc.id)}">${icon('clock')} Historique</button><button class="link" data-download="${e(doc.id)}" data-ver="${doc.latest.number}" title="Télécharger" aria-label="Télécharger ${e(doc.title)}">${icon('download')}</button></div></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty"><div class="empty-icon">${icon('file')}</div><strong>Ce sous-dossier est vide</strong>${f.can_write?'Déposez un premier document pour commencer.':'Aucun document pour le moment.'}</div>`}</div></section>
 
+ ${f.can_read?renderDossierSummary(f,docs):''}
  </section>
  <section class="detail-view-panel" data-detail-view-panel="tools" id="detail-view-tools" role="tabpanel" aria-labelledby="detail-tab-tools" ${state.detailSection==='tools'?'':'hidden'}>
    ${renderDetailToolWorkspace()}
@@ -331,6 +353,10 @@ function renderDetail(){
  app.querySelector('#back-launches').onclick=()=>navigate('launches');
  app.querySelector('#launch-info')?.addEventListener('click',showLaunchInformation);
  app.querySelector('#edit-launch')?.addEventListener('click',openEditLaunch);
+ const showValidations=()=>{switchDetailView('tools');selectDetailTool('approvals')};
+ app.querySelector('#lc-header-validations')?.addEventListener('click',showValidations);
+ app.querySelector('#lc-open-validations')?.addEventListener('click',showValidations);
+ app.querySelector('#lc-show-info')?.addEventListener('click',showLaunchInformation);
  app.querySelectorAll('[data-detail-view]').forEach(button=>{
   button.addEventListener('click',()=>switchDetailView(button.dataset.detailView));
   button.addEventListener('keydown',event=>{
