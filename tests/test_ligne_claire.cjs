@@ -63,7 +63,6 @@ vm.runInContext([
  assert(ctx.lastHtml.includes('data-folder="rose"'));
  assert(!ctx.lastHtml.includes('class="command-hero"'));
  // Check the real approval renderer independently (not the detail stubs).
- vm.runInContext(approvals,ctx);
  const approvalHtml=vm.runInContext('renderApprovals()',ctx);
  assert(approvalHtml.includes('Faire valider un document'));
  assert(approvalHtml.includes('Que signifie cette validation ?'));
