@@ -334,6 +334,13 @@ def update_launch(launch_id: str, payload: LaunchPatch, user: User = Depends(get
             raise HTTPException(409, "Référence rapprochée à ORLI : modification interdite sans procédure de déliaison")
     for field, value in changes.items():
         setattr(l, field, value.strip() if isinstance(value, str) else value)
+    if "orli_ref" in changes:
+        # The document-level reference remains authoritative if manually edited.
+        normalized = (changes["orli_ref"] or "").strip() or None
+        for entry in db.scalars(select(GlobalDocumentEntry).where(
+                GlobalDocumentEntry.legacy_launch_id == l.id,
+                GlobalDocumentEntry.orli_overridden == False)).all():  # noqa: E712
+            entry.orli_ref = normalized
     audit(db, user, "launch.update", "launch", l.id, {"fields": list(changes.keys())})
     db.commit()
     return launch_out(l)
@@ -413,6 +420,12 @@ async def upload_document(launch_id: str, folder: str = Form(...), title: str = 
         doc = Document(folder_id=entity.id, title=title.strip(), doc_type=doc_type.strip() or "Autre", created_by=user.id)
         db.add(doc)
         db.flush()
+        # A legacy uploader must not create a document invisible from the
+        # global library.  Preserve the legacy launch for permissions.
+        db.add(GlobalDocumentEntry(
+            document_id=doc.id, folder_slug=folder,
+            orli_ref=launch.orli_ref, orli_overridden=False,
+            legacy_folder_id=entity.id, legacy_launch_id=launch.id))
         version = DocumentVersion(document_id=doc.id, number=1, original_name=original, disk_name=disk_name, size=size, sha256=sha, content_type=mime, uploaded_by=user.id)
         db.add(version)
         db.flush()
