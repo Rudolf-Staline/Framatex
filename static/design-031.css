@@ -1,0 +1,276 @@
+/* Framatex 0.31 — Atelier documentaire.
+   Une seule voix typographique, un rythme régulier, aucun changement métier. */
+
+/* Foundations */
+:root{
+  --ux-font:"Onest","Segoe UI",Arial,sans-serif;
+  --ux-heading:"Onest","Segoe UI",Arial,sans-serif;
+  --ux-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --font-ui:var(--ux-font);
+  --font-heading:var(--ux-heading);
+  --ux-ink:#202820;
+  --ux-muted:#666F68;
+  --ux-faint:#879089;
+  --ux-line:#E6E8E1;
+  --ux-paper:#FFFFFF;
+  --ux-soft:#F8F8F4;
+  --ux-yellow:#D5AC2E;
+  --ux-yellow-soft:#FFF7DD;
+  --ux-focus:#AA8120;
+  --ux-s1:4px;--ux-s2:8px;--ux-s3:12px;--ux-s4:16px;
+  --ux-s5:20px;--ux-s6:24px;--ux-s8:32px;
+  font-family:var(--ux-font);
+}
+html{font-size:16px;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body,button,input,select,textarea,.app-shell,.modal,.login-page{
+  font-family:var(--ux-font);
+  font-optical-sizing:auto;
+  letter-spacing:normal;
+}
+body{font-size:14px;line-height:1.55;color:var(--ux-ink)}
+.app-shell:not([data-folder-theme]),.app-shell:not([data-folder-theme]) .main{background:#fff}
+.app-shell .content{max-width:1460px;padding:32px clamp(24px,3.5vw,54px) 84px}
+.app-shell :is(p,li,dd,.row-sub,.muted,.page-lead,.modal-desc){line-height:1.6}
+.app-shell :is(.page-title,.dash-welcome h1,.detail-compact-header .page-title),
+.modal-head h2,.login-rebalanced #login-title{
+  font-family:var(--ux-heading);font-weight:720;letter-spacing:-.044em;
+}
+.app-shell .page-heading .page-title,.app-shell[data-folder-theme] .detail-compact-header .page-title{
+  font-size:clamp(25px,2.45vw,34px);line-height:1.2;color:var(--ux-ink);
+}
+.app-shell .page-heading .page-lead{font-size:13px;line-height:1.65;color:var(--ux-muted);max-width:72ch}
+.app-shell .page-heading .page-kicker{
+  font-family:var(--ux-font);font-size:11px;letter-spacing:.035em;
+  font-weight:650;color:#80621C;text-transform:none;
+}
+.app-shell .page-heading{padding:25px 29px;margin-bottom:27px;border-radius:12px;border-color:var(--ux-line);background:#fff}
+.app-shell .page-heading::after{opacity:.42}
+.app-shell .section-heading{margin:29px 0 15px;gap:16px}
+.app-shell .section-heading h2,.app-shell .detail-tool-toolbar-heading h2{
+  font-family:var(--ux-heading);font-size:19px;font-weight:700;
+  line-height:1.3;letter-spacing:-.032em;color:var(--ux-ink);
+}
+.app-shell :is(h3,h4,.dash-card-head h2,.priority-header h2,.quality-simple-intro h3){
+  font-family:var(--ux-heading);letter-spacing:-.025em;
+}
+
+/* Navigation: calm paper rail, unambiguous active position */
+.app-shell .sidebar.sidebar-rail.sidebar-light,
+.app-shell[data-folder-theme] .sidebar.sidebar-rail.sidebar-light{
+  width:222px;min-width:222px;padding:26px 15px 18px;
+  border-color:var(--ux-line);background:#fff;
+}
+.app-shell{grid-template-columns:222px minmax(0,1fr)}
+.app-shell .sidebar-rail.sidebar-light .rail-brand{margin-bottom:27px;padding-bottom:17px}
+.app-shell .sidebar-rail.sidebar-light .rail-brand-name{
+  font:760 18px/1.2 var(--ux-heading);letter-spacing:-.045em;color:var(--ux-ink);
+}
+.app-shell .sidebar-rail.sidebar-light .sidebar-nav{gap:5px}
+.app-shell .sidebar-rail.sidebar-light .nav-btn,
+.app-shell .sidebar-rail.sidebar-light .rail-management-links .nav-btn{
+  font-family:var(--ux-font);font-size:13px;font-weight:570;letter-spacing:-.01em;
+  line-height:1.35;min-height:44px;padding:11px 12px;border-radius:9px;
+  color:#535F57;
+}
+.app-shell .sidebar-rail.sidebar-light .nav-btn:hover,
+.app-shell .sidebar-rail.sidebar-light .rail-management summary:hover{
+  background:var(--ux-soft);color:#28312A;
+}
+.app-shell .sidebar-rail.sidebar-light .nav-btn.active,
+.app-shell[data-folder-theme] .sidebar.sidebar-rail.sidebar-light .nav-btn.active{
+  color:#493809;background:#F7ECC7;border-color:#ECD79A;box-shadow:none;font-weight:720;
+}
+.app-shell .sidebar-rail.sidebar-light .nav-btn.active svg{stroke:#805F14}
+.app-shell .sidebar-rail.sidebar-light .nav-current,
+.app-shell[data-folder-theme] .sidebar.sidebar-rail.sidebar-light .nav-current{color:#785B1B}
+.app-shell .sidebar-rail.sidebar-light .rail-management{margin-top:21px;padding-top:13px;border-color:var(--ux-line)}
+.app-shell .sidebar-rail.sidebar-light .rail-management summary{
+  padding:10px 11px;font:600 12px/1.4 var(--ux-font);color:var(--ux-muted);
+}
+.app-shell .sidebar-rail.sidebar-light .rail-management-links .nav-btn{font-size:12px;min-height:40px}
+.app-shell .sidebar-rail.sidebar-light .sidebar-bottom.rail-account{border-color:var(--ux-line)}
+.app-shell .sidebar-rail.sidebar-light .user .user-name{font-size:12px;color:#38433B}
+.app-shell .sidebar-rail.sidebar-light .logout{font-size:12px}
+.app-shell .sidebar-rail.sidebar-light .ux-help-button{
+  margin-top:18px;font-size:12px;line-height:1.3;min-height:43px;
+  background:var(--ux-yellow-soft);border-color:#EADBA9;box-shadow:none;
+}
+.app-shell .topbar{height:65px;border-bottom:1px solid var(--ux-line);background:#fff}
+.app-shell .topbar .breadcrumb{font-size:12px;color:var(--ux-muted);letter-spacing:0}
+.app-shell .topbar .breadcrumb strong{font-size:12px;color:#39443C;font-weight:650}
+.app-shell .topbar .topbar-search{font-size:12px;color:#5D685E;background:#fff}
+
+/* Dashboard: softer hierarchy, data still dense but legible */
+.app-shell .content:has(.dashboard-022){max-width:1460px;padding:36px clamp(24px,3.5vw,54px) 84px}
+.app-shell .dash-welcome{margin:0 0 27px;gap:20px}
+.app-shell .dash-welcome h1{
+  font:740 clamp(29px,2.65vw,37px)/1.18 var(--ux-heading);
+  letter-spacing:-.05em;color:var(--ux-ink);margin-bottom:9px;
+}
+.app-shell .dash-welcome p{font-size:14px;line-height:1.6;color:var(--ux-muted)}
+.app-shell .dash-stats.simple-stats{gap:13px;margin-bottom:24px}
+.app-shell .dash-stats.simple-stats article{
+  min-height:104px;padding:21px 22px;border:1px solid var(--ux-line);
+  border-radius:12px;box-shadow:none;background:#fff;gap:16px;
+}
+.app-shell .dash-stats.simple-stats article+article{border-left:1px solid var(--ux-line)}
+.app-shell .dash-stats.simple-stats article span:not(.dash-metric-icon){
+  font-size:12px;color:var(--ux-muted);font-weight:550;line-height:1.4;
+}
+.app-shell .dash-stats.simple-stats article strong,
+.app-shell .ux-task-metrics strong{
+  font:740 29px/1.1 var(--ux-heading);letter-spacing:-.045em;
+  font-variant-numeric:tabular-nums;color:var(--ux-ink);
+}
+.app-shell .dash-metric-icon{height:43px;width:43px;flex-basis:43px;border-radius:10px}
+.app-shell .dash-card,.app-shell .panel{
+  border:1px solid var(--ux-line);box-shadow:none;border-radius:12px;background:#fff;
+}
+.app-shell .dash-card-head{padding:21px 23px 15px;gap:14px}
+.app-shell .dash-card-head h2{font:700 17px/1.35 var(--ux-heading);color:var(--ux-ink);letter-spacing:-.03em}
+.app-shell .dash-link{font-size:12px;font-weight:650;color:#776020}
+.app-shell .dash-table thead th{
+  font-size:11px;font-weight:680;letter-spacing:.012em;color:#616A62;
+  background:#FAFAF7;padding:13px 14px;
+}
+.app-shell .dash-table tbody td{
+  font-size:13px;line-height:1.5;color:#4F5B51;padding:14px;
+  border-color:#ECEDE8;
+}
+.app-shell .dash-table tbody td strong{
+  font:660 13px/1.4 var(--ux-font);letter-spacing:-.01em;color:#273329;max-width:260px;
+}
+.app-shell .dash-table tbody td small,
+.app-shell .dash-table .dash-date{font-size:11px;color:#6F7A70}
+.app-shell .dash-table-foot{font-size:12px;color:var(--ux-muted);padding:14px 23px}
+.app-shell .dash-table tbody tr:hover,.app-shell .dash-table tbody tr:focus-visible{background:#FFFDF6}
+.app-shell .dash-segments button{font-size:12px;font-weight:600}
+.app-shell .dash-folder-link strong{font-size:13px;letter-spacing:-.012em}
+.app-shell .dash-folder-link small{font-size:11px;line-height:1.45}
+.app-shell .dash-priority-row strong{font-size:13px}
+.app-shell .dash-priority-row small{font-size:11px}
+.app-shell .dash-more-filters>summary{font-size:12px}
+
+/* Dossier: tab typography and document density */
+.app-shell .detail-inline-meta,.app-shell .detail-inline-meta span{font-size:12px}
+.app-shell .detail-main-tabs button{font:640 13px/1.45 var(--ux-font);letter-spacing:0;min-height:45px}
+.app-shell[data-folder-theme] .detail-view-panel .folder-tab{
+  font-family:var(--ux-font);font-size:13px;font-weight:620;line-height:1.45;
+}
+.app-shell[data-folder-theme] .simple-document-section .simple-section-heading h2{
+  font:700 18px/1.35 var(--ux-heading);letter-spacing:-.025em;
+}
+.app-shell .detail-tool-toolbar-heading h2{margin-bottom:5px}
+.app-shell .detail-tool-picker select{
+  font-family:var(--ux-font);font-size:13px;line-height:1.5;
+  border-radius:9px;color:#344035;
+}
+.app-shell .detail-tool-panel-container{border-radius:11px}
+.app-shell .quality-simple-row-head h4{font:680 14px/1.35 var(--ux-heading)}
+.app-shell .quality-simple-row-head p{font-size:12px}
+
+/* Forms, tables and actions: one interaction standard */
+.app-shell :is(.primary,.secondary,.dash-create),.modal :is(.primary,.secondary){
+  font-family:var(--ux-font);font-size:13px;font-weight:660;letter-spacing:0;
+  min-height:41px;border-radius:9px;box-shadow:none;
+}
+.app-shell .primary,.modal .primary{
+  background:#E4BB40;border-color:#D8AD32;color:#382B0E;box-shadow:none;
+}
+.app-shell .primary:hover,.modal .primary:hover{background:#D8A92A;border-color:#CB9C25;color:#30230A}
+.app-shell .dash-welcome .dash-create{
+  background:#E4BB40;border-color:#D8AD32;color:#382B0E;
+  border-radius:9px;min-height:43px;font-size:13px;
+}
+.app-shell .dash-welcome .dash-create:hover{background:#D8A92A;color:#30230A}
+.app-shell .secondary,.modal .secondary{background:#fff;border-color:#DDE1D9;color:#39483D}
+.app-shell .secondary:hover,.modal .secondary:hover{background:#F9FAF6;border-color:#C1C9BC}
+.app-shell .panel thead th,.app-shell .panel th{
+  font:650 11px/1.4 var(--ux-font);color:#677168;
+  background:#FAFAF8;letter-spacing:.015em;
+  padding:13px 17px;
+}
+.app-shell .panel tbody td,.app-shell .panel td{
+  font-size:13px;line-height:1.5;color:#526055;padding:15px 17px;
+  border-color:#EBEDE7;
+}
+.app-shell .panel .row-title{font-size:13px;color:#29352D;font-weight:660;line-height:1.35}
+.app-shell .panel .row-sub{font-size:11px;color:#717C72;line-height:1.45}
+.app-shell .panel tbody tr.item-row:hover{background:#FFFDF5}
+.app-shell .tag,.app-shell .dash-table .tag{
+  font:610 11px/1.35 var(--ux-font);border-radius:7px;
+  letter-spacing:0;padding:4px 8px;
+}
+.app-shell :is(.field label,.ux-filter-row label),.modal .field label{
+  font:640 12px/1.45 var(--ux-font);color:#39463C;letter-spacing:0;
+}
+.app-shell :is(input:not([type="checkbox"]):not([type="radio"]),textarea,select),
+.modal :is(input:not([type="checkbox"]):not([type="radio"]),textarea,select){
+  font-family:var(--ux-font);font-size:13px;line-height:1.5;
+}
+.modal .field input,.modal .field select,.modal .field textarea{
+  border-color:#DAE0D5;border-radius:9px;min-height:43px;font-size:13px;
+}
+.modal .modal-body{font-size:13px;line-height:1.65;padding:25px 28px 28px;color:#48574B}
+.modal .modal-head{padding:21px 28px;border-color:var(--ux-line)}
+.modal .modal-head h2{font:720 21px/1.35 var(--ux-heading);letter-spacing:-.035em;color:var(--ux-ink)}
+.modal .modal-desc{font-size:13px;line-height:1.65;color:var(--ux-muted)}
+.modal .modal-actions{margin-top:25px;gap:10px}
+.app-shell :is(.section-index,.page-kicker,.nav-label,.hero-eyebrow){
+  letter-spacing:.04em;text-transform:none;
+}
+.app-shell :is(.row-title,.dash-date,.version-meta,.detail-inline-meta,.priority-date){
+  font-variant-numeric:tabular-nums;
+}
+.app-shell .priority-title{font-size:13px;font-weight:680;color:#27372B}
+.app-shell .priority-description,.app-shell .priority-date{font-size:12px;color:#657267}
+.app-shell .priority-item{padding:16px 12px}
+.app-shell .priority-item:hover{background:#FFFCF3}
+.app-shell .priority-header h2{font-size:18px}
+.app-shell .ux-explainer p,.app-shell .ux-admin-context p{font-size:13px}
+
+/* Visible keyboard affordances */
+.app-shell :is(button,a,input,select,textarea,summary):focus-visible,
+.modal :is(button,input,select,textarea):focus-visible{
+  outline:2px solid var(--ux-focus);outline-offset:2px;
+}
+
+/* Keep mobile typography readable without wide cards */
+@media(max-width:1100px) and (min-width:761px){
+  .app-shell{grid-template-columns:210px minmax(0,1fr)}
+  .app-shell .sidebar.sidebar-rail.sidebar-light{width:210px;min-width:210px}
+  .app-shell .content,.app-shell .content:has(.dashboard-022){padding-inline:25px}
+  .app-shell .dash-stats.simple-stats article{padding:17px}
+}
+@media(max-width:760px){
+  .app-shell{display:block;grid-template-columns:none}
+  .app-shell .sidebar.sidebar-rail.sidebar-light{
+    width:100%;min-width:0;max-width:100%;padding:12px 14px 9px;
+    grid-template-areas:"brand account" "primary primary" "manage manage" "help help";
+  }
+  .app-shell .sidebar-rail.sidebar-light .rail-primary .nav-btn{font-size:12px;min-height:38px;padding:8px 11px}
+  .app-shell .content,.app-shell .content:has(.dashboard-022){padding:23px 16px 66px}
+  .app-shell .dash-welcome h1{font-size:29px}
+  .app-shell .dash-welcome p{font-size:13px}
+  .app-shell .dash-stats.simple-stats{gap:9px}
+  .app-shell .dash-stats.simple-stats article{min-height:92px;padding:12px 10px}
+  .app-shell .dash-stats.simple-stats article strong{font-size:23px}
+  .app-shell .dash-stats.simple-stats article span:not(.dash-metric-icon){font-size:11px;min-height:0}
+  .app-shell .page-heading{padding:20px}
+  .app-shell .page-heading .page-title{font-size:27px}
+  .app-shell .dash-card-head{padding:18px 17px 13px}
+  .app-shell .dash-table tbody td{font-size:12px}
+  .app-shell .detail-main-tabs button{font-size:12px}
+  .modal .modal-head{padding:17px 19px}
+  .modal .modal-body{padding:19px 19px 23px}
+}
+@media(max-width:440px){
+  .app-shell .dash-stats.simple-stats article{gap:7px}
+  .app-shell .dash-metric-icon{height:34px;width:34px;flex-basis:34px}
+  .app-shell .dash-stats.simple-stats article strong{font-size:22px}
+  .app-shell .dash-stats.simple-stats article span:not(.dash-metric-icon){font-size:11px}
+  .app-shell .section-heading h2{font-size:18px}
+}
+@media(prefers-reduced-motion:reduce){
+  .app-shell :is(button,a){transition:none}
+}
