@@ -4,7 +4,7 @@ const js=fs.readFileSync('static/app.js','utf8');
 const css=fs.readFileSync('static/design-020.css','utf8');
 const assistant=fs.readFileSync('static/assistant.js','utf8');
 const html=fs.readFileSync('static/index.html','utf8');
-assert(html.includes('design-020.css'));
+assert(html.includes('/assets/ui-foundation.css'));
 assert(!js.includes('class="command-hero"') && !js.includes('class="home-rail"'));
 assert(!js.includes('class="sidebar-assistant '));
 assert(!assistant.includes('<aside class="assistant-context">'));

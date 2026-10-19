@@ -3,9 +3,9 @@ const fs=require('node:fs'), vm=require('node:vm'),assert=require('node:assert/s
 const js=fs.readFileSync('static/app.js','utf8');
 const css=fs.readFileSync('static/design-026.css','utf8');
 const html=fs.readFileSync('static/index.html','utf8');
-assert(html.includes('/assets/design-024.css'));
-assert(html.includes('/assets/design-026.css'));
-assert(html.indexOf('design-026.css')>html.indexOf('design-024.css'));
+assert(html.includes('/assets/ui-foundation.css'));
+assert(html.includes('/assets/design-030.css'));
+assert(html.indexOf('design-030.css')>html.indexOf('ui-foundation.css'));
 assert(css.includes('.login-page.login-rebalanced'));
 assert(css.includes('grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)'));
 assert(css.includes('.login-rebalanced .login-visual'));

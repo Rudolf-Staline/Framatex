@@ -5,13 +5,13 @@ const approvals=fs.readFileSync('static/approvals.js','utf8');
 const css=fs.readFileSync('static/design-030.css','utf8');
 const html=fs.readFileSync('static/index.html','utf8');
 const csp=fs.readFileSync('app/main.py','utf8');
-assert(csp.includes("style-src 'self' 'unsafe-inline' https://fonts.googleapis.com"), 'Inter stylesheet blocked by CSP');
-assert(csp.includes("font-src 'self' https://fonts.gstatic.com"), 'Inter font download blocked by CSP');
-assert(html.includes('family=Inter'), 'approved typeface missing');
+assert(csp.includes("style-src 'self' 'unsafe-inline' https://fonts.googleapis.com"), 'Typeface stylesheet blocked by CSP');
+assert(csp.includes("font-src 'self' https://fonts.gstatic.com"), 'Typeface glyphs blocked by CSP');
+assert(html.includes('family=IBM+Plex+Sans'), 'approved typeface missing');
 assert(html.includes('/assets/design-030.css'), 'stylesheet missing');
-assert(html.indexOf('design-030.css')>html.indexOf('design-029.css'));
+assert(html.indexOf('design-030.css')>html.indexOf('ui-foundation.css'));
 assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length);
-for(const rule of ['lc-global-search','lc-folder-access','lc-documents-layout','lc-detail-summary','lc-approval-layout']){
+for(const rule of ['lc-global-search','iw-page-head','iw-folder-status','lc-documents-layout','.dash-table tbody td']){
  assert(css.includes(rule),rule+' style missing');
 }
 const nodes=new Map();
@@ -42,15 +42,13 @@ vm.runInContext([
 ].join('\n'),ctx);
 (async()=>{
  await vm.runInContext('home()',ctx);
- assert(ctx.lastHtml.includes('Vos dossiers récents'));
- assert(ctx.lastHtml.includes('Accès rapides aux sous-dossiers'));
- assert(ctx.lastHtml.includes('Dossiers actifs'));
- assert(ctx.lastHtml.includes('Documents accessibles'));
- assert(ctx.lastHtml.includes('Dossiers à compléter'));
- assert(ctx.lastHtml.includes('<strong>11</strong>'), 'metrics must come from server');
- assert(ctx.lastHtml.includes('data-quick-folder="rose"'));
- assert(ctx.lastHtml.includes('data-quick-folder="vert"'));
- assert(!ctx.lastHtml.includes('24 Dossiers actifs'),'must not use image-only numbers');
+ assert(ctx.lastHtml.includes('Suivi des lancements'));
+ assert(ctx.lastHtml.includes('Points signalés'));
+ assert(ctx.lastHtml.includes('Lot chemises'));
+ assert(ctx.lastHtml.includes('Lot polos'));
+ assert(ctx.lastHtml.includes('1 en cours · 1 à compléter'));
+ assert(!ctx.lastHtml.includes('simple-stats dash-stats'),'No decorative KPIs');
+ assert(!ctx.lastHtml.includes('Accès rapides aux sous-dossiers'),'No redundant folder cards');
  vm.runInContext([
   'for(const method of ["renderCompleteness","renderWorkflow","renderQuality","renderIntake","renderPaper","renderSpec","renderMail","renderImpactSimulation","renderOrliReconciliation","renderMaterialReport","renderApprovals","renderSharing"])globalThis[method]=()=>"";',
   'for(const method of ["bindCompleteness","bindWorkflow","bindQuality","bindIntake","bindPaper","bindSpec","bindMail","bindImpactSimulation","bindOrliReconciliation","bindMaterialReport","bindApprovals","bindSharing"])globalThis[method]=()=>{};',
@@ -60,7 +58,7 @@ vm.runInContext([
   'renderDetail();'
  ].join('\n'),ctx);
  assert(ctx.lastHtml.includes('lc-documents-layout'));
- assert(ctx.lastHtml.includes('lc-detail-summary'));
+ assert(ctx.lastHtml.includes('iw-folder-status'));
  assert(ctx.lastHtml.includes('Fiche emploi'));
  assert(ctx.lastHtml.includes('Approuvée'));
  assert(ctx.lastHtml.includes('id="lc-open-validations"'));
@@ -68,7 +66,7 @@ vm.runInContext([
  assert(!ctx.lastHtml.includes('class="command-hero"'));
  // Check the real approval renderer independently (not the detail stubs).
  const approvalHtml=actualRenderApprovals();
- assert(approvalHtml.includes('Faire valider un document'));
- assert(approvalHtml.includes('Que signifie cette validation ?'));
- console.log('Ligne claire: all three screens, real metrics, accessible folders and approval layout OK');
+ assert(approvalHtml.includes('<h2>Validations</h2>'));
+ assert(!approvalHtml.includes('Que signifie cette validation ?'),'No explainer card');
+ console.log('Framatex industrial interface: worklist, dossier tabs and validation semantics OK');
 })().catch(err=>{console.error(err);process.exitCode=1});
