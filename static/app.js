@@ -111,14 +111,7 @@ async function home(){
  const accessible=folders.filter(([slug])=>can('document.read',slug));
  const priorityPreview=(priorities.items||[]).slice(0,5);
  mount(`<div class="simple-home dashboard-022">
-  <header class="dash-welcome"><div><h1>Bonjour ${e((state.me?.name||'').trim().split(/\s+/)[0]||'')}</h1><p>Bienvenue sur Framatex. Voici l’activité de vos dossiers de fabrication.</p></div>
-  ${can('launch.create')?`<button class="primary dash-create" id="create-launch">${icon('plus')} Nouveau dossier</button>`:''}</header>
-  <section class="simple-stats dash-stats" aria-label="Indicateurs de vos lancements">
-   <article><span class="dash-metric-icon dash-gold">${icon('folder')}</span><div><span>Dossiers actifs</span><strong>${launches.filter(l=>l.status!=='Clôturé').length}</strong></div></article>
-   <article><span class="dash-metric-icon dash-blue">${icon('file')}</span><div><span>Documents accessibles</span><strong>${d.documents}</strong></div></article>
-   <article><span class="dash-metric-icon dash-amber">${icon('clock')}</span><div><span>Points à suivre</span><strong>${priorities.total}</strong></div></article>
-   <article><span class="dash-metric-icon dash-green">${icon('check')}</span><div><span>Dossiers à compléter</span><strong>${launches.filter(l=>l.status==='À compléter').length}</strong></div></article>
-  </section>
+  <header class="iw-page-head"><div><span class="iw-eyebrow">DOSSIERS DE FABRICATION</span><h1>Suivi des lancements</h1><p class="iw-description">${launches.filter(l=>l.status!=='Clôturé').length} en cours · ${launches.filter(l=>l.status==='À compléter').length} à compléter</p></div>${can('launch.create')?`<button type="button" class="primary" id="create-launch">${icon('plus')} Créer un dossier</button>`:''} </header>
   <div class="dash-main-grid">
    <section class="dash-card dash-launches" aria-labelledby="dash-launch-heading">
     <div class="dash-card-head"><h2 id="dash-launch-heading">Vos dossiers récents</h2><button type="button" class="dash-link" id="all-launches">Voir tous ${icon('arrow')}</button></div>
