@@ -114,3 +114,18 @@ body{font-size:14px;line-height:1.5;color:var(--ux-text)}
  .ux-role-row strong{grid-column:1/-1}
  .ux-role-permission-head{flex-direction:column}
 }
+
+/* Override earlier rail typography with readable, persistent labels. */
+.app-shell .sidebar-rail.sidebar-light .nav-btn{font-size:13px;line-height:1.45;min-height:43px;font-weight:600}
+.app-shell .sidebar-rail.sidebar-light .rail-management summary{font-size:12px}
+.app-shell .sidebar-rail.sidebar-light .rail-management-links .nav-btn{font-size:12px}
+.app-shell .page-heading .page-title{font-family:var(--ux-heading)}
+@media(max-width:760px){
+ .app-shell .sidebar.sidebar-rail.sidebar-light{
+  grid-template-areas:"brand account" "primary primary" "manage manage" "help help";
+ }
+ .app-shell .sidebar-rail.sidebar-light .rail-primary .nav-btn{font-size:12px}
+ .app-shell .sidebar-rail.sidebar-light .ux-help-button{
+  grid-area:help;display:flex;min-height:36px;justify-content:center;margin:6px 0 2px;
+ }
+}
