@@ -43,7 +43,7 @@ function showErr(err){toast(err.message||String(err))}
 function can(action,folder=null){return !!state.me?.admin||state.me?.permissions?.some(p=>p.action===action&&(folder?p.folder===null||p.folder===folder:p.folder===null))}
 function statusTag(s){return `<span class="tag ${s==='À compléter'?'orange':s==='Clôturé'?'green':s==='En validation'?'blue':''}">${e(s)}</span>`}
 function topbar(label){
- return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher un dossier">${icon('search')}<span>Rechercher un dossier, un document…</span></button><div class="topbar-actions"><button type="button" class="lc-notification-btn" id="top-notifications" title="Notifications" aria-label="Consulter les notifications">${icon('clock')}</button><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
+ return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher un dossier">${icon('search')}<span>Rechercher un dossier, un document…</span></button><div class="topbar-actions"><button type="button" class="lc-notification-btn" id="top-notifications" title="Notifications" aria-label="Consulter les notifications">${icon('clock')}</button><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
 }
 function sidebar(){
  const primary=[['home','grid','Accueil'],['launches','folder','Dossiers'],['actions','clock','À traiter'],['notifications','info','Notifications']];
@@ -147,7 +147,6 @@ async function home(){
      <select id="quick-launch" ${launches.length?'':'disabled'} aria-label="Choisir le lancement à ouvrir">${launches.length?launches.map(l=>`<option value="${e(l.id)}" ${l.id===state.quickLaunchId?'selected':''}>${e(l.name)}</option>`).join(''):'<option>Aucun lancement</option>'}</select>
      <div class="dash-folder-links">${accessible.map(([slug,name,desc])=>`<button type="button" class="dash-folder-link dash-folder-${slug}" data-quick-folder="${slug}" ${launches.length?'':'disabled'}>
        <span class="dash-folder-symbol">${icon('folder')}</span><span><strong>${name}</strong><small>${desc}</small></span>${icon('arrow')}</button>`).join('')||'<p class="dash-muted">Aucun sous-dossier accessible.</p>'}</div>
-    </section>
 
  </div>`,'Accueil');
  const draw=()=>{
