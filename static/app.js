@@ -57,6 +57,7 @@ function sidebar(){
    <details class="rail-management" ${toolsOpen?'open':''}><summary title="Options complémentaires">${icon('users')}<span class="nav-text">Plus d’options</span><span class="rail-chevron" aria-hidden="true">⌄</span></summary>
      <nav class="sidebar-nav rail-management-links" aria-label="Gestion et contrôle">${items(tools)}</nav>
    </details>
+   <button type="button" class="ux-help-button" id="ux-help-open">${icon('info')}<span>Comprendre Framatex</span></button>
    <div class="sidebar-bottom rail-account"><div class="user"><div class="avatar" aria-hidden="true">${e(state.me.name.slice(0,2).toUpperCase())}</div><span class="user-name" title="${e(state.me.name)}">${e(state.me.name)}</span></div>
      <button type="button" class="logout" id="logout" title="Déconnexion" aria-label="Déconnexion">${icon('out')}<span>Quitter</span></button></div>
  </aside>`;
@@ -64,6 +65,7 @@ function sidebar(){
 function mount(html,label){
  app.innerHTML=`<div class="app-shell"${state.view==='detail'&&['jaune','rose','bleu','vert'].includes(state.folder)?` data-folder-theme="${state.folder}"`:''}>${sidebar()}<div class="main">${topbar(label)}<main class="content">${html}</main></div></div>`;
  app.querySelectorAll('[data-view]').forEach(n=>n.addEventListener('click',()=>navigate(n.dataset.view)));
+ app.querySelector('#ux-help-open')?.addEventListener('click',showUsageHelp);
  app.querySelector('.rail-management')?.addEventListener('toggle',event=>{state.sidebarAdminOpen=event.currentTarget.open});
  syncFloatingAssistant();
  app.querySelector('#global-search')?.addEventListener('click',async()=>{await navigate('launches');app.querySelector('#launch-search')?.focus()});
@@ -352,6 +354,7 @@ function renderDetail(){
 }
 const PERMISSION_DESCRIPTIONS={'launch.read':'Voir les dossiers','launch.create':'Créer un dossier','launch.update':'Modifier un dossier','document.read':'Consulter les documents','document.write':'Ajouter des documents','document.review':'Valider un document','completeness.review':'Vérifier les pièces attendues','impact.review':'Examiner les modifications','quality.review':'Examiner les incohérences','requirement.review':'Vérifier les exigences client','ambiguity.review':'Clarifier une exigence','commitment.review':'Suivre les engagements','value.write':'Mettre à jour les valeurs métier','audit.read':'Consulter le journal d’activité'};
 function permissionDescription(action){return PERMISSION_DESCRIPTIONS[action]||action}
+function showUsageHelp(){modal('Comprendre Framatex',`<div class="ux-guide"><p class="modal-desc">Vous n’avez pas besoin de configurer les outils pour travailler. Voici les étapes les plus courantes et les termes à connaître.</p><h3>Les trois premières étapes</h3><ol><li>Ouvrez <strong>Dossiers</strong>, puis choisissez un lancement. Si nécessaire, créez-en un sans numéro ORLI.</li><li>Sélectionnez la couleur du sous-dossier, puis cliquez sur <strong>Ajouter un document</strong>.</li><li>Consultez <strong>À traiter</strong> pour les vérifications possibles avec vos droits ; les autres points apparaissent dans « À suivre ».</li></ol><h3>Les mots de l’application</h3><dl><dt>Profil documentaire</dt><dd>Liste de documents attendus dans un type de lancement. Elle est définie par un administrateur.</dd><dt>Rôle / autorisation</dt><dd>Ce qu’un utilisateur peut consulter ou modifier. Avoir un droit ne signifie pas être responsable d’une tâche.</dd><dt>Validation</dt><dd>Accord donné par une personne habilitée sur une version précise d’un document.</dd><dt>Circuit de validation</dt><dd>Ordre des personnes ou services qui doivent examiner un document.</dd><dt>Complétude</dt><dd>Vérification des pièces attendues. Un dossier complet n’est pas nécessairement approuvé.</dd><dt>ORLI</dt><dd>Référence du système de gestion métier. Vous pouvez créer un dossier avant qu’elle ne soit disponible.</dd><dt>OCR</dt><dd>Lecture automatique du texte d’un fichier. Les champs proposés doivent être vérifiés avant intégration.</dd></dl></div>` ,true)}
 function modal(title,content,wide=false){overlay.innerHTML=`<div class="modal-scrim"><div class="modal ${wide?'wide':''}" role="dialog" aria-modal="true" aria-label="${e(title)}"><div class="modal-head"><h2>${e(title)}</h2><button id="close-modal" aria-label="Fermer">${icon('x')}</button></div><div class="modal-body">${content}</div></div></div>`;overlay.querySelector('#close-modal').onclick=closeModal;overlay.querySelector('.modal-scrim').addEventListener('click',evt=>{if(evt.target.classList.contains('modal-scrim'))closeModal()})}
 function closeModal(){overlay.innerHTML=''}
 function val(id){return overlay.querySelector('#'+id)?.value.trim()||''}
