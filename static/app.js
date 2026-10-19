@@ -102,9 +102,9 @@ function dashboardLaunchRows(list){
 }
 async function home(){
  // Every metric comes from the same permission-filtered API as the business screens.
- const [priorities,d,launches]=await Promise.all([
-   api('/api/workspace/priorities'),api('/api/dashboard'),api('/api/launches')]);
- state.priorities=priorities;state.dashboard=d;state.launches=launches;state.view='home';
+ const [priorities,launches]=await Promise.all([
+   api('/api/workspace/priorities'),api('/api/launches')]);
+ state.priorities=priorities;state.launches=launches;state.view='home';
  if(typeof assistantContextLaunch!=='undefined')assistantContextLaunch=null;
  if(!launches.some(l=>l.id===state.quickLaunchId))state.quickLaunchId=launches[0]?.id||null;
  
