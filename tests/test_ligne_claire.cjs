@@ -22,6 +22,7 @@ const ctx={console,window:{addEventListener(){}},document:{querySelector:n=>n===
 vm.createContext(ctx);
 vm.runInContext(appjs.slice(0,appjs.lastIndexOf('(async function init(){')),ctx);
 vm.runInContext(approvals,ctx);
+const actualRenderApprovals=vm.runInContext('renderApprovals',ctx);
 vm.runInContext([
  'globalThis.lastHtml="";',
  'mount=html=>{lastHtml=html};',
@@ -63,7 +64,7 @@ vm.runInContext([
  assert(ctx.lastHtml.includes('data-folder="rose"'));
  assert(!ctx.lastHtml.includes('class="command-hero"'));
  // Check the real approval renderer independently (not the detail stubs).
- const approvalHtml=vm.runInContext('renderApprovals()',ctx);
+ const approvalHtml=actualRenderApprovals();
  assert(approvalHtml.includes('Faire valider un document'));
  assert(approvalHtml.includes('Que signifie cette validation ?'));
  console.log('Ligne claire: all three screens, real metrics, accessible folders and approval layout OK');
