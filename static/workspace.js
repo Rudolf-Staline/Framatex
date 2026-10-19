@@ -1,7 +1,7 @@
 'use strict';
 // 0.9 — navigation et priorisation, sans décision automatique.
 const PRIORITY_LABELS={urgent:'Échéance dépassée',high:'À examiner',normal:'À suivre'};
-const AREA_TARGETS={documents:'.simple-document-section',workflow:'.workflow-root',spec:'.spec-section',mail:'.mail-section'};
+const AREA_TARGETS={documents:'.simple-document-section',completeness:'[data-detail-tool-panel="completeness"]',workflow:'.workflow-root',spec:'.spec-section',mail:'.mail-section'};
 
 function priorityCard(item){
  const label=PRIORITY_LABELS[item.priority]||'À suivre';
