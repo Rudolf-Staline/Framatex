@@ -43,11 +43,11 @@ function showErr(err){toast(err.message||String(err))}
 function can(action,folder=null){return !!state.me?.admin||state.me?.permissions?.some(p=>p.action===action&&(folder?p.folder===null||p.folder===folder:p.folder===null))}
 function statusTag(s){return `<span class="tag ${s==='À compléter'?'orange':s==='Clôturé'?'green':s==='En validation'?'blue':''}">${e(s)}</span>`}
 function topbar(label){
- return `<header class="topbar"><div class="breadcrumb">${icon('arrow')}<strong>${e(label)}</strong></div><div class="topbar-actions"><button type="button" class="topbar-search" id="global-search" title="Rechercher un dossier">${icon('search')}</button></div></header>`;
+ return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher un dossier">${icon('search')}<span>Rechercher un dossier, un document…</span></button><div class="topbar-actions"><button type="button" class="lc-notification-btn" id="top-notifications" title="Notifications" aria-label="Consulter les notifications">${icon('clock')}</button><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
 }
 function sidebar(){
- const primary=[['home','grid','Accueil'],['launches','folder','Lancements'],['actions','check','Mes tâches'],['notifications','clock','Notifications']];
- const tools=[['pilot','info','Recette pilote'],...(state.me.admin?[['orli','file','Imports ORLI'],['admin','users','Administration'],['audit','shield','Journal d’activité']]:[])];
+ const primary=[['home','grid','Accueil'],['launches','folder','Dossiers'],['actions','clock','À traiter'],['notifications','info','Notifications']];
+ const tools=[['pilot','info','Aide & retours'],...(state.me.admin?[['orli','file','Imports ORLI'],['admin','users','Administration'],['audit','shield','Journal d’activité']]:[])];
  const active=view=>state.view===view||(state.view==='detail'&&view==='launches');
  const items=list=>list.map(([view,ico,label])=>`<button type="button" class="nav-btn ${active(view)?'active':''}" data-view="${view}" title="${label}" aria-current="${active(view)?'page':'false'}">${icon(ico)}<span class="nav-text">${label}</span>${active(view)?'<span class="nav-current" aria-hidden="true">›</span>':''}</button>`).join('');
  const toolsOpen=!!state.sidebarAdminOpen||tools.some(([view])=>active(view));
@@ -67,6 +67,8 @@ function mount(html,label){
  app.querySelector('.rail-management')?.addEventListener('toggle',event=>{state.sidebarAdminOpen=event.currentTarget.open});
  syncFloatingAssistant();
  app.querySelector('#global-search')?.addEventListener('click',async()=>{await navigate('launches');app.querySelector('#launch-search')?.focus()});
+ app.querySelector('#top-notifications')?.addEventListener('click',()=>navigate('notifications'));
+
  app.querySelector('#logout').addEventListener('click',async()=>{try{await api('/api/auth/logout',{method:'POST'})}catch{}state.me=null;state.detail=null;renderLogin()});
 }
 function renderLogin(){overlay.innerHTML='';syncFloatingAssistant();app.innerHTML=`<div class="login-page login-rebalanced"><main class="login-stage">
@@ -93,7 +95,7 @@ function bindLaunchRows(){
 function dashboardLaunchRows(list){
  if(!list.length)return `<div class="dash-no-results">${icon('folder')}<strong>Aucun lancement à afficher</strong><p>Essayez un autre filtre ou créez votre premier lancement.</p></div>`;
  return `<div class="dash-table-scroll"><table class="dash-table"><thead><tr><th>Lancement</th><th>Client</th><th>Référence ORLI</th><th>Statut</th><th>Dernière activité</th><th><span class="sr-only">Ouvrir</span></th></tr></thead><tbody>${list.map(l=>`<tr class="item-row" data-launch="${e(l.id)}" tabindex="0" aria-label="Ouvrir ${e(l.name)}">
- <td><strong>${e(l.name)}</strong><small>${e(l.order_ref||'Lancement de fabrication')}</small></td>
+ <td><strong><span class="lc-table-folder" aria-hidden="true">${icon('folder')}</span>${e(l.name)}</strong><small>${e(l.order_ref||'Lancement de fabrication')}</small></td>
  <td>${e(l.client_name||'—')}</td><td>${l.orli_ref?e(l.orli_ref):'<span class="muted">Non attribuée</span>'}</td>
  <td>${statusTag(l.status)}</td><td class="dash-date">${niceDate(l.updated_at||l.created_at)}</td><td class="dash-row-arrow">${icon('arrow')}</td>
  </tr>`).join('')}</tbody></table></div>`;
@@ -107,18 +109,19 @@ async function home(){
  if(!launches.some(l=>l.id===state.quickLaunchId))state.quickLaunchId=launches[0]?.id||null;
  const folders=[['jaune','Jaune','Technique'],['rose','Rose','Réception'],['bleu','Bleu','Douane'],['vert','Vert','Facturation']];
  const accessible=folders.filter(([slug])=>can('document.read',slug));
- const priorityPreview=(priorities.items||[]).slice(0,3);
+ const priorityPreview=(priorities.items||[]).slice(0,5);
  mount(`<div class="simple-home dashboard-022">
-  <header class="dash-welcome"><div><h1>Bienvenue</h1><p>Retrouvez vos lancements et reprenez le travail en quelques clics.</p></div>
-  ${can('launch.create')?`<button class="primary dash-create" id="create-launch">${icon('plus')} Nouveau lancement</button>`:''}</header>
+  <header class="dash-welcome"><div><h1>Bonjour ${e((state.me?.name||'').trim().split(/\s+/)[0]||'')}</h1><p>Bienvenue sur Framatex. Voici l’activité de vos dossiers de fabrication.</p></div>
+  ${can('launch.create')?`<button class="primary dash-create" id="create-launch">${icon('plus')} Nouveau dossier</button>`:''}</header>
   <section class="simple-stats dash-stats" aria-label="Indicateurs de vos lancements">
-   <article><span class="dash-metric-icon dash-gold">${icon('folder')}</span><div><span>Lancements</span><strong>${d.launches}</strong></div></article>
+   <article><span class="dash-metric-icon dash-gold">${icon('folder')}</span><div><span>Dossiers actifs</span><strong>${launches.filter(l=>l.status!=='Clôturé').length}</strong></div></article>
    <article><span class="dash-metric-icon dash-blue">${icon('file')}</span><div><span>Documents accessibles</span><strong>${d.documents}</strong></div></article>
-   <article><span class="dash-metric-icon dash-amber">${icon('clock')}</span><div><span>Actions à traiter</span><strong>${priorities.total}</strong></div></article>
+   <article><span class="dash-metric-icon dash-amber">${icon('clock')}</span><div><span>Points à suivre</span><strong>${priorities.total}</strong></div></article>
+   <article><span class="dash-metric-icon dash-green">${icon('check')}</span><div><span>Dossiers à compléter</span><strong>${launches.filter(l=>l.status==='À compléter').length}</strong></div></article>
   </section>
   <div class="dash-main-grid">
    <section class="dash-card dash-launches" aria-labelledby="dash-launch-heading">
-    <div class="dash-card-head"><h2 id="dash-launch-heading">Mes lancements</h2><button type="button" class="dash-link" id="all-launches">Voir tous ${icon('arrow')}</button></div>
+    <div class="dash-card-head"><h2 id="dash-launch-heading">Vos dossiers récents</h2><button type="button" class="dash-link" id="all-launches">Voir tous ${icon('arrow')}</button></div>
     <div class="dash-filter-bar"><div class="dash-segments" aria-label="Filtrer les lancements">
       <button type="button" data-home-tab="all" class="selected" aria-pressed="true">Tous</button>
       <button type="button" data-home-tab="recent" aria-pressed="false">Récents</button>
@@ -133,18 +136,19 @@ async function home(){
     <div class="dash-table-foot"><span id="home-result-count">${Math.min(8,launches.length)} lancement(s) affiché(s)</span></div>
    </section>
    <aside class="dash-side-panels" aria-label="Raccourcis et actions">
-    <section class="dash-card dash-access"><div class="dash-card-head"><h2>Accès rapide</h2></div>
-     <label class="dash-choose-label" for="quick-launch">Lancement concerné</label>
-     <select id="quick-launch" ${launches.length?'':'disabled'} aria-label="Choisir le lancement à ouvrir">${launches.length?launches.map(l=>`<option value="${e(l.id)}" ${l.id===state.quickLaunchId?'selected':''}>${e(l.name)}</option>`).join(''):'<option>Aucun lancement</option>'}</select>
-     <div class="dash-folder-links">${accessible.map(([slug,name,desc])=>`<button type="button" class="dash-folder-link dash-folder-${slug}" data-quick-folder="${slug}" ${launches.length?'':'disabled'}>
-       <span class="dash-folder-symbol">${icon('folder')}</span><span><strong>${name}</strong><small>${desc}</small></span>${icon('arrow')}</button>`).join('')||'<p class="dash-muted">Aucun sous-dossier accessible.</p>'}</div>
-    </section>
-    <section class="dash-card dash-to-do"><div class="dash-card-head"><h2>À suivre</h2><button type="button" class="dash-link" id="workspace-all-hero">Tout voir ${icon('arrow')}</button></div>
+    <section class="dash-card dash-to-do"><div class="dash-card-head"><h2>À traiter</h2><button type="button" class="dash-link" id="workspace-all-hero">Tout voir ${icon('arrow')}</button></div>
       ${priorityPreview.length?`<div class="dash-priority-list">${priorityPreview.map(item=>`<button type="button" class="dash-priority-row" data-workspace-launch="${e(item.launch_id)}" data-workspace-area="${e(item.area)}">
         <span class="dash-priority-dot ${e(item.priority)}"></span><span><strong>${e(item.title)}</strong><small>${e(item.launch_name)}</small></span>${icon('arrow')}</button>`).join('')}</div>`:'<div class="dash-empty-actions">Aucune action en attente.</div>'}
     </section>
    </aside>
   </div>
+  <section class="dash-card dash-access lc-folder-access"><div class="dash-card-head"><h2>Accès rapides aux sous-dossiers</h2></div>
+     <label class="dash-choose-label" for="quick-launch">Lancement concerné</label>
+     <select id="quick-launch" ${launches.length?'':'disabled'} aria-label="Choisir le lancement à ouvrir">${launches.length?launches.map(l=>`<option value="${e(l.id)}" ${l.id===state.quickLaunchId?'selected':''}>${e(l.name)}</option>`).join(''):'<option>Aucun lancement</option>'}</select>
+     <div class="dash-folder-links">${accessible.map(([slug,name,desc])=>`<button type="button" class="dash-folder-link dash-folder-${slug}" data-quick-folder="${slug}" ${launches.length?'':'disabled'}>
+       <span class="dash-folder-symbol">${icon('folder')}</span><span><strong>${name}</strong><small>${desc}</small></span>${icon('arrow')}</button>`).join('')||'<p class="dash-muted">Aucun sous-dossier accessible.</p>'}</div>
+    </section>
+
  </div>`,'Accueil');
  const draw=()=>{
    let result=[...state.launches];
@@ -178,7 +182,7 @@ async function home(){
  bindLaunchRows();
 }
 
-async function launchList(){state.view='launches';state.launches=await api('/api/launches');mount(`<div class="page-heading"><div><div class="page-kicker">${icon('folder')} DOSSIERS DE FABRICATION</div><h1 class="page-title">Dossiers jaunes</h1><p class="page-lead">Un dossier par lancement de fabrication.</p></div>${can('launch.create')?`<button class="primary" id="create-launch">${icon('plus')} Nouveau dossier</button>`:''}</div><div class="toolbar"><label class="searchbar">${icon('search')}<input id="launch-search" value="${e(state.query)}" placeholder="Rechercher par client, lancement, ORLI..." aria-label="Rechercher des dossiers" /></label><span class="muted small">${state.launches.length} dossier(s) au total</span></div><div class="panel" id="launches-table">${tableLaunches(state.launches)}</div>`,'Dossiers jaunes');bindLaunchRows();app.querySelector('#create-launch')?.addEventListener('click',openNewLaunch);app.querySelector('#launch-search').addEventListener('input',ev=>{state.query=ev.target.value;const term=state.query.toLowerCase();document.querySelector('#launches-table').innerHTML=tableLaunches(state.launches.filter(l=>[l.name,l.client_name,l.orli_ref,l.order_ref].join(' ').toLowerCase().includes(term)));bindLaunchRows()})}
+async function launchList(){state.view='launches';state.launches=await api('/api/launches');mount(`<div class="page-heading"><div><div class="page-kicker">${icon('folder')} DOSSIERS DE FABRICATION</div><h1 class="page-title">Dossiers jaunes</h1><p class="page-lead">Un dossier par lancement de fabrication. Retrouvez les documents et leur suivi au même endroit.</p></div>${can('launch.create')?`<button class="primary" id="create-launch">${icon('plus')} Nouveau dossier</button>`:''}</div><div class="toolbar"><label class="searchbar">${icon('search')}<input id="launch-search" value="${e(state.query)}" placeholder="Rechercher par client, lancement, ORLI..." aria-label="Rechercher des dossiers" /></label><span class="muted small">${state.launches.length} dossier(s) au total</span></div><div class="panel" id="launches-table">${tableLaunches(state.launches)}</div>`,'Dossiers jaunes');bindLaunchRows();app.querySelector('#create-launch')?.addEventListener('click',openNewLaunch);app.querySelector('#launch-search').addEventListener('input',ev=>{state.query=ev.target.value;const term=state.query.toLowerCase();document.querySelector('#launches-table').innerHTML=tableLaunches(state.launches.filter(l=>[l.name,l.client_name,l.orli_ref,l.order_ref].join(' ').toLowerCase().includes(term)));bindLaunchRows()})}
 async function openLaunch(id,folder=state.folder){const keepSection=state.view==='detail'&&state.detail?.id===id;const [detail,completeness,reviews,values,impacts,fields,quality,excels,specs,mails,simGraph,simHistory,orliReconciliation,materials,approvalOverview]=await Promise.all([api('/api/launches/'+encodeURIComponent(id)),api('/api/launches/'+encodeURIComponent(id)+'/completeness'),api('/api/launches/'+encodeURIComponent(id)+'/reviews'),api('/api/launches/'+encodeURIComponent(id)+'/values'),api('/api/launches/'+encodeURIComponent(id)+'/impacts'),api('/api/business-value-fields'),api('/api/launches/'+encodeURIComponent(id)+'/quality'),api('/api/launches/'+encodeURIComponent(id)+'/excel-inspections'),api('/api/launches/'+encodeURIComponent(id)+'/specifications'),can('document.read','rose')?api('/api/launches/'+encodeURIComponent(id)+'/emails'):Promise.resolve(null),api('/api/launches/'+encodeURIComponent(id)+'/dependency-graph'),can('document.read','jaune')?api('/api/launches/'+encodeURIComponent(id)+'/impact-simulations'):Promise.resolve([]),api('/api/launches/'+encodeURIComponent(id)+'/orli-reconciliation'),can('document.read','jaune')&&can('document.read','rose')?api('/api/launches/'+encodeURIComponent(id)+'/materials'):Promise.resolve(null),api('/api/launches/'+encodeURIComponent(id)+'/approval-overview')]);[state.clientPublications,state.supplierRequests]=await Promise.all([api(`/api/launches/${encodeURIComponent(id)}/client-publications`),api(`/api/launches/${encodeURIComponent(id)}/supplier-requests`)]);state.approvalOverview=approvalOverview;state.materials=materials;state.orliReconciliation=orliReconciliation;state.simGraph=simGraph;state.simHistory=simHistory;state.mailReport=mails;state.specReport=specs;state.qualityReport=quality;state.excelInspections=excels;state.detail=detail;state.completeness=completeness;state.workflowReviews=reviews;state.workflowValues=values;state.workflowImpacts=impacts;state.workflowFields=fields;state.view='detail';state.folder=folder;state.detailSection=keepSection?state.detailSection:'documents';renderDetail()}
 function installDetailNavigation(){
  const content=app.querySelector('main.content');if(!content)return;
@@ -228,7 +232,7 @@ const DETAIL_TOOL_GROUPS=[
   ['sim','Simulation d’impact','activity','Conséquences potentielles des modifications',()=>renderImpactSimulation()],
   ['orli','Rapprochement ORLI','file','Références et rapprochements',()=>renderOrliReconciliation()],
   ['materials','Suivi matière','grid','Consommations et mouvements',()=>renderMaterialReport()],
-  ['approvals','Approbations','shield','Circuits de décision',()=>renderApprovals()],
+  ['approvals','Faire valider un document','shield','Consulter et suivre les validations par version',()=>renderApprovals()],
   ['sharing','Partage externe','users','Clients et fournisseurs',()=>renderSharing()]
  ]}
 ];
