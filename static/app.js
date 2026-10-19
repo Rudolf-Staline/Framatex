@@ -29,7 +29,7 @@ function e(s){return String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function niceDate(value){if(!value)return '—';const s=String(value).trim();const hasZone=/(?:Z|[+-]\d{2}:?\d{2})$/i.test(s);const normalized=/^\d{4}-\d\d-\d\dT/.test(s)&&!hasZone?s+'Z':s;const date=new Date(normalized);if(Number.isNaN(date.getTime()))return '—';return date.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}
 function sizeText(n){return n>=1024*1024?`${(n/1024/1024).toFixed(1)} Mo`:`${Math.max(1,Math.ceil(n/1024))} Ko`}
 const app=document.querySelector('#app'), overlay=document.querySelector('#overlay-root');
-const state={me:null,view:'home',priorities:null,launches:[],dashboard:null,detail:null,completeness:null,completionProfiles:[],completenessPhases:[{code:'preparation',label:'Préparation'},{code:'approvisionnement',label:'Approvisionnement'},{code:'fabrication',label:'Fabrication'},{code:'expedition',label:'Expédition'},{code:'cloture',label:'Clôture'}],folder:'jaune',roles:[],users:[],audit:[],workflowReviews:[],workflowValues:[],workflowImpacts:[],workflowFields:[],workflowRules:[],qualityReport:null,excelInspections:[],specReport:null,mailReport:null,simGraph:null,simHistory:[],orliReconciliation:null,orliBatches:[],materials:null,approvalOverview:null,clientPublications:null,supplierRequests:null,approvalTemplates:[],approvalRoles:[],notifications:null,query:''};
+const state={me:null,view:'home',sidebarDossierOpen:false,dossierFolder:'jaune',priorities:null,launches:[],dashboard:null,detail:null,completeness:null,completionProfiles:[],completenessPhases:[{code:'preparation',label:'Préparation'},{code:'approvisionnement',label:'Approvisionnement'},{code:'fabrication',label:'Fabrication'},{code:'expedition',label:'Expédition'},{code:'cloture',label:'Clôture'}],folder:'jaune',roles:[],users:[],audit:[],workflowReviews:[],workflowValues:[],workflowImpacts:[],workflowFields:[],workflowRules:[],qualityReport:null,excelInspections:[],specReport:null,mailReport:null,simGraph:null,simHistory:[],orliReconciliation:null,orliBatches:[],materials:null,approvalOverview:null,clientPublications:null,supplierRequests:null,approvalTemplates:[],approvalRoles:[],notifications:null,query:''};
 async function api(path,options={}){
   const headers={'X-Framatex-Request':'1',...options.headers};
   if(options.body && !(options.body instanceof FormData))headers['Content-Type']='application/json';
@@ -49,7 +49,21 @@ function sidebar(){
  const primary=[['dossier','folder','Dossier Jaune'],['actions','clock','Suivi'],['notifications','info','Notifications']];
  const tools=[['pilot','info','Aide & retours'],...(state.me.admin?[['launches','layers','Anciens lancements'],['orli','file','Imports ORLI'],['admin','users','Administration'],['audit','shield','Journal d’activité']]:[])];
  const active=view=>state.view===view||(state.view==='detail'&&view==='launches');
- const items=list=>list.map(([view,ico,label])=>`<button type="button" class="nav-btn ${active(view)?'active':''}" data-view="${view}" title="${label}" aria-current="${active(view)?'page':'false'}">${icon(ico)}<span class="nav-text">${label}</span>${active(view)?'<span class="nav-current" aria-hidden="true">›</span>':''}</button>`).join('');
+ const dossierOpen=!!state.sidebarDossierOpen;
+ const subfolders=[['jaune','Jaune'],['rose','Rose'],['bleu','Bleu'],['vert','Vert']];
+ const items=list=>list.map(([view,ico,label])=>{
+   if(view==='dossier'){
+     return `<div class="dossier-nav-block">
+       <button type="button" class="nav-btn ${active(view)?'active':''}" data-view="dossier" data-dossier-toggle title="Dossier Jaune" aria-current="${active(view)?'page':'false'}" aria-expanded="${dossierOpen}" aria-controls="dossier-nav-children">
+         ${icon('folder')}<span class="nav-text">Dossier Jaune</span><span class="dossier-nav-chevron" aria-hidden="true">⌄</span>
+       </button>
+       <div class="dossier-nav-children" id="dossier-nav-children" role="group" aria-label="Sous-dossiers du Dossier Jaune" ${dossierOpen?'':'hidden'}>
+         ${subfolders.map(([slug,name])=>`<button type="button" class="dossier-nav-child ${state.view==='dossier'&&state.dossierFolder===slug?'active':''}" data-sidebar-folder="${slug}" aria-current="${state.view==='dossier'&&state.dossierFolder===slug?'location':'false'}"><span class="dossier-child-dot ${slug}" aria-hidden="true"></span><span>${name}</span></button>`).join('')}
+       </div>
+     </div>`;
+   }
+   return `<button type="button" class="nav-btn ${active(view)?'active':''}" data-view="${view}" title="${label}" aria-current="${active(view)?'page':'false'}">${icon(ico)}<span class="nav-text">${label}</span>${active(view)?'<span class="nav-current" aria-hidden="true">›</span>':''}</button>`;
+ }).join('');
  const toolsOpen=!!state.sidebarAdminOpen||tools.some(([view])=>active(view));
  return `<aside class="sidebar sidebar-rail sidebar-light" aria-label="Navigation Framatex">
    <div class="rail-brand"><div class="rail-logo" aria-hidden="true">${icon('folder')}</div><span class="rail-brand-name">Framatex</span></div>
@@ -63,7 +77,20 @@ function sidebar(){
 }
 function mount(html,label){
  app.innerHTML=`<div class="app-shell"${state.view==='detail'&&['jaune','rose','bleu','vert'].includes(state.folder)?` data-folder-theme="${state.folder}"`:''}>${sidebar()}<div class="main">${topbar(label)}<main class="content">${html}</main></div></div>`;
- app.querySelectorAll('[data-view]').forEach(n=>n.addEventListener('click',()=>navigate(n.dataset.view)));
+ app.querySelectorAll('[data-view]').forEach(n=>n.addEventListener('click',()=>{
+   if(n.dataset.view!=='dossier'){navigate(n.dataset.view);return}
+   // Le premier clic ouvre le menu, sans effacer une recherche en cours.
+   const expand=state.view==='dossier'?!state.sidebarDossierOpen:true;
+   state.sidebarDossierOpen=expand;
+   if(state.view!=='dossier'){navigate('dossier');return}
+   n.setAttribute('aria-expanded',String(expand));
+   const children=app.querySelector('#dossier-nav-children');
+   if(children)children.hidden=!expand;
+ }));
+ app.querySelectorAll('[data-sidebar-folder]').forEach(n=>n.addEventListener('click',()=>{
+   state.sidebarDossierOpen=true;
+   openGlobalFolder(n.dataset.sidebarFolder).catch(showErr);
+ }));
  app.querySelector('.rail-management')?.addEventListener('toggle',event=>{state.sidebarAdminOpen=event.currentTarget.open});
  syncFloatingAssistant();
  app.querySelector('#global-search')?.addEventListener('click',async()=>{await navigate('dossier');app.querySelector('#global-search-input')?.focus()});
