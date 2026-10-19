@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 
 from .core import Base, COOKIE, DATA_DIR, ROOT, engine, get_current_user, get_db, hash_password, check_password, make_token, login_limit_key, login_attempt_allowed, record_login_failure, clear_login_failures
 from .models import AuditEvent, Document, DocumentVersion, Folder, Launch, LaunchMember, Role, RolePermission, User
+from .global_library_models import GlobalFolder, GlobalDocumentEntry, GlobalLibraryConfig  # noqa: F401
 from .completeness_models import CompletenessProfile, RequirementRule, LaunchCompleteness, RequirementValidation, RequirementException
 from .completeness import PHASES, PHASE_RANK, evaluate
 from .workflow_models import DocumentReview, BusinessValueRevision, ImpactRule, ImpactAlert
@@ -276,6 +277,10 @@ def launches(q: str = "", user: User = Depends(get_current_user), db: Session = 
     must(user, "launch.read")
     from .access import visible
     rows = visible(db, user, db.scalars(select(Launch).order_by(Launch.created_at.desc())).all())
+    # Ne jamais afficher le conteneur technique de compatibilité comme un lancement.
+    system = db.get(GlobalLibraryConfig, "unique")
+    if system:
+        rows = [l for l in rows if l.id != system.legacy_launch_id]
     term = q.strip().lower()
     if term:
         rows = [l for l in rows if term in " ".join((l.name, l.client_name or "", l.order_ref or "", l.orli_ref or "")).lower()]
@@ -304,6 +309,9 @@ def get_launch(db: Session, launch_id: str) -> Launch:
 def launch_detail(launch_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.read")
     l = get_launch(db, launch_id)
+    system = db.get(GlobalLibraryConfig, "unique")
+    if system and l.id == system.legacy_launch_id:
+        raise HTTPException(404, "Lancement introuvable")
     folders = []
     for slug, label in FOLDERS:
         folder = next((f for f in l.folders if f.slug == slug), None)
@@ -778,6 +786,10 @@ app.include_router(approval_router)
 from .sharing_routes import router as sharing_router
 app.include_router(sharing_router)
 
+
+# Dossier Jaune V2 — bibliothèque commune, indépendante des lancements métier.
+from .global_library_routes import router as global_library_router
+app.include_router(global_library_router)
 
 # 0.15 — Gestion des accès d'un lancement par l'administrateur.
 from .access_routes import router as access_router
