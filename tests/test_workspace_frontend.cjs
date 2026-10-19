@@ -2,19 +2,23 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const src=fs.readFileSync('static/workspace.js','utf8');
 const ctx={console};vm.createContext(ctx);vm.runInContext(src,ctx);
-const sample={items:[{id:'requirement:1',launch_id:'abc',launch_name:'Lancement de vestes',title:'Exigence <script>alert(1)</script>',description:'Une preuve',priority:'high',kind:'requirement',area:'spec',deadline:null},{id:'commitment:2',launch_id:'abc',launch_name:'Lancement de vestes',title:'Envoi de matière',description:'À confirmer',priority:'urgent',kind:'commitment',area:'mail',deadline:'2026-10-15'}],counts:{urgent:1,high:1,normal:0},total:2,truncated:false};
+const sample={items:[{id:'requirement:1',launch_id:'abc',launch_name:'Lancement de vestes',title:'Exigence <script>alert(1)</script>',description:'Une preuve',priority:'high',kind:'requirement',area:'spec',can_act:true,folder:'jaune',next_step:'Vérifier la preuve',deadline:null},{id:'commitment:2',launch_id:'abc',launch_name:'Lancement de vestes',title:'Envoi de matière',description:'À confirmer',priority:'urgent',kind:'commitment',area:'mail',can_act:true,folder:'rose',deadline:'2026-10-15'}],counts:{urgent:1,high:1,normal:0},total:2,truncated:false};
 ctx.state={priorities:sample};
 ctx.e=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 ctx.icon=()=>'<svg></svg>';
 const html=vm.runInContext('renderPriorityWidget()',ctx);
-assert(html.includes('Mes actions'));
+assert(html.includes('Ce que vous pouvez traiter'));
+assert(html.includes('Je peux agir'));
+assert(html.includes('data-workspace-folder="rose"'));
+assert(html.includes('Vérifier la preuve'));
+
 assert(html.includes('Échéance dépassée'));
 assert(html.includes('Lancement de vestes'));
 assert(html.includes('data-workspace-area="mail"'));
 assert(!html.includes('<script>'));
 assert(html.includes('&lt;script&gt;'));
 const empty=vm.runInContext('prioritySummary({items:[],counts:{urgent:0,high:0,normal:0},total:0,truncated:false})',ctx);
-assert(empty.includes('Aucune action prioritaire'));
+assert(empty.includes('Aucune intervention possible'));
 const floating=fs.readFileSync('static/floating-assistant.js','utf8');
 assert(src.includes('function openGuideDrawer()'));
 assert(src.includes('return openFloatingAssistant()'));
