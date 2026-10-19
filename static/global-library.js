@@ -8,6 +8,15 @@ async function globalLibraryPage(){
  globalIndex=await api('/api/dossier-jaune');
  renderGlobalLibrary();
 }
+async function openGlobalFolder(slug){
+ if(!Object.hasOwn(GLOB_COLORS,slug))return;
+ globalFolder=slug;
+ globalQuery='';
+ state.dossierFolder=slug;
+ state.sidebarDossierOpen=true;
+ if(state.view==='dossier'&&globalIndex){renderGlobalLibrary();return}
+ await globalLibraryPage();
+}
 function globalDocumentsVisible(){
  const group=globalIndex.folders.find(f=>f.slug===globalFolder);
  if(!group?.can_read)return [];
@@ -36,6 +45,7 @@ function globalRenderRows(){
  host.querySelectorAll('[data-global-edit]').forEach(b=>b.onclick=()=>globalEditReference(b.dataset.globalEdit));
 }
 function renderGlobalLibrary(){
+ state.dossierFolder=globalFolder;
  const folder=globalIndex.folders.find(f=>f.slug===globalFolder);
  mount(`<div class="global-library">
  <header class="global-heading"><div><span class="global-overline">DOCUMENTATION / FRAMATEX</span><h1>Dossier Jaune</h1><p>Bibliothèque documentaire commune à l'entreprise</p></div>
@@ -46,7 +56,7 @@ function renderGlobalLibrary(){
  <div class="global-subhead"><div><h2>${GLOB_COLORS[globalFolder]} · ${e(folder.label)}</h2><p>Les documents sont déposés ensemble, sans classement par lancement.</p></div>
  <label class="global-search">${icon('search')}<input type="search" id="global-search-input" aria-label="Rechercher un document" placeholder="Nom, type, référence ORLI" value="${e(globalQuery)}" ${folder.can_read?'':'disabled'}></label></div>
  <div id="global-result-count" class="global-count"></div><div id="global-doc-results"></div></div>`,'Dossier Jaune');
- app.querySelectorAll('[data-global-folder]').forEach(b=>b.onclick=()=>{globalFolder=b.dataset.globalFolder;globalQuery='';renderGlobalLibrary()});
+ app.querySelectorAll('[data-global-folder]').forEach(b=>b.onclick=()=>openGlobalFolder(b.dataset.globalFolder).catch(showErr));
  app.querySelector('#global-search-input')?.addEventListener('input',ev=>{globalQuery=ev.target.value;globalRenderRows()});
  app.querySelector('#global-upload')?.addEventListener('click',globalUploadModal);
  globalRenderRows();
