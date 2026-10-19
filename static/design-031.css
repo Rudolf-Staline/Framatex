@@ -274,3 +274,21 @@ body{font-size:14px;line-height:1.55;color:var(--ux-ink)}
 @media(prefers-reduced-motion:reduce){
   .app-shell :is(button,a){transition:none}
 }
+
+/* References and sign-in — same typographic identity throughout */
+.app-shell .dash-table tbody td:nth-child(3):not(:has(.muted)),
+.app-shell .panel tbody td:nth-child(3) > .tag{
+  font-family:var(--ux-mono);font-size:11px;font-weight:500;letter-spacing:-.015em;
+  font-variant-numeric:tabular-nums;
+}
+.login-rebalanced .login-form-brand strong{
+  font-family:var(--ux-heading);font-size:19px;font-weight:750;letter-spacing:-.04em;
+}
+.login-rebalanced h1{
+  font-family:var(--ux-heading);font-weight:740;letter-spacing:-.045em;line-height:1.2;
+}
+.login-rebalanced .login-form .field label{
+  font-family:var(--ux-font);font-size:12px;font-weight:640;letter-spacing:0;
+}
+.login-rebalanced .login-form .field input{font-family:var(--ux-font);font-size:14px}
+.login-rebalanced .login-form .primary{font-family:var(--ux-font);font-size:13px;font-weight:680;box-shadow:none}
