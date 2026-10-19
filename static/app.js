@@ -107,14 +107,14 @@ async function home(){
  state.priorities=priorities;state.dashboard=d;state.launches=launches;state.view='home';
  if(typeof assistantContextLaunch!=='undefined')assistantContextLaunch=null;
  if(!launches.some(l=>l.id===state.quickLaunchId))state.quickLaunchId=launches[0]?.id||null;
- const folders=[['jaune','Jaune','Technique'],['rose','Rose','Réception'],['bleu','Bleu','Douane'],['vert','Vert','Facturation']];
- const accessible=folders.filter(([slug])=>can('document.read',slug));
+ 
+ 
  const priorityPreview=(priorities.items||[]).slice(0,5);
- mount(`<div class="simple-home dashboard-022">
+ mount(`<div class="simple-home dashboard-022 iw-home">
   <header class="iw-page-head"><div><span class="iw-eyebrow">DOSSIERS DE FABRICATION</span><h1>Suivi des lancements</h1><p class="iw-description">${launches.filter(l=>l.status!=='Clôturé').length} en cours · ${launches.filter(l=>l.status==='À compléter').length} à compléter</p></div>${can('launch.create')?`<button type="button" class="primary" id="create-launch">${icon('plus')} Créer un dossier</button>`:''} </header>
   <div class="dash-main-grid">
    <section class="dash-card dash-launches" aria-labelledby="dash-launch-heading">
-    <div class="dash-card-head"><h2 id="dash-launch-heading">Vos dossiers récents</h2><button type="button" class="dash-link" id="all-launches">Voir tous ${icon('arrow')}</button></div>
+    <div class="dash-card-head"><h2 id="dash-launch-heading">Lancements</h2><button type="button" class="dash-link" id="all-launches">Voir tous ${icon('arrow')}</button></div>
     <div class="dash-filter-bar"><div class="dash-segments" aria-label="Filtrer les lancements">
       <button type="button" data-home-tab="all" class="selected" aria-pressed="true">Tous</button>
       <button type="button" data-home-tab="recent" aria-pressed="false">Récents</button>
@@ -129,17 +129,13 @@ async function home(){
     <div class="dash-table-foot"><span id="home-result-count">${Math.min(8,launches.length)} lancement(s) affiché(s)</span></div>
    </section>
    <aside class="dash-side-panels" aria-label="Raccourcis et actions">
-    <section class="dash-card dash-to-do"><div class="dash-card-head"><h2>À traiter</h2><button type="button" class="dash-link" id="workspace-all-hero">Tout voir ${icon('arrow')}</button></div>
-      ${priorityPreview.length?`<div class="dash-priority-list">${priorityPreview.map(item=>`<button type="button" class="dash-priority-row" data-workspace-launch="${e(item.launch_id)}" data-workspace-area="${e(item.area)}">
-        <span class="dash-priority-dot ${e(item.priority)}"></span><span><strong>${e(item.title)}</strong><small>${e(item.launch_name)}</small></span>${icon('arrow')}</button>`).join('')}</div>`:'<div class="dash-empty-actions">Aucune action en attente.</div>'}
+    <section class="dash-card dash-to-do"><div class="dash-card-head"><h2>Points signalés</h2><button type="button" class="dash-link" id="workspace-all-hero">Tout voir ${icon('arrow')}</button></div>
+      <p class="iw-attention-note">Documents à vérifier, échéances et points de suivi. Ils ne sont pas nécessairement attribués à votre compte.</p>
+      ${priorityPreview.length?`<div class="dash-priority-list">${priorityPreview.map(item=>`<button type="button" class="dash-priority-row" data-workspace-launch="${e(item.launch_id)}" data-workspace-area="${e(item.area)}" data-workspace-folder="${e(item.folder||'')}">
+        <span class="dash-priority-dot ${e(item.priority)}"></span><span><strong>${e(item.title)}</strong><small>${e(item.launch_name)}</small></span>${icon('arrow')}</button>`).join('')}</div>`:'<div class="dash-empty-actions">Aucun point signalé.</div>'}
     </section>
    </aside>
   </div>
-  <section class="dash-card dash-access lc-folder-access"><div class="dash-card-head"><h2>Accès rapides aux sous-dossiers</h2></div>
-     <label class="dash-choose-label" for="quick-launch">Lancement concerné</label>
-     <select id="quick-launch" ${launches.length?'':'disabled'} aria-label="Choisir le lancement à ouvrir">${launches.length?launches.map(l=>`<option value="${e(l.id)}" ${l.id===state.quickLaunchId?'selected':''}>${e(l.name)}</option>`).join(''):'<option>Aucun lancement</option>'}</select>
-     <div class="dash-folder-links">${accessible.map(([slug,name,desc])=>`<button type="button" class="dash-folder-link dash-folder-${slug}" data-quick-folder="${slug}" ${launches.length?'':'disabled'}>
-       <span class="dash-folder-symbol">${icon('folder')}</span><span><strong>${name}</strong><small>${desc}</small></span>${icon('arrow')}</button>`).join('')||'<p class="dash-muted">Aucun sous-dossier accessible.</p>'}</div>
 
  </div>`,'Accueil');
  const draw=()=>{
@@ -165,11 +161,6 @@ async function home(){
  app.querySelector('#all-launches')?.addEventListener('click',()=>navigate('launches'));
  app.querySelector('#create-launch')?.addEventListener('click',openNewLaunch);
  app.querySelector('#workspace-all-hero')?.addEventListener('click',()=>navigate('actions'));
- app.querySelector('#quick-launch')?.addEventListener('change',event=>{state.quickLaunchId=event.target.value});
- app.querySelectorAll('[data-quick-folder]').forEach(button=>button.addEventListener('click',()=>{
-   if(!state.quickLaunchId){toast('Sélectionnez un lancement pour ouvrir un sous-dossier.');return}
-   openLaunch(state.quickLaunchId,button.dataset.quickFolder).catch(showErr)
- }));
  bindPriorityWidget();
  bindLaunchRows();
 }
