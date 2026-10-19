@@ -120,6 +120,13 @@ def guard_http_request(request: Request):
         if not user or not user.active:
             return JSONResponse({'detail':'Connexion nécessaire'},status_code=401)
         target_launch = indirect_launch(db,params)
+        # The technical compatibility launch is not an employee-facing
+        # manufacturing dossier. Direct per-launch routes must never expose it.
+        if params.get('launch_id'):
+            from .global_library_models import GlobalLibraryConfig
+            config = db.get(GlobalLibraryConfig, 'unique')
+            if config and config.legacy_launch_id == params['launch_id']:
+                return JSONResponse({'detail':'Lancement introuvable'},status_code=404)
         if target_launch and not accessible(db,user,db.get(Launch,target_launch)):
             return JSONResponse({'detail':'Lancement introuvable'},status_code=404)
     return None
