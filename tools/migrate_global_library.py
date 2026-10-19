@@ -76,6 +76,18 @@ def apply_to_connection(conn: Connection) -> dict:
     final = conn.scalar(select(func.count(GlobalDocumentEntry.document_id))) or 0
     if final != total:
         raise RuntimeError(f"Contrôle nombre documents : {total} != {final}")
+    if conn.dialect.name == "postgresql":
+        # Supabase exposes public to the Data API. The legacy Framatex schema
+        # enforces RLS even when ORM access uses a privileged server role.
+        # Do the same for every new global table in the migration transaction.
+        from sqlalchemy import text
+        for table_name in ("global_folders", "global_document_entries", "global_library_config"):
+            conn.execute(text(f'ALTER TABLE public.{table_name} ENABLE ROW LEVEL SECURITY'))
+            conn.execute(text(f'REVOKE ALL ON TABLE public.{table_name} FROM PUBLIC'))
+            for role in ("anon", "authenticated"):
+                present = conn.scalar(text("SELECT 1 FROM pg_roles WHERE rolname=:name"), {"name": role})
+                if present:
+                    conn.execute(text(f'REVOKE ALL ON TABLE public.{table_name} FROM {role}'))
     return {
         "source_documents": total,
         "indexed_documents": final,
