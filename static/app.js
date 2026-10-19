@@ -111,7 +111,7 @@ async function home(){
  
  const priorityPreview=(priorities.items||[]).slice(0,5);
  mount(`<div class="simple-home dashboard-022 iw-home">
-  <header class="iw-page-head"><div><span class="iw-eyebrow">DOSSIERS DE FABRICATION</span><h1>Suivi des lancements</h1><p class="iw-description">${launches.filter(l=>l.status!=='Clôturé').length} en cours · ${launches.filter(l=>l.status==='À compléter').length} à compléter</p></div>${can('launch.create')?`<button type="button" class="primary" id="create-launch">${icon('plus')} Créer un dossier</button>`:''} </header>
+  <header class="iw-page-head"><div><span class="iw-eyebrow">DOSSIERS DE FABRICATION</span><h1>Suivi des lancements</h1><p class="iw-description">${launches.filter(l=>l.status!=='Clôturé'&&l.status!=='À compléter').length} en cours · ${launches.filter(l=>l.status==='À compléter').length} à compléter</p></div>${can('launch.create')?`<button type="button" class="primary" id="create-launch">${icon('plus')} Créer un dossier</button>`:''} </header>
   <div class="dash-main-grid">
    <section class="dash-card dash-launches" aria-labelledby="dash-launch-heading">
     <div class="dash-card-head"><h2 id="dash-launch-heading">Lancements</h2><button type="button" class="dash-link" id="all-launches">Voir tous ${icon('arrow')}</button></div>
