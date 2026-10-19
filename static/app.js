@@ -54,7 +54,7 @@ function sidebar(){
  const items=list=>list.map(([view,ico,label])=>{
    if(view==='dossier'){
      return `<div class="dossier-nav-block">
-       <button type="button" class="nav-btn ${active(view)?'active':''}" data-view="dossier" data-dossier-toggle title="Dossier Jaune" aria-current="${active(view)?'page':'false'}" aria-expanded="${dossierOpen}" aria-controls="dossier-nav-children">
+       <button type="button" class="nav-btn ${active(view)?'active':''}" data-view="dossier" title="Dossier Jaune" aria-current="${active(view)?'page':'false'}" data-dossier-toggle aria-expanded="${dossierOpen}" aria-controls="dossier-nav-children">
          ${icon('folder')}<span class="nav-text">Dossier Jaune</span><span class="dossier-nav-chevron" aria-hidden="true">⌄</span>
        </button>
        <div class="dossier-nav-children" id="dossier-nav-children" role="group" aria-label="Sous-dossiers du Dossier Jaune" ${dossierOpen?'':'hidden'}>
