@@ -33,7 +33,7 @@ function globalRenderRows(){
    ${d.versions.map(v=>`<button class="link" type="button" data-global-download="${e(d.id)}" data-v="${v.number}">v${v.number} · ${e(v.original_name)} · ${niceDate(v.created_at)} ${icon('download')}</button>`).join('')}
    </details></td></tr>`).join('')}</tbody></table></div>`:'<p class="global-empty">Aucun document correspondant.</p>';
  host.querySelectorAll('[data-global-download]').forEach(b=>b.onclick=()=>globalDownload(b.dataset.globalDownload,Number(b.dataset.v)));
- host.querySelectorAll('[data-global-edit]').forEach(b=>b.onclick=()=>globalEditReference(b.dataset.globalEdit);
+ host.querySelectorAll('[data-global-edit]').forEach(b=>b.onclick=()=>globalEditReference(b.dataset.globalEdit));
 }
 function renderGlobalLibrary(){
  const folder=globalIndex.folders.find(f=>f.slug===globalFolder);
