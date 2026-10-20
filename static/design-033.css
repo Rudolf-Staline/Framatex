@@ -1,0 +1,253 @@
+/* Framatex — coloration contextuelle du Dossier Jaune.
+   Les quatre thèmes restent sobres : fond légèrement teinté, surfaces claires
+   et contrastes contrôlés. Aucun effet sur la connexion ni les autres écrans. */
+
+.app-shell[data-dossier-theme="jaune"]{
+ --folder-accent:#c69617;
+ --folder-button:#f1c443;
+ --folder-button-hover:#e5b62c;
+ --folder-button-text:#352808;
+ --folder-ink:#694b0b;
+ --folder-canvas:#fff9eb;
+ --folder-side:#fffcf5;
+ --folder-header:#fffdf8;
+ --folder-panel:#fffdfa;
+ --folder-soft:#fff0c3;
+ --folder-softest:#fff7df;
+ --folder-border:#e8cf88;
+ --folder-line:#f0e1ba;
+ --folder-muted:#7b6b46;
+}
+.app-shell[data-dossier-theme="rose"]{
+ --folder-accent:#af4679;
+ --folder-button:#a83e72;
+ --folder-button-hover:#8f2c5d;
+ --folder-button-text:#ffffff;
+ --folder-ink:#823056;
+ --folder-canvas:#fff4f8;
+ --folder-side:#fff8fb;
+ --folder-header:#fffafd;
+ --folder-panel:#fffafd;
+ --folder-soft:#f9deea;
+ --folder-softest:#fff0f6;
+ --folder-border:#e4a3c0;
+ --folder-line:#f2d4e0;
+ --folder-muted:#855b6c;
+}
+.app-shell[data-dossier-theme="bleu"]{
+ --folder-accent:#276ebc;
+ --folder-button:#2368ae;
+ --folder-button-hover:#19558f;
+ --folder-button-text:#ffffff;
+ --folder-ink:#22558b;
+ --folder-canvas:#f3f8ff;
+ --folder-side:#f8fbff;
+ --folder-header:#fafdff;
+ --folder-panel:#fbfdff;
+ --folder-soft:#dfeeff;
+ --folder-softest:#edf5ff;
+ --folder-border:#a4c7ed;
+ --folder-line:#d6e6f6;
+ --folder-muted:#526c8b;
+}
+.app-shell[data-dossier-theme="vert"]{
+ --folder-accent:#287e5b;
+ --folder-button:#237956;
+ --folder-button-hover:#1c6548;
+ --folder-button-text:#ffffff;
+ --folder-ink:#226749;
+ --folder-canvas:#f1faf5;
+ --folder-side:#f7fcf8;
+ --folder-header:#fbfefc;
+ --folder-panel:#fcfffd;
+ --folder-soft:#d9f1e3;
+ --folder-softest:#eaf8ef;
+ --folder-border:#a0d4b7;
+ --folder-line:#d0e9dc;
+ --folder-muted:#557662;
+}
+
+/* Appliquer la couleur à l'espace entier, pas seulement aux onglets. */
+.app-shell[data-dossier-theme],
+.app-shell[data-dossier-theme] .main,
+.app-shell[data-dossier-theme] .content{
+ background:var(--folder-canvas);
+}
+.app-shell[data-dossier-theme] .sidebar.sidebar-rail.sidebar-light{
+ background:var(--folder-side);
+ border-right-color:var(--folder-line);
+}
+.app-shell[data-dossier-theme] .topbar{
+ background:var(--folder-header);
+ border-bottom-color:var(--folder-line);
+}
+.app-shell[data-dossier-theme] .sidebar-rail.sidebar-light .rail-brand{
+ border-bottom-color:var(--folder-line);
+}
+.app-shell[data-dossier-theme] .sidebar-rail.sidebar-light .rail-logo{
+ background:var(--folder-soft);
+ color:var(--folder-ink);
+}
+.app-shell[data-dossier-theme] .sidebar-rail.sidebar-light .rail-management{
+ border-top-color:var(--folder-line);
+}
+.app-shell[data-dossier-theme] .sidebar-rail.sidebar-light .nav-btn.active,
+.app-shell[data-dossier-theme] .sidebar-rail.sidebar-light .dossier-nav-child.active{
+ background:var(--folder-soft);
+ border-color:transparent;
+ color:var(--folder-ink);
+}
+.app-shell[data-dossier-theme] .sidebar-rail.sidebar-light .nav-btn.active svg{
+ stroke:var(--folder-accent);
+}
+.app-shell[data-dossier-theme] .sidebar-rail.sidebar-light .dossier-nav-child.active{
+ border-left:3px solid var(--folder-accent);
+ padding-left:7px;
+}
+.app-shell[data-dossier-theme] .sidebar-rail.sidebar-light .dossier-nav-children{
+ border-left-color:var(--folder-border);
+}
+.app-shell[data-dossier-theme] .sidebar-rail.sidebar-light .dossier-nav-child:hover,
+.app-shell[data-dossier-theme] .sidebar-rail.sidebar-light .nav-btn:hover{
+ background:var(--folder-softest);
+ color:var(--folder-ink);
+}
+.app-shell[data-dossier-theme] .sidebar-rail.sidebar-light .dossier-nav-child:focus-visible,
+.app-shell[data-dossier-theme] .sidebar-rail.sidebar-light [data-dossier-toggle]:focus-visible{
+ outline-color:var(--folder-accent);
+}
+.app-shell[data-dossier-theme] .lc-global-search:focus-visible,
+.app-shell[data-dossier-theme] .lc-notification-btn:focus-visible{
+ outline:2px solid var(--folder-accent);
+ outline-offset:2px;
+}
+.app-shell[data-dossier-theme] .lc-global-search:hover{
+ background:var(--folder-softest);
+}
+
+/* Bande de couleur du chapitre et panneau documentaire. */
+.app-shell[data-dossier-theme] .global-breadcrumb strong{
+ color:var(--folder-ink);
+}
+.app-shell[data-dossier-theme] .global-workspace-panel{
+ background:var(--folder-panel);
+ border:1px solid var(--folder-line);
+ border-top:4px solid var(--folder-accent);
+ box-shadow:0 10px 26px rgba(25,38,44,.04);
+}
+.app-shell[data-dossier-theme] .global-workspace .global-folder-card{
+ border-color:var(--folder-line);
+ background:#ffffff;
+}
+.app-shell[data-dossier-theme] .global-workspace .global-folder-card.selected{
+ background:var(--folder-softest);
+ border-color:var(--folder-accent);
+ box-shadow:0 0 0 1px var(--folder-accent);
+}
+.app-shell[data-dossier-theme] .global-workspace .global-folder-card.selected .global-card-text strong{
+ color:var(--folder-ink);
+}
+.app-shell[data-dossier-theme] .global-workspace .global-folder-card.selected .global-card-icon{
+ color:var(--folder-ink);
+ background:var(--folder-soft);
+}
+.app-shell[data-dossier-theme] .global-workspace .global-card-text small{
+ color:var(--folder-muted);
+}
+.app-shell[data-dossier-theme] .global-panel-title h1{
+ color:#202c2a;
+}
+.app-shell[data-dossier-theme] .global-panel-title h1 span{
+ color:var(--folder-ink);
+}
+.app-shell[data-dossier-theme] .global-panel-title .global-panel-icon{
+ background:var(--folder-soft);
+ color:var(--folder-ink);
+}
+.app-shell[data-dossier-theme] .global-panel-title p{
+ color:var(--folder-muted);
+}
+
+/* Actions et sélection utilisent toujours la teinte du sous-dossier actif. */
+.app-shell[data-dossier-theme] .global-workspace .primary{
+ background:var(--folder-button);
+ border-color:var(--folder-button);
+ color:var(--folder-button-text);
+}
+.app-shell[data-dossier-theme] .global-workspace .primary:hover{
+ background:var(--folder-button-hover);
+ border-color:var(--folder-button-hover);
+ color:var(--folder-button-text);
+}
+.app-shell[data-dossier-theme] .global-workspace .primary:focus-visible{
+ outline:3px solid var(--folder-border);
+ outline-offset:2px;
+}
+.app-shell[data-dossier-theme] .global-panel-tab{
+ background:var(--folder-soft);
+ color:var(--folder-ink);
+}
+.app-shell[data-dossier-theme] .global-panel-tabbar{
+ border-bottom-color:var(--folder-line);
+}
+.app-shell[data-dossier-theme] .global-workspace .global-search,
+.app-shell[data-dossier-theme] .global-filter-label{
+ border-color:var(--folder-line);
+ background:#ffffff;
+}
+.app-shell[data-dossier-theme] .global-workspace .global-search:focus-within,
+.app-shell[data-dossier-theme] .global-filter-label:focus-within{
+ border-color:var(--folder-accent);
+ outline:2px solid var(--folder-soft);
+}
+.app-shell[data-dossier-theme] .global-workspace .global-table th{
+ background:var(--folder-softest);
+ border-bottom-color:var(--folder-line);
+ color:var(--folder-ink);
+}
+.app-shell[data-dossier-theme] .global-workspace .global-table td{
+ border-bottom-color:var(--folder-line);
+}
+.app-shell[data-dossier-theme] .global-workspace .global-table tbody tr:hover:not(.global-versions){
+ background:var(--folder-softest);
+}
+.app-shell[data-dossier-theme] .global-file-icon{
+ background:var(--folder-softest);
+ color:var(--folder-ink);
+}
+.app-shell[data-dossier-theme] .global-type-pill{
+ background:var(--folder-soft);
+ color:var(--folder-ink);
+}
+.app-shell[data-dossier-theme] .global-workspace .global-actions button{
+ color:var(--folder-ink);
+ border-color:var(--folder-line);
+}
+.app-shell[data-dossier-theme] .global-workspace .global-actions button:hover{
+ background:var(--folder-soft);
+ border-color:var(--folder-border);
+}
+.app-shell[data-dossier-theme] .global-empty-glyph{
+ background:var(--folder-soft);
+ color:var(--folder-ink);
+}
+.app-shell[data-dossier-theme] .global-empty-state strong{
+ color:var(--folder-ink);
+}
+.app-shell[data-dossier-theme] .global-workspace .global-version-list button:focus-visible,
+.app-shell[data-dossier-theme] .global-workspace a:focus-visible{
+ outline:2px solid var(--folder-accent);
+ outline-offset:2px;
+}
+@media(max-width:760px){
+ .app-shell[data-dossier-theme] .sidebar.sidebar-rail.sidebar-light{
+  background:var(--folder-side);
+  border-bottom:1px solid var(--folder-line);
+ }
+ .app-shell[data-dossier-theme] .global-workspace-panel{
+  border-top-width:3px;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .app-shell[data-dossier-theme] *{transition:none!important}
+}
