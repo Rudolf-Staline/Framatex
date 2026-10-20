@@ -453,3 +453,5 @@ body .app-shell:has(.document-register) .main,body .app-shell:has(.document-regi
  .document-register .saffron-table{min-width:760px}
  .document-register .saffron-table-scroll{overscroll-behavior-inline:contain}
 }
+
+.document-register .saffron-file-icon img{width:40px;height:40px;max-width:none;flex-shrink:0;display:block}

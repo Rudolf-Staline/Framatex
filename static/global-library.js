@@ -35,7 +35,7 @@ function globalDocumentFormat(doc){
 }
 function globalFileIcon(doc){
  const format=globalDocumentFormat(doc);
- return '<span class="saffron-file-icon global-format-'+format+'">'+icon(({pdf:'file-pdf',word:'file-doc',excel:'file-xls',image:'file-image'})[format]||'file')+'</span>';
+ return '<span class="saffron-file-icon global-format-'+format+'"><img src="/assets/icons/file-types/'+(({pdf:'pdf-simple',word:'docx',excel:'xlsx',image:'image'})[format]||'empty')+'.svg" alt="" aria-hidden="true"></span>';
 }
 function globalFileSize(doc){
  const size=doc.latest?.size;
