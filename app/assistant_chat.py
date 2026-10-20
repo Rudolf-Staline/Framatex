@@ -23,6 +23,12 @@ class ChatInput(BaseModel):
 def chat(payload: ChatInput, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     from .main import permitted
     phrase = normalized(payload.question)
+    from .access import must_access
+    from .assistant_context import contextual_answer
+    context = must_access(db,user,payload.launch_id) if payload.launch_id else None
+    result = contextual_answer(db,user,payload.question,context,permitted)
+    if result is not None:
+        return result
     memory = payload.mode == "memory" or any(word in phrase for word in
         ("resolu", "resoudre", "rencontre", "solution", "cause", "deja", "incident", "probleme", "eviter", "pourquoi"))
     if memory:
