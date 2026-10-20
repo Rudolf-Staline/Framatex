@@ -30,6 +30,8 @@ def assert_ready():
         missing = REQUIRED - existing
         if missing:
             raise RuntimeError("Base demo non initialisee : executer explicitement python -m app.demo_postgres init")
+        if 'identification_json' not in {c['name'] for c in inspect(conn).get_columns('launches')}:
+            raise RuntimeError("Fiche commande non initialisée : python -m tools.migrate_order_identification --apply")
         # Public is an exposed Supabase Data API schema by default.
         rows = conn.execute(text("""SELECT c.relname, c.relrowsecurity FROM pg_class c
             JOIN pg_namespace n ON n.oid=c.relnamespace

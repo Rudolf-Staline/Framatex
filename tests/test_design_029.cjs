@@ -36,20 +36,26 @@ assert(!empty.includes('workflow-stats'),'Empty metrics should disappear');
 assert(!empty.includes('Règles consultables'));
 assert(!empty.includes('Écarts non traités'));
 assert(!empty.includes('Version 0.4'));
-const info=vm.runInContext(`(()=>{
+vm.runInContext(fs.readFileSync('static/order-identification.js','utf8'),ctx);
+(async()=>{
+const info=await vm.runInContext(`(async()=>{
  let captured={};
  modal=(title,body)=>{captured={title,body}};
  state.detail={id:'uuid-example',client_name:'Acme <script>',order_ref:'C-2',
  orli_ref:null,updated_at:'2026-10-18T14:39:21+00:00'};
- showLaunchInformation();
+ orderFieldCatalog=[{key:'client_name',label:'Client',type:'text',storage:'base'},
+ {key:'order_ref',label:'Numéro de commande',type:'text',storage:'base'},
+ {key:'orli_ref',label:'Référence ORLI',type:'text',storage:'base'}];
+ await showLaunchInformation();
  return captured;
 })()`,ctx);
-assert.equal(info.title,'Informations du lancement');
-assert(info.body.includes('uuid-example'));
-assert(info.body.includes('Commande'));
-assert(info.body.includes('Non renseignée'));
+assert.equal(info.title,'Fiche commande');
+assert(info.body.includes('Numéro de commande'));
+assert(info.body.includes('Non renseigné'));
 assert(info.body.includes('Acme &lt;script&gt;'));
 assert(!info.body.includes('<script>'));
 assert(!info.body.includes('Invalid Date'));
 assert(js.includes('ArrowRight')&&js.includes('ArrowLeft'));
 console.log('Framatex 0.29: compact dossier, accessible tabs, clean empty quality, timezone dates and safe information modal OK');
+
+})().catch(err=>{console.error(err);process.exitCode=1});

@@ -29,7 +29,7 @@ assert(app.includes('class="admin-advanced"'));
 assert(app.includes('class="admin-advanced-content"'));
 assert(app.includes('Paramètres avancés'));
 assert(!app.includes('Journal d’activité<span class="brand-accent">'));
-assert(app.includes('Un dossier par lancement de fabrication.'));
+assert(html.includes('/assets/order-identification.js'));
 assert(app.includes('data-launch="${e(l.id)}" tabindex="0"'));
 assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length,'Malformed CSS braces');
 // Minimal rendering check for the redesigned launch listing with live mocked results.
@@ -37,18 +37,17 @@ const root={innerHTML:'',querySelector:()=>({addEventListener(){},onclick:null})
 const ctx={console,setTimeout,clearTimeout,document:{querySelector:()=>root},window:{addEventListener(){}},syncFloatingAssistant:()=>{}};
 vm.createContext(ctx);
 vm.runInContext(app.slice(0,app.lastIndexOf('(async function init(){')),ctx);
+vm.runInContext(fs.readFileSync('static/order-identification.js','utf8'),ctx);
 vm.runInContext([
  'state.me={name:"Admin",admin:true,permissions:[],roles:["Administrateur"]};',
  'api=async path=>path==="/api/launches"?[{id:"L1",name:"Lancement fictif",status:"À compléter",client_name:"Client fictif",created_at:"2026-10-18T10:00:00Z"}]:[];',
  'syncFloatingAssistant=()=>{};',
  'bindLaunchRows=()=>{};'
 ].join('\n'),ctx);
-// The DOM mock need only support event registration for list rendering.
-(async()=>{
- await vm.runInContext('launchList()',ctx);
- assert(root.innerHTML.includes('Dossiers jaunes'));
- assert(root.innerHTML.includes('Un dossier par lancement de fabrication.'));
- assert(root.innerHTML.includes('Lancement fictif'));
- assert(root.innerHTML.includes('tabindex="0"'));
- console.log('Framatex 0.27: coherent pages, collapsed admin, live list, themed folders, responsive layout OK');
-})().catch(err=>{console.error(err);process.exitCode=1});
+const table=vm.runInContext("orderTable([{id:'L1',name:'Dossier fictif',order_ref:'CMD-1',client_name:'Client fictif',status:'À compléter',identification:{workshop:'Atelier A'}}])",ctx);
+assert(table.includes('CMD-1'));
+assert(table.includes('Client fictif'));
+assert(table.includes('Atelier A'));
+assert(table.includes('data-order-open="L1"'));
+assert(table.includes('<button type="button"'));
+console.log('Framatex: themed folders, responsive styles and order listing OK');

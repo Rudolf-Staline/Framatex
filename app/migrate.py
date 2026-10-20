@@ -25,7 +25,7 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
                         Column('version', String(80), primary_key=True),
                         Column('applied_at', String(50), nullable=False), extend_existing=True)
 
-REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_global_library', '0005_experience_controls')
+REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_global_library', '0005_experience_controls', '0006_order_identification')
 
 
 def _versions(conn):
@@ -45,7 +45,9 @@ def migrate():
         pending_pilot = has_migrations and ('0003_pilot_reports' not in {
             v for v, in probe.execute(text('SELECT version FROM schema_migrations'))} or
             '0004_global_library' not in {v for v, in probe.execute(text('SELECT version FROM schema_migrations'))})
-    if legacy or pending_pilot:
+    with engine.connect() as probe:
+        pending_identification = 'launches' in tables and 'identification_json' not in {c['name'] for c in inspect(probe).get_columns('launches')}
+    if legacy or pending_pilot or pending_identification:
         saved = backup_sqlite()
         if saved:
             print('Sauvegarde automatique avant migration :', saved)
@@ -99,6 +101,11 @@ def migrate():
             apply_to_connection(conn)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0005_experience_controls','d':datetime.now(timezone.utc).isoformat()})
+        if '0006_order_identification' not in done:
+            from tools.migrate_order_identification import apply_to_connection
+            apply_to_connection(conn)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0006_order_identification','d':datetime.now(timezone.utc).isoformat()})
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
         cols = {c['name'] for c in inspect(conn).get_columns('launches')}
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():

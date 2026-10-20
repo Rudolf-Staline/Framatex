@@ -21,6 +21,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .core import Base, COOKIE, DATA_DIR, ROOT, engine, get_current_user, get_db, hash_password, check_password, make_token, login_limit_key, login_attempt_allowed, record_login_failure, clear_login_failures
+from .order_fields import ORDER_FIELDS, OrderIdentification, identification_values, merge_identification
 from .models import AuditEvent, Document, DocumentVersion, Folder, Launch, LaunchMember, Role, RolePermission, User
 from .global_library_models import GlobalFolder, GlobalDocumentEntry, GlobalLibraryConfig  # noqa: F401
 from .experience_models import ExperienceRecord, DocumentExpectation  # noqa: F401
@@ -130,7 +131,7 @@ def user_out(u: User):
 
 
 def launch_out(l: Launch):
-    return {"restricted": bool(l.restricted), "id": l.id, "name": l.name, "order_ref": l.order_ref, "client_name": l.client_name, "orli_ref": l.orli_ref, "status": l.status, "created_at": l.created_at.isoformat(), "updated_at": l.updated_at.isoformat()}
+    return {"identification": identification_values(l), "restricted": bool(l.restricted), "id": l.id, "name": l.name, "order_ref": l.order_ref, "client_name": l.client_name, "orli_ref": l.orli_ref, "status": l.status, "created_at": l.created_at.isoformat(), "updated_at": l.updated_at.isoformat()}
 
 
 def version_out(v: DocumentVersion):
@@ -147,12 +148,14 @@ class LoginPayload(BaseModel):
     password: str
 
 class LaunchPayload(BaseModel):
+    identification: OrderIdentification = Field(default_factory=OrderIdentification)
     name: str = Field(min_length=2, max_length=180)
     client_name: str | None = Field(default=None, max_length=150)
     order_ref: str | None = Field(default=None, max_length=100)
     orli_ref: str | None = Field(default=None, max_length=100)
 
 class LaunchPatch(BaseModel):
+    identification: OrderIdentification | None = None
     name: str | None = Field(default=None, min_length=2, max_length=180)
     client_name: str | None = Field(default=None, max_length=150)
     order_ref: str | None = Field(default=None, max_length=100)
@@ -293,6 +296,13 @@ def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_
             "completeness_unconfigured": sum(not c["configured"] for c in completion),
             "recent": [launch_out(l) for l in sorted(launches, key=lambda l: l.created_at, reverse=True)[:5]]}
 
+@app.get("/api/launch-fields")
+def launch_fields(user: User = Depends(get_current_user)):
+    if not (permitted(user, "launch.read") or permitted(user, "launch.create")):
+        raise HTTPException(403, "Accès interdit")
+    return {"fields": ORDER_FIELDS}
+
+
 @app.get("/api/launches")
 def launches(q: str = "", user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.read")
@@ -311,6 +321,9 @@ def launches(q: str = "", user: User = Depends(get_current_user), db: Session = 
 def create_launch(payload: LaunchPayload, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.create")
     l = Launch(name=payload.name.strip(), client_name=payload.client_name or None, order_ref=payload.order_ref or None, orli_ref=payload.orli_ref or None, restricted=os.getenv("FRAMATEX_RESTRICT_NEW_LAUNCHES", "0") == "1", created_by=user.id)
+    if len(l.name) < 2:
+        raise HTTPException(422, "Le nom du dossier est requis")
+    merge_identification(l, payload.identification)
     db.add(l)
     db.flush()
     for slug, label in FOLDERS:
@@ -345,6 +358,11 @@ def update_launch(launch_id: str, payload: LaunchPatch, user: User = Depends(get
     must(user, "launch.update")
     l = get_launch(db, launch_id)
     changes = payload.model_dump(exclude_unset=True)
+    changes.pop("identification", None)
+    if payload.identification is not None:
+        merge_identification(l, payload.identification)
+    if "name" in changes and (not changes["name"] or len(changes["name"].strip()) < 2):
+        raise HTTPException(422, "Le nom du dossier est requis (2 caractères minimum)")
     if "status" in changes and changes["status"] not in STATUSES:
         raise HTTPException(422, "Statut inconnu")
     if "orli_ref" in changes and db.scalar(select(OrliLink).where(OrliLink.launch_id == l.id)):
@@ -362,7 +380,10 @@ def update_launch(launch_id: str, payload: LaunchPatch, user: User = Depends(get
                 GlobalDocumentEntry.legacy_launch_id == l.id,
                 GlobalDocumentEntry.orli_overridden == False)).all():  # noqa: E712
             entry.orli_ref = normalized
-    audit(db, user, "launch.update", "launch", l.id, {"fields": list(changes.keys())})
+    changed_fields = list(changes.keys())
+    if payload.identification is not None:
+        changed_fields.extend("identification." + key for key in payload.identification.model_fields_set)
+    audit(db, user, "launch.update", "launch", l.id, {"fields": changed_fields})
     db.commit()
     return launch_out(l)
 

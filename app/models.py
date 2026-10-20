@@ -45,6 +45,7 @@ class Launch(Base):
     order_ref: Mapped[str | None] = mapped_column(String(100), nullable=True)
     client_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
     orli_ref: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    identification_json: Mapped[str] = mapped_column(Text, default="{}", server_default="{}", nullable=False)
     status: Mapped[str] = mapped_column(String(40), default="À compléter")
     created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

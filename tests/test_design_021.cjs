@@ -33,7 +33,7 @@ for(const view of ['dossier','controls','rex']){
 assert(output.normal.includes('data-view="dossier" title="Dossier Jaune" aria-current="page"'));
 assert(!output.normal.includes('data-view="assistant"'));
 assert(js.includes("else if(view==='assistant')openFloatingAssistant()"));
-assert(!output.inside.includes('data-view="launches"'));
+assert(output.inside.includes('data-view="launches"')); // Un dossier par commande : accès rétabli.
 assert(!output.normal.includes('data-view="notifications"'));
 assert(!output.normal.includes('data-view="audit"'));
 assert(!output.normal.includes('data-view="actions"'));
