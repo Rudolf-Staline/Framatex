@@ -487,3 +487,18 @@ body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child.active .dossier-c
 .knowledge-page .page-title>.ui-icon{width:30px;height:30px;vertical-align:-3px;margin-right:8px;color:var(--folder-ink)}
 .knowledge-page h2>.ui-icon,.saffron-version-list h3>.ui-icon{width:20px;height:20px;vertical-align:-3px;margin-right:6px}
 .knowledge-page button>.ui-icon{width:18px;height:18px;vertical-align:-3px;flex-shrink:0}
+
+/* Action colors follow the selected folder, including dialogs outside the shell. */
+body:has(.app-shell[data-dossier-theme="jaune"]){--action-color:#d39b00;--action-hover:#b88700}
+body:has(.app-shell[data-dossier-theme="rose"]){--action-color:#e34b87;--action-hover:#c93973}
+body:has(.app-shell[data-dossier-theme="bleu"]){--action-color:#287fe0;--action-hover:#1e68bf}
+body:has(.app-shell[data-dossier-theme="vert"]){--action-color:#24a363;--action-hover:#19854f}
+body:has(.app-shell[data-dossier-theme]) button.primary{background:var(--action-color);border-color:var(--action-color);color:#fff;font-weight:750}
+body:has(.app-shell[data-dossier-theme]) button.primary:hover{background:var(--action-hover);border-color:var(--action-hover);color:#fff}
+body:has(.app-shell[data-dossier-theme]) button.secondary{border-color:var(--action-color);color:var(--action-color);background:#fff}
+body:has(.app-shell[data-dossier-theme]) button.secondary:hover{border-color:var(--action-hover);color:var(--action-hover);background:#fff}
+#floating-assistant-root .floating-assistant-trigger,
+#floating-assistant-root .floating-assistant-trigger:hover,
+#floating-assistant-root .floating-assistant-trigger:active,
+#floating-assistant-root .floating-assistant-trigger:focus-visible{background:#fff;color:#344054;border:1px solid #e4e7ec;box-shadow:0 4px 18px #10182814}
+#floating-assistant-root .floating-assistant-trigger svg{stroke:currentColor}
