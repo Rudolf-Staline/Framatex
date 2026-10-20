@@ -455,3 +455,17 @@ body .app-shell:has(.document-register) .main,body .app-shell:has(.document-regi
 }
 
 .document-register .saffron-file-icon img{width:40px;height:40px;max-width:none;flex-shrink:0;display:block}
+
+/* Folder navigation shares one tab rail above the document panel. */
+.document-register .register-folder-bar{display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:1px solid #d0d5dd}
+.document-register .saffron-folders{align-self:stretch;flex:1;max-width:630px;gap:0;margin:0;border:0}
+.document-register .saffron-folder-tab{flex:1;max-width:none;height:52px;justify-content:center;margin-bottom:-1px;border:1px solid transparent;border-bottom:1px solid #d0d5dd;border-radius:8px 8px 0 0;background:transparent}
+.document-register .saffron-folder-tab.selected{border-color:#d0d5dd;border-bottom-color:#fff;background:#fff;color:var(--folder-ink,#775510);box-shadow:inset 0 3px var(--folder-accent,#efbd30)}
+.document-register .saffron-folder-tab:focus-visible{outline:2px solid var(--folder-ink,#775510);outline-offset:-5px}
+.document-register .register-upload{margin:0 0 8px}
+@media(max-width:760px){
+ .document-register .register-folder-bar{flex-wrap:wrap;gap:12px}
+ .document-register .saffron-folders{order:2;flex-basis:100%;max-width:none}
+ .document-register .register-upload{margin:0 0 0 auto}
+ .document-register .saffron-folder-tab{padding:12px 8px;gap:8px}
+}
