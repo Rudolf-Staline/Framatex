@@ -15,7 +15,7 @@ from typing import Literal
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictBool, ConfigDict, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -163,9 +163,28 @@ class Grant(BaseModel):
     action: str
     folder: str | None = None
 
+class FolderRoleAccess(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    access: StrictBool = False
+    modify: StrictBool = False
+
+    @model_validator(mode="after")
+    def modification_requires_access(self):
+        if self.modify and not self.access:
+            raise ValueError("La modification nécessite l’accès au sous-dossier")
+        return self
+
+
 class RolePayload(BaseModel):
     name: str = Field(min_length=2, max_length=80)
     permissions: list[Grant] = Field(default_factory=list)
+    folder_access: dict[Literal["jaune", "rose", "bleu", "vert"], FolderRoleAccess] | None = None
+
+    @model_validator(mode="after")
+    def single_permission_format(self):
+        if self.folder_access is not None and self.permissions:
+            raise ValueError("Utilisez les accès par sous-dossier ou les permissions détaillées")
+        return self
 
 class UserPayload(BaseModel):
     name: str = Field(min_length=2, max_length=120)
@@ -483,22 +502,28 @@ def download(doc_id: str, number: int, user: User = Depends(get_current_user), d
 @app.get("/api/admin/roles")
 def list_roles(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     admin_only(user)
-    return [{"id": r.id, "name": r.name, "permissions": [{"action": g.action, "folder": g.folder_slug} for g in r.grants]} for r in db.scalars(select(Role).order_by(Role.name)).all()]
+    from .role_permissions import folder_access
+    return [{"id": r.id, "name": r.name, "folder_access": folder_access(r), "permissions": [{"action": g.action, "folder": g.folder_slug} for g in r.grants]} for r in db.scalars(select(Role).order_by(Role.name)).all()]
 
 @app.post("/api/admin/roles", status_code=201)
 def create_role(payload: RolePayload, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     admin_only(user)
+    if len(payload.name.strip()) < 2:
+        raise HTTPException(422, "Le nom du rôle doit contenir au moins deux caractères")
     if payload.name.strip().lower() == "administrateur":
         raise HTTPException(422, "Ce rôle est réservé au système")
     for p in payload.permissions:
         if p.action not in ACTIONS or p.folder not in (None, *SLUGS) or (p.folder and not (p.action.startswith(("document.", "rex.")) or p.action in {"completeness.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"})):
             raise HTTPException(422, "Permission inconnue")
     role = Role(name=payload.name.strip())
+    from .role_permissions import folder_grants
+    grants = (folder_grants(payload.folder_access) if payload.folder_access is not None
+              else [(p.action, p.folder) for p in payload.permissions])
     seen = set()
-    for p in payload.permissions:
-        if (p.action, p.folder) not in seen:
-            role.grants.append(RolePermission(action=p.action, folder_slug=p.folder))
-            seen.add((p.action, p.folder))
+    for action, folder in grants:
+        if (action, folder) not in seen:
+            role.grants.append(RolePermission(action=action, folder_slug=folder))
+            seen.add((action, folder))
     db.add(role)
     try:
         db.flush()

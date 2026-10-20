@@ -350,3 +350,56 @@ body .app-shell :focus-visible{outline:2px solid var(--folder-ink,#775510);outli
 
 /* Keep navigation usable when a small laptop opens the full management menu. */
 @media(min-width:761px){body .app-shell .rail-navigation-content{overflow-y:auto;scrollbar-width:thin}.dossier-nav-chevron svg,.rail-chevron svg{width:16px;height:16px}}
+
+/* Compact file register: name, size, dates and the actual latest uploader. */
+.saffron-table th:first-child{width:38%}
+.saffron-table th.saffron-size-col{width:9%}
+.saffron-table th.saffron-added-col,.saffron-table th.saffron-updated-col{width:16%}
+.saffron-table th.saffron-uploader-col{width:21%}
+.saffron-table td{height:68px;padding-block:12px}
+.saffron-table td.saffron-added-col,.saffron-table td.saffron-updated-col{font-size:11.5px;white-space:nowrap;color:#657284}
+.saffron-table th:first-child,.saffron-table td:first-child{padding-left:12px}
+.saffron-document-name{gap:12px;min-height:44px}
+.saffron-document-name strong{font-size:13px;font-weight:650}
+.saffron-file-meta{display:block;margin-top:3px;font-size:11px;line-height:1.6;color:#657284;overflow-wrap:anywhere}
+.saffron-file-meta .global-version-pill{font-size:inherit}
+.saffron-file-icon{width:28px;height:32px}
+.saffron-file-icon svg{width:28px;height:32px}
+.saffron-uploader{display:flex;align-items:center;gap:9px;min-width:0;font-size:12px;color:#344154}
+.saffron-uploader>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.saffron-uploader-avatar{display:grid;place-items:center;flex:0 0 28px;height:28px;background:var(--folder-soft,#f3ebd9);color:#5c5139;border-radius:50%;font-size:10px;font-weight:650}
+.saffron-mobile-file-size{display:none}
+.role-access-table{width:100%;border-collapse:collapse;margin:20px 0 8px}
+.role-access-table th,.role-access-table td{padding:14px 10px;border-bottom:1px solid #e8e9e5;text-align:center}
+.role-access-table th:first-child{text-align:left}
+.role-access-table thead th{font-size:12px;color:#657284;font-weight:600}
+.role-access-table tbody th{font-size:14px;font-weight:600}
+.role-folder-name{display:flex;align-items:center;gap:12px}
+.role-folder-name .dossier-child-dot{width:12px;height:12px;flex:0 0 12px}
+.role-folder-name small{display:block;font-size:11px;color:#657284;font-weight:400;margin-top:3px}
+.role-access-table input[type=checkbox]{width:24px;height:24px;accent-color:#a97712;cursor:pointer}
+.role-access-table input[disabled]{opacity:.35;cursor:not-allowed}
+.role-folder-summaries{display:flex;flex-wrap:wrap;gap:12px 22px;padding:4px 0}
+.role-folder-summary{display:grid;grid-template-columns:12px auto;align-items:center;column-gap:7px;min-width:100px;font-size:12px}
+.role-folder-summary .dossier-child-dot{width:10px;height:10px}
+.role-folder-summary>span:last-child{grid-column:2;color:#657284;font-size:11px;font-weight:400}
+#role-form-error{color:#a33427;font-size:13px;line-height:1.6}
+@media(max-width:1150px) and (min-width:761px){
+ .saffron-table .saffron-added-col,.saffron-table .saffron-uploader-col{display:none}
+ .saffron-table th:first-child{width:60%}
+ .saffron-table th.saffron-size-col{width:14%}
+ .saffron-table th.saffron-updated-col{width:26%}
+}
+@media(max-width:760px){
+ .saffron-table .saffron-added-col,.saffron-table .saffron-updated-col,.saffron-table .saffron-uploader-col{display:none}
+ .saffron-table th:first-child{width:78%}
+ .saffron-table th.saffron-size-col{width:22%}
+ .saffron-file-meta{font-size:10.5px}
+ .role-access-table th,.role-access-table td{padding:13px 5px}
+ .role-access-table thead th{font-size:11px}
+}
+@media(max-width:400px){
+ .saffron-table .saffron-size-col{display:none}
+ .saffron-table th:first-child{width:auto}
+ .saffron-mobile-file-size{display:inline}
+}
