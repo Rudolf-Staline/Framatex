@@ -44,11 +44,11 @@ function showErr(err){toast(err.message||String(err))}
 function can(action,folder=null){return !!state.me?.admin||state.me?.permissions?.some(p=>p.action===action&&(folder?p.folder===null||p.folder===folder:p.folder===null))}
 function statusTag(s){return `<span class="tag ${s==='À compléter'?'orange':s==='Clôturé'?'green':s==='En validation'?'blue':''}">${e(s)}</span>`}
 function topbar(label){
- return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher un document">${icon('search')}<span>Rechercher un document…</span></button><div class="topbar-actions"><button type="button" class="lc-notification-btn" id="top-notifications" title="Notifications" aria-label="Consulter les notifications">${icon('clock')}</button><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
+ return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher un document">${icon('search')}<span>Rechercher un document…</span></button><div class="topbar-actions"><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
 }
 function sidebar(){
- const primary=[['dossier','folder','Dossier Jaune'],...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s))?[['controls','shield','Vérifications']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s)&&can('rex.read',s))?[['rex','book','Mémoire métier']]:[]),['notifications','bell','Notifications']];
- const tools=[['actions','clock','Suivi'],['pilot','info','Aide & retours'],...(state.me.admin?[['launches','layers','Anciens lancements'],['orli','file','Imports ORLI'],['admin','users','Administration'],['audit','shield','Journal d’activité']]:[])];
+ const primary=[['dossier','folder','Dossier Jaune'],...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s))?[['controls','shield','Vérifications']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s)&&can('rex.read',s))?[['rex','book','Mémoire métier']]:[])];
+ const tools=[...(state.me.admin?[['orli','file','Imports ORLI'],['admin','users','Administration']]:[])];
  const active=view=>state.view===view||(state.view==='detail'&&view==='launches');
  const dossierOpen=!!state.sidebarDossierOpen;
  const subfolders=[['jaune','Jaune'],['rose','Rose'],['bleu','Bleu'],['vert','Vert']];
@@ -70,9 +70,9 @@ function sidebar(){
    <div class="rail-brand"><div class="rail-logo" aria-hidden="true">${icon('folder')}</div><span class="rail-brand-name">Framatex</span></div>
    <button type="button" class="mobile-navigation-toggle" id="mobile-navigation-toggle" aria-expanded="false" aria-controls="framat-navigation">${icon('grid')}<span>Menu</span></button>
    <div class="rail-navigation-content" id="framat-navigation"><nav class="sidebar-nav rail-primary" aria-label="Navigation principale">${items(primary)}</nav>
-   <details class="rail-management" ${toolsOpen?'open':''}><summary title="Outils de gestion">${icon('users')}<span class="nav-text">Gestion</span><span class="rail-chevron" aria-hidden="true">${icon('chevron')}</span></summary>
+   ${tools.length?`<details class="rail-management" ${toolsOpen?'open':''}><summary title="Outils de gestion">${icon('settings')}<span class="nav-text">Gestion</span><span class="rail-chevron" aria-hidden="true">${icon('chevron')}</span></summary>
      <nav class="sidebar-nav rail-management-links" aria-label="Gestion et contrôle">${items(tools)}</nav>
-   </details>
+   </details>`:'' }
    <div class="sidebar-bottom rail-account"><div class="user"><div class="avatar" aria-hidden="true">${e(state.me.name.trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</div><span class="user-name" title="${e(state.me.name)}">${e(state.me.name)}</span></div>
      <button type="button" class="logout" id="logout" title="Déconnexion" aria-label="Déconnexion">${icon('out')}<span>Quitter</span></button></div></div>
  </aside>`;
@@ -98,7 +98,6 @@ function mount(html,label){
  app.querySelector('#mobile-navigation-toggle')?.addEventListener('click',event=>{const button=event.currentTarget;const open=button.getAttribute('aria-expanded')!=='true';button.setAttribute('aria-expanded',String(open));app.querySelector('.sidebar')?.classList.toggle('is-mobile-open',open)});
  syncFloatingAssistant();
  app.querySelector('#global-search')?.addEventListener('click',async()=>{await navigate('dossier');app.querySelector('#global-search-input')?.focus()});
- app.querySelector('#top-notifications')?.addEventListener('click',()=>navigate('notifications'));
 
  app.querySelector('#logout').addEventListener('click',async()=>{try{await api('/api/auth/logout',{method:'POST'})}catch{}state.me=null;state.detail=null;renderLogin()});
 }
@@ -452,7 +451,7 @@ function openNewRole(){
 }
 function openNewUser(){modal('Créer un collaborateur',`<form id="user-form"><div class="field"><label>Nom complet</label><input id="u-name" required maxlength="120" /></div><div class="field"><label>Email</label><input id="u-email" type="email" required maxlength="254" /></div><div class="field"><label>Mot de passe initial (12 caractères minimum)</label><input id="u-pass" type="password" minlength="12" required autocomplete="new-password" /></div><div class="field"><label>Rôle</label><select id="u-role">${state.roles.map(r=>`<option value="${e(r.id)}">${e(r.name)}</option>`).join('')}</select></div><div class="modal-actions"><button type="button" class="secondary" id="cancel-modal">Annuler</button><button class="primary" type="submit">${icon('check')} Créer le compte</button></div></form>`);overlay.querySelector('#cancel-modal').onclick=closeModal;overlay.querySelector('#user-form').onsubmit=async evt=>{evt.preventDefault();try{await api('/api/admin/users',{method:'POST',body:JSON.stringify({name:val('u-name'),email:val('u-email'),password:overlay.querySelector('#u-pass').value,role_ids:[val('u-role')]})});closeModal();toast('Compte collaborateur créé');await admin()}catch(err){showErr(err)}}}
 async function auditView(){state.view='audit';state.audit=await api('/api/admin/audit');mount(`<div class="page-heading"><div><div class="page-kicker">${icon('activity')} TRAÇABILITÉ</div><h1 class="page-title">Journal d’activité</h1><p class="page-lead">100 dernières opérations sensibles.</p></div></div><div class="panel table-scroll"><table><thead><tr><th>Action</th><th>Utilisateur</th><th>Élément</th><th>Date</th></tr></thead><tbody>${state.audit.map(x=>`<tr><td class="row-title">${e(x.action)}</td><td class="audit-item">${e((x.actor_id||'—').slice(0,12))}</td><td class="audit-item">${e(x.target_type)} · ${e(x.target_id.slice(0,12))}</td><td class="small">${niceDate(x.occurred_at)}</td></tr>`).join('')}</tbody></table></div>`,'Journal d’activité')}
-async function navigate(view){try{if(view==='dossier'||view==='home')await globalLibraryPage();else if(view==='controls')await libraryControlsPage();else if(view==='rex')await rexPage();else if(view==='launches')await launchList();else if(view==='actions')await workspaceActions();else if(view==='assistant')openFloatingAssistant();else if(view==='notifications')await notificationsPage();else if(view==='pilot')await pilotPage();else if(view==='orli'&&state.me.admin)await orliAdmin();else if(view==='admin'&&state.me.admin)await admin();else if(view==='audit'&&state.me.admin)await auditView()}catch(err){showErr(err)}}
+async function navigate(view){try{if(view==='dossier'||view==='home')await globalLibraryPage();else if(view==='controls')await libraryControlsPage();else if(view==='rex')await rexPage();else if(view==='launches')await launchList();else if(view==='actions')await workspaceActions();else if(view==='assistant')openFloatingAssistant();else if(view==='pilot')await pilotPage();else if(view==='orli'&&state.me.admin)await orliAdmin();else if(view==='admin'&&state.me.admin)await admin();else if(view==='audit'&&state.me.admin)await auditView()}catch(err){showErr(err)}}
 window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 // Partie intégrée dans app.js lors de la construction du MVP 0.2.
 function phaseLabel(code){return {'preparation':'Préparation','approvisionnement':'Approvisionnement','fabrication':'Fabrication','expedition':'Expédition','cloture':'Clôture'}[code]||code}
