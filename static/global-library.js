@@ -1,7 +1,7 @@
 'use strict';
 // Un seul Dossier Jaune, quatre catégories permanentes, aucune arborescence par lancement.
 const GLOB_COLORS={jaune:'Jaune',rose:'Rose',bleu:'Bleu',vert:'Vert'};
-let globalIndex=null,globalFolder='jaune',globalQuery='';
+let globalIndex=null,globalFolder='jaune',globalQuery='',globalType='all',globalView='list';
 
 async function globalLibraryPage(){
  state.view='dossier';
@@ -12,6 +12,7 @@ async function openGlobalFolder(slug){
  if(!Object.hasOwn(GLOB_COLORS,slug))return;
  globalFolder=slug;
  globalQuery='';
+ globalType='all';
  state.dossierFolder=slug;
  state.sidebarDossierOpen=true;
  if(state.view==='dossier'&&globalIndex){renderGlobalLibrary();return}
@@ -21,7 +22,7 @@ function globalDocumentsVisible(){
  const group=globalIndex.folders.find(f=>f.slug===globalFolder);
  if(!group?.can_read)return [];
  const term=globalQuery.trim().toLocaleLowerCase('fr');
- return group.documents.filter(d=>!term||[d.title,d.doc_type,d.orli_ref||'',...(d.versions||[]).map(v=>v.original_name)].some(v=>String(v).toLocaleLowerCase('fr').includes(term)));
+ return group.documents.filter(d=>(globalType==='all'||String(d.doc_type||'').toLowerCase().includes(globalType))&&(!term||[d.title,d.doc_type,d.orli_ref||'',...(d.versions||[]).map(v=>v.original_name)].some(v=>String(v).toLocaleLowerCase('fr').includes(term))));
 }
 function globalRenderRows(){
  const group=globalIndex.folders.find(f=>f.slug===globalFolder);
@@ -31,31 +32,36 @@ function globalRenderRows(){
  const rows=globalDocumentsVisible();
  count.textContent=rows.length+' document'+(rows.length===1?'':'s');
  host.innerHTML=rows.length?`<div class="table-scroll"><table class="global-table">
-   <thead><tr><th>Document</th><th>Référence ORLI</th><th>Version</th><th>Dernière version</th><th>Actions</th></tr></thead>
-   <tbody>${rows.map(d=>`<tr>
-   <td><strong>${e(d.title)}</strong><small>${e(d.doc_type)} · ${e(d.latest?.original_name||'')}</small></td>
-   <td>${d.orli_ref?e(d.orli_ref):'<span class="muted">Non renseignée</span>'}</td>
-   <td>v${d.latest?.number||'—'}</td><td class="small">${niceDate(d.latest?.created_at||d.created_at)}</td>
-   <td class="global-actions"><button class="link" type="button" data-global-download="${e(d.id)}" data-v="${d.latest?.number||1}" aria-label="Télécharger ${e(d.title)}">${icon('download')}</button>
-   ${group.can_write?`<button class="link" type="button" data-global-edit="${e(d.id)}" aria-label="Modifier la référence ORLI">${icon('pencil')}</button>`:''}</td>
-   </tr><tr class="global-versions"><td colspan="5"><details><summary>Historique · ${d.versions.length} version${d.versions.length===1?'':'s'}</summary>
-   ${d.versions.map(v=>`<button class="link" type="button" data-global-download="${e(d.id)}" data-v="${v.number}">v${v.number} · ${e(v.original_name)} · ${niceDate(v.created_at)} ${icon('download')}</button>`).join('')}
-   </details></td></tr>`).join('')}</tbody></table></div>`:'<p class="global-empty">Aucun document correspondant.</p>';
+ <thead><tr><th>Nom</th><th>Type</th><th>Référence / ORLI</th><th>Date d'ajout</th><th>Version</th><th>Actions</th></tr></thead>
+ <tbody>${rows.map(d=>`<tr>
+ <td><div class="global-file-name"><span class="global-file-icon">${icon('file')}</span><span><strong>${e(d.title)}</strong><small>${e(d.latest?.original_name||'Document')}</small></span></div></td>
+ <td><span class="global-type-pill">${e(d.doc_type||'Autre')}</span></td>
+ <td>${d.orli_ref?e(d.orli_ref):'<span class="muted">—</span>'}</td>
+ <td class="small">${niceDate(d.latest?.created_at||d.created_at)}</td>
+ <td>v${d.latest?.number||'—'}</td>
+ <td class="global-actions"><button class="link" type="button" data-global-download="${e(d.id)}" data-v="${d.latest?.number||1}" aria-label="Télécharger ${e(d.title)}">${icon('download')}</button>
+ ${group.can_write?`<button class="link" type="button" data-global-edit="${e(d.id)}" aria-label="Modifier la référence ORLI">${icon('pencil')}</button>`:''}</td>
+ </tr><tr class="global-versions"><td colspan="6"><details><summary>Historique des versions · ${d.versions.length}</summary>
+ ${d.versions.map(v=>`<button class="link" type="button" data-global-download="${e(d.id)}" data-v="${v.number}">v${v.number} · ${e(v.original_name)} · ${niceDate(v.created_at)} ${icon('download')}</button>`).join('')}
+ </details></td></tr>`).join('')}</tbody></table></div>`:`<div class="global-empty-state"><div class="global-empty-glyph">${icon('folder')}</div><strong>${globalQuery||globalType!=='all'?'Aucun résultat':'Aucun document pour le moment'}</strong><p>${globalQuery||globalType!=='all'?'Modifiez les filtres pour élargir la recherche.':'Les fichiers déposés apparaîtront ici.'}</p>${group.can_write&&!globalQuery&&globalType==='all'?'<button class="primary" id="global-empty-upload" type="button">'+icon('plus')+' Déposer un document</button>':''}</div>`;
+ host.querySelector('#global-empty-upload')?.addEventListener('click',globalUploadModal);
  host.querySelectorAll('[data-global-download]').forEach(b=>b.onclick=()=>globalDownload(b.dataset.globalDownload,Number(b.dataset.v)));
  host.querySelectorAll('[data-global-edit]').forEach(b=>b.onclick=()=>globalEditReference(b.dataset.globalEdit));
 }
 function renderGlobalLibrary(){
  state.dossierFolder=globalFolder;
  const folder=globalIndex.folders.find(f=>f.slug===globalFolder);
- mount(`<div class="global-library">
- <header class="global-heading"><div><span class="global-overline">DOCUMENTATION / FRAMATEX</span><h1>Dossier Jaune</h1><p>Bibliothèque documentaire commune à l'entreprise</p></div>
- ${folder.can_write?`<button type="button" class="primary" id="global-upload">${icon('plus')} Déposer un document</button>`:''}</header>
- <nav class="global-folders" role="tablist" aria-label="Les quatre sous-dossiers">
- ${globalIndex.folders.map(f=>`<button type="button" role="tab" data-global-folder="${f.slug}" aria-selected="${f.slug===globalFolder}" class="${f.slug===globalFolder?'selected':''}">
-   <span class="global-dot ${f.slug}"></span>${GLOB_COLORS[f.slug]} <small>${f.can_read?f.count:'—'}</small></button>`).join('')}</nav>
- <div class="global-subhead"><div><h2>${GLOB_COLORS[globalFolder]} · ${e(folder.label)}</h2><p>Les documents sont déposés ensemble, sans classement par lancement.</p></div>
- <label class="global-search">${icon('search')}<input type="search" id="global-search-input" aria-label="Rechercher un document" placeholder="Nom, type, référence ORLI" value="${e(globalQuery)}" ${folder.can_read?'':'disabled'}></label></div>
- <div id="global-result-count" class="global-count"></div><div id="global-doc-results"></div></div>`,'Dossier Jaune');
+ mount(`<div class="global-library global-workspace">
+ <nav class="global-breadcrumb" aria-label="Fil d'Ariane"><span>Dossier Jaune</span><span>›</span><strong>${GLOB_COLORS[globalFolder]}</strong></nav>
+ <div class="global-workspace-top"><nav class="global-folders" role="tablist" aria-label="Les quatre sous-dossiers">
+ ${globalIndex.folders.map(f=>`<button type="button" role="tab" data-global-folder="${f.slug}" aria-selected="${f.slug===globalFolder}" class="global-folder-card ${f.slug} ${f.slug===globalFolder?'selected':''}"><span class="global-card-icon">${icon('folder')}</span><span class="global-card-text"><strong>${GLOB_COLORS[f.slug]}</strong><small>${f.can_read?f.count+' document'+(f.count===1?'':'s'):'Accès restreint'}</small></span></button>`).join('')}</nav>
+ ${folder.can_write?`<button type="button" class="primary global-top-upload" id="global-upload">${icon('plus')} Déposer un document</button>`:''}</div>
+ <section class="global-workspace-panel">
+ <div class="global-panel-heading"><div class="global-panel-title"><span class="global-panel-icon ${globalFolder}">${icon('folder')}</span><div><h1>${GLOB_COLORS[globalFolder]} <span>· ${e(folder.label)}</span></h1><p>Documents partagés dans ce sous-dossier</p></div></div><div class="global-panel-controls"><label class="global-search">${icon('search')}<input type="search" id="global-search-input" aria-label="Rechercher un document" placeholder="Nom, type, référence ORLI..." value="${e(globalQuery)}" ${folder.can_read?'':'disabled'}></label><label class="global-filter-label"><span>Type</span><select id="global-type-filter" aria-label="Filtrer par type"><option value="all">Tous les types</option><option value="pdf">PDF</option><option value="word">Word</option><option value="excel">Excel</option><option value="image">Image</option></select></label></div></div>
+ <div class="global-panel-tabbar"><span class="global-panel-tab">${icon('file')} Documents</span><span class="global-panel-count" id="global-result-count"></span></div>
+ <div id="global-doc-results"></div>
+ </section></div>`,'Dossier Jaune');
+ app.querySelector('#global-type-filter')?.addEventListener('change',ev=>{globalType=ev.target.value;globalRenderRows()});
  app.querySelectorAll('[data-global-folder]').forEach(b=>b.onclick=()=>openGlobalFolder(b.dataset.globalFolder).catch(showErr));
  app.querySelector('#global-search-input')?.addEventListener('input',ev=>{globalQuery=ev.target.value;globalRenderRows()});
  app.querySelector('#global-upload')?.addEventListener('click',globalUploadModal);
