@@ -6,6 +6,8 @@ const vm=require('node:vm');
 const source=fs.readFileSync('static/app.js','utf8');
 const globalSource=fs.readFileSync('static/global-library.js','utf8');
 const styles=fs.readFileSync('static/design-031.css','utf8');
+const iconStyles=fs.readFileSync('static/design-folder-icons.css','utf8');
+const page=fs.readFileSync('static/index.html','utf8');
 
 const events=[];
 const parent={
@@ -54,6 +56,8 @@ assert(sidebar.includes('id="dossier-nav-children"'));
 assert(sidebar.includes('id="dossier-nav-children" role="group" aria-label="Sous-dossiers du Dossier Jaune" hidden'));
 for(const name of ['jaune','rose','bleu','vert']){
   assert(sidebar.includes('data-sidebar-folder="'+name+'"'),name+' must appear in navigation');
+  assert(sidebar.includes('class="dossier-child-folder '+name+'"'),name+' must have its own folder icon');
+  assert(iconStyles.includes('.dossier-child-folder.'+name),name+' icon must have a distinct palette');
 }
 vm.runInContext("mount('<main>Documents</main>','Dossier Jaune')",context);
 assert.equal(typeof parent.click,'function');
@@ -87,4 +91,13 @@ assert(globalSource.includes('state.sidebarDossierOpen=true'));
 assert(styles.includes('.dossier-nav-children[hidden]'));
 assert(styles.includes('.dossier-nav-child:focus-visible'));
 assert(styles.includes('@media(max-width:760px)'));
+assert(sidebar.includes('<svg'), 'Folder icons must use vector artwork');
+assert(!sidebar.includes('class="dossier-child-dot'), 'Colored squares must be removed from sidebar');
+assert(iconStyles.includes('fill:var(--folder-icon-fill)'));
+assert(iconStyles.includes('stroke:var(--folder-icon-stroke)'));
+assert(iconStyles.includes('.dossier-nav-child.active'));
+assert(iconStyles.includes('@media(max-width:760px)'));
+assert(page.includes('/assets/design-folder-icons.css'));
+assert(page.indexOf('/assets/design-folder-icons.css')>page.indexOf('/assets/design-assistant-v2.css'));
+
 console.log('Sidebar dossier unique : accordéon, 4 rubriques, sélection et clavier OK');
