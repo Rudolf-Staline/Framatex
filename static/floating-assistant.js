@@ -6,9 +6,9 @@ let floatingAssistantOpen=false;
 let floatingAssistantBusy=false;
 let floatingAssistantPriorFocus=null;
 const FLOATING_QUESTIONS=[
-  ['Où déposer une facture ?','Déposer une facture'],
-  ['Comment trouver les pièces manquantes ?','Pièces manquantes'],
-  ['Comment interroger la mémoire métier ?','Mémoire métier']
+  ['Comment déposer un document ?','Déposer un document','file'],
+  ['Comment retrouver un problème déjà résolu ?','Trouver une solution déjà utilisée','book'],
+  ['Comment consulter les procédures ?','Consulter une procédure','search']
 ];
 const FLOATING_CHAT_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.4a8.2 8.2 0 0 1-8.6 8.2 9.5 9.5 0 0 1-3.5-.8L3.5 20l1.3-4.2a8.3 8.3 0 1 1 15.2-4.4Z"/><path d="M8 11.6h8M8 14.5h5.2"/></svg>';
 const FLOATING_SPARK_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 1.7 6.3L20 10l-6.3 1.7L12 18l-1.7-6.3L4 10l6.3-1.7L12 2Z"/><path d="m19 16 .6 2.4L22 19l-2.4.6L19 22l-.6-2.4L16 19l2.4-.6L19 16Z"/></svg>';
@@ -26,26 +26,21 @@ function buildFloatingAssistant(){
     '<span class="floating-assistant-trigger-tip" aria-hidden="true">Besoin d’aide ?</span>',
   '</button>',
   '<div class="floating-assistant-backdrop" id="floating-assistant-backdrop" hidden></div>',
-  '<section class="floating-assistant-panel" id="floating-assistant-panel" role="dialog" aria-modal="true" aria-labelledby="floating-assistant-title" aria-describedby="floating-assistant-intro" hidden>',
+  '<section class="floating-assistant-panel" id="floating-assistant-panel" role="dialog" aria-modal="true" aria-labelledby="floating-assistant-title"  hidden>',
     '<header class="floating-assistant-head">',
       '<div class="floating-assistant-brand-icon">',FLOATING_SPARK_ICON,'</div>',
-      '<div class="floating-assistant-brand-copy"><span class="floating-assistant-eyebrow">ASSISTANCE DOCUMENTAIRE</span>',
-      '<h2 id="floating-assistant-title">Framatex Assist <span class="floating-assistant-status" title="Guide disponible"></span></h2></div>',
+      '<div class="floating-assistant-brand-copy">',
+      '<h2 id="floating-assistant-title">Assistant Framatex</h2></div>',
       '<button type="button" id="floating-assistant-reset" class="floating-assistant-icon-button" title="Nouvelle conversation" aria-label="Nouvelle conversation">',icon('plus'),'</button>',
       '<button type="button" id="floating-assistant-close" class="floating-assistant-icon-button" title="Fermer" aria-label="Fermer l’assistant">',icon('x'),'</button>',
     '</header>',
     '<div id="floating-assistant-chat" class="floating-assistant-chat" role="log" aria-live="polite" aria-label="Conversation avec Framatex Assist"></div>',
     '<div class="floating-assistant-bottom">',
-      '<label class="floating-assistant-mode-label" for="floating-assistant-mode">Rechercher dans<select id="floating-assistant-mode"><option value="auto">L’aide et la mémoire métier</option><option value="memory">Les retours d’expérience</option></select></label>',
-      '<div class="floating-assistant-questions" aria-label="Questions suggérées">',
-      FLOATING_QUESTIONS.map((question,index)=>'<button type="button" data-floating-question="'+index+'">'+e(question[1])+'</button>').join(''),
-      '</div>',
       '<form id="floating-assistant-form" class="floating-assistant-form">',
         '<label for="floating-assistant-input" class="sr-only">Votre question</label>',
-        '<input type="text" id="floating-assistant-input" minlength="2" maxlength="500" required autocomplete="off" placeholder="Votre question…" />',
+        '<textarea id="floating-assistant-input" rows="2" minlength="2" maxlength="500" required placeholder="Posez votre question…"></textarea>',
         '<button type="submit" id="floating-assistant-send" aria-label="Envoyer la question">',icon('arrow'),'</button>',
       '</form>',
-      '<p class="floating-assistant-disclaimer">Réponses fondées sur les procédures locales, sans IA générative.</p>',
     '</div>',
   '</section>'
  ].join('');
@@ -60,9 +55,9 @@ function buildFloatingAssistant(){
    event.preventDefault();
    askFloatingAssistant(host.querySelector('#floating-assistant-input')?.value);
  });
- host.querySelectorAll('[data-floating-question]').forEach(button=>button.addEventListener('click',()=>{
-   askFloatingAssistant(FLOATING_QUESTIONS[+button.dataset.floatingQuestion][0]);
- }));
+ host.querySelector('#floating-assistant-input').addEventListener('keydown',event=>{
+   if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();askFloatingAssistant(event.currentTarget.value)}
+ });
 }
 function syncFloatingAssistant(){
  const host=floatingAssistantHost();
@@ -119,7 +114,7 @@ function floatingAssistantKeydown(event){
  const host=floatingAssistantHost();
  const panel=host?.querySelector('#floating-assistant-panel');
  if(!panel)return;
- const focusables=[...panel.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled])')];
+ const focusables=[...panel.querySelectorAll('button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled])')];
  if(!focusables.length)return;
  const first=focusables[0],last=focusables[focusables.length-1];
  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
@@ -142,12 +137,14 @@ function paintFloatingAssistant(){
  const host=floatingAssistantHost();
  const chat=host?.querySelector('#floating-assistant-chat');if(!chat)return;
  chat.innerHTML=[
-  '<div class="floating-assistant-intro" id="floating-assistant-intro"><span class="floating-assistant-intro-icon">',
-   FLOATING_SPARK_ICON,'</span><div><strong>Bonjour !</strong>',
-  '<p>Je peux vous guider dans Framatex et retrouver les problèmes déjà rencontrés, leurs solutions et leurs fiches sources.</p></div></div>',
+  ...(!floatingAssistantMessages.length?[
+   '<div class="floating-assistant-welcome"><span class="floating-assistant-welcome-icon">'+FLOATING_CHAT_ICON+'</span><h3>Que souhaitez-vous retrouver ?</h3><p>Retrouvez vos documents, procédures et retours d’expérience.</p><div class="floating-assistant-suggestions" aria-label="Questions suggérées">'+
+   FLOATING_QUESTIONS.map((q,i)=>'<button type="button" data-floating-question="'+i+'"><span>'+icon(q[2])+'</span><span>'+e(q[1])+'</span>'+icon('arrow')+'</button>').join('')+'</div></div>'
+  ]:[]),
   ...floatingAssistantMessages.map(floatingAssistantMessageMarkup),
   ...(floatingAssistantBusy?['<div class="floating-assistant-typing" role="status">Recherche dans l’aide et les fiches accessibles…</div>']:[])
  ].join('');
+ chat.querySelectorAll('[data-floating-question]').forEach(button=>button.addEventListener('click',()=>askFloatingAssistant(FLOATING_QUESTIONS[+button.dataset.floatingQuestion][0])));
  chat.querySelectorAll('[data-floating-destination]').forEach(button=>button.addEventListener('click',async()=>{
    const response=floatingAssistantMessages[+button.dataset.floatingDestination]?.response;
    if(!response?.destination)return;
@@ -177,7 +174,7 @@ async function askFloatingAssistant(question){
  const launchId=state.view==='detail'&&state.detail?.id?state.detail.id:null;
  try{
    const response=await api('/api/assistant/chat',{
-     method:'POST',body:JSON.stringify({question:q,launch_id:launchId,mode:host.querySelector('#floating-assistant-mode')?.value||'auto'})
+     method:'POST',body:JSON.stringify({question:q,launch_id:launchId,mode:'auto'})
    });
    if(state.me)floatingAssistantMessages.push({kind:'bot',text:response.answer||'Aucune réponse disponible.',response});
  }catch(err){
