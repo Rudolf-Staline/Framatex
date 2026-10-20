@@ -20,7 +20,7 @@ assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length);
 
 const htmlPane={innerHTML:'',querySelectorAll:()=>[],querySelector:()=>null};
 const countPane={textContent:''};
-const dummy={addEventListener(){},focus(){},value:'all'};
+const dummy={querySelectorAll:()=>[],addEventListener(){},focus(){},value:'all'};
 const app={
  querySelector(key){
    if(key==='#global-doc-results')return htmlPane;
@@ -58,15 +58,17 @@ vm.runInContext(js,ctx);
 ctx.sample=source;
 vm.runInContext('globalIndex=sample;globalFolder="jaune";renderGlobalLibrary()',ctx);
 for(const name of ['jaune','rose','bleu','vert']){
- assert(rendered.includes('global-folder-card '+name));
+ assert(rendered.includes('saffron-folder-tab '+name));
 }
-assert(rendered.includes('RUBRIQUE 01'));
-assert(rendered.includes('global-card-footer'));
-assert(rendered.includes('global-card-total'));
-assert(rendered.includes('Sous-dossiers'));
+
+
+
+
+assert(rendered.includes('role="tablist"'));
 assert(rendered.includes('tabindex="0"'));
+assert(rendered.includes('saffron-document-toolbar'));
 assert(rendered.includes('tabindex="-1"'));
-assert(rendered.includes('global-workspace-toolbar'));
+
 assert(htmlPane.innerHTML.includes('global-format-pdf'));
 assert(htmlPane.innerHTML.includes('global-format-excel'));
 assert(htmlPane.innerHTML.includes('global-version-pill'));
@@ -85,4 +87,4 @@ assert(!htmlPane.innerHTML.includes('Tableau'));
 vm.runInContext('globalQuery="";globalFolder="bleu";renderGlobalLibrary()',ctx);
 assert(rendered.includes('Accès restreint'));
 assert(htmlPane.innerHTML.includes('Accès à cette rubrique réservé.'));
-console.log('Finishing pass: font, cards, folder switching, accessible tabs, file filters and responsive styles OK');
+console.log('Document library: fonts, compact tabs, file filters, permissions and responsive styles OK');
