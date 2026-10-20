@@ -103,6 +103,8 @@ def guard_http_request(request: Request):
     Called for every /api/ request by the existing header-checking middleware.
     Endpoints must still enforce role and folder permissions as before.
     """
+    if request.url.path in ('/api/auth/login','/api/auth/logout'):
+        return None
     # Client identities must never enter employee-only APIs.
     token = request.cookies.get(COOKIE)
     if token:
