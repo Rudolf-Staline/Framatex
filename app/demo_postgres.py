@@ -14,8 +14,12 @@ from .core import Base, engine
 from . import models, completeness_models, workflow_models, quality_models  # noqa: F401
 from . import intake_models, spec_models, mail_models, impact_sim_models  # noqa: F401
 from . import orli_models, material_models, approval_models, sharing_models, pilot_models  # noqa: F401
+from . import global_library_models  # noqa: F401
+from . import experience_models  # noqa: F401
 
-REQUIRED = {"users", "roles", "launches", "folders", "documents", "document_versions", "audit_events"}
+REQUIRED = {"users", "roles", "launches", "folders", "documents", "document_versions", "audit_events",
+            "global_folders", "global_document_entries", "global_library_config",
+            "experience_records", "document_expectations"}
 
 
 def assert_ready():
@@ -33,6 +37,10 @@ def assert_ready():
         insecure = sorted(name for name, enabled in rows if name in Base.metadata.tables and not enabled)
         if insecure:
             raise RuntimeError(f"RLS requis pour les tables Framatex : {', '.join(insecure)}")
+        colors = set(conn.execute(text("SELECT slug FROM public.global_folders")).scalars())
+        if colors != {"jaune", "rose", "bleu", "vert"}:
+            raise RuntimeError("Indexation du Dossier Jaune non initialisee : migration V2 requise")
+
 
 
 def bootstrap():

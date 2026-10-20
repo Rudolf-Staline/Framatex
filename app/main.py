@@ -15,13 +15,15 @@ from typing import Literal
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictBool, ConfigDict, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .core import Base, COOKIE, DATA_DIR, ROOT, engine, get_current_user, get_db, hash_password, check_password, make_token, login_limit_key, login_attempt_allowed, record_login_failure, clear_login_failures
 from .models import AuditEvent, Document, DocumentVersion, Folder, Launch, LaunchMember, Role, RolePermission, User
+from .global_library_models import GlobalFolder, GlobalDocumentEntry, GlobalLibraryConfig  # noqa: F401
+from .experience_models import ExperienceRecord, DocumentExpectation  # noqa: F401
 from .completeness_models import CompletenessProfile, RequirementRule, LaunchCompleteness, RequirementValidation, RequirementException
 from .completeness import PHASES, PHASE_RANK, evaluate
 from .workflow_models import DocumentReview, BusinessValueRevision, ImpactRule, ImpactAlert
@@ -40,6 +42,7 @@ from .cloud_storage import upload_local as cloud_upload, ensure_local as cloud_f
 FOLDERS = [("jaune", "Technique"), ("rose", "Réception"), ("bleu", "Douane"), ("vert", "Facturation")]
 SLUGS = {slug for slug, _ in FOLDERS}
 ACTIONS = {"launch.read", "launch.create", "launch.update", "document.read", "document.write", "audit.read", "completeness.review", "document.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"}
+ACTIONS.update({"rex.read", "rex.write"})
 STATUSES = {"À compléter", "En cours", "En validation", "Clôturé"}
 MAX_UPLOAD = 20 * 1024 * 1024
 STORAGE = DATA_DIR / "files"
@@ -160,9 +163,28 @@ class Grant(BaseModel):
     action: str
     folder: str | None = None
 
+class FolderRoleAccess(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    access: StrictBool = False
+    modify: StrictBool = False
+
+    @model_validator(mode="after")
+    def modification_requires_access(self):
+        if self.modify and not self.access:
+            raise ValueError("La modification nécessite l’accès au sous-dossier")
+        return self
+
+
 class RolePayload(BaseModel):
     name: str = Field(min_length=2, max_length=80)
     permissions: list[Grant] = Field(default_factory=list)
+    folder_access: dict[Literal["jaune", "rose", "bleu", "vert"], FolderRoleAccess] | None = None
+
+    @model_validator(mode="after")
+    def single_permission_format(self):
+        if self.folder_access is not None and self.permissions:
+            raise ValueError("Utilisez les accès par sous-dossier ou les permissions détaillées")
+        return self
 
 class UserPayload(BaseModel):
     name: str = Field(min_length=2, max_length=120)
@@ -276,6 +298,10 @@ def launches(q: str = "", user: User = Depends(get_current_user), db: Session = 
     must(user, "launch.read")
     from .access import visible
     rows = visible(db, user, db.scalars(select(Launch).order_by(Launch.created_at.desc())).all())
+    # Ne jamais afficher le conteneur technique de compatibilité comme un lancement.
+    system = db.get(GlobalLibraryConfig, "unique")
+    if system:
+        rows = [l for l in rows if l.id != system.legacy_launch_id]
     term = q.strip().lower()
     if term:
         rows = [l for l in rows if term in " ".join((l.name, l.client_name or "", l.order_ref or "", l.orli_ref or "")).lower()]
@@ -304,6 +330,9 @@ def get_launch(db: Session, launch_id: str) -> Launch:
 def launch_detail(launch_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.read")
     l = get_launch(db, launch_id)
+    system = db.get(GlobalLibraryConfig, "unique")
+    if system and l.id == system.legacy_launch_id:
+        raise HTTPException(404, "Lancement introuvable")
     folders = []
     for slug, label in FOLDERS:
         folder = next((f for f in l.folders if f.slug == slug), None)
@@ -326,6 +355,13 @@ def update_launch(launch_id: str, payload: LaunchPatch, user: User = Depends(get
             raise HTTPException(409, "Référence rapprochée à ORLI : modification interdite sans procédure de déliaison")
     for field, value in changes.items():
         setattr(l, field, value.strip() if isinstance(value, str) else value)
+    if "orli_ref" in changes:
+        # The document-level reference remains authoritative if manually edited.
+        normalized = (changes["orli_ref"] or "").strip() or None
+        for entry in db.scalars(select(GlobalDocumentEntry).where(
+                GlobalDocumentEntry.legacy_launch_id == l.id,
+                GlobalDocumentEntry.orli_overridden == False)).all():  # noqa: E712
+            entry.orli_ref = normalized
     audit(db, user, "launch.update", "launch", l.id, {"fields": list(changes.keys())})
     db.commit()
     return launch_out(l)
@@ -405,6 +441,12 @@ async def upload_document(launch_id: str, folder: str = Form(...), title: str = 
         doc = Document(folder_id=entity.id, title=title.strip(), doc_type=doc_type.strip() or "Autre", created_by=user.id)
         db.add(doc)
         db.flush()
+        # A legacy uploader must not create a document invisible from the
+        # global library.  Preserve the legacy launch for permissions.
+        db.add(GlobalDocumentEntry(
+            document_id=doc.id, folder_slug=folder,
+            orli_ref=launch.orli_ref, orli_overridden=False,
+            legacy_folder_id=entity.id, legacy_launch_id=launch.id))
         version = DocumentVersion(document_id=doc.id, number=1, original_name=original, disk_name=disk_name, size=size, sha256=sha, content_type=mime, uploaded_by=user.id)
         db.add(version)
         db.flush()
@@ -460,22 +502,28 @@ def download(doc_id: str, number: int, user: User = Depends(get_current_user), d
 @app.get("/api/admin/roles")
 def list_roles(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     admin_only(user)
-    return [{"id": r.id, "name": r.name, "permissions": [{"action": g.action, "folder": g.folder_slug} for g in r.grants]} for r in db.scalars(select(Role).order_by(Role.name)).all()]
+    from .role_permissions import folder_access
+    return [{"id": r.id, "name": r.name, "folder_access": folder_access(r), "permissions": [{"action": g.action, "folder": g.folder_slug} for g in r.grants]} for r in db.scalars(select(Role).order_by(Role.name)).all()]
 
 @app.post("/api/admin/roles", status_code=201)
 def create_role(payload: RolePayload, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     admin_only(user)
+    if len(payload.name.strip()) < 2:
+        raise HTTPException(422, "Le nom du rôle doit contenir au moins deux caractères")
     if payload.name.strip().lower() == "administrateur":
         raise HTTPException(422, "Ce rôle est réservé au système")
     for p in payload.permissions:
-        if p.action not in ACTIONS or p.folder not in (None, *SLUGS) or (p.folder and not (p.action.startswith("document.") or p.action in {"completeness.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"})):
+        if p.action not in ACTIONS or p.folder not in (None, *SLUGS) or (p.folder and not (p.action.startswith(("document.", "rex.")) or p.action in {"completeness.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"})):
             raise HTTPException(422, "Permission inconnue")
     role = Role(name=payload.name.strip())
+    from .role_permissions import folder_grants
+    grants = (folder_grants(payload.folder_access) if payload.folder_access is not None
+              else [(p.action, p.folder) for p in payload.permissions])
     seen = set()
-    for p in payload.permissions:
-        if (p.action, p.folder) not in seen:
-            role.grants.append(RolePermission(action=p.action, folder_slug=p.folder))
-            seen.add((p.action, p.folder))
+    for action, folder in grants:
+        if (action, folder) not in seen:
+            role.grants.append(RolePermission(action=action, folder_slug=folder))
+            seen.add((action, folder))
     db.add(role)
     try:
         db.flush()
@@ -778,6 +826,17 @@ app.include_router(approval_router)
 from .sharing_routes import router as sharing_router
 app.include_router(sharing_router)
 
+
+# Dossier Jaune V2 — bibliothèque commune, indépendante des lancements métier.
+from .global_library_routes import router as global_library_router
+app.include_router(global_library_router)
+
+from .experience_routes import router as experience_router
+from .library_controls import router as library_controls_router
+from .assistant_chat import router as assistant_chat_router
+app.include_router(experience_router)
+app.include_router(library_controls_router)
+app.include_router(assistant_chat_router)
 
 # 0.15 — Gestion des accès d'un lancement par l'administrateur.
 from .access_routes import router as access_router

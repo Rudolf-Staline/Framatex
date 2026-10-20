@@ -18,7 +18,7 @@ assert(empty.includes('Aucune action prioritaire'));
 const floating=fs.readFileSync('static/floating-assistant.js','utf8');
 assert(src.includes('function openGuideDrawer()'));
 assert(src.includes('return openFloatingAssistant()'));
-assert(floating.includes("'/api/assistant/guide'"));
+assert(floating.includes("'/api/assistant/chat'"));
 assert(floating.includes('floating-assistant-follow'));
 assert(floating.includes("kind:'user'"));
 assert(floating.includes('floating-assistant-chat'));
