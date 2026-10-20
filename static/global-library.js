@@ -35,7 +35,7 @@ function globalDocumentFormat(doc){
 }
 function globalFileIcon(doc){
  const format=globalDocumentFormat(doc);
- return '<span class="saffron-file-icon global-format-'+format+'">'+icon(({pdf:'file-pdf',word:'file-doc',excel:'file-xls',image:'file-image'})[format]||'file')+'</span>';
+ return '<span class="saffron-file-icon global-format-'+format+'"><img src="/assets/icons/file-types/'+(({pdf:'pdf-simple',word:'docx',excel:'xlsx',image:'image'})[format]||'empty')+'.svg" alt="" aria-hidden="true"></span>';
 }
 function globalFileSize(doc){
  const size=doc.latest?.size;
@@ -72,7 +72,7 @@ function globalRenderRows(){
  const dateOrder=globalSort==='recent'?'descending':globalSort==='oldest'?'ascending':'none';
  host.innerHTML=rows.length?'<div class="saffron-table-scroll"><table class="saffron-table"><caption class="sr-only">Documents accessibles du sous-dossier '+GLOB_COLORS[globalFolder]+'</caption>'+
  '<colgroup><col class="register-check-col"><col class="register-name-col"><col class="register-size-col"><col class="register-added-col"><col class="register-updated-col"><col class="register-uploader-col"></colgroup>'+
- '<thead><tr><th scope="col" class="saffron-check-col"><label class="register-checkbox"><input type="checkbox" id="global-select-all" aria-label="Sélectionner tous les fichiers affichés"></label></th><th scope="col" aria-sort="'+nameOrder+'"><button type="button" data-global-sort="name">Nom du fichier</button></th><th scope="col" class="saffron-size-col">Taille</th><th scope="col" class="saffron-added-col">Ajouté le</th><th scope="col" class="saffron-updated-col" aria-sort="'+dateOrder+'"><button type="button" data-global-sort="date">Mis à jour</button></th><th scope="col" class="saffron-uploader-col">Déposé par</th></tr></thead>'+
+ '<thead><tr><th scope="col" class="saffron-check-col"><label class="register-checkbox"><input type="checkbox" id="global-select-all" aria-label="Sélectionner tous les fichiers affichés"></label></th><th scope="col" aria-sort="'+nameOrder+'"><button type="button" data-global-sort="name">Nom du fichier '+icon('sort')+'</button></th><th scope="col" class="saffron-size-col">Taille</th><th scope="col" class="saffron-added-col">Ajouté le</th><th scope="col" class="saffron-updated-col" aria-sort="'+dateOrder+'"><button type="button" data-global-sort="date">Mis à jour '+icon('sort')+'</button></th><th scope="col" class="saffron-uploader-col">Déposé par</th></tr></thead>'+
  '<tbody>'+rows.map(d=>'<tr class="'+(globalChosenIds.has(d.id)?'is-selected':'')+'">'+
  '<td class="saffron-check-col"><label class="register-checkbox"><input type="checkbox" data-global-check="'+e(d.id)+'" aria-label="Sélectionner '+e(d.latest?.original_name||d.title)+'"'+(globalChosenIds.has(d.id)?' checked':'')+'></label></td>'+
  '<td><button class="saffron-document-name" type="button" data-global-actions="'+e(d.id)+'" title="Ouvrir '+e(d.latest?.original_name||d.title)+'">'+globalFileIcon(d)+'<span><strong>'+e(d.latest?.original_name||d.title)+'</strong><small class="saffron-file-meta">'+globalFileSize(d)+'</small></span></button></td>'+
@@ -126,7 +126,7 @@ function globalDocumentActions(id){
  modal('Actions du document','<div class="saffron-document-actions"><p class="saffron-action-title">'+e(doc.title)+'</p><p class="register-document-meta">'+e(doc.orli_ref||'ORLI : Non renseignée')+' · v'+(doc.latest?.number||'—')+'</p><button type="button" class="secondary" id="global-action-download">'+icon('download')+' Télécharger la version actuelle</button>'+
  (writable?'<button type="button" class="secondary" id="global-action-reference">'+icon('pencil')+' Modifier la référence ORLI</button>':'')+
  (writableMemory?'<button type="button" class="secondary" id="global-action-rex">'+icon('chat')+' Consigner un problème</button>':'')+
- '<section class="saffron-version-list" aria-labelledby="global-version-heading"><h3 id="global-version-heading">Historique des versions</h3>'+doc.versions.slice().reverse().map(v=>'<button class="link" type="button" data-global-version="'+v.number+'"><span>v'+v.number+' · '+e(v.original_name)+'<small>'+niceDate(v.created_at)+'</small></span>'+icon('download')+'</button>').join('')+'</section></div>');
+ '<section class="saffron-version-list" aria-labelledby="global-version-heading"><h3 id="global-version-heading">'+icon('clock')+' Historique des versions</h3>'+doc.versions.slice().reverse().map(v=>'<button class="link" type="button" data-global-version="'+v.number+'"><span>v'+v.number+' · '+e(v.original_name)+'<small>'+niceDate(v.created_at)+'</small></span>'+icon('download')+'</button>').join('')+'</section></div>');
  overlay.querySelector('#global-action-download').onclick=()=>globalDownload(doc.id,doc.latest?.number||1);
  overlay.querySelector('#global-action-rex')?.addEventListener('click',()=>globalRecordIssue(doc.id)?.catch(showErr));
  overlay.querySelector('#global-action-reference')?.addEventListener('click',()=>globalEditReference(doc.id));
@@ -137,21 +137,12 @@ function renderGlobalLibrary(){
  state.dossierFolder=globalFolder;
  const folder=globalIndex.folders.find(f=>f.slug===globalFolder);
  mount('<div class="global-library saffron-workspace document-register">'+
- '<section class="saffron-library-main"><nav class="global-breadcrumb" aria-label="Fil d’Ariane"><span>Espace documentaire</span><span aria-hidden="true">/</span><strong>'+GLOB_COLORS[globalFolder]+'</strong></nav>'+
- '<header class="saffron-page-head"><div><h1>'+e(folder.label||GLOB_DESCRIPTIONS[globalFolder])+'</h1><p>Documents du sous-dossier '+GLOB_COLORS[globalFolder].toLocaleLowerCase('fr')+'.</p></div>'+(folder.can_write?'<button type="button" class="primary register-upload" id="global-upload">'+icon('upload')+' Déposer un document</button>':'')+'</header>'+
- '<nav class="saffron-folders" role="tablist" aria-label="Les quatre sous-dossiers">'+globalIndex.folders.map(f=>'<button type="button" role="tab" id="folder-tab-'+f.slug+'" data-global-folder="'+f.slug+'" aria-selected="'+(f.slug===globalFolder)+'" aria-controls="global-document-panel" aria-label="Sous-dossier '+GLOB_COLORS[f.slug]+' · '+e(f.label||GLOB_DESCRIPTIONS[f.slug])+'" tabindex="'+(f.slug===globalFolder?'0':'-1')+'" class="saffron-folder-tab '+f.slug+' '+(f.slug===globalFolder?'selected':'')+'"><span class="dossier-child-dot '+f.slug+'" aria-hidden="true"></span>'+GLOB_COLORS[f.slug]+(!f.can_read?'<span class="sr-only"> · Accès restreint</span>':'')+'</button>').join('')+'</nav>'+
- '<section id="global-document-panel" class="saffron-document-panel" role="tabpanel" aria-labelledby="folder-tab-'+globalFolder+'"><div class="saffron-document-toolbar"><label class="saffron-document-search">'+icon('search')+'<input type="search" id="global-search-input" aria-label="Rechercher dans ce sous-dossier" placeholder="Rechercher dans ce dossier…" value="'+e(globalQuery)+'" '+(folder.can_read?'':'disabled')+'></label>'+
+ '<section class="saffron-library-main"><div class="register-folder-bar">'+
+ (folder.can_write?'<button type="button" class="primary register-upload" id="global-upload">'+icon('upload')+' Déposer un document</button>':'')+'</div>'+
+ '<section id="global-document-panel" class="saffron-document-panel" aria-label="Documents du sous-dossier '+GLOB_COLORS[globalFolder]+'"><div class="saffron-document-toolbar"><label class="saffron-document-search">'+icon('search')+'<input type="search" id="global-search-input" aria-label="Rechercher dans ce sous-dossier" placeholder="Rechercher dans ce dossier…" value="'+e(globalQuery)+'" '+(folder.can_read?'':'disabled')+'></label>'+
  '<label class="saffron-type-filter"><span class="sr-only">Type de document</span><select id="global-type-filter" aria-label="Filtrer par type"><option value="all">Tous les types</option><option value="pdf">PDF</option><option value="word">Word</option><option value="excel">Excel</option><option value="image">Image</option><option value="other">Autres</option></select></label></div><span class="sr-only" id="global-result-count" role="status" aria-live="polite"></span><div id="global-doc-results"></div><div id="global-selection-actions" class="register-selection-bar" hidden><span id="global-selected-count" role="status" aria-live="polite"></span><button type="button" class="secondary" id="global-download-selection">'+icon('download')+' Télécharger la sélection</button><button type="button" class="link" id="global-clear-selection">Désélectionner</button></div></section></section></div>','Dossier Jaune');
  const typeSelect=app.querySelector('#global-type-filter');if(typeSelect)typeSelect.value=globalType;
  app.querySelector('#global-type-filter')?.addEventListener('change',event=>{globalType=event.target.value;globalRenderRows()});
- app.querySelectorAll('[data-global-folder]').forEach(button=>button.onclick=()=>openGlobalFolder(button.dataset.globalFolder).catch(showErr));
- app.querySelector('.saffron-folders')?.addEventListener('keydown',event=>{
-  if(!['ArrowRight','ArrowLeft','Home','End'].includes(event.key))return;
-  const tabs=[...app.querySelectorAll('[data-global-folder]')],current=tabs.indexOf(document.activeElement);if(current<0)return;
-  event.preventDefault();
-  const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
-  openGlobalFolder(tabs[next].dataset.globalFolder).then(()=>app.querySelector('[data-global-folder="'+tabs[next].dataset.globalFolder+'"]')?.focus()).catch(showErr);
- });
  app.querySelector('#global-search-input')?.addEventListener('input',event=>{globalQuery=event.target.value;globalRenderRows()});
  app.querySelector('#global-upload')?.addEventListener('click',globalUploadModal);
  app.querySelector('#global-download-selection')?.addEventListener('click',globalDownloadSelection);

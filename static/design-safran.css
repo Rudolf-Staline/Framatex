@@ -9,8 +9,8 @@ body .app-shell{
 body .app-shell[data-dossier-theme="jaune"]{
  --folder-canvas:#fffefa;--folder-side:#fbf9f1;--folder-header:#ffffff;
  --folder-panel:#ffffff;--folder-soft:#fcf0c8;--folder-softest:#fff9e9;
- --folder-line:#eeeadf;--folder-border:#e7d59f;--folder-accent:#edb92c;
- --folder-button:#efbe32;--folder-button-hover:#e2af24;--folder-button-text:#302910;
+ --folder-line:#eeeadf;--folder-border:#e7d59f;--folder-accent:#f2c200;
+ --folder-button:#f2c200;--folder-button-hover:#dcaf00;--folder-button-text:#302910;
  --folder-ink:#775510;
 }
 body .app-shell[data-dossier-theme="rose"]{
@@ -75,8 +75,9 @@ body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child{
  border:0;border-radius:7px;font-family:inherit;font-size:13px;
  font-weight:500;background:none;color:#303a49;line-height:1.5;
 }
-body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child.active{
- background:var(--folder-soft,#fcf0c8);color:#243041;font-weight:650;
+body .app-shell[data-dossier-theme] .sidebar-rail.sidebar-light .dossier-nav-child.active{
+ background:var(--folder-nav-active,#f2c200);color:#fff;font-weight:750;opacity:1;
+ border-left:0;box-shadow:none;
 }
 body .app-shell .dossier-child-dot{width:13px;height:13px;min-width:13px;box-shadow:none;border:0}
 body .app-shell .dossier-child-dot.jaune{background:#efbd30}
@@ -453,3 +454,99 @@ body .app-shell:has(.document-register) .main,body .app-shell:has(.document-regi
  .document-register .saffron-table{min-width:760px}
  .document-register .saffron-table-scroll{overscroll-behavior-inline:contain}
 }
+
+.document-register .saffron-file-icon img{width:40px;height:40px;max-width:none;flex-shrink:0;display:block}
+
+/* Folder navigation shares one tab rail above the document panel. */
+.document-register .register-folder-bar{display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:1px solid #d0d5dd}
+.document-register .saffron-folders{align-self:stretch;flex:1;max-width:630px;gap:0;margin:0;border:0}
+.document-register .saffron-folder-tab{flex:1;max-width:none;height:52px;justify-content:center;margin-bottom:-1px;border:1px solid transparent;border-bottom:1px solid #d0d5dd;border-radius:8px 8px 0 0;background:transparent}
+.document-register .saffron-folder-tab.selected{border-color:#d0d5dd;border-bottom-color:#fff;background:#fff;color:var(--folder-ink,#775510);box-shadow:inset 0 3px var(--folder-accent,#efbd30)}
+.document-register .saffron-folder-tab:focus-visible{outline:2px solid var(--folder-ink,#775510);outline-offset:-5px}
+.document-register .register-upload{margin:0 0 8px}
+@media(max-width:760px){
+ .document-register .register-folder-bar{flex-wrap:wrap;gap:12px}
+ .document-register .saffron-folders{order:2;flex-basis:100%;max-width:none}
+ .document-register .register-upload{margin:0 0 0 auto}
+ .document-register .saffron-folder-tab{padding:12px 8px;gap:8px}
+}
+
+/* Opaque folder selection in the sidebar. */
+body .app-shell[data-dossier-theme="jaune"]{--folder-nav-active:#f2c200}
+body .app-shell[data-dossier-theme="rose"]{--folder-nav-active:#e34b87}
+body .app-shell[data-dossier-theme="bleu"]{--folder-nav-active:#287fe0}
+body .app-shell[data-dossier-theme="vert"]{--folder-nav-active:#24a363}
+body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child.active .dossier-child-dot{background:#fff;opacity:1}
+
+/* Shared icon rhythm across document navigation and business tools. */
+.register-folder-icon{display:inline-flex;flex:0 0 20px;width:20px;height:20px;color:var(--folder-accent)}
+.register-folder-icon.jaune{color:#f2c200}.register-folder-icon.rose{color:#e34b87}.register-folder-icon.bleu{color:#287fe0}.register-folder-icon.vert{color:#24a363}
+.register-folder-icon .ui-icon{width:20px;height:20px}
+.document-register .saffron-table th button{display:inline-flex;align-items:center;gap:6px}
+.document-register .saffron-table th button .ui-icon{width:14px;height:14px;flex-shrink:0;color:#98a2b3}
+.knowledge-page .page-title>.ui-icon{width:30px;height:30px;vertical-align:-3px;margin-right:8px;color:var(--folder-ink)}
+.knowledge-page h2>.ui-icon,.saffron-version-list h3>.ui-icon{width:20px;height:20px;vertical-align:-3px;margin-right:6px}
+.knowledge-page button>.ui-icon{width:18px;height:18px;vertical-align:-3px;flex-shrink:0}
+
+/* Action colors follow the selected folder, including dialogs outside the shell. */
+body:has(.app-shell[data-dossier-theme="jaune"]){--action-color:#f2c200;--action-hover:#dcaf00}
+body:has(.app-shell[data-dossier-theme="rose"]){--action-color:#e34b87;--action-hover:#c93973}
+body:has(.app-shell[data-dossier-theme="bleu"]){--action-color:#287fe0;--action-hover:#1e68bf}
+body:has(.app-shell[data-dossier-theme="vert"]){--action-color:#24a363;--action-hover:#19854f}
+body:has(.app-shell[data-dossier-theme]) button.primary{background:var(--action-color);border-color:var(--action-color);color:#fff;font-weight:750}
+body:has(.app-shell[data-dossier-theme]) button.primary:hover{background:var(--action-hover);border-color:var(--action-hover);color:#fff}
+body:has(.app-shell[data-dossier-theme]) button.secondary{border-color:var(--action-color);color:var(--action-color);background:#fff}
+body:has(.app-shell[data-dossier-theme]) button.secondary:hover{border-color:var(--action-hover);color:var(--action-hover);background:#fff}
+#floating-assistant-root .floating-assistant-trigger,
+#floating-assistant-root .floating-assistant-trigger:hover,
+#floating-assistant-root .floating-assistant-trigger:active,
+#floating-assistant-root .floating-assistant-trigger:focus-visible{background:#fff;color:#344054;border:1px solid #e4e7ec;box-shadow:0 4px 18px #10182814}
+#floating-assistant-root .floating-assistant-trigger svg{stroke:currentColor}
+
+.document-register .register-folder-bar{justify-content:flex-end;border:0}
+.document-register .register-folder-bar:empty{display:none}
+.document-register .register-folder-bar .register-upload{margin:0}
+
+/* Assistant: a focused conversation with a useful empty state. */
+#floating-assistant-root{color:#242629;font-family:"DM Sans",sans-serif}
+#floating-assistant-root .floating-assistant-panel{width:min(440px,calc(100vw - 28px));height:min(620px,calc(100dvh - 40px));border:1px solid #e5e7eb;border-radius:20px;background:#fff}
+#floating-assistant-root .floating-assistant-head{padding:18px 20px;gap:12px;border-bottom:1px solid #eceef0;background:#fff}
+#floating-assistant-root .floating-assistant-head h2{margin:0;font-size:16px;color:#242629}
+#floating-assistant-root .floating-assistant-brand-icon{width:36px;height:36px;min-width:36px;background:#f6c43d;color:#332a13;border-radius:11px;box-shadow:none}
+#floating-assistant-root .floating-assistant-chat{padding:24px 20px;background:#fff;gap:22px;scrollbar-color:#d9dce0 transparent}
+.floating-assistant-welcome{margin:auto 0; padding:14px 0 24px}
+.floating-assistant-welcome-icon{display:grid;place-items:center;width:52px;height:52px;margin-bottom:24px;background:#fff6d9;color:#68501b;border-radius:16px}
+.floating-assistant-welcome-icon svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.floating-assistant-welcome h3{font-size:25px;line-height:1.22;letter-spacing:-.8px;color:#242629;margin:0 0 12px;max-width:280px}
+.floating-assistant-welcome p{font-size:14px;line-height:1.6;color:#72767e;margin:0 0 26px;max-width:320px}
+.floating-assistant-suggestions{display:flex;flex-direction:column;gap:0}
+#floating-assistant-root .floating-assistant-suggestions button{display:flex;align-items:center;gap:12px;text-align:left;width:100%;border:0;border-bottom:1px solid #eceef0;border-radius:0;background:#fff;padding:14px 0;color:#35383e;font-size:13px;font-weight:550;line-height:1.4;box-shadow:none}
+#floating-assistant-root .floating-assistant-suggestions button:hover{background:#fafafa;color:#17191c}
+.floating-assistant-suggestions button>span:first-child{display:grid;place-items:center;color:#7f6a34}
+.floating-assistant-suggestions button>span:nth-child(2){flex:1}
+.floating-assistant-suggestions svg{height:19px;width:19px}
+.floating-assistant-suggestions button>svg{height:15px;width:15px;color:#93979d}
+#floating-assistant-root .floating-assistant-bottom{padding:14px 18px 18px;border-top:1px solid #eceef0;gap:0}
+#floating-assistant-root .floating-assistant-form{align-items:flex-end;padding:12px;border:1px solid #d9dce0;border-radius:14px;box-shadow:none;background:#fff}
+#floating-assistant-root .floating-assistant-form:focus-within{border-color:#b68a18;box-shadow:none}
+#floating-assistant-root textarea{font:inherit;resize:none;flex:1;min-width:0;max-height:120px;border:0!important;box-shadow:none!important;outline:0!important;background:#fff!important;color:#242629!important;font-size:14px;line-height:1.6;padding:0!important;margin:0}
+#floating-assistant-root textarea::placeholder{color:#92969e}
+#floating-assistant-root .floating-assistant-form button{width:38px;height:38px;min-width:38px;background:#f6c43d;color:#332a13;border:0;border-radius:11px;box-shadow:none}
+#floating-assistant-root .floating-assistant-form button:hover{background:#edb62c;color:#332a13}
+#floating-assistant-root .floating-assistant-icon-button:hover{background:#f3f4f5;color:#242629}
+#floating-assistant-root button:focus-visible{outline:2px solid #a77b12;outline-offset:3px}
+#floating-assistant-root .floating-assistant-bubble{font-size:14px;line-height:1.65;color:#454950;border:0;padding:0;background:#fff;box-shadow:none;max-width:calc(100% - 33px)}
+#floating-assistant-root .floating-assistant-bubble strong{font-size:14px;color:#242629}
+#floating-assistant-root .is-user .floating-assistant-bubble{background:#f3f4f5;border:0;border-radius:14px 14px 4px 14px;padding:12px 15px;color:#242629}
+#floating-assistant-root .floating-assistant-message-avatar{background:#fff6d9;color:#80601d}
+#floating-assistant-root .floating-assistant-message-avatar svg{fill:none}
+#floating-assistant-root .floating-assistant-bubble small{font-size:11px;color:#7b8088}
+#floating-assistant-root .floating-assistant-follow{background:#fff6d9;color:#705416;font-size:12px}
+#floating-assistant-root .floating-assistant-typing{font-size:13px;background:#f7f8f9;border:0;color:#747981}
+@media(max-width:620px){
+ #floating-assistant-root .floating-assistant-panel{width:100%;height:min(86dvh,760px);max-height:calc(100dvh - 16px);border:0;border-radius:20px 20px 0 0}
+ #floating-assistant-root .floating-assistant-bottom{padding-bottom:max(16px,env(safe-area-inset-bottom))}
+ #floating-assistant-root textarea{font-size:16px}
+ .floating-assistant-welcome h3{font-size:24px}
+}
+@media(max-height:530px){.floating-assistant-welcome{padding:0}.floating-assistant-welcome-icon{display:none}.floating-assistant-welcome p{margin-bottom:8px}.floating-assistant-welcome h3{font-size:20px}.floating-assistant-suggestions button{padding:10px 0!important}}
