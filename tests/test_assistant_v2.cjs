@@ -25,7 +25,7 @@ assert(src.includes('floating-assistant-suggestion-label'));
 
 const listeners={};
 const reset={hidden:true,addEventListener(t,fn){listeners.reset=fn},focus(){}};
-const input={value:'',disabled:false,scrollHeight:50,style:{},focus(){}};
+const input={value:'',disabled:false,scrollHeight:50,style:{},focus(){},addEventListener(t,fn){listeners['input_'+t]=fn}};
 const send={disabled:false};
 const close={addEventListener(t,fn){listeners.close=fn}};
 const chat={innerHTML:'',scrollHeight:0,scrollTop:0,querySelectorAll:()=>[]};
