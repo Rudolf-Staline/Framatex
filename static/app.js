@@ -25,7 +25,42 @@ const ICON = {
   info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
 };
 const PHOSPHOR_ICONS={shield:'checks',chevron:'caret-down',folder:'folder',file:'file',plus:'plus',search:'magnifying-glass',check:'check-circle',clock:'clock',arrow:'caret-right',pencil:'pencil-simple',x:'x',lock:'lock',info:'info',activity:'arrows-clockwise',grid:'squares-four',users:'users',out:'sign-out',download:'download-simple',upload:'upload-simple',more:'dots-three',settings:'gear-six',book:'book-open-text',chat:'chat-circle-text',warning:'warning-circle',bell:'bell',forward:'arrow-right',sort:'caret-up-down','file-pdf':'file-pdf','file-doc':'file-doc','file-xls':'file-xls','file-image':'file-image'};
-function icon(name){const asset=PHOSPHOR_ICONS[name];return asset?`<svg class="ui-icon" viewBox="0 0 256 256" aria-hidden="true"><use href="/assets/icons/phosphor.svg#${asset}"></use></svg>`:`<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[name]||ICON.file}</svg>`}
+// Iconographie unifiée : pictogrammes dessinés en traits simples, sans sprite externe.
+const LINE_ICONS={
+ 'folder':'<path d="M3 7a2 2 0 0 1 2-2h5l2 2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
+ 'shield':'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>',
+ 'book':'<path d="M12 7c-2.5-1.8-5.5-2.1-9-1v13c3.5-1 6.5-.7 9 1 2.5-1.7 5.5-2 9-1V6c-3.5-1.1-6.5-.8-9 1Z"/><path d="M12 7v13"/>',
+ 'settings':'<circle cx="12" cy="12" r="3"/><path d="M19.3 15a1.7 1.7 0 0 0 .34 1.87l-1.78 1.78a1.7 1.7 0 0 0-1.87-.34l-.66.28a1.7 1.7 0 0 0-1.02 1.56V21h-2.6v-.85a1.7 1.7 0 0 0-1.02-1.56l-.66-.28a1.7 1.7 0 0 0-1.87.34l-1.78-1.78A1.7 1.7 0 0 0 6.7 15l-.27-.66a1.7 1.7 0 0 0-1.56-1.02H4v-2.6h.87a1.7 1.7 0 0 0 1.56-1.02l.27-.66a1.7 1.7 0 0 0-.34-1.87l1.78-1.78a1.7 1.7 0 0 0 1.87.34l.66-.28a1.7 1.7 0 0 0 1.02-1.56V3h2.6v.85a1.7 1.7 0 0 0 1.02 1.56l.66.28a1.7 1.7 0 0 0 1.87-.34l1.78 1.78a1.7 1.7 0 0 0-.34 1.87l.28.66a1.7 1.7 0 0 0 1.56 1.02H22v2.6h-.86a1.7 1.7 0 0 0-1.56 1.02Z"/>',
+ 'chevron':'<path d="m6 9 6 6 6-6"/>',
+ 'file':'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h6"/>',
+ 'plus':'<path d="M12 5v14M5 12h14"/>',
+ 'search':'<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+ 'check':'<circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/>',
+ 'clock':'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+ 'arrow':'<path d="m9 18 6-6-6-6"/>',
+ 'forward':'<path d="M4 12h16m-7-7 7 7-7 7"/>',
+ 'back':'<path d="m15 18-6-6 6-6"/>',
+ 'pencil':'<path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z"/>',
+ 'x':'<path d="M18 6 6 18M6 6l12 12"/>',
+ 'lock':'<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/>',
+ 'info':'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+ 'activity':'<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+ 'grid':'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+ 'users':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+ 'out':'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
+ 'download':'<path d="M12 3v13m-5-5 5 5 5-5M4 17v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
+ 'upload':'<path d="M12 16V3m-5 5 5-5 5 5M4 17v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
+ 'more':'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+ 'sort':'<path d="m8 9 4-4 4 4m-8 6 4 4 4-4"/>',
+ 'chat':'<path d="M20 11.4a8.2 8.2 0 0 1-8.6 8.2 9.5 9.5 0 0 1-3.5-.8L3.5 20l1.3-4.2a8.3 8.3 0 1 1 15.2-4.4Z"/><path d="M8 11.5h8m-8 4h5"/>',
+ 'warning':'<circle cx="12" cy="12" r="9"/><path d="M12 7v6m0 4h.01"/>',
+ 'bell':'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 10h18c0-2-3-3-3-10M10 21h4"/>',
+ 'file-pdf':'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M7 16h10"/>',
+ 'file-doc':'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8"/>',
+ 'file-xls':'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 12l8 6m0-6-8 6"/>',
+ 'file-image':'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/>',
+};
+function icon(name){return '<svg class="ui-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(LINE_ICONS[name]||ICON[name]||LINE_ICONS.file)+'</svg>'}
 function e(s){return String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function niceDate(value){if(!value)return '—';const s=String(value).trim();const hasZone=/(?:Z|[+-]\d{2}:?\d{2})$/i.test(s);const normalized=/^\d{4}-\d\d-\d\dT/.test(s)&&!hasZone?s+'Z':s;const date=new Date(normalized);if(Number.isNaN(date.getTime()))return '—';return date.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}
 function sizeText(n){return n>=1024*1024?`${(n/1024/1024).toFixed(1)} Mo`:`${Math.max(1,Math.ceil(n/1024))} Ko`}
