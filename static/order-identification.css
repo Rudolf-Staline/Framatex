@@ -7,3 +7,6 @@
 .order-open small{font-weight:400;color:var(--sa-muted,#657284);margin-top:4px}
 .launch-information-list dd{white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:600px){.order-field-grid{grid-template-columns:minmax(0,1fr);gap:0}.order-field-wide{grid-column:auto}}
+
+/* Les documents occupent toute la largeur du dossier de commande. */
+.app-shell .lc-documents-layout:not([hidden]){grid-template-columns:minmax(0,1fr)}

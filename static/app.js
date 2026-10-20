@@ -65,7 +65,7 @@ function e(s){return String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function niceDate(value){if(!value)return '—';const s=String(value).trim();const hasZone=/(?:Z|[+-]\d{2}:?\d{2})$/i.test(s);const normalized=/^\d{4}-\d\d-\d\dT/.test(s)&&!hasZone?s+'Z':s;const date=new Date(normalized);if(Number.isNaN(date.getTime()))return '—';return date.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}
 function sizeText(n){return n>=1024*1024?`${(n/1024/1024).toFixed(1)} Mo`:`${Math.max(1,Math.ceil(n/1024))} Ko`}
 const app=document.querySelector('#app'), overlay=document.querySelector('#overlay-root');
-const state={me:null,view:'home',sidebarDossierOpen:true,dossierFolder:'jaune',priorities:null,launches:[],dashboard:null,detail:null,completeness:null,completionProfiles:[],completenessPhases:[{code:'preparation',label:'Préparation'},{code:'approvisionnement',label:'Approvisionnement'},{code:'fabrication',label:'Fabrication'},{code:'expedition',label:'Expédition'},{code:'cloture',label:'Clôture'}],folder:'jaune',roles:[],users:[],audit:[],workflowReviews:[],workflowValues:[],workflowImpacts:[],workflowFields:[],workflowRules:[],qualityReport:null,excelInspections:[],specReport:null,mailReport:null,simGraph:null,simHistory:[],orliReconciliation:null,orliBatches:[],materials:null,approvalOverview:null,clientPublications:null,supplierRequests:null,approvalTemplates:[],approvalRoles:[],notifications:null,query:''};
+const state={me:null,view:'home',dossierFolder:'jaune',priorities:null,launches:[],dashboard:null,detail:null,completeness:null,completionProfiles:[],completenessPhases:[{code:'preparation',label:'Préparation'},{code:'approvisionnement',label:'Approvisionnement'},{code:'fabrication',label:'Fabrication'},{code:'expedition',label:'Expédition'},{code:'cloture',label:'Clôture'}],folder:'jaune',roles:[],users:[],audit:[],workflowReviews:[],workflowValues:[],workflowImpacts:[],workflowFields:[],workflowRules:[],qualityReport:null,excelInspections:[],specReport:null,mailReport:null,simGraph:null,simHistory:[],orliReconciliation:null,orliBatches:[],materials:null,approvalOverview:null,clientPublications:null,supplierRequests:null,approvalTemplates:[],approvalRoles:[],notifications:null,query:''};
 async function api(path,options={}){
   const headers={'X-Framatex-Request':'1',...options.headers};
   if(options.body && !(options.body instanceof FormData))headers['Content-Type']='application/json';
@@ -79,25 +79,13 @@ function showErr(err){toast(err.message||String(err))}
 function can(action,folder=null){return !!state.me?.admin||state.me?.permissions?.some(p=>p.action===action&&(folder?p.folder===null||p.folder===folder:p.folder===null))}
 function statusTag(s){return `<span class="tag ${s==='À compléter'?'orange':s==='Clôturé'?'green':s==='En validation'?'blue':''}">${e(s)}</span>`}
 function topbar(label){
- return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher un document">${icon('search')}<span>Rechercher un document…</span></button><div class="topbar-actions"><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
+ return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher une commande">${icon('search')}<span>Rechercher une commande…</span></button><div class="topbar-actions"><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
 }
 function sidebar(){
- const primary=[...(can('launch.read')?[['launches','folder','Commandes']]:[]),['dossier','folder','Dossier Jaune'],...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s))?[['controls','shield','Vérifications']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s)&&can('rex.read',s))?[['rex','book','Mémoire métier']]:[])];
+ const primary=[...(can('launch.read')?[['launches','folder','Commandes']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s))?[['controls','shield','Vérifications']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s)&&can('rex.read',s))?[['rex','book','Mémoire métier']]:[])];
  const tools=[['pilot','info','Aide & retours'],...(state.me.admin?[['orli','file','Imports ORLI'],['admin','users','Administration']]:[])];
  const active=view=>state.view===view||(state.view==='detail'&&view==='launches');
- const dossierOpen=!!state.sidebarDossierOpen;
- const subfolders=[['jaune','Jaune'],['rose','Rose'],['bleu','Bleu'],['vert','Vert']];
  const items=list=>list.map(([view,ico,label])=>{
-   if(view==='dossier'){
-     return `<div class="dossier-nav-block">
-       <button type="button" class="nav-btn ${active(view)?'active':''}" data-view="dossier" title="Dossier Jaune" aria-current="${active(view)?'page':'false'}" data-dossier-toggle aria-expanded="${dossierOpen}" aria-controls="dossier-nav-children">
-         ${icon('folder')}<span class="nav-text">Dossier Jaune</span><span class="dossier-nav-chevron" aria-hidden="true">${icon('chevron')}</span>
-       </button>
-       <div class="dossier-nav-children" id="dossier-nav-children" role="group" aria-label="Sous-dossiers du Dossier Jaune" ${dossierOpen?'':'hidden'}>
-         ${subfolders.map(([slug,name])=>`<button type="button" class="dossier-nav-child ${state.view==='dossier'&&state.dossierFolder===slug?'active':''}" data-sidebar-folder="${slug}" aria-current="${state.view==='dossier'&&state.dossierFolder===slug?'location':'false'}"><span class="dossier-child-folder ${slug}" aria-hidden="true">${icon('folder')}</span><span>${name}</span></button>`).join('')}
-       </div>
-     </div>`;
-   }
    return `<button type="button" class="nav-btn ${active(view)?'active':''}" data-view="${view}" title="${label}" aria-current="${active(view)?'page':'false'}">${icon(ico)}<span class="nav-text">${label}</span>${active(view)?'<span class="nav-current" aria-hidden="true">›</span>':''}</button>`;
  }).join('');
  const toolsOpen=!!state.sidebarAdminOpen||tools.some(([view])=>active(view));
@@ -115,24 +103,11 @@ function sidebar(){
 function mount(html,label){
  const dossierTheme=['dossier','controls','rex'].includes(state.view)&&['jaune','rose','bleu','vert'].includes(state.dossierFolder)?state.dossierFolder:null;
  app.innerHTML=`<div class="app-shell"${state.view==='detail'&&['jaune','rose','bleu','vert'].includes(state.folder)?` data-folder-theme="${state.folder}"`:''}${dossierTheme?` data-dossier-theme="${dossierTheme}"`:''}>${sidebar()}<div class="main">${topbar(label)}<main class="content">${html}</main></div></div>`;
- app.querySelectorAll('[data-view]').forEach(n=>n.addEventListener('click',()=>{
-   if(n.dataset.view!=='dossier'){navigate(n.dataset.view);return}
-   // Le premier clic ouvre le menu, sans effacer une recherche en cours.
-   const expand=state.view==='dossier'?!state.sidebarDossierOpen:true;
-   state.sidebarDossierOpen=expand;
-   if(state.view!=='dossier'){navigate('dossier');return}
-   n.setAttribute('aria-expanded',String(expand));
-   const children=app.querySelector('#dossier-nav-children');
-   if(children)children.hidden=!expand;
- }));
- app.querySelectorAll('[data-sidebar-folder]').forEach(n=>n.addEventListener('click',()=>{
-   state.sidebarDossierOpen=true;
-   openGlobalFolder(n.dataset.sidebarFolder).catch(showErr);
- }));
+ app.querySelectorAll('[data-view]').forEach(n=>n.addEventListener('click',()=>navigate(n.dataset.view)));
  app.querySelector('.rail-management')?.addEventListener('toggle',event=>{state.sidebarAdminOpen=event.currentTarget.open});
  app.querySelector('#mobile-navigation-toggle')?.addEventListener('click',event=>{const button=event.currentTarget;const open=button.getAttribute('aria-expanded')!=='true';button.setAttribute('aria-expanded',String(open));app.querySelector('.sidebar')?.classList.toggle('is-mobile-open',open)});
  syncFloatingAssistant();
- app.querySelector('#global-search')?.addEventListener('click',async()=>{await navigate('dossier');app.querySelector('#global-search-input')?.focus()});
+ app.querySelector('#global-search')?.addEventListener('click',async()=>{await navigate('launches');app.querySelector('#order-search')?.focus()});
 
  app.querySelector('#logout').addEventListener('click',async()=>{try{await api('/api/auth/logout',{method:'POST'})}catch{}state.me=null;state.detail=null;renderLogin()});
 }
@@ -147,7 +122,7 @@ function renderLogin(){overlay.innerHTML='';syncFloatingAssistant();app.innerHTM
       <button class="primary" type="submit">Se connecter</button>
     </form>
   </div></section></main></div>`;
-  app.querySelector('#login-form').addEventListener('submit',async evt=>{evt.preventDefault();const btn=evt.target.querySelector('button');btn.disabled=true;try{state.me=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:app.querySelector('#email').value,password:app.querySelector('#password').value})});state.me=await api('/api/auth/me');if(!(await paperOpenDeepLink()))await navigate('dossier')}catch(err){app.querySelector('#login-error').innerHTML=`<div class="error">${e(err.message)}</div>`}finally{btn.disabled=false}})
+  app.querySelector('#login-form').addEventListener('submit',async evt=>{evt.preventDefault();const btn=evt.target.querySelector('button');btn.disabled=true;try{state.me=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:app.querySelector('#email').value,password:app.querySelector('#password').value})});state.me=await api('/api/auth/me');if(!(await paperOpenDeepLink()))await navigate('launches')}catch(err){app.querySelector('#login-error').innerHTML=`<div class="error">${e(err.message)}</div>`}finally{btn.disabled=false}})
 }
 function tableLaunches(list){if(!list.length)return `<div class="empty"><div class="empty-icon">${icon('folder')}</div><strong>Aucun dossier pour l’instant</strong>Créez votre premier lancement de fabrication pour démarrer.</div>`;return `<div class="table-scroll"><table><thead><tr><th>Lancement</th><th>Client</th><th>Référence ORLI</th><th>Statut</th><th>Créé le</th><th></th></tr></thead><tbody>${list.map(l=>`<tr class="item-row" data-launch="${e(l.id)}" tabindex="0" aria-label="Ouvrir ${e(l.name)}"><td><div class="row-title">${e(l.name)}</div><div class="row-sub">${e(l.order_ref||'Aucune référence de commande')}</div></td><td>${e(l.client_name||'—')}</td><td>${l.orli_ref?`<span class="tag">${e(l.orli_ref)}</span>`:'<span class="muted small">Non attribuée</span>'}</td><td>${statusTag(l.status)}</td><td class="small">${niceDate(l.created_at)}</td><td>${icon('arrow')}</td></tr>`).join('')}</tbody></table></div>`}
 function bindLaunchRows(){
@@ -348,27 +323,6 @@ function switchDetailView(view){
 }
 function showLaunchInformation(){return orderInformation()}
 
-function renderDossierSummary(folder,docs){
- const records=(state.approvalOverview?.items||[]).filter(x=>x.folder===folder.slug && docs.some(doc=>doc.id===x.document_id));
- const pending=records.filter(x=>x.run?.status==='pending');
- const approved=records.filter(x=>x.run?.status==='approved');
- const list=records.filter(x=>x.run||x.template).slice(0,3);
- return `<aside class="lc-detail-summary" aria-label="Suivi du sous-dossier">
- <section class="lc-summary-card"><div class="lc-summary-head"><h3>État du sous-dossier</h3></div>
-  <div class="lc-summary-figure"><strong>${docs.length}</strong><span>document(s) accessible(s)</span></div>
-  <div class="lc-summary-pair"><span>Versions approuvées</span><strong>${approved.length}</strong></div>
-  <div class="lc-summary-pair"><span>Validations en cours</span><strong>${pending.length}</strong></div>
-  <p class="lc-helper-note">Les validations concernent une version précise. Ce décompte ne mesure pas la complétude du dossier.</p></section>
- <section class="lc-summary-card"><div class="lc-summary-head"><h3>Circuits de validation</h3></div>
-  ${list.length?`<div class="lc-approval-peek">${list.map(x=>`<div class="lc-peek-row"><span class="lc-peek-icon">${icon('file')}</span><div><strong>${e(x.document_title)}</strong><small>${x.run?.status==='approved'?'Approuvée':x.run?.status==='pending'?'Validation en cours':x.run?.status==='changes_requested'?'Corrections demandées':x.run?.status==='rejected'?'Refusée':x.run?.status==='stale'?'Ancienne version':'Demande non lancée'}</small></div></div>`).join('')}</div>`:'<p class="lc-summary-empty">Aucun circuit configuré pour les documents visibles.</p>'}
-  <button type="button" class="secondary lc-summary-action" id="lc-open-validations">${icon('check')} Voir les validations ${icon('arrow')}</button></section>
- <section class="lc-summary-card lc-summary-info"><h3>Informations</h3>
-  <div class="lc-summary-pair"><span>Sous-dossier</span><strong>${e(folder.label)}</strong></div>
-  <div class="lc-summary-pair"><span>Lecture</span><strong>${folder.can_read?'Autorisée':'Limitée'}</strong></div>
-  <div class="lc-summary-pair"><span>Dépôt</span><strong>${folder.can_write?'Autorisé':'Non autorisé'}</strong></div>
-  <button type="button" class="link" id="lc-show-info">Fiche commande ${icon('arrow')}</button></section>
- </aside>`;
-}
 function renderDetail(){
  const d=state.detail;
  const f=d.folders.find(x=>x.slug===state.folder)||d.folders[0];
@@ -395,7 +349,6 @@ function renderDetail(){
  ${f.can_write?`<button class="primary" id="upload-doc">${icon('plus')} Ajouter un document</button>`:''}</div>
  <div class="panel">${!f.can_read?`<div class="denied">${icon('lock')}<p>Vous n’avez pas accès à cette rubrique.</p></div>`:docs.length?`<div class="table-scroll"><table><thead><tr><th>Document</th><th>Type</th><th>Version</th><th>Validation</th><th>Action</th></tr></thead><tbody>${docs.map(doc=>`<tr><td><div class="file-name"><div class="doc-icon">${icon('file')}</div><div><div class="row-title">${e(doc.title)}</div><div class="row-sub">${e(doc.latest.original_name)} · ${sizeText(doc.latest.size)}</div></div></div></td><td class="small">${e(doc.doc_type)}</td><td><span class="tag">v${doc.latest.number}</span></td><td>${(()=>{const record=(state.approvalOverview?.items||[]).find(x=>x.document_id===doc.id);const approval=record?.run?.status;const status=approval==='approved'?'Approuvée':approval==='pending'?'En validation':approval==='changes_requested'?'À corriger':approval==='rejected'?'Refusée':approval==='stale'?'Version remplacée':'Non soumise';return `<span class="lc-document-status ${approval==='approved'?'approved':approval==='pending'?'pending':'neutral'}">${status}</span>`})()}</td><td><div class="doc-actions"><button class="link" data-history="${e(doc.id)}">${icon('clock')} Historique</button><button class="link" data-download="${e(doc.id)}" data-ver="${doc.latest.number}" title="Télécharger" aria-label="Télécharger ${e(doc.title)}">${icon('download')}</button></div></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty"><div class="empty-icon">${icon('file')}</div><strong>Ce sous-dossier est vide</strong>${f.can_write?'Déposez un premier document pour commencer.':'Aucun document pour le moment.'}</div>`}</div></section>
 
- ${f.can_read?renderDossierSummary(f,docs):''}
  </section>
  <section class="detail-view-panel" data-detail-view-panel="tools" id="detail-view-tools" role="tabpanel" aria-labelledby="detail-tab-tools" ${state.detailSection==='tools'?'':'hidden'}>
    ${renderDetailToolWorkspace()}
@@ -406,8 +359,6 @@ function renderDetail(){
  app.querySelector('#edit-launch')?.addEventListener('click',openEditLaunch);
  const showValidations=()=>{switchDetailView('tools');selectDetailTool('approvals')};
  app.querySelector('#lc-header-validations')?.addEventListener('click',showValidations);
- app.querySelector('#lc-open-validations')?.addEventListener('click',showValidations);
- app.querySelector('#lc-show-info')?.addEventListener('click',showLaunchInformation);
  app.querySelectorAll('[data-detail-view]').forEach(button=>{
   button.addEventListener('click',()=>switchDetailView(button.dataset.detailView));
   button.addEventListener('keydown',event=>{
@@ -473,7 +424,7 @@ function openNewRole(){
 }
 function openNewUser(){modal('Créer un collaborateur',`<form id="user-form"><div class="field"><label>Nom complet</label><input id="u-name" required maxlength="120" /></div><div class="field"><label>Email</label><input id="u-email" type="email" required maxlength="254" /></div><div class="field"><label>Mot de passe initial (12 caractères minimum)</label><input id="u-pass" type="password" minlength="12" required autocomplete="new-password" /></div><div class="field"><label>Rôle</label><select id="u-role">${state.roles.map(r=>`<option value="${e(r.id)}">${e(r.name)}</option>`).join('')}</select></div><div class="modal-actions"><button type="button" class="secondary" id="cancel-modal">Annuler</button><button class="primary" type="submit">${icon('check')} Créer le compte</button></div></form>`);overlay.querySelector('#cancel-modal').onclick=closeModal;overlay.querySelector('#user-form').onsubmit=async evt=>{evt.preventDefault();try{await api('/api/admin/users',{method:'POST',body:JSON.stringify({name:val('u-name'),email:val('u-email'),password:overlay.querySelector('#u-pass').value,role_ids:[val('u-role')]})});closeModal();toast('Compte collaborateur créé');await admin()}catch(err){showErr(err)}}}
 async function auditView(){state.view='audit';state.audit=await api('/api/admin/audit');mount(`<div class="page-heading"><div><div class="page-kicker">${icon('activity')} TRAÇABILITÉ</div><h1 class="page-title">Journal d’activité</h1><p class="page-lead">100 dernières opérations sensibles.</p></div></div><div class="panel table-scroll"><table><thead><tr><th>Action</th><th>Utilisateur</th><th>Élément</th><th>Date</th></tr></thead><tbody>${state.audit.map(x=>`<tr><td class="row-title">${e(x.action)}</td><td class="audit-item">${e((x.actor_id||'—').slice(0,12))}</td><td class="audit-item">${e(x.target_type)} · ${e(x.target_id.slice(0,12))}</td><td class="small">${niceDate(x.occurred_at)}</td></tr>`).join('')}</tbody></table></div>`,'Journal d’activité')}
-async function navigate(view){try{if(view==='dossier'||view==='home')await globalLibraryPage();else if(view==='controls')await libraryControlsPage();else if(view==='rex')await rexPage();else if(view==='launches')await launchList();else if(view==='actions')await workspaceActions();else if(view==='assistant')openFloatingAssistant();else if(view==='pilot')await pilotPage();else if(view==='orli'&&state.me.admin)await orliAdmin();else if(view==='admin'&&state.me.admin)await admin();else if(view==='audit'&&state.me.admin)await auditView()}catch(err){showErr(err)}}
+async function navigate(view){try{if(view==='dossier'||view==='home')await launchList();else if(view==='controls')await libraryControlsPage();else if(view==='rex')await rexPage();else if(view==='launches')await launchList();else if(view==='actions')await workspaceActions();else if(view==='assistant')openFloatingAssistant();else if(view==='pilot')await pilotPage();else if(view==='orli'&&state.me.admin)await orliAdmin();else if(view==='admin'&&state.me.admin)await admin();else if(view==='audit'&&state.me.admin)await auditView()}catch(err){showErr(err)}}
 window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 // Partie intégrée dans app.js lors de la construction du MVP 0.2.
 function phaseLabel(code){return {'preparation':'Préparation','approvisionnement':'Approvisionnement','fabrication':'Fabrication','expedition':'Expédition','cloture':'Clôture'}[code]||code}

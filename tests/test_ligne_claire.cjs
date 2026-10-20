@@ -60,10 +60,10 @@ vm.runInContext([
   'renderDetail();'
  ].join('\n'),ctx);
  assert(ctx.lastHtml.includes('lc-documents-layout'));
- assert(ctx.lastHtml.includes('lc-detail-summary'));
+ assert(!ctx.lastHtml.includes('lc-detail-summary'));
  assert(ctx.lastHtml.includes('Fiche emploi'));
  assert(ctx.lastHtml.includes('Approuvée'));
- assert(ctx.lastHtml.includes('id="lc-open-validations"'));
+ assert(ctx.lastHtml.includes('id="lc-header-validations"'));
  assert(ctx.lastHtml.includes('data-folder="rose"'));
  assert(!ctx.lastHtml.includes('class="command-hero"'));
  // Check the real approval renderer independently (not the detail stubs).
