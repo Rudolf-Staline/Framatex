@@ -312,3 +312,20 @@
  #floating-assistant-root .floating-assistant-form button,
  #floating-assistant-root .floating-assistant-form{transition:none!important;transform:none!important}
 }
+
+/* Résultats sourcés du guide : ouvrir directement le bon dossier. */
+#floating-assistant-root .floating-assistant-results{display:grid;gap:7px;margin-top:13px}
+#floating-assistant-root .floating-assistant-results button{
+ display:flex;align-items:center;gap:11px;text-align:left;padding:12px 13px;
+ border:1px solid #e8e3d4;border-radius:11px;background:#fff;cursor:pointer;
+ color:#272b2c;transition:background .18s,border-color .18s,transform .18s
+}
+#floating-assistant-root .floating-assistant-results button:hover,
+#floating-assistant-root .floating-assistant-results button:focus-visible{
+ background:#fff9e8;border-color:#d7aa29;transform:translateX(2px)
+}
+#floating-assistant-root .floating-assistant-results button>svg:first-child{flex-shrink:0;color:#b38708}
+#floating-assistant-root .floating-assistant-results button>svg:last-child{margin-left:auto;flex-shrink:0;opacity:.7}
+#floating-assistant-root .floating-assistant-results button>span{min-width:0;display:grid;gap:2px;flex:1}
+#floating-assistant-root .floating-assistant-results button strong{font-weight:700;font-size:12px;overflow-wrap:anywhere}
+#floating-assistant-root .floating-assistant-results button small{font-size:11px;color:#73746d}
