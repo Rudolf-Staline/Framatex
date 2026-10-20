@@ -271,15 +271,20 @@ def login(payload: LoginPayload, response: Response, request: Request, db: Sessi
     return user_out(user)
 
 @app.post("/api/auth/logout")
-def logout(response: Response, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Deleting a cookie alone does not invalidate a copied signed JWT.
-    # Record its unique identifier server-side so reuse is denied immediately.
+def logout(response: Response, request: Request, db: Session = Depends(get_db)):
+    # Signing out must remain possible after a client or contact is disabled.
     import jwt
     from .core import SECRET_KEY
     token = request.cookies.get(COOKIE)
-    payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-    audit(db, user, "session.logout", "session", payload["jti"])
-    db.commit()
+    if token:
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            user = db.get(User, payload.get("sub"))
+            if user and isinstance(payload.get("jti"), str):
+                audit(db, user, "session.logout", "session", payload["jti"])
+                db.commit()
+        except jwt.InvalidTokenError:
+            pass
     response.delete_cookie(COOKIE, path="/")
     return {"ok": True}
 
