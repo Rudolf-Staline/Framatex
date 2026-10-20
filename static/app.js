@@ -76,7 +76,8 @@ function sidebar(){
  </aside>`;
 }
 function mount(html,label){
- app.innerHTML=`<div class="app-shell"${state.view==='detail'&&['jaune','rose','bleu','vert'].includes(state.folder)?` data-folder-theme="${state.folder}"`:''}>${sidebar()}<div class="main">${topbar(label)}<main class="content">${html}</main></div></div>`;
+ const dossierTheme=state.view==='dossier'&&['jaune','rose','bleu','vert'].includes(state.dossierFolder)?state.dossierFolder:null;
+ app.innerHTML=`<div class="app-shell"${state.view==='detail'&&['jaune','rose','bleu','vert'].includes(state.folder)?` data-folder-theme="${state.folder}"`:''}${dossierTheme?` data-dossier-theme="${dossierTheme}"`:''}>${sidebar()}<div class="main">${topbar(label)}<main class="content">${html}</main></div></div>`;
  app.querySelectorAll('[data-view]').forEach(n=>n.addEventListener('click',()=>{
    if(n.dataset.view!=='dossier'){navigate(n.dataset.view);return}
    // Le premier clic ouvre le menu, sans effacer une recherche en cours.
