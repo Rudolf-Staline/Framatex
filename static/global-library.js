@@ -3,27 +3,23 @@
 const GLOB_COLORS={jaune:'Jaune',rose:'Rose',bleu:'Bleu',vert:'Vert'};
 const GLOB_DESCRIPTIONS={jaune:'Technique',rose:'Réception',bleu:'Douane',vert:'Facturation'};
 let globalIndex=null,globalFolder='jaune',globalQuery='',globalType='all',globalView='list';
-let globalControlReport=null,globalControlStatus='loading',globalSelectedId=null,globalSort='recent',globalLoad=0;
+let globalSort='recent',globalLoad=0;
+const globalChosenIds=new Set();
 
 async function globalLibraryPage(){
  const load=++globalLoad;
  state.view='dossier';
  const index=await api('/api/dossier-jaune');
  if(load!==globalLoad||state.view!=='dossier')return;
- globalIndex=index;globalControlReport=null;globalControlStatus='loading';
+ globalIndex=index;
+ const available=new Set(globalIndex.folders.find(f=>f.slug===globalFolder)?.documents.map(d=>d.id)||[]);
+ for(const id of globalChosenIds)if(!available.has(id))globalChosenIds.delete(id);
  renderGlobalLibrary();
- try{
-  const report=await api('/api/dossier-jaune/controls');
-  if(load!==globalLoad||state.view!=='dossier')return;
-  globalControlReport=report;globalControlStatus='ready';renderGlobalContext();
- }catch(error){
-  if(load!==globalLoad||state.view!=='dossier'||!state.me)return;
-  globalControlStatus='error';renderGlobalContext();
- }
 }
+
 async function openGlobalFolder(slug){
  if(!Object.hasOwn(GLOB_COLORS,slug))return;
- globalFolder=slug;globalQuery='';globalType='all';globalSelectedId=null;
+ globalFolder=slug;globalQuery='';globalType='all';globalChosenIds.clear();
  state.dossierFolder=slug;state.sidebarDossierOpen=true;
  if(state.view==='dossier'&&globalIndex){renderGlobalLibrary();return}
  await globalLibraryPage();
@@ -50,7 +46,7 @@ function globalUploader(doc){
  const name=doc.latest?.uploaded_by?.trim();
  if(!name)return '<span class="saffron-muted">Non renseigné</span>';
  const initials=name.split(/\s+/).map(word=>word[0]).slice(0,2).join('').toLocaleUpperCase('fr');
- return '<span class="saffron-uploader"><span class="saffron-uploader-avatar" aria-hidden="true">'+e(initials)+'</span><span title="'+e(name)+'">'+e(name)+'</span></span>';
+ return '<span class="saffron-uploader"><span class="saffron-uploader-avatar" aria-hidden="true">'+e(initials)+'</span><span class="saffron-uploader-info"><strong title="'+e(name)+'">'+e(name)+'</strong><small>Version '+(doc.latest?.number||'—')+'</small></span></span>';
 }
 function globalDocumentsVisible(){
  const group=globalIndex?.folders.find(f=>f.slug===globalFolder);
@@ -58,7 +54,7 @@ function globalDocumentsVisible(){
  const term=globalQuery.trim().toLocaleLowerCase('fr');
  const rows=group.documents.filter(d=>(globalType==='all'||globalDocumentFormat(d)===globalType)&&(!term||[d.title,d.doc_type,d.orli_ref||'',...(d.versions||[]).map(v=>v.original_name)].some(v=>String(v).toLocaleLowerCase('fr').includes(term))));
  const date=d=>new Date(d.latest?.created_at||d.created_at).getTime()||0;
- if(globalSort==='name'||globalSort==='name-desc')rows.sort((a,b)=>a.title.localeCompare(b.title,'fr')*(globalSort==='name'?1:-1));
+ if(globalSort==='name'||globalSort==='name-desc')rows.sort((a,b)=>String(a.latest?.original_name||a.title).localeCompare(String(b.latest?.original_name||b.title),'fr')*(globalSort==='name'?1:-1));
  else rows.sort((a,b)=>(date(b)-date(a))*(globalSort==='oldest'?-1:1));
  return rows;
 }
@@ -68,85 +64,71 @@ function globalRenderRows(){
  if(!host)return;
  if(!group.can_read){
   host.innerHTML='<div class="saffron-empty"><strong>Accès à cette rubrique réservé.</strong><p>Votre rôle ne permet pas de consulter ces documents.</p></div>';
-  if(count)count.textContent='';renderGlobalContext();return;
+  if(count)count.textContent='';globalUpdateSelection();return;
  }
  const rows=globalDocumentsVisible();
- if(!rows.some(d=>d.id===globalSelectedId))globalSelectedId=rows[0]?.id||null;
  if(count)count.textContent=rows.length+' document'+(rows.length===1?'':'s');
  const nameOrder=globalSort==='name'?'ascending':globalSort==='name-desc'?'descending':'none';
  const dateOrder=globalSort==='recent'?'descending':globalSort==='oldest'?'ascending':'none';
  host.innerHTML=rows.length?'<div class="saffron-table-scroll"><table class="saffron-table"><caption class="sr-only">Documents accessibles du sous-dossier '+GLOB_COLORS[globalFolder]+'</caption>'+
- '<thead><tr><th scope="col" aria-sort="'+nameOrder+'"><button type="button" data-global-sort="name">Nom du fichier '+icon('sort')+'</button></th><th scope="col" class="saffron-size-col">Taille</th><th scope="col" class="saffron-added-col">Ajouté le</th><th scope="col" class="saffron-updated-col" aria-sort="'+dateOrder+'"><button type="button" data-global-sort="date">Mis à jour '+icon('sort')+'</button></th><th scope="col" class="saffron-uploader-col">Déposé par</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>'+
- '<tbody>'+rows.map(d=>'<tr class="'+(d.id===globalSelectedId?'is-selected':'')+'">'+
- '<td><button class="saffron-document-name" type="button" data-global-select="'+e(d.id)+'" aria-pressed="'+(d.id===globalSelectedId)+'" title="Afficher les contrôles de '+e(d.title)+'">'+globalFileIcon(d)+'<span><strong>'+e(d.latest?.original_name||d.title)+'</strong><small class="saffron-file-meta">'+(d.latest?.original_name&&d.latest.original_name!==d.title?'<span>'+e(d.title)+'</span> · ':'')+(d.orli_ref?e(d.orli_ref):'ORLI : Non renseignée')+' · <span class="global-version-pill">v'+(d.latest?.number||'—')+'</span><span class="saffron-mobile-file-size"> · '+globalFileSize(d)+'</span></small></span></button></td>'+
- '<td class="saffron-size-col">'+globalFileSize(d)+'</td><td class="saffron-added-col">'+niceDate(d.created_at)+'</td><td class="saffron-updated-col">'+niceDate(d.latest?.created_at||d.created_at)+'</td><td class="saffron-uploader-col">'+globalUploader(d)+'</td>'+
- '<td class="saffron-row-actions"><button type="button" class="saffron-more" data-global-actions="'+e(d.id)+'" aria-label="Actions pour '+e(d.title)+'">'+icon('more')+'</button></td></tr>').join('')+'</tbody></table></div>':
+ '<colgroup><col class="register-check-col"><col class="register-name-col"><col class="register-size-col"><col class="register-added-col"><col class="register-updated-col"><col class="register-uploader-col"></colgroup>'+
+ '<thead><tr><th scope="col" class="saffron-check-col"><label class="register-checkbox"><input type="checkbox" id="global-select-all" aria-label="Sélectionner tous les fichiers affichés"></label></th><th scope="col" aria-sort="'+nameOrder+'"><button type="button" data-global-sort="name">Nom du fichier</button></th><th scope="col" class="saffron-size-col">Taille</th><th scope="col" class="saffron-added-col">Ajouté le</th><th scope="col" class="saffron-updated-col" aria-sort="'+dateOrder+'"><button type="button" data-global-sort="date">Mis à jour</button></th><th scope="col" class="saffron-uploader-col">Déposé par</th></tr></thead>'+
+ '<tbody>'+rows.map(d=>'<tr class="'+(globalChosenIds.has(d.id)?'is-selected':'')+'">'+
+ '<td class="saffron-check-col"><label class="register-checkbox"><input type="checkbox" data-global-check="'+e(d.id)+'" aria-label="Sélectionner '+e(d.latest?.original_name||d.title)+'"'+(globalChosenIds.has(d.id)?' checked':'')+'></label></td>'+
+ '<td><button class="saffron-document-name" type="button" data-global-actions="'+e(d.id)+'" title="Ouvrir '+e(d.latest?.original_name||d.title)+'">'+globalFileIcon(d)+'<span><strong>'+e(d.latest?.original_name||d.title)+'</strong><small class="saffron-file-meta">'+globalFileSize(d)+'</small></span></button></td>'+
+ '<td class="saffron-size-col">'+globalFileSize(d)+'</td><td class="saffron-added-col">'+niceDate(d.created_at)+'</td><td class="saffron-updated-col">'+niceDate(d.latest?.created_at||d.created_at)+'</td><td class="saffron-uploader-col">'+globalUploader(d)+'</td></tr>').join('')+'</tbody></table></div>':
  '<div class="saffron-empty"><span class="saffron-empty-icon">'+icon('file')+'</span><strong>'+(globalQuery||globalType!=='all'?'Aucun résultat':'Aucun document pour le moment')+'</strong><p>'+(globalQuery||globalType!=='all'?'Modifiez les filtres pour élargir la recherche.':'Les fichiers déposés apparaîtront ici.')+'</p>'+(group.can_write&&!globalQuery&&globalType==='all'?'<button type="button" class="primary" id="global-empty-upload">'+icon('plus')+' Déposer un document</button>':'')+'</div>';
  host.querySelector('#global-empty-upload')?.addEventListener('click',globalUploadModal);
- host.querySelectorAll('[data-global-select]').forEach(button=>button.addEventListener('click',()=>{
-  globalSelectedId=button.dataset.globalSelect;
-  host.querySelectorAll('[data-global-select]').forEach(item=>{
-   const selected=item.dataset.globalSelect===globalSelectedId;
-   item.setAttribute('aria-pressed',String(selected));item.closest('tr').classList.toggle('is-selected',selected);
-  });
-  renderGlobalContext();
+ host.querySelector('#global-select-all')?.addEventListener('change',event=>{
+  rows.forEach(d=>event.target.checked?globalChosenIds.add(d.id):globalChosenIds.delete(d.id));globalUpdateSelection();
+ });
+ host.querySelectorAll('[data-global-check]').forEach(input=>input.addEventListener('change',()=>{
+  if(input.checked)globalChosenIds.add(input.dataset.globalCheck);else globalChosenIds.delete(input.dataset.globalCheck);
+  globalUpdateSelection();
  }));
  host.querySelectorAll('[data-global-actions]').forEach(button=>button.addEventListener('click',()=>globalDocumentActions(button.dataset.globalActions)));
  host.querySelectorAll('[data-global-sort]').forEach(button=>button.addEventListener('click',()=>{
   globalSort=button.dataset.globalSort==='name'?(globalSort==='name'?'name-desc':'name'):(globalSort==='recent'?'oldest':'recent');
   globalRenderRows();app.querySelector('[data-global-sort="'+button.dataset.globalSort+'"]')?.focus();
  }));
- renderGlobalContext();
+ globalUpdateSelection();
 }
-function globalRef(value){return String(value||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('fr')}
-function globalNumber(value){
- const [integer,decimal]=String(value).split('.');
- return integer.replace(/\B(?=(\d{3})+(?!\d))/g,'\u202f')+(decimal?','+decimal:'');
+function globalSelectedDocuments(){
+ const folder=globalIndex?.folders.find(f=>f.slug===globalFolder);
+ return folder?.can_read?folder.documents.filter(d=>globalChosenIds.has(d.id)):[];
 }
-function globalContextIssues(){
- if(globalControlStatus!=='ready'||!globalControlReport)return [];
- const group=globalIndex.folders.find(f=>f.slug===globalFolder);
- if(!group?.can_read)return [];
- const selected=group.documents.find(d=>d.id===globalSelectedId);
- const refs=new Set((selected?.orli_ref?[selected.orli_ref]:globalDocumentsVisible().map(d=>d.orli_ref)).filter(Boolean).map(globalRef));
- const issues=[];
- for(const row of globalControlReport.comparisons||[]){
-  if(row.status==='consistent')continue;
-  if(!refs.has(globalRef(row.orli_ref)))continue;
-  if(!(row.folders||[]).includes(globalFolder)&&!refs.has(globalRef(row.orli_ref)))continue;
-  const pair=row.pair||[],numeric=pair.length===2&&pair.every(p=>p.value!==null&&p.value!==undefined);
-  const description=numeric?pair.map(p=>globalNumber(p.value)).join(' / ')+(pair[0].unit===pair[1].unit?' '+pair[0].unit:' · unités différentes'):row.reason;
-  issues.push({title:row.status==='difference'?'Écart à examiner':row.status==='unit_mismatch'?'Unités différentes':row.status==='ambiguous'?'Sources à préciser':'Valeur ou pièce à compléter',description,detail:row.name,tab:'consistency',folder:(row.folders||[]).includes(globalFolder)?globalFolder:(row.folders||[])[0],rank:row.status==='difference'||row.status==='unit_mismatch'?0:2});
- }
- for(const row of globalControlReport.expectations||[]){
-  if(row.status!=='missing')continue;
-  if(row.orli_ref&&!refs.has(globalRef(row.orli_ref)))continue;
-  if(row.folder!==globalFolder&&(!row.orli_ref||!refs.has(globalRef(row.orli_ref))))continue;
-  issues.push({title:row.title+' manquant',description:row.orli_ref||GLOB_COLORS[row.folder],detail:row.document_type,tab:'expectations',folder:row.folder,rank:1});
- }
- return issues.sort((a,b)=>a.rank-b.rank);
+function globalUpdateSelection(){
+ const selected=globalSelectedDocuments(),bar=app.querySelector('#global-selection-actions');
+ if(bar)bar.hidden=!selected.length;
+ const count=app.querySelector('#global-selected-count');if(count)count.textContent=selected.length+' fichier'+(selected.length===1?' sélectionné':'s sélectionnés');
+ const host=app.querySelector('#global-doc-results');if(!host)return;
+ host.querySelectorAll('[data-global-check]').forEach(input=>{
+  input.checked=globalChosenIds.has(input.dataset.globalCheck);
+  input.closest('tr')?.classList.toggle('is-selected',input.checked);
+ });
+ const all=host.querySelector('#global-select-all'),visible=globalDocumentsVisible();
+ if(all){const n=visible.filter(d=>globalChosenIds.has(d.id)).length;all.checked=visible.length>0&&n===visible.length;all.indeterminate=n>0&&n<visible.length}
 }
-function renderGlobalContext(){
- const host=app.querySelector('#global-context-issues');if(!host)return;
- const group=globalIndex?.folders.find(f=>f.slug===globalFolder);
- const issues=globalContextIssues(),visible=issues.slice(0,2);
- if(!group?.can_read){host.innerHTML='<p class="saffron-context-note">Les contrôles respectent les droits d’accès à cette rubrique.</p>';return}
- if(globalControlStatus==='loading')host.innerHTML='<p class="saffron-context-note" role="status">Lecture des vérifications…</p>';
- else if(globalControlStatus==='error')host.innerHTML='<p class="saffron-context-note" role="status">Les vérifications sont momentanément indisponibles.</p>';
- else if(!issues.length)host.innerHTML='<p class="saffron-context-note">'+((globalControlReport?.rules?.length||globalControlReport?.expectations?.length)?'Aucun point à examiner pour les documents affichés.':'Aucune règle de vérification configurée pour ces documents.')+'</p>';
- else host.innerHTML=visible.map((issue,i)=>'<button class="saffron-context-issue" type="button" data-global-issue="'+i+'" title="'+e(issue.detail)+'"><span class="saffron-warning">'+icon('warning')+'</span><span><strong>'+e(issue.title)+'</strong><small>'+e(issue.description)+'</small></span></button>').join('')+(issues.length>2?'<p class="saffron-context-note">'+(issues.length-2)+' autre'+(issues.length>3?'s':'')+' point'+(issues.length>3?'s':'')+' à examiner</p>':'');
- host.querySelectorAll('[data-global-issue]').forEach(button=>button.addEventListener('click',()=>{
-  const issue=visible[+button.dataset.globalIssue];
-  controlState.tab=issue.tab;controlState.folder=issue.folder||'';navigate('controls');
- }));
+async function globalDownloadSelection(){
+ const docs=globalSelectedDocuments(),button=app.querySelector('#global-download-selection');
+ if(button)button.disabled=true;
+ try{for(const doc of docs)await globalDownload(doc.id,doc.latest?.number||1)}finally{if(button)button.disabled=false}
+}
+function globalRecordIssue(id){
+ const doc=globalIndex.folders.flatMap(f=>f.documents).find(d=>d.id===id);
+ if(!doc||!can('document.read',doc.folder)||!can('rex.read',doc.folder)||!can('rex.write',doc.folder))return;
+ return openRexEditor(null,{folder:doc.folder,orli_ref:doc.orli_ref||'',document_id:doc.id});
 }
 function globalDocumentActions(id){
  const doc=globalIndex.folders.flatMap(f=>f.documents).find(d=>d.id===id);if(!doc)return;
  const writable=can('document.write',doc.folder);
- modal('Actions du document','<div class="saffron-document-actions"><p class="saffron-action-title">'+e(doc.title)+'</p><button type="button" class="secondary" id="global-action-download">'+icon('download')+' Télécharger la version actuelle</button>'+
+ const writableMemory=can('document.read',doc.folder)&&can('rex.read',doc.folder)&&can('rex.write',doc.folder);
+ modal('Actions du document','<div class="saffron-document-actions"><p class="saffron-action-title">'+e(doc.title)+'</p><p class="register-document-meta">'+e(doc.orli_ref||'ORLI : Non renseignée')+' · v'+(doc.latest?.number||'—')+'</p><button type="button" class="secondary" id="global-action-download">'+icon('download')+' Télécharger la version actuelle</button>'+
  (writable?'<button type="button" class="secondary" id="global-action-reference">'+icon('pencil')+' Modifier la référence ORLI</button>':'')+
+ (writableMemory?'<button type="button" class="secondary" id="global-action-rex">'+icon('chat')+' Consigner un problème</button>':'')+
  '<section class="saffron-version-list" aria-labelledby="global-version-heading"><h3 id="global-version-heading">Historique des versions</h3>'+doc.versions.slice().reverse().map(v=>'<button class="link" type="button" data-global-version="'+v.number+'"><span>v'+v.number+' · '+e(v.original_name)+'<small>'+niceDate(v.created_at)+'</small></span>'+icon('download')+'</button>').join('')+'</section></div>');
  overlay.querySelector('#global-action-download').onclick=()=>globalDownload(doc.id,doc.latest?.number||1);
+ overlay.querySelector('#global-action-rex')?.addEventListener('click',()=>globalRecordIssue(doc.id)?.catch(showErr));
  overlay.querySelector('#global-action-reference')?.addEventListener('click',()=>globalEditReference(doc.id));
  overlay.querySelectorAll('[data-global-version]').forEach(button=>button.addEventListener('click',()=>globalDownload(doc.id,Number(button.dataset.globalVersion))));
  if(typeof knowledgeDialogFocus==='function')knowledgeDialogFocus();
@@ -154,16 +136,12 @@ function globalDocumentActions(id){
 function renderGlobalLibrary(){
  state.dossierFolder=globalFolder;
  const folder=globalIndex.folders.find(f=>f.slug===globalFolder);
- const writableMemory=can('document.read',globalFolder)&&can('rex.read',globalFolder)&&can('rex.write',globalFolder);
- mount('<div class="global-library saffron-workspace">'+
+ mount('<div class="global-library saffron-workspace document-register">'+
  '<section class="saffron-library-main"><nav class="global-breadcrumb" aria-label="Fil d’Ariane"><span>Espace documentaire</span><span aria-hidden="true">/</span><strong>'+GLOB_COLORS[globalFolder]+'</strong></nav>'+
- '<header class="saffron-page-head"><h1>'+e(folder.label||GLOB_DESCRIPTIONS[globalFolder])+'</h1><p>Documents du sous-dossier '+GLOB_COLORS[globalFolder].toLocaleLowerCase('fr')+'.</p></header>'+
+ '<header class="saffron-page-head"><div><h1>'+e(folder.label||GLOB_DESCRIPTIONS[globalFolder])+'</h1><p>Documents du sous-dossier '+GLOB_COLORS[globalFolder].toLocaleLowerCase('fr')+'.</p></div>'+(folder.can_write?'<button type="button" class="primary register-upload" id="global-upload">'+icon('upload')+' Déposer un document</button>':'')+'</header>'+
  '<nav class="saffron-folders" role="tablist" aria-label="Les quatre sous-dossiers">'+globalIndex.folders.map(f=>'<button type="button" role="tab" id="folder-tab-'+f.slug+'" data-global-folder="'+f.slug+'" aria-selected="'+(f.slug===globalFolder)+'" aria-controls="global-document-panel" aria-label="Sous-dossier '+GLOB_COLORS[f.slug]+' · '+e(f.label||GLOB_DESCRIPTIONS[f.slug])+'" tabindex="'+(f.slug===globalFolder?'0':'-1')+'" class="saffron-folder-tab '+f.slug+' '+(f.slug===globalFolder?'selected':'')+'"><span class="dossier-child-dot '+f.slug+'" aria-hidden="true"></span>'+GLOB_COLORS[f.slug]+(!f.can_read?'<span class="sr-only"> · Accès restreint</span>':'')+'</button>').join('')+'</nav>'+
  '<section id="global-document-panel" class="saffron-document-panel" role="tabpanel" aria-labelledby="folder-tab-'+globalFolder+'"><div class="saffron-document-toolbar"><label class="saffron-document-search">'+icon('search')+'<input type="search" id="global-search-input" aria-label="Rechercher dans ce sous-dossier" placeholder="Rechercher dans ce dossier…" value="'+e(globalQuery)+'" '+(folder.can_read?'':'disabled')+'></label>'+
- '<label class="saffron-type-filter"><span class="sr-only">Type de document</span><select id="global-type-filter" aria-label="Filtrer par type"><option value="all">Tous les types</option><option value="pdf">PDF</option><option value="word">Word</option><option value="excel">Excel</option><option value="image">Image</option><option value="other">Autres</option></select></label></div><span class="sr-only" id="global-result-count" role="status" aria-live="polite"></span><div id="global-doc-results"></div></section></section>'+
- '<aside class="saffron-context" aria-label="Vérifications contextuelles">'+(folder.can_write?'<button type="button" class="primary saffron-upload" id="global-upload">Déposer un document</button>':'')+
- '<section class="saffron-context-section"><h2>À vérifier</h2><div id="global-context-issues" aria-live="polite"></div><button type="button" class="saffron-context-link" id="global-open-controls">Voir les vérifications '+icon('forward')+'</button></section>'+
- (writableMemory?'<div class="saffron-context-footer"><button type="button" class="saffron-context-link" id="global-record-issue">'+icon('chat')+' Consigner un problème '+icon('forward')+'</button></div>':'')+'</aside></div>','Dossier Jaune');
+ '<label class="saffron-type-filter"><span class="sr-only">Type de document</span><select id="global-type-filter" aria-label="Filtrer par type"><option value="all">Tous les types</option><option value="pdf">PDF</option><option value="word">Word</option><option value="excel">Excel</option><option value="image">Image</option><option value="other">Autres</option></select></label></div><span class="sr-only" id="global-result-count" role="status" aria-live="polite"></span><div id="global-doc-results"></div><div id="global-selection-actions" class="register-selection-bar" hidden><span id="global-selected-count" role="status" aria-live="polite"></span><button type="button" class="secondary" id="global-download-selection">'+icon('download')+' Télécharger la sélection</button><button type="button" class="link" id="global-clear-selection">Désélectionner</button></div></section></section></div>','Dossier Jaune');
  const typeSelect=app.querySelector('#global-type-filter');if(typeSelect)typeSelect.value=globalType;
  app.querySelector('#global-type-filter')?.addEventListener('change',event=>{globalType=event.target.value;globalRenderRows()});
  app.querySelectorAll('[data-global-folder]').forEach(button=>button.onclick=()=>openGlobalFolder(button.dataset.globalFolder).catch(showErr));
@@ -176,11 +154,8 @@ function renderGlobalLibrary(){
  });
  app.querySelector('#global-search-input')?.addEventListener('input',event=>{globalQuery=event.target.value;globalRenderRows()});
  app.querySelector('#global-upload')?.addEventListener('click',globalUploadModal);
- app.querySelector('#global-open-controls')?.addEventListener('click',()=>{controlState.folder=globalFolder;navigate('controls')});
- app.querySelector('#global-record-issue')?.addEventListener('click',()=>{
-  const doc=folder.documents.find(d=>d.id===globalSelectedId);
-  openRexEditor(null,{folder:globalFolder,orli_ref:doc?.orli_ref||'',document_id:doc?.id||null}).catch(showErr);
- });
+ app.querySelector('#global-download-selection')?.addEventListener('click',globalDownloadSelection);
+ app.querySelector('#global-clear-selection')?.addEventListener('click',()=>{globalChosenIds.clear();globalUpdateSelection()});
  globalRenderRows();
 }
 
