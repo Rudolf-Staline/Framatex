@@ -403,3 +403,53 @@ body .app-shell :focus-visible{outline:2px solid var(--folder-ink,#775510);outli
  .saffron-table th:first-child{width:auto}
  .saffron-mobile-file-size{display:inline}
 }
+
+/* File table reference: neutral white rows, 2-line names, generous columns. */
+body .app-shell .saffron-workspace.document-register{display:block;min-height:calc(100dvh - 140px);background:#fff}
+body .app-shell:has(.document-register) .main,body .app-shell:has(.document-register) .content{background:#fff}
+.document-register .saffron-page-head{display:flex;align-items:center;justify-content:space-between;gap:24px}
+.document-register .register-upload{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:10px 16px;margin-top:20px;border-radius:6px;white-space:nowrap}
+.document-register .register-upload svg{width:18px;height:18px}
+.document-register .saffron-document-toolbar{max-width:810px}
+.document-register .saffron-table-scroll{overflow-x:auto;width:100%;background:#fff}
+.document-register .saffron-table{width:100%;min-width:760px;table-layout:fixed;border-collapse:collapse;font-family:"Inter",Arial,sans-serif;background:#fff}
+.document-register .register-check-col{width:4%}
+.document-register .register-name-col{width:39%}
+.document-register .register-size-col{width:11%}
+.document-register .register-added-col,.document-register .register-updated-col{width:15%}
+.document-register .register-uploader-col{width:16%}
+.document-register .saffron-table th,.document-register .saffron-table td{display:table-cell;width:auto;padding:16px 12px;border:0;border-bottom:1px solid #eaecf0;background:#fff;text-align:left;vertical-align:middle;line-height:20px;font-size:14px;color:#667085;overflow-wrap:normal}
+.document-register .saffron-table th{height:44px;padding-block:12px;font-size:12px;line-height:18px;font-weight:500;background:#fcfcfd}
+.document-register .saffron-table th button{font:inherit;color:inherit;white-space:nowrap}
+.document-register .saffron-table td{height:80px}
+.document-register .saffron-table .saffron-check-col{padding:0;text-align:center}
+.document-register .saffron-table td.saffron-added-col,.document-register .saffron-table td.saffron-updated-col{font-size:14px;white-space:nowrap}
+.document-register .saffron-table tr.is-selected td,.document-register .saffron-table tbody tr:hover td{background:#f9fafb;border-left:0}
+.document-register .saffron-table td:first-child{border-left:0}
+.document-register .saffron-document-name{display:flex;align-items:center;gap:12px;width:100%;min-width:0;min-height:40px;padding:0;background:none;border:0;overflow:hidden;text-align:left}
+.document-register .saffron-document-name>span:last-child{flex:1;min-width:0;overflow:hidden}
+.document-register .saffron-document-name strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:"Inter",Arial,sans-serif;font-size:14px;line-height:20px;font-weight:600;color:#101828;overflow-wrap:normal}
+.document-register .saffron-file-meta{display:block;margin:0;font-family:"Inter",Arial,sans-serif;font-size:14px;line-height:20px;color:#667085;font-weight:400}
+.document-register .saffron-file-icon{display:flex;align-items:center;justify-content:center;flex:0 0 32px;width:32px;height:40px}
+.document-register .saffron-file-icon svg{width:32px;height:40px}
+.document-register .global-format-pdf{color:#c96669}
+.document-register .saffron-uploader{display:flex;align-items:center;gap:10px;min-width:0;font-family:"Inter",Arial,sans-serif}
+.document-register .saffron-uploader-avatar{display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border-radius:50%;background:#eef1f5;color:#475467;font-size:11px;font-weight:500}
+.document-register .saffron-uploader-info{display:block;min-width:0;overflow:hidden}
+.document-register .saffron-uploader-info strong{display:block;color:#101828;font-size:14px;line-height:20px;font-weight:600;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.document-register .saffron-uploader-info small{display:block;color:#667085;font-size:14px;line-height:20px;font-weight:400}
+.document-register .register-checkbox{display:flex;align-items:center;justify-content:center;min-height:44px;width:100%;cursor:pointer}
+.document-register .register-checkbox input{appearance:none;display:block;width:16px;height:16px;margin:0;border:1px solid #d0d5dd;border-radius:4px;background:#fff;cursor:pointer;accent-color:#344054}
+.document-register .register-checkbox input:checked{appearance:auto;background:#fff;border-color:#344054}
+.document-register .register-checkbox input:indeterminate{appearance:auto}
+.document-register .register-selection-bar{display:flex;align-items:center;flex-wrap:wrap;gap:16px;padding:16px 0;color:#475467;font-size:13px}
+.document-register .register-selection-bar[hidden]{display:none}
+.document-register .register-selection-bar .secondary{display:inline-flex;align-items:center;gap:7px;font-size:12px}
+.register-document-meta{margin:-12px 0 4px;font-size:12px;line-height:1.6;color:#667085}
+@media(max-width:760px){
+ .document-register .saffron-page-head{align-items:flex-start;flex-direction:column;gap:16px}
+ .document-register .register-upload{margin:0}
+ .document-register .saffron-document-toolbar{width:100%;max-width:none}
+ .document-register .saffron-table{min-width:760px}
+ .document-register .saffron-table-scroll{overscroll-behavior-inline:contain}
+}
