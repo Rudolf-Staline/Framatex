@@ -28,7 +28,7 @@ body .app-shell[data-dossier-theme="vert"]{
  --folder-panel:#ffffff;--folder-soft:#e1f2e5;--folder-softest:#f1faf3;
  --folder-line:#e2eee6;--folder-accent:#4b976a;
 }
-body .app-shell .ui-icon{fill:currentColor;stroke:none;stroke-width:0}
+body .ui-icon{fill:currentColor;stroke:none;stroke-width:0}
 body .app-shell .sidebar.sidebar-rail.sidebar-light{
  width:auto;min-width:0;position:sticky;top:0;height:100dvh;
  padding:24px 14px 20px;gap:0;border-right:1px solid var(--sa-line);
