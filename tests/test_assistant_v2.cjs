@@ -66,15 +66,18 @@ const ctx={
 };
 vm.createContext(ctx);vm.runInContext(src,ctx);
 vm.runInContext('buildFloatingAssistant()',ctx);
-assert(root.innerHTML.includes('ASSISTANCE DOCUMENTAIRE'));
+assert(root.innerHTML.includes('VOTRE ESPACE D’AIDE'));
 assert(root.innerHTML.includes('floating-assistant-compose-hint'));
-assert(root.innerHTML.includes('floating-assistant-suggestion-arrow'));
+assert(!root.innerHTML.includes('floating-assistant-suggestion-arrow'));
+
 assert(root.innerHTML.includes('rows="1"'));
 assert(!root.innerHTML.includes('title="Fermer"'));
 assert(!root.innerHTML.includes('Nouvelle conversation'));
 vm.runInContext('paintFloatingAssistant()',ctx);
 assert.equal(reset.hidden,true);
 assert(chat.innerHTML.includes('Comment puis-je vous aider ?'));
+assert(chat.innerHTML.includes('ASSISTANCE DOCUMENTAIRE'));
+assert(chat.innerHTML.includes('floating-assistant-suggestion-arrow'));
 assert.equal((chat.innerHTML.match(/class="floating-assistant-suggestion"/g)||[]).length,3);
 assert(chat.innerHTML.includes('Trouver une solution déjà utilisée'));
 assert(chat.innerHTML.includes('Consulter une procédure'));
