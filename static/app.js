@@ -25,7 +25,42 @@ const ICON = {
   info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
 };
 const PHOSPHOR_ICONS={shield:'checks',chevron:'caret-down',folder:'folder',file:'file',plus:'plus',search:'magnifying-glass',check:'check-circle',clock:'clock',arrow:'caret-right',pencil:'pencil-simple',x:'x',lock:'lock',info:'info',activity:'arrows-clockwise',grid:'squares-four',users:'users',out:'sign-out',download:'download-simple',upload:'upload-simple',more:'dots-three',settings:'gear-six',book:'book-open-text',chat:'chat-circle-text',warning:'warning-circle',bell:'bell',forward:'arrow-right',sort:'caret-up-down','file-pdf':'file-pdf','file-doc':'file-doc','file-xls':'file-xls','file-image':'file-image'};
-function icon(name){const asset=PHOSPHOR_ICONS[name];return asset?`<svg class="ui-icon" viewBox="0 0 256 256" aria-hidden="true"><use href="/assets/icons/phosphor.svg#${asset}"></use></svg>`:`<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[name]||ICON.file}</svg>`}
+// Iconographie unifiée : pictogrammes dessinés en traits simples, sans sprite externe.
+const LINE_ICONS={
+ 'folder':'<path d="M3 7a2 2 0 0 1 2-2h5l2 2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
+ 'shield':'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>',
+ 'book':'<path d="M12 7c-2.5-1.8-5.5-2.1-9-1v13c3.5-1 6.5-.7 9 1 2.5-1.7 5.5-2 9-1V6c-3.5-1.1-6.5-.8-9 1Z"/><path d="M12 7v13"/>',
+ 'settings':'<circle cx="12" cy="12" r="3"/><path d="M19.3 15a1.7 1.7 0 0 0 .34 1.87l-1.78 1.78a1.7 1.7 0 0 0-1.87-.34l-.66.28a1.7 1.7 0 0 0-1.02 1.56V21h-2.6v-.85a1.7 1.7 0 0 0-1.02-1.56l-.66-.28a1.7 1.7 0 0 0-1.87.34l-1.78-1.78A1.7 1.7 0 0 0 6.7 15l-.27-.66a1.7 1.7 0 0 0-1.56-1.02H4v-2.6h.87a1.7 1.7 0 0 0 1.56-1.02l.27-.66a1.7 1.7 0 0 0-.34-1.87l1.78-1.78a1.7 1.7 0 0 0 1.87.34l.66-.28a1.7 1.7 0 0 0 1.02-1.56V3h2.6v.85a1.7 1.7 0 0 0 1.02 1.56l.66.28a1.7 1.7 0 0 0 1.87-.34l1.78 1.78a1.7 1.7 0 0 0-.34 1.87l.28.66a1.7 1.7 0 0 0 1.56 1.02H22v2.6h-.86a1.7 1.7 0 0 0-1.56 1.02Z"/>',
+ 'chevron':'<path d="m6 9 6 6 6-6"/>',
+ 'file':'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h6"/>',
+ 'plus':'<path d="M12 5v14M5 12h14"/>',
+ 'search':'<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+ 'check':'<circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/>',
+ 'clock':'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+ 'arrow':'<path d="m9 18 6-6-6-6"/>',
+ 'forward':'<path d="M4 12h16m-7-7 7 7-7 7"/>',
+ 'back':'<path d="m15 18-6-6 6-6"/>',
+ 'pencil':'<path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z"/>',
+ 'x':'<path d="M18 6 6 18M6 6l12 12"/>',
+ 'lock':'<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/>',
+ 'info':'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+ 'activity':'<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+ 'grid':'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+ 'users':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+ 'out':'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
+ 'download':'<path d="M12 3v13m-5-5 5 5 5-5M4 17v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
+ 'upload':'<path d="M12 16V3m-5 5 5-5 5 5M4 17v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
+ 'more':'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+ 'sort':'<path d="m8 9 4-4 4 4m-8 6 4 4 4-4"/>',
+ 'chat':'<path d="M20 11.4a8.2 8.2 0 0 1-8.6 8.2 9.5 9.5 0 0 1-3.5-.8L3.5 20l1.3-4.2a8.3 8.3 0 1 1 15.2-4.4Z"/><path d="M8 11.5h8m-8 4h5"/>',
+ 'warning':'<circle cx="12" cy="12" r="9"/><path d="M12 7v6m0 4h.01"/>',
+ 'bell':'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 10h18c0-2-3-3-3-10M10 21h4"/>',
+ 'file-pdf':'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M7 16h10"/>',
+ 'file-doc':'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8"/>',
+ 'file-xls':'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 12l8 6m0-6-8 6"/>',
+ 'file-image':'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/>',
+};
+function icon(name){return '<svg class="ui-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(LINE_ICONS[name]||ICON[name]||LINE_ICONS.file)+'</svg>'}
 function e(s){return String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function niceDate(value){if(!value)return '—';const s=String(value).trim();const hasZone=/(?:Z|[+-]\d{2}:?\d{2})$/i.test(s);const normalized=/^\d{4}-\d\d-\d\dT/.test(s)&&!hasZone?s+'Z':s;const date=new Date(normalized);if(Number.isNaN(date.getTime()))return '—';return date.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}
 function sizeText(n){return n>=1024*1024?`${(n/1024/1024).toFixed(1)} Mo`:`${Math.max(1,Math.ceil(n/1024))} Ko`}
@@ -44,11 +79,11 @@ function showErr(err){toast(err.message||String(err))}
 function can(action,folder=null){return !!state.me?.admin||state.me?.permissions?.some(p=>p.action===action&&(folder?p.folder===null||p.folder===folder:p.folder===null))}
 function statusTag(s){return `<span class="tag ${s==='À compléter'?'orange':s==='Clôturé'?'green':s==='En validation'?'blue':''}">${e(s)}</span>`}
 function topbar(label){
- return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher un document">${icon('search')}<span>Rechercher un document…</span></button><div class="topbar-actions"><button type="button" class="lc-notification-btn" id="top-notifications" title="Notifications" aria-label="Consulter les notifications">${icon('clock')}</button><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
+ return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher un document">${icon('search')}<span>Rechercher un document…</span></button><div class="topbar-actions"><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
 }
 function sidebar(){
- const primary=[['dossier','folder','Dossier Jaune'],...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s))?[['controls','shield','Vérifications']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s)&&can('rex.read',s))?[['rex','book','Mémoire métier']]:[]),['notifications','bell','Notifications']];
- const tools=[['actions','clock','Suivi'],['pilot','info','Aide & retours'],...(state.me.admin?[['launches','layers','Anciens lancements'],['orli','file','Imports ORLI'],['admin','users','Administration'],['audit','shield','Journal d’activité']]:[])];
+ const primary=[['dossier','folder','Dossier Jaune'],...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s))?[['controls','shield','Vérifications']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s)&&can('rex.read',s))?[['rex','book','Mémoire métier']]:[])];
+ const tools=[['pilot','info','Aide & retours'],...(state.me.admin?[['orli','file','Imports ORLI'],['admin','users','Administration']]:[])];
  const active=view=>state.view===view||(state.view==='detail'&&view==='launches');
  const dossierOpen=!!state.sidebarDossierOpen;
  const subfolders=[['jaune','Jaune'],['rose','Rose'],['bleu','Bleu'],['vert','Vert']];
@@ -70,9 +105,9 @@ function sidebar(){
    <div class="rail-brand"><div class="rail-logo" aria-hidden="true">${icon('folder')}</div><span class="rail-brand-name">Framatex</span></div>
    <button type="button" class="mobile-navigation-toggle" id="mobile-navigation-toggle" aria-expanded="false" aria-controls="framat-navigation">${icon('grid')}<span>Menu</span></button>
    <div class="rail-navigation-content" id="framat-navigation"><nav class="sidebar-nav rail-primary" aria-label="Navigation principale">${items(primary)}</nav>
-   <details class="rail-management" ${toolsOpen?'open':''}><summary title="Outils de gestion">${icon('users')}<span class="nav-text">Gestion</span><span class="rail-chevron" aria-hidden="true">${icon('chevron')}</span></summary>
+   ${tools.length?`<details class="rail-management" ${toolsOpen?'open':''}><summary title="Outils de gestion">${icon('settings')}<span class="nav-text">Gestion</span><span class="rail-chevron" aria-hidden="true">${icon('chevron')}</span></summary>
      <nav class="sidebar-nav rail-management-links" aria-label="Gestion et contrôle">${items(tools)}</nav>
-   </details>
+   </details>`:'' }
    <div class="sidebar-bottom rail-account"><div class="user"><div class="avatar" aria-hidden="true">${e(state.me.name.trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</div><span class="user-name" title="${e(state.me.name)}">${e(state.me.name)}</span></div>
      <button type="button" class="logout" id="logout" title="Déconnexion" aria-label="Déconnexion">${icon('out')}<span>Quitter</span></button></div></div>
  </aside>`;
@@ -98,7 +133,6 @@ function mount(html,label){
  app.querySelector('#mobile-navigation-toggle')?.addEventListener('click',event=>{const button=event.currentTarget;const open=button.getAttribute('aria-expanded')!=='true';button.setAttribute('aria-expanded',String(open));app.querySelector('.sidebar')?.classList.toggle('is-mobile-open',open)});
  syncFloatingAssistant();
  app.querySelector('#global-search')?.addEventListener('click',async()=>{await navigate('dossier');app.querySelector('#global-search-input')?.focus()});
- app.querySelector('#top-notifications')?.addEventListener('click',()=>navigate('notifications'));
 
  app.querySelector('#logout').addEventListener('click',async()=>{try{await api('/api/auth/logout',{method:'POST'})}catch{}state.me=null;state.detail=null;renderLogin()});
 }
@@ -452,7 +486,7 @@ function openNewRole(){
 }
 function openNewUser(){modal('Créer un collaborateur',`<form id="user-form"><div class="field"><label>Nom complet</label><input id="u-name" required maxlength="120" /></div><div class="field"><label>Email</label><input id="u-email" type="email" required maxlength="254" /></div><div class="field"><label>Mot de passe initial (12 caractères minimum)</label><input id="u-pass" type="password" minlength="12" required autocomplete="new-password" /></div><div class="field"><label>Rôle</label><select id="u-role">${state.roles.map(r=>`<option value="${e(r.id)}">${e(r.name)}</option>`).join('')}</select></div><div class="modal-actions"><button type="button" class="secondary" id="cancel-modal">Annuler</button><button class="primary" type="submit">${icon('check')} Créer le compte</button></div></form>`);overlay.querySelector('#cancel-modal').onclick=closeModal;overlay.querySelector('#user-form').onsubmit=async evt=>{evt.preventDefault();try{await api('/api/admin/users',{method:'POST',body:JSON.stringify({name:val('u-name'),email:val('u-email'),password:overlay.querySelector('#u-pass').value,role_ids:[val('u-role')]})});closeModal();toast('Compte collaborateur créé');await admin()}catch(err){showErr(err)}}}
 async function auditView(){state.view='audit';state.audit=await api('/api/admin/audit');mount(`<div class="page-heading"><div><div class="page-kicker">${icon('activity')} TRAÇABILITÉ</div><h1 class="page-title">Journal d’activité</h1><p class="page-lead">100 dernières opérations sensibles.</p></div></div><div class="panel table-scroll"><table><thead><tr><th>Action</th><th>Utilisateur</th><th>Élément</th><th>Date</th></tr></thead><tbody>${state.audit.map(x=>`<tr><td class="row-title">${e(x.action)}</td><td class="audit-item">${e((x.actor_id||'—').slice(0,12))}</td><td class="audit-item">${e(x.target_type)} · ${e(x.target_id.slice(0,12))}</td><td class="small">${niceDate(x.occurred_at)}</td></tr>`).join('')}</tbody></table></div>`,'Journal d’activité')}
-async function navigate(view){try{if(view==='dossier'||view==='home')await globalLibraryPage();else if(view==='controls')await libraryControlsPage();else if(view==='rex')await rexPage();else if(view==='launches')await launchList();else if(view==='actions')await workspaceActions();else if(view==='assistant')openFloatingAssistant();else if(view==='notifications')await notificationsPage();else if(view==='pilot')await pilotPage();else if(view==='orli'&&state.me.admin)await orliAdmin();else if(view==='admin'&&state.me.admin)await admin();else if(view==='audit'&&state.me.admin)await auditView()}catch(err){showErr(err)}}
+async function navigate(view){try{if(view==='dossier'||view==='home')await globalLibraryPage();else if(view==='controls')await libraryControlsPage();else if(view==='rex')await rexPage();else if(view==='launches')await launchList();else if(view==='actions')await workspaceActions();else if(view==='assistant')openFloatingAssistant();else if(view==='pilot')await pilotPage();else if(view==='orli'&&state.me.admin)await orliAdmin();else if(view==='admin'&&state.me.admin)await admin();else if(view==='audit'&&state.me.admin)await auditView()}catch(err){showErr(err)}}
 window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 // Partie intégrée dans app.js lors de la construction du MVP 0.2.
 function phaseLabel(code){return {'preparation':'Préparation','approvisionnement':'Approvisionnement','fabrication':'Fabrication','expedition':'Expédition','cloture':'Clôture'}[code]||code}

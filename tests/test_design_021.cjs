@@ -27,15 +27,19 @@ const output=vm.runInContext(`(()=>{
 })()`,ctx);
 assert(output.normal.includes('sidebar-rail'));
 assert(output.normal.includes('aria-label="Navigation principale"'));
-for(const view of ['dossier','actions','notifications']){
+for(const view of ['dossier','controls','rex']){
  assert(output.normal.includes('data-view="'+view+'"'));
 }
 assert(output.normal.includes('data-view="dossier" title="Dossier Jaune" aria-current="page"'));
 assert(!output.normal.includes('data-view="assistant"'));
 assert(js.includes("else if(view==='assistant')openFloatingAssistant()"));
-assert(output.inside.includes('data-view="launches" title="Anciens lancements" aria-current="page"'));
+assert(!output.inside.includes('data-view="launches"'));
+assert(!output.normal.includes('data-view="notifications"'));
+assert(!output.normal.includes('data-view="audit"'));
+assert(!output.normal.includes('data-view="actions"'));
+assert(output.normal.includes('data-view="pilot"'));
 assert(output.admin.includes('class="rail-management" open'));
-assert(output.normal.includes('data-view="audit"'));
+assert(!output.normal.includes('data-view="audit"'));
 assert(!output.limited.includes('data-view="audit"'));
 assert(!output.limited.includes('data-view="admin"'));
 assert(output.normal.includes('id="logout"'));
