@@ -1,3 +1,36 @@
+# Développement local — clients et portail
+
+La branche `feat/local-client-workspace` ajoute le répertoire **Clients** (administration),
+les comptes de contacts et leur espace client. Le compte interne et le compte client
+utilisent la même page de connexion ; le serveur oriente le compte client vers un portail isolé.
+
+1. Dans **Clients**, inscrire une société puis **Gérer le client → Créer un accès**.
+2. Dans **Nouveau dossier** ou **Modifier le dossier**, choisir le client du répertoire.
+   La référence de commande reste une propriété du dossier jaune. Le nom libre historique
+   reste possible sans activer de portail.
+3. Approuver une version documentaire admissible, puis la publier dans **Échanges documentaires**.
+   Seules ces versions sont téléchargeables depuis le compte client. Les publications historiques
+   sans identité client restent internes : retirer et republier après rattachement si nécessaire.
+4. Le contact voit les dossiers de sa société, leur statut, leur référence de commande et leurs
+   documents publiés. Les API internes, références ORLI, rubriques privées et journaux lui sont interdits.
+5. La désactivation d'une société ou d'un contact bloque les sessions existantes. Une nouvelle
+   version, un retrait ou un changement de société suspend l'accès aux publications concernées.
+
+Migration SQLite additive `0004_client_portal`, sauvegarde automatique d'une base antérieure,
+puis migration répétable au démarrage. Aucun rattachement automatique sur la base d'un nom libre.
+
+```bash
+cd /home/praxede/Documents/Framatex
+.venv/bin/python -m app.migrate upgrade
+.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Un portail local ne constitue pas une mise en ligne : pour un accès distant, il faudra un hébergement
+avec HTTPS et une configuration adaptée. Les mots de passe sont créés par l'administration ;
+l'inscription publique, l'envoi d'invitations et la récupération par email ne sont pas intégrés.
+
+---
+
 # Framatex — Dossier jaune numérique (MVP 0.19)
 
 > **Version 0.19 — interface blanche, accents bleus et nouvel espace Framatex Assist.** Tableau de bord, navigation, bibliothèque documentaire et assistant harmonisés. [Détails](VERSION_0.19.md). Aucune migration supplémentaire.

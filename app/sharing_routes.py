@@ -68,7 +68,7 @@ def pub_out(db: Session, p: ClientPublication, launch):
     v = db.get(DocumentVersion, p.document_version_id)
     doc = db.get(Document, v.document_id)
     stale = latest(doc).id != v.id
-    wrong_client = norm(p.client_name) != norm(launch.client_name or '')
+    wrong_client = norm(p.client_name) != norm(launch.client_name or '') or p.client_id != launch.client_id
     approved = is_approved(db, v, doc)
     visible = p.status == 'published' and not stale and not wrong_client and approved and is_safe(doc)
     return {'id':p.id,'document_id':doc.id,'document_title':doc.title,'document_type':doc.doc_type,
@@ -93,7 +93,7 @@ def list_publications(launch_id: str, user: User = Depends(get_current_user), db
     launch = get_launch(db,launch_id)
     rows = db.scalars(select(ClientPublication).where(ClientPublication.launch_id == launch.id)
                       .order_by(ClientPublication.created_at.desc())).all()
-    return {'external_access_enabled':False,'client_name':launch.client_name,
+    return {'external_access_enabled':bool(launch.client_id),'client_name':launch.client_name,
             'items':[pub_out(db,p,launch) for p in rows
                      if permitted(user,'document.read',db.get(Document,db.get(DocumentVersion,p.document_version_id).document_id).folder.slug)]}
 
@@ -117,7 +117,7 @@ def publish(launch_id: str, payload: PublicationInput,
     if active:
         raise HTTPException(409,'Cette version fait déjà l’objet d’une publication active')
     p = ClientPublication(launch_id=launch.id,document_version_id=v.id,
-          client_name=launch.client_name.strip(),reason=payload.reason.strip(),created_by=user.id)
+          client_id=launch.client_id,client_name=launch.client_name.strip(),reason=payload.reason.strip(),created_by=user.id)
     db.add(p);db.flush()
     audit(db,user,'client.publish.simulated','client_publication',p.id,
           {'launch':launch.id,'version':v.id,'client':p.client_name})
@@ -147,7 +147,7 @@ def client_preview(launch_id: str, user: User = Depends(get_current_user), db: S
     launch = get_launch(db,launch_id)
     rows = db.scalars(select(ClientPublication).where(ClientPublication.launch_id == launch.id)).all()
     visible = [pub_out(db,p,launch) for p in rows]
-    return {'simulation_only':True,'externally_accessible':False,'client':launch.client_name,
+    return {'simulation_only':not bool(launch.client_id),'externally_accessible':bool(launch.client_id),'client':launch.client_name,
             'launch_id':launch.id,'documents':[
                 {'title':v['document_title'],'document_type':v['document_type'],
                  'version':v['version'],'published_at':v['created_at']}

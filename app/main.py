@@ -114,11 +114,15 @@ def audit(db: Session, user: User | None, action: str, entity: object, target_id
 
 
 def user_out(u: User):
-    return {"id": u.id, "email": u.email, "name": u.name, "active": u.active, "roles": [r.name for r in u.roles], "admin": is_admin(u)}
+    from .models import ClientContact
+    from sqlalchemy.orm import object_session
+    db = object_session(u)
+    u._client_account = bool(db and db.get(ClientContact, u.id))
+    return {"id": u.id, "email": u.email, "name": u.name, "active": u.active, "roles": [r.name for r in u.roles], "admin": is_admin(u), "client_account": getattr(u, "_client_account", False)}
 
 
 def launch_out(l: Launch):
-    return {"restricted": bool(l.restricted), "id": l.id, "name": l.name, "order_ref": l.order_ref, "client_name": l.client_name, "orli_ref": l.orli_ref, "status": l.status, "created_at": l.created_at.isoformat(), "updated_at": l.updated_at.isoformat()}
+    return {"restricted": bool(l.restricted), "id": l.id, "name": l.name, "order_ref": l.order_ref, "client_name": l.client_name, "client_id": l.client_id, "orli_ref": l.orli_ref, "status": l.status, "created_at": l.created_at.isoformat(), "updated_at": l.updated_at.isoformat()}
 
 
 def version_out(v: DocumentVersion):
@@ -136,12 +140,14 @@ class LoginPayload(BaseModel):
 
 class LaunchPayload(BaseModel):
     name: str = Field(min_length=2, max_length=180)
+    client_id: str | None = Field(default=None, max_length=36)
     client_name: str | None = Field(default=None, max_length=150)
     order_ref: str | None = Field(default=None, max_length=100)
     orli_ref: str | None = Field(default=None, max_length=100)
 
 class LaunchPatch(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=180)
+    client_id: str | None = Field(default=None, max_length=36)
     client_name: str | None = Field(default=None, max_length=150)
     order_ref: str | None = Field(default=None, max_length=100)
     orli_ref: str | None = Field(default=None, max_length=100)
@@ -232,6 +238,8 @@ def launches(q: str = "", user: User = Depends(get_current_user), db: Session = 
 def create_launch(payload: LaunchPayload, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.create")
     l = Launch(name=payload.name.strip(), client_name=payload.client_name or None, order_ref=payload.order_ref or None, orli_ref=payload.orli_ref or None, restricted=os.getenv("FRAMATEX_RESTRICT_NEW_LAUNCHES", "0") == "1", created_by=user.id)
+    from .client_routes import assign_client
+    assign_client(db, l, payload.client_id)
     db.add(l)
     db.flush()
     for slug, label in FOLDERS:
@@ -271,6 +279,11 @@ def update_launch(launch_id: str, payload: LaunchPatch, user: User = Depends(get
         from .orli_import import normalize_reference
         if normalize_reference(current_ref) != normalize_reference(requested_ref):
             raise HTTPException(409, "Référence rapprochée à ORLI : modification interdite sans procédure de déliaison")
+    from .client_routes import assign_client
+    if 'client_id' in changes:
+        assign_client(db, l, changes.pop('client_id'))
+    if l.client_id:
+        changes.pop('client_name', None)
     for field, value in changes.items():
         setattr(l, field, value.strip() if isinstance(value, str) else value)
     audit(db, user, "launch.update", "launch", l.id, {"fields": list(changes.keys())})
@@ -730,6 +743,9 @@ from .access_routes import router as access_router
 app.include_router(access_router)
 
 # 0.17 — Signalements pilotes anonymisés vis-à-vis des autres collaborateurs.
+from .client_routes import router as client_router
+app.include_router(client_router)
+
 from .pilot_routes import router as pilot_router
 app.include_router(pilot_router)
 

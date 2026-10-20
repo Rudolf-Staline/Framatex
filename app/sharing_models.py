@@ -12,6 +12,7 @@ class ClientPublication(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     launch_id: Mapped[str] = mapped_column(ForeignKey('launches.id'), index=True)
     document_version_id: Mapped[str] = mapped_column(ForeignKey('document_versions.id'))
+    client_id: Mapped[str | None] = mapped_column(ForeignKey("clients.id"), nullable=True)
     client_name: Mapped[str] = mapped_column(String(150))
     reason: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(24), default='published')

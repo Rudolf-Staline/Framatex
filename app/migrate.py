@@ -24,7 +24,7 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
                         Column('version', String(80), primary_key=True),
                         Column('applied_at', String(50), nullable=False), extend_existing=True)
 
-REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports')
+REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_client_portal')
 
 
 def _versions(conn):
@@ -43,7 +43,8 @@ def migrate():
         has_migrations = 'schema_migrations' in tables
         pending_pilot = has_migrations and '0003_pilot_reports' not in {
             v for v, in probe.execute(text('SELECT version FROM schema_migrations'))}
-    if legacy or pending_pilot:
+    pending_clients = 'launches' in tables and 'clients' not in tables
+    if legacy or pending_pilot or pending_clients:
         saved = backup_sqlite()
         if saved:
             print('Sauvegarde automatique avant migration :', saved)
@@ -59,7 +60,7 @@ def migrate():
                 if not expected.issubset(existing):
                     raise RuntimeError('Schéma existant partiel : migration interrompue pour éviter une perte de données')
                 # Old 0.14 installations must contain the complete pre-0.15 schema.
-                missing = (set(Base.metadata.tables) - {'schema_migrations', 'launch_members'}) - existing
+                missing = (set(Base.metadata.tables) - {'schema_migrations', 'launch_members', 'clients', 'client_contacts'}) - existing
                 if missing:
                     raise RuntimeError('Base antérieure incomplète : tables manquantes : ' + ', '.join(sorted(missing)))
             else:
@@ -87,6 +88,16 @@ def migrate():
             Base.metadata.tables['pilot_reports'].create(bind=conn, checkfirst=True)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0003_pilot_reports','d':datetime.now(timezone.utc).isoformat()})
+        if '0004_client_portal' not in done:
+            for name in ('clients', 'client_contacts'):
+                Base.metadata.tables[name].create(bind=conn, checkfirst=True)
+            for name in ('launches', 'client_publications'):
+                cols = {c['name'] for c in inspect(conn).get_columns(name)}
+                if 'client_id' not in cols:
+                    conn.execute(text(f'ALTER TABLE {name} ADD COLUMN client_id VARCHAR(36) REFERENCES clients(id)'))
+            conn.execute(text('CREATE INDEX IF NOT EXISTS ix_launches_client_id ON launches (client_id)'))
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0004_client_portal','d':datetime.now(timezone.utc).isoformat()})
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
         cols = {c['name'] for c in inspect(conn).get_columns('launches')}
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():

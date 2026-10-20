@@ -21,6 +21,9 @@ def accessible(db: Session, user: User, launch: Launch | None) -> bool:
         return False
     if any(r.name == "Administrateur" for r in user.roles):
         return True
+    from .models import ClientContact
+    if db.get(ClientContact, user.id):
+        return False
     if not launch.restricted or launch.created_by == user.id:
         return True
     return db.scalar(select(LaunchMember.id).where(
@@ -106,19 +109,31 @@ def guard_http_request(request: Request):
         if match:
             params[name] = match.group(1)
             break
-    if not params:
-        return None
     token = request.cookies.get(COOKIE)
     try:
         subject = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])['sub'] if token else None
     except (jwt.InvalidTokenError, KeyError):
         subject = None
+    if not subject and not params:
+        return None
     if not subject:
         return JSONResponse({'detail':'Connexion nécessaire'},status_code=401)
     with SessionLocal() as db:
         user = db.get(User, subject)
         if not user or not user.active:
             return JSONResponse({'detail':'Connexion nécessaire'},status_code=401)
+        from .models import ClientContact, Client
+        contact = db.get(ClientContact, user.id)
+        if contact:
+            client = db.get(Client, contact.client_id)
+            if not client or not client.active:
+                return JSONResponse({'detail':'Compte client désactivé'}, status_code=403)
+            allowed = request.url.path.startswith('/api/portal/') or request.url.path in {
+                '/api/auth/me', '/api/auth/logout', '/api/auth/login'}
+            if not allowed:
+                return JSONResponse({'detail':'Utilisez votre espace client'}, status_code=403)
+        if not params:
+            return None
         target_launch = indirect_launch(db,params)
         if target_launch and not accessible(db,user,db.get(Launch,target_launch)):
             return JSONResponse({'detail':'Lancement introuvable'},status_code=404)
