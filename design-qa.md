@@ -1,70 +1,63 @@
-# Bibliothèque safran — validation du design 1
+# Tableau de fichiers — contrôle visuel du 20 octobre 2026
 
-Date : 20 octobre 2026.
+Périmètre : nouvelle demande de retirer le panneau droit « À vérifier » et de reprendre le style de la capture du tableau. Ce contrôle remplace le rapport de blocage visuel initial pour ce composant de bureau ; il ne constitue pas une recette complète de tous les modules.
 
-## Résultat
+final result: passed
 
-final result: blocked
+## Référence et rendu inspectés
 
-La transposition et les tests techniques sont terminés. Le rendu navigateur n’a pas pu être capturé : l’ouverture de `http://terminal.local:4173/` a renvoyé `net::ERR_BLOCKED_BY_CLIENT`, puis le navigateur a explicitement refusé l’observation au titre de sa politique d’accès aux URL. Aucun autre mécanisme de navigateur ni autre adresse locale n’a été utilisé pour contourner ce refus. Une réponse HTTP ou le démarrage du service ne constitue pas une validation visuelle.
+- Source : `/workspace/scratch/53cc5695024c/upload/image(20261020-065003).png`, 478 × 205 pixels. Taille CSS et densité source inconnues ; capture partielle du tableau, quatre fichiers fictifs.
+- Production inspectée avec une session authentifiée via le formulaire sécurisé : `https://framat-demo.vercel.app/`.
+- Version applicative : `3064663da27df67fc9ae1110fce44dbb53029cb9`.
+- Capture plein viewport : `/workspace/scratch/53cc5695024c/framatex-fichiers-20261020.jpg`, 1363 × 936 pixels, viewport CSS 1363 × 936, densité 1.
+- Capture du composant : `/workspace/scratch/53cc5695024c/framatex-liste-fichiers.jpg`, 1072 × 126 pixels, recadrage de la même capture navigateur.
+- Comparaison dans une seule image : `/workspace/scratch/53cc5695024c/framatex-table-comparison.png`.
+- Normalisation : source agrandie uniformément 2× pour sa lisibilité, composant de production conservé à 1×. Aucune densité CSS source n’est inventée. Les différences de largeur du viewport et de contenu ne sont pas traitées comme des défauts de style.
+- État : sous-dossier Jaune, recherche vide, aucun fichier sélectionné. La production comporte un fichier réel avec trois versions ; les quatre exemples de la référence n’ont pas été ajoutés à la base.
 
-Après ce constat initial, l’utilisateur a explicitement demandé le déploiement, effectué le 20 octobre 2026. La comparaison visuelle reste à reprendre. Ce rapport ne valide ni la fidélité graphique ni l’absence de régression responsive.
+## Constats corrigés et preuves
 
-## Cible et preuves
+1. [P1, corrigé] Le panneau droit conservait une colonne entière et une bordure, absentes de la demande. Suppression du panneau et de son appel API ; dépôt déplacé dans l’en-tête. Vérifié dans le DOM authentifié : aucune `.saffron-context`, tableau de 1072 px.
+2. [P2, corrigé] Le tableau précédent utilisait une ligne jaune sélectionnée par défaut et débordait de 2 px sur un conteneur de 802 px. Lignes blanches, sélection explicite par cases, colonnes réparties sur toute la largeur. Après correction : `clientWidth = scrollWidth = 1072`, largeur de page 1363 px pour un viewport de 1363 px.
+3. [P2, corrigé] Les métadonnées sous le nom et l’icône générique ne reprenaient pas la capture. La taille se trouve désormais sous le nom ; ORLI et historique sont accessibles dans la boîte du document. Icônes officielles Untitled UI File Icons, dont PDF avec symbole Acrobat, rendues mécaniquement sans redessiner les tracés. Image chargée vérifiée : largeur naturelle 40 px.
 
-- Source visuelle : proposition 1 « Bibliothèque safran », image générée choisie par l’utilisateur.
-- Chemin de la source dans la session : `/workspace/scratch/53cc5695024c/generated_images/exec-ad57eefd-5a8c-4a80-a01b-f04fa5dcd602.png`.
-- Dimensions source : 1487 × 1058 pixels, interface bureau sans cadre ; densité CSS non spécifiée par l’image.
-- État cible : utilisateur connecté, Dossier Jaune ouvert, rubrique Technique/Jaune, six documents, première ligne sélectionnée, deux vérifications à droite.
-- Implémentation : `static/app.js`, `static/global-library.js`, `static/design-safran.css`, dernière feuille chargée dans `static/index.html`.
-- Capture de l’implémentation : indisponible, accès navigateur refusé.
-- Viewport/CSS/densité de l’implémentation : non mesurés ; normalisation non réalisée.
-- Comparaison plein écran côte à côte : bloquée, capture de l’implémentation manquante.
-- Comparaisons de détail : bloquées pour le même motif ; devront couvrir navigation, onglets, tableau, panneau et boîte d’actions.
+## Surfaces de fidélité
 
-L’aperçu temporaire est distinct du dépôt. Il utilise les fichiers frontend du dépôt et des réponses synthétiques exportées depuis les véritables routes FastAPI sur une base SQLite jetable. Aucun jeu de données, session ou mécanisme d’authentification de cet aperçu n’est inclus dans la branche.
+| Surface | Résultat du contrôle |
+| --- | --- |
+| Typographie | Inter sur le tableau, nom 14 px/600, données 14 px/400, en-têtes 12 px/500. Famille calculée contrôlée et `document.fonts.check('600 14px Inter')` vrai. |
+| Espacement et structure | Six colonnes, cases à gauche, fichier et taille sur deux lignes ; lignes mesurées à 80 px. Suppression de la colonne de contrôle, séparateurs horizontaux fins, absence de débordement bureau. |
+| Couleurs et surfaces | Fond blanc, texte principal `#101828`, secondaire `#667085`, séparateurs `#eaecf0`, en-tête `#fcfcfd`. Suppression de la bande jaune sur la première ligne. |
+| Images et icônes | Famille officielle de fichiers, PDF Acrobat chargé. Les auteurs réels utilisent leurs initiales ; les portraits et personnes fictives de la référence ne sont pas injectés dans les comptes de production. |
+| Texte et contenu | Libellés français, taille et dates réelles, dernier déposant et version réelle. Les adresses email de démonstration de la référence ne sont pas reproduites. |
+| Accessibilité et interactions | Cases natives nommées, sélection globale et individuelle, état du nombre sélectionné, liens de fichier accessibles au clavier, onglets testés avec les flèches et focus transféré à l’onglet actif. |
 
-## Surfaces à vérifier visuellement
+## Interactions réellement vérifiées
 
-| Surface | Implémentation préparée | Validation restante |
-| --- | --- | --- |
-| Polices et typographie | DM Sans et Plus Jakarta Sans conservées ; titre 40 px, texte de document 14 px | Chargement réel, poids, coupures, hiérarchie et rendu aux autres largeurs |
-| Espacement et structure | Barre latérale ivoire, onglets plats, tableau, panneau séparé par un filet | Proportions, densité, hauteur des lignes et alignements avec la source |
-| Couleurs et jetons | Safran pour Jaune ; thèmes Rose/Bleu/Vert conservés ; texte secondaire et focus assombris pour le contraste | Contraste calculé réel après cascade, états actifs et focus dans le navigateur |
-| Images et icônes | Aucune image de contenu dans la cible ; icônes Phosphor officielles vendues avec licence MIT | Chargement du sprite externe, taille et alignement des icônes |
-| Texte et contenu | Libellés français ; contrôles calculés et contexte ORLI ; aucune anomalie de démonstration codée en dur | Coupures et lisibilité avec les données réelles, libellés longs |
-| Responsive et accessibilité | Menu mobile, onglets clavier, filtrage, focus visible, réduction des animations | Captures à 1487, 1024, 768, 390 et 320 px ; zoom 200 %, parcours Tab/Escape, absence de débordement |
+- Sélection de tous les fichiers affichés : case et ligne cochées, barre « 1 fichier sélectionné » affichée ; désélection rétablit l’état initial.
+- Clic sur le fichier : ouverture des actions, affichage de la référence ORLI et de la version, historique des trois versions et accès au REX contextualisé conservés.
+- Recherche sans correspondance : état « Aucun résultat » ; effacement restaure le fichier.
+- Filtre Word : aucun résultat pour le document PDF ; remise sur Tous les types.
+- Passage à Rose : état vide sans panneau droit ; retour à Jaune avec les flèches du clavier.
+- Aucun dépôt ni changement de données métier effectué pendant ces contrôles.
 
-## Vérifications techniques effectuées
+## Vérifications techniques et limites
 
-- API et logique métier : 85 tests Python réussis.
-- Frontend : 29 scripts de contrôle Node réussis, dont un nouveau contrôle de contexte Safran.
-- Syntaxe de tous les fichiers JavaScript et `git diff --check` : réussis.
-- Contrôles de contexte testés : ORLI et droits de lecture, unités incompatibles sans conversion, états indisponibles distincts d’un résultat vide, filtrage, tri sans mutation de l’archive, historique et téléchargement courant, préremplissage du REX et réponse tardive après navigation.
-- Les tests frontend utilisent un environnement VM avec stubs DOM. Ils ne remplacent pas les interactions dans un navigateur.
-- Interactions primaires dans le navigateur : non exécutées, accès refusé avant le rendu.
-- Console navigateur : non inspectable sur l’aperçu bloqué ; aucune conclusion « sans erreur ».
+- GitHub Actions de la PR #25 : réussi, avec 92 tests Python et 30 scripts JavaScript.
+- Ajustement d’icônes : syntaxe JavaScript, test du registre, chargement réel des images et comparaison visuelle après déploiement.
+- Aucun journal d’erreur/fatal Vercel trouvé pour le déploiement applicatif contrôlé.
+- La lecture de l’historique console navigateur a été interrompue par la protection de rétention après connexion sécurisée. Aucune affirmation « sans erreur console » n’est faite.
+- Les largeurs mobile/tablette ne sont pas déclarées visuellement vérifiées : l’API navigateur n’a pas permis de changer le viewport. Le tableau conserve ses colonnes dans une zone de défilement interne sur ces largeurs.
 
 ## Historique de comparaison
 
-1. Source choisie ouverte et inspectée ; transposition dans l’application existante.
-2. Service d’aperçu démarré ; ouverture via le navigateur sélectionné refusée. Capture et comparaison bloquées avant le premier passage visuel.
-3. Aucune itération de fidélité déclarée. Les corrections de logique et tests techniques ne sont pas comptées comme des passages de QA visuelle.
+- Capture initiale authentifiée : panneau droit, ligne jaune et débordement constatés.
+- Premier déploiement : panneau supprimé, mesures de largeur et sélection vérifiées ; icône PDF encore différente.
+- Ajustement : adoption des icônes officielles de fichiers.
+- Dernière capture et comparaison commune : corrections visibles, image chargée, aucune anomalie P0/P1/P2 restante sur le composant bureau demandé.
 
-## Liste de reprise
+## Contrôles restants hors périmètre de cette capture
 
-1. Ouvrir une prévisualisation autorisée de la branche avec une session de test.
-2. Capturer l’état cible et comparer la source et le rendu dans une même image normalisée.
-3. Vérifier dépôt, recherche, filtres, changement de rubrique, tri, historique/téléchargement, lien vers les vérifications et création/consultation/interrogation d’un REX.
-4. Contrôler les largeurs indiquées, le clavier et les erreurs console.
-5. Corriger les défauts P0/P1/P2 éventuels, recapturer et comparer ; passer ce rapport à `final result: passed` uniquement après cette vérification.
-6. Fusionner et déployer après validation visuelle.
-
-
-## Itération suivante — rôles simples et registre de fichiers
-
-La demande du 20 octobre à 06:50 remplace la création de rôle détaillée par une matrice Accès / Modification pour Jaune, Rose, Bleu et Vert. Les nouveaux booléens sont traduits côté serveur vers les droits existants ; modification sans accès est rejetée, les rôles existants restent inchangés et aucun accès global aux anciens lancements n’est accordé implicitement.
-
-Le tableau reprend la capture fournie : nom du fichier avec métadonnées discrètes, taille réelle de la dernière version, date d’ajout du document, mise à jour et auteur réel du dernier dépôt. Les auteurs sont résolus après application des droits de lecture ; aucune adresse email n’est ajoutée à la réponse documentaire.
-
-Référence : `/workspace/scratch/53cc5695024c/upload/image(20261020-065003).png`, 478 × 205 pixels. Validation de cette itération : tests API de refus/autorisation, compatibilité des rôles, attribution de la dernière version, et tests frontend de la matrice, des métadonnées et de l’échappement HTML. Aucun nouveau rendu de l’espace connecté n’a été capturé ; les limites de validation visuelle restent inchangées.
+- Recette visuelle à 390 et 768 px et zoom 200 %.
+- Relecture complète de la console dans une session de diagnostic sans historique de connexion protégé.
+- Les portraits réels des utilisateurs demanderaient des images de profil fournies par leurs comptes ; les initiales restent la représentation actuelle.
