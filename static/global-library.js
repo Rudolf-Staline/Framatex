@@ -64,13 +64,16 @@ function renderGlobalLibrary(){
  const folder=globalIndex.folders.find(f=>f.slug===globalFolder);
  mount(`<div class="global-library global-workspace">
  <nav class="global-breadcrumb" aria-label="Fil d'Ariane"><span class="global-breadcrumb-root">Espace documentaire</span><span class="global-breadcrumb-separator" aria-hidden="true">/</span><span>Dossier Jaune</span><span class="global-breadcrumb-separator" aria-hidden="true">/</span><strong>${GLOB_COLORS[globalFolder]}</strong></nav>
- <div class="global-workspace-top"><nav class="global-folders" role="tablist" aria-label="Les quatre sous-dossiers">
+ <div class="global-workspace-top">
+ <div class="global-workspace-toolbar"><div class="global-workspace-title"><span>ORGANISATION</span><h2>Sous-dossiers</h2></div>
+ ${folder.can_write?`<button type="button" class="primary global-top-upload" id="global-upload">${icon('plus')} Déposer un document</button>`:''}</div>
+ <nav class="global-folders" role="tablist" aria-label="Les quatre sous-dossiers">
  ${globalIndex.folders.map((f,i)=>`<button type="button" role="tab" data-global-folder="${f.slug}" aria-selected="${f.slug===globalFolder}" aria-label="Sous-dossier ${GLOB_COLORS[f.slug]} · ${e(f.label||GLOB_DESCRIPTIONS[f.slug])}" tabindex="${f.slug===globalFolder?'0':'-1'}" class="global-folder-card ${f.slug} ${f.slug===globalFolder?'selected':''}">
  <span class="global-card-overline"><span>RUBRIQUE 0${i+1}</span><span class="global-card-chevron" aria-hidden="true">${icon('arrow')}</span></span>
  <span class="global-card-center"><span class="global-card-icon">${icon('folder')}</span><span class="global-card-text"><strong>${GLOB_COLORS[f.slug]}</strong><small>${e(f.label||GLOB_DESCRIPTIONS[f.slug])}</small></span></span>
  <span class="global-card-footer"><span class="global-card-total">${f.can_read?f.count:'—'}</span><span class="global-card-footer-text">${f.can_read?(f.count===1?'document':'documents'):'Accès restreint'}</span></span>
  </button>`).join('')}</nav>
- ${folder.can_write?`<button type="button" class="primary global-top-upload" id="global-upload">${icon('plus')} Déposer un document</button>`:''}</div>
+ </div>
  <section class="global-workspace-panel">
  <div class="global-panel-heading"><div class="global-panel-title"><span class="global-panel-icon ${globalFolder}">${icon('folder')}</span><div><h1>${GLOB_COLORS[globalFolder]} <span>· ${e(folder.label)}</span></h1><p>Documents de la rubrique · ${folder.can_read?folder.count+' élément'+(folder.count===1?'':'s'):'Accès limité'}</p></div></div><div class="global-panel-controls"><label class="global-search">${icon('search')}<input type="search" id="global-search-input" aria-label="Rechercher un document" placeholder="Nom, type, référence ORLI..." value="${e(globalQuery)}" ${folder.can_read?'':'disabled'}></label><label class="global-filter-label"><span>Type</span><select id="global-type-filter" aria-label="Filtrer par type"><option value="all">Tous les types</option><option value="pdf">PDF</option><option value="word">Word</option><option value="excel">Excel</option><option value="image">Image</option><option value="other">Autres</option></select></label></div></div>
  <div class="global-panel-tabbar"><span class="global-panel-tab">${icon('file')} Documents</span><span class="global-panel-count" id="global-result-count"></span></div>
