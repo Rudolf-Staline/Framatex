@@ -75,7 +75,7 @@ body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child{
  border:0;border-radius:7px;font-family:inherit;font-size:13px;
  font-weight:500;background:none;color:#303a49;line-height:1.5;
 }
-body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child.active{
+body .app-shell[data-dossier-theme] .sidebar-rail.sidebar-light .dossier-nav-child.active{
  background:var(--folder-nav-active,#d39b00);color:#fff;font-weight:750;opacity:1;
  border-left:0;box-shadow:none;
 }
