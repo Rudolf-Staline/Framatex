@@ -69,14 +69,23 @@ async function orderListPage(){
  if(state.view!=='launches')return;
  mount('<div class="page-heading"><div><h1 class="page-title">Commandes</h1><p class="page-lead">Un dossier par commande, avec ses quatre sous-dossiers.</p></div>'+
  (can('launch.create')?'<button type="button" class="primary" id="create-launch">'+icon('plus')+' Nouveau dossier</button>':'')+'</div>'+
- '<div class="toolbar"><label class="searchbar">'+icon('search')+'<input type="search" id="order-search" aria-label="Rechercher une commande" placeholder="Commande, client, atelier…" value="'+e(state.query)+'"></label><span id="order-count" role="status" aria-live="polite" class="muted small"></span></div><div class="panel" id="orders-table"></div>','Commandes');
+ '<div class="toolbar"><label class="searchbar">'+icon('search')+'<input type="search" id="order-search" aria-label="Rechercher une commande" placeholder="Commande, client, atelier…" value="'+e(state.query)+'"></label><span id="order-count" role="status" aria-live="polite" class="muted small"></span></div>'+
+ (state.clientFilter?'<div class="toolbar" role="status"><span class="tag">Client : '+e(state.clientFilter.name)+'</span><button type="button" class="secondary tiny" id="clear-client-filter">Afficher toutes les commandes</button></div>':'')+
+ '<div class="panel" id="orders-table"></div>','Commandes');
  const render=()=>{
   const term=state.query.trim().toLocaleLowerCase('fr');
-  const rows=state.launches.filter(d=>[d.name,d.order_ref,d.client_name,d.orli_ref,...Object.values(d.identification||{})].join(' ').toLocaleLowerCase('fr').includes(term));
+  const rows=state.launches.filter(d=>
+   (!state.clientFilter || d.client_id===state.clientFilter.id)&&
+   [d.name,d.order_ref,d.client_name,d.orli_ref,...Object.values(d.identification||{})].join(' ').toLocaleLowerCase('fr').includes(term));
   const host=app.querySelector('#orders-table');host.innerHTML=orderTable(rows);
   app.querySelector('#order-count').textContent=rows.length+' dossier'+(rows.length===1?'':'s');
   host.querySelectorAll('[data-order-open]').forEach(button=>button.addEventListener('click',()=>openLaunch(button.dataset.orderOpen,'jaune').catch(showErr)));
  };
  app.querySelector('#order-search').addEventListener('input',event=>{state.query=event.target.value;render()});
+ app.querySelector('#clear-client-filter')?.addEventListener('click',()=>{
+  state.clientFilter=null;
+  state.query='';
+  orderListPage().catch(showErr);
+ });
  app.querySelector('#create-launch')?.addEventListener('click',()=>orderEditor());render();
 }
