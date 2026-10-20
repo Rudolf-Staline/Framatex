@@ -1,6 +1,7 @@
 'use strict';
 // Un seul Dossier Jaune, quatre catégories permanentes, aucune arborescence par lancement.
 const GLOB_COLORS={jaune:'Jaune',rose:'Rose',bleu:'Bleu',vert:'Vert'};
+const GLOB_DESCRIPTIONS={jaune:'Technique',rose:'Réception',bleu:'Douane',vert:'Facturation'};
 let globalIndex=null,globalFolder='jaune',globalQuery='',globalType='all',globalView='list';
 
 async function globalLibraryPage(){
@@ -18,11 +19,21 @@ async function openGlobalFolder(slug){
  if(state.view==='dossier'&&globalIndex){renderGlobalLibrary();return}
  await globalLibraryPage();
 }
+function globalDocumentFormat(doc){
+ const name=String(doc.latest?.original_name||'').toLowerCase();
+ const ext=name.split('.').pop();
+ const type=String(doc.doc_type||'').toLowerCase();
+ if(ext==='pdf'||type.includes('pdf'))return 'pdf';
+ if(['doc','docx','odt'].includes(ext)||/word|texte|courrier/.test(type))return 'word';
+ if(['xls','xlsx','csv','ods'].includes(ext)||/excel|tableur/.test(type))return 'excel';
+ if(['jpg','jpeg','png','webp','gif'].includes(ext)||/image|photo/.test(type))return 'image';
+ return 'other';
+}
 function globalDocumentsVisible(){
  const group=globalIndex.folders.find(f=>f.slug===globalFolder);
  if(!group?.can_read)return [];
  const term=globalQuery.trim().toLocaleLowerCase('fr');
- return group.documents.filter(d=>(globalType==='all'||String(d.doc_type||'').toLowerCase().includes(globalType))&&(!term||[d.title,d.doc_type,d.orli_ref||'',...(d.versions||[]).map(v=>v.original_name)].some(v=>String(v).toLocaleLowerCase('fr').includes(term))));
+ return group.documents.filter(d=>(globalType==='all'||globalDocumentFormat(d)===globalType)&&(!term||[d.title,d.doc_type,d.orli_ref||'',...(d.versions||[]).map(v=>v.original_name)].some(v=>String(v).toLocaleLowerCase('fr').includes(term))));
 }
 function globalRenderRows(){
  const group=globalIndex.folders.find(f=>f.slug===globalFolder);
@@ -34,11 +45,11 @@ function globalRenderRows(){
  host.innerHTML=rows.length?`<div class="table-scroll"><table class="global-table">
  <thead><tr><th>Nom</th><th>Type</th><th>Référence / ORLI</th><th>Date d'ajout</th><th>Version</th><th>Actions</th></tr></thead>
  <tbody>${rows.map(d=>`<tr>
- <td><div class="global-file-name"><span class="global-file-icon">${icon('file')}</span><span><strong>${e(d.title)}</strong><small>${e(d.latest?.original_name||'Document')}</small></span></div></td>
+ <td><div class="global-file-name"><span class="global-file-icon global-format-${globalDocumentFormat(d)}">${icon('file')}</span><span><strong>${e(d.title)}</strong><small>${e(d.latest?.original_name||'Document')}</small></span></div></td>
  <td><span class="global-type-pill">${e(d.doc_type||'Autre')}</span></td>
- <td>${d.orli_ref?e(d.orli_ref):'<span class="muted">—</span>'}</td>
+ <td>${d.orli_ref?'<span class="global-orli">'+e(d.orli_ref)+'</span>':'<span class="global-not-set">Non renseignée</span>'}</td>
  <td class="small">${niceDate(d.latest?.created_at||d.created_at)}</td>
- <td>v${d.latest?.number||'—'}</td>
+ <td><span class="global-version-pill">v${d.latest?.number||'—'}</span></td>
  <td class="global-actions"><button class="link" type="button" data-global-download="${e(d.id)}" data-v="${d.latest?.number||1}" aria-label="Télécharger ${e(d.title)}">${icon('download')}</button>
  ${group.can_write?`<button class="link" type="button" data-global-edit="${e(d.id)}" aria-label="Modifier la référence ORLI">${icon('pencil')}</button>`:''}</td>
  </tr><tr class="global-versions"><td colspan="6"><details><summary>Historique des versions · ${d.versions.length}</summary>
@@ -52,17 +63,35 @@ function renderGlobalLibrary(){
  state.dossierFolder=globalFolder;
  const folder=globalIndex.folders.find(f=>f.slug===globalFolder);
  mount(`<div class="global-library global-workspace">
- <nav class="global-breadcrumb" aria-label="Fil d'Ariane"><span>Dossier Jaune</span><span>›</span><strong>${GLOB_COLORS[globalFolder]}</strong></nav>
+ <nav class="global-breadcrumb" aria-label="Fil d'Ariane"><span class="global-breadcrumb-root">Espace documentaire</span><span class="global-breadcrumb-separator" aria-hidden="true">/</span><span>Dossier Jaune</span><span class="global-breadcrumb-separator" aria-hidden="true">/</span><strong>${GLOB_COLORS[globalFolder]}</strong></nav>
  <div class="global-workspace-top"><nav class="global-folders" role="tablist" aria-label="Les quatre sous-dossiers">
- ${globalIndex.folders.map(f=>`<button type="button" role="tab" data-global-folder="${f.slug}" aria-selected="${f.slug===globalFolder}" class="global-folder-card ${f.slug} ${f.slug===globalFolder?'selected':''}"><span class="global-card-icon">${icon('folder')}</span><span class="global-card-text"><strong>${GLOB_COLORS[f.slug]}</strong><small>${f.can_read?f.count+' document'+(f.count===1?'':'s'):'Accès restreint'}</small></span></button>`).join('')}</nav>
+ ${globalIndex.folders.map((f,i)=>`<button type="button" role="tab" data-global-folder="${f.slug}" aria-selected="${f.slug===globalFolder}" aria-label="Sous-dossier ${GLOB_COLORS[f.slug]} · ${e(f.label||GLOB_DESCRIPTIONS[f.slug])}" tabindex="${f.slug===globalFolder?'0':'-1'}" class="global-folder-card ${f.slug} ${f.slug===globalFolder?'selected':''}">
+ <span class="global-card-overline"><span>RUBRIQUE 0${i+1}</span><span class="global-card-chevron" aria-hidden="true">${icon('arrow')}</span></span>
+ <span class="global-card-center"><span class="global-card-icon">${icon('folder')}</span><span class="global-card-text"><strong>${GLOB_COLORS[f.slug]}</strong><small>${e(f.label||GLOB_DESCRIPTIONS[f.slug])}</small></span></span>
+ <span class="global-card-footer"><span class="global-card-total">${f.can_read?f.count:'—'}</span><span class="global-card-footer-text">${f.can_read?(f.count===1?'document':'documents'):'Accès restreint'}</span></span>
+ </button>`).join('')}</nav>
  ${folder.can_write?`<button type="button" class="primary global-top-upload" id="global-upload">${icon('plus')} Déposer un document</button>`:''}</div>
  <section class="global-workspace-panel">
- <div class="global-panel-heading"><div class="global-panel-title"><span class="global-panel-icon ${globalFolder}">${icon('folder')}</span><div><h1>${GLOB_COLORS[globalFolder]} <span>· ${e(folder.label)}</span></h1><p>Documents partagés dans ce sous-dossier</p></div></div><div class="global-panel-controls"><label class="global-search">${icon('search')}<input type="search" id="global-search-input" aria-label="Rechercher un document" placeholder="Nom, type, référence ORLI..." value="${e(globalQuery)}" ${folder.can_read?'':'disabled'}></label><label class="global-filter-label"><span>Type</span><select id="global-type-filter" aria-label="Filtrer par type"><option value="all">Tous les types</option><option value="pdf">PDF</option><option value="word">Word</option><option value="excel">Excel</option><option value="image">Image</option></select></label></div></div>
+ <div class="global-panel-heading"><div class="global-panel-title"><span class="global-panel-icon ${globalFolder}">${icon('folder')}</span><div><h1>${GLOB_COLORS[globalFolder]} <span>· ${e(folder.label)}</span></h1><p>Documents de la rubrique · ${folder.can_read?folder.count+' élément'+(folder.count===1?'':'s'):'Accès limité'}</p></div></div><div class="global-panel-controls"><label class="global-search">${icon('search')}<input type="search" id="global-search-input" aria-label="Rechercher un document" placeholder="Nom, type, référence ORLI..." value="${e(globalQuery)}" ${folder.can_read?'':'disabled'}></label><label class="global-filter-label"><span>Type</span><select id="global-type-filter" aria-label="Filtrer par type"><option value="all">Tous les types</option><option value="pdf">PDF</option><option value="word">Word</option><option value="excel">Excel</option><option value="image">Image</option><option value="other">Autres</option></select></label></div></div>
  <div class="global-panel-tabbar"><span class="global-panel-tab">${icon('file')} Documents</span><span class="global-panel-count" id="global-result-count"></span></div>
  <div id="global-doc-results"></div>
  </section></div>`,'Dossier Jaune');
+ const typeSelect=app.querySelector('#global-type-filter');
+ if(typeSelect)typeSelect.value=globalType;
  app.querySelector('#global-type-filter')?.addEventListener('change',ev=>{globalType=ev.target.value;globalRenderRows()});
  app.querySelectorAll('[data-global-folder]').forEach(b=>b.onclick=()=>openGlobalFolder(b.dataset.globalFolder).catch(showErr));
+ app.querySelector('.global-folders')?.addEventListener('keydown',event=>{
+  if(!['ArrowRight','ArrowLeft','Home','End'].includes(event.key))return;
+  const tabs=[...app.querySelectorAll('[data-global-folder]')];
+  const current=tabs.indexOf(document.activeElement);
+  if(current<0)return;
+  event.preventDefault();
+  const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:
+    (current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+  openGlobalFolder(tabs[next].dataset.globalFolder).then(()=>{
+   app.querySelector('[data-global-folder="'+tabs[next].dataset.globalFolder+'"]')?.focus();
+  }).catch(showErr);
+ });
  app.querySelector('#global-search-input')?.addEventListener('input',ev=>{globalQuery=ev.target.value;globalRenderRows()});
  app.querySelector('#global-upload')?.addEventListener('click',globalUploadModal);
  globalRenderRows();
