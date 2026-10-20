@@ -477,3 +477,13 @@ body .app-shell[data-dossier-theme="rose"]{--folder-nav-active:#e34b87}
 body .app-shell[data-dossier-theme="bleu"]{--folder-nav-active:#287fe0}
 body .app-shell[data-dossier-theme="vert"]{--folder-nav-active:#24a363}
 body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child.active .dossier-child-dot{background:#fff;opacity:1}
+
+/* Shared icon rhythm across document navigation and business tools. */
+.register-folder-icon{display:inline-flex;flex:0 0 20px;width:20px;height:20px;color:var(--folder-accent)}
+.register-folder-icon.jaune{color:#d39b00}.register-folder-icon.rose{color:#e34b87}.register-folder-icon.bleu{color:#287fe0}.register-folder-icon.vert{color:#24a363}
+.register-folder-icon .ui-icon{width:20px;height:20px}
+.document-register .saffron-table th button{display:inline-flex;align-items:center;gap:6px}
+.document-register .saffron-table th button .ui-icon{width:14px;height:14px;flex-shrink:0;color:#98a2b3}
+.knowledge-page .page-title>.ui-icon{width:30px;height:30px;vertical-align:-3px;margin-right:8px;color:var(--folder-ink)}
+.knowledge-page h2>.ui-icon,.saffron-version-list h3>.ui-icon{width:20px;height:20px;vertical-align:-3px;margin-right:6px}
+.knowledge-page button>.ui-icon{width:18px;height:18px;vertical-align:-3px;flex-shrink:0}
