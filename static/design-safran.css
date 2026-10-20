@@ -9,8 +9,8 @@ body .app-shell{
 body .app-shell[data-dossier-theme="jaune"]{
  --folder-canvas:#fffefa;--folder-side:#fbf9f1;--folder-header:#ffffff;
  --folder-panel:#ffffff;--folder-soft:#fcf0c8;--folder-softest:#fff9e9;
- --folder-line:#eeeadf;--folder-border:#e7d59f;--folder-accent:#edb92c;
- --folder-button:#efbe32;--folder-button-hover:#e2af24;--folder-button-text:#302910;
+ --folder-line:#eeeadf;--folder-border:#e7d59f;--folder-accent:#f2c200;
+ --folder-button:#f2c200;--folder-button-hover:#dcaf00;--folder-button-text:#302910;
  --folder-ink:#775510;
 }
 body .app-shell[data-dossier-theme="rose"]{
@@ -76,7 +76,7 @@ body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child{
  font-weight:500;background:none;color:#303a49;line-height:1.5;
 }
 body .app-shell[data-dossier-theme] .sidebar-rail.sidebar-light .dossier-nav-child.active{
- background:var(--folder-nav-active,#d39b00);color:#fff;font-weight:750;opacity:1;
+ background:var(--folder-nav-active,#f2c200);color:#fff;font-weight:750;opacity:1;
  border-left:0;box-shadow:none;
 }
 body .app-shell .dossier-child-dot{width:13px;height:13px;min-width:13px;box-shadow:none;border:0}
@@ -472,7 +472,7 @@ body .app-shell:has(.document-register) .main,body .app-shell:has(.document-regi
 }
 
 /* Opaque folder selection in the sidebar. */
-body .app-shell[data-dossier-theme="jaune"]{--folder-nav-active:#d39b00}
+body .app-shell[data-dossier-theme="jaune"]{--folder-nav-active:#f2c200}
 body .app-shell[data-dossier-theme="rose"]{--folder-nav-active:#e34b87}
 body .app-shell[data-dossier-theme="bleu"]{--folder-nav-active:#287fe0}
 body .app-shell[data-dossier-theme="vert"]{--folder-nav-active:#24a363}
@@ -480,7 +480,7 @@ body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child.active .dossier-c
 
 /* Shared icon rhythm across document navigation and business tools. */
 .register-folder-icon{display:inline-flex;flex:0 0 20px;width:20px;height:20px;color:var(--folder-accent)}
-.register-folder-icon.jaune{color:#d39b00}.register-folder-icon.rose{color:#e34b87}.register-folder-icon.bleu{color:#287fe0}.register-folder-icon.vert{color:#24a363}
+.register-folder-icon.jaune{color:#f2c200}.register-folder-icon.rose{color:#e34b87}.register-folder-icon.bleu{color:#287fe0}.register-folder-icon.vert{color:#24a363}
 .register-folder-icon .ui-icon{width:20px;height:20px}
 .document-register .saffron-table th button{display:inline-flex;align-items:center;gap:6px}
 .document-register .saffron-table th button .ui-icon{width:14px;height:14px;flex-shrink:0;color:#98a2b3}
@@ -489,7 +489,7 @@ body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child.active .dossier-c
 .knowledge-page button>.ui-icon{width:18px;height:18px;vertical-align:-3px;flex-shrink:0}
 
 /* Action colors follow the selected folder, including dialogs outside the shell. */
-body:has(.app-shell[data-dossier-theme="jaune"]){--action-color:#d39b00;--action-hover:#b88700}
+body:has(.app-shell[data-dossier-theme="jaune"]){--action-color:#f2c200;--action-hover:#dcaf00}
 body:has(.app-shell[data-dossier-theme="rose"]){--action-color:#e34b87;--action-hover:#c93973}
 body:has(.app-shell[data-dossier-theme="bleu"]){--action-color:#287fe0;--action-hover:#1e68bf}
 body:has(.app-shell[data-dossier-theme="vert"]){--action-color:#24a363;--action-hover:#19854f}
