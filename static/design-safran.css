@@ -76,7 +76,8 @@ body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child{
  font-weight:500;background:none;color:#303a49;line-height:1.5;
 }
 body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child.active{
- background:var(--folder-soft,#fcf0c8);color:#243041;font-weight:650;
+ background:var(--folder-nav-active,#d39b00);color:#fff;font-weight:750;opacity:1;
+ border-left:0;box-shadow:none;
 }
 body .app-shell .dossier-child-dot{width:13px;height:13px;min-width:13px;box-shadow:none;border:0}
 body .app-shell .dossier-child-dot.jaune{background:#efbd30}
@@ -469,3 +470,10 @@ body .app-shell:has(.document-register) .main,body .app-shell:has(.document-regi
  .document-register .register-upload{margin:0 0 0 auto}
  .document-register .saffron-folder-tab{padding:12px 8px;gap:8px}
 }
+
+/* Opaque folder selection in the sidebar. */
+body .app-shell[data-dossier-theme="jaune"]{--folder-nav-active:#d39b00}
+body .app-shell[data-dossier-theme="rose"]{--folder-nav-active:#e34b87}
+body .app-shell[data-dossier-theme="bleu"]{--folder-nav-active:#287fe0}
+body .app-shell[data-dossier-theme="vert"]{--folder-nav-active:#24a363}
+body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child.active .dossier-child-dot{background:#fff;opacity:1}
