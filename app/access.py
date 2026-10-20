@@ -103,6 +103,8 @@ def guard_http_request(request: Request):
     Called for every /api/ request by the existing header-checking middleware.
     Endpoints must still enforce role and folder permissions as before.
     """
+    if request.url.path == '/api/auth/login':
+        return None
     params = {}
     for pattern, name in SCOPE_PATHS:
         match = pattern.match(request.url.path)
@@ -126,7 +128,7 @@ def guard_http_request(request: Request):
         contact = db.get(ClientContact, user.id)
         if contact:
             client = db.get(Client, contact.client_id)
-            if not client or not client.active:
+            if (not client or not client.active) and request.url.path != '/api/auth/logout':
                 return JSONResponse({'detail':'Compte client désactivé'}, status_code=403)
             allowed = request.url.path.startswith('/api/portal/') or request.url.path in {
                 '/api/auth/me', '/api/auth/logout', '/api/auth/login'}

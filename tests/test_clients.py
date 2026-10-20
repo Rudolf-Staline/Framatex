@@ -23,6 +23,7 @@ def system():
             db.commit()
         assert admin.post('/api/auth/login',json={'email':'clients-admin@test.local','password':PASSWORD},headers=H).status_code==200
         yield admin
+    Base.metadata.drop_all(engine)
 
 def add_client(admin,name,email):
     row=admin.post('/api/clients',json={'name':name},headers=H)
@@ -89,6 +90,8 @@ def test_portal_isolation_and_lifecycle(system):
     # Disable client takes effect for an already connected browser.
     assert admin.patch(f'/api/clients/{b}/active',json={'active':False},headers=H).status_code==200
     assert beta.get('/api/portal/home').status_code==403
+    assert beta.post('/api/auth/logout',headers=H).status_code==200
+    assert beta.post('/api/auth/login',json={'email':'clients-admin@test.local','password':PASSWORD},headers=H).status_code==200
 
 def test_revision_revocation_and_contact_deactivation(system):
     a,uid=add_client(system,'Client Gamma','gamma@test.local');lid=launch(system,a)

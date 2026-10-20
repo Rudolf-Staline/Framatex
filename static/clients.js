@@ -46,3 +46,11 @@ async function portalDetail(id){
  mount(`<button class="link" id="portal-back">${icon('back')} Mes dossiers</button><div class="page-heading"><div><div class="page-kicker">DOSSIER JAUNE</div><h1 class="page-title">${e(d.name)}</h1><p class="page-lead">${e(d.order_ref||'Sans référence de commande')} · Mise à jour le ${niceDate(d.updated_at)}</p></div>${statusTag(d.status)}</div><div class="section-heading"><h2>Documents partagés</h2><small>Versions validées par Framatex</small></div><section class="panel">${d.documents.length?`<div class="client-document-list">${d.documents.map(doc=>`<div>${icon('file')}<span><strong>${e(doc.title)}</strong><small>Version ${doc.version} · Partagée le ${niceDate(doc.published_at)}</small></span><a class="secondary tiny" href="/api/portal/documents/${encodeURIComponent(doc.id)}/download">${icon('download')} Télécharger</a></div>`).join('')}</div>`:'<div class="empty"><strong>Les documents arrivent bientôt</strong><p>Les pièces apparaissent ici lorsque votre équipe Framatex les publie.</p></div>'}</section>`,'Mon dossier');
  app.querySelector('#portal-back').onclick=()=>clientPortal();
 }
+
+function bindClientChoice(prefix){
+ const select=overlay.querySelector('#'+prefix+'-client-id');
+ const freeText=overlay.querySelector('#'+prefix+'-client');
+ if(!select||!freeText)return;
+ const update=()=>{freeText.disabled=!!select.value;freeText.closest('.field').hidden=!!select.value};
+ select.addEventListener('change',update);update();
+}

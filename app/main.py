@@ -117,8 +117,8 @@ def user_out(u: User):
     from .models import ClientContact
     from sqlalchemy.orm import object_session
     db = object_session(u)
-    u._client_account = bool(db and db.get(ClientContact, u.id))
-    return {"id": u.id, "email": u.email, "name": u.name, "active": u.active, "roles": [r.name for r in u.roles], "admin": is_admin(u), "client_account": getattr(u, "_client_account", False)}
+    client_account = bool(db and db.get(ClientContact, u.id))
+    return {"id": u.id, "email": u.email, "name": u.name, "active": u.active, "roles": [r.name for r in u.roles], "admin": is_admin(u), "client_account": client_account}
 
 
 def launch_out(l: Launch):

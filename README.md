@@ -16,6 +16,14 @@ utilisent la même page de connexion ; le serveur oriente le compte client vers 
 5. La désactivation d'une société ou d'un contact bloque les sessions existantes. Une nouvelle
    version, un retrait ou un changement de société suspend l'accès aux publications concernées.
 
+**Assistant et ergonomie :** le sélecteur de contexte permet de résumer un dossier et de
+rechercher ses titres, types de documents et références. Exemples : « Résume ce dossier »,
+« Recherche fiche technique », « Cherche CMD-2026-001 », « Comment créer un espace client ? ».
+Les résultats ouvrent le dossier et sa rubrique. Les droits sont vérifiés à chaque demande ;
+le contenu des fichiers n'est pas lu. Le guide reste local et déterministe, sans modèle génératif.
+La relance « Et ensuite ? » reprend la question précédente. `Ctrl+K` / `⌘K` ouvre la recherche ;
+`Échap` ferme les formulaires et le focus clavier reste dans la fenêtre pendant la saisie.
+
 Migration SQLite additive `0004_client_portal`, sauvegarde automatique d'une base antérieure,
 puis migration répétable au démarrage. Aucun rattachement automatique sur la base d'un nom libre.
 

@@ -145,6 +145,7 @@ def priorities(user: User = Depends(get_current_user), db: Session = Depends(get
 class GuideRequest(BaseModel):
     question: str = Field(min_length=2, max_length=500)
     launch_id: str | None = Field(default=None, max_length=36)
+    previous_question: str | None = Field(default=None, max_length=500)
 
 
 GUIDES = (
@@ -173,7 +174,14 @@ def guide(payload: GuideRequest, user: User = Depends(get_current_user), db: Ses
     if payload.launch_id:
         from .access import must_access
         launch = must_access(db, user, payload.launch_id)
-    phrase = _normalize(payload.question)
+    question = payload.question
+    if _normalize(question).strip(' ?.!)') in {'et ensuite','comment faire','ou ca','comment','oui'} and payload.previous_question:
+        question = payload.previous_question
+    from .assistant_context import contextual_answer
+    contextual = contextual_answer(db, user, question, launch, permitted)
+    if contextual:
+        return contextual
+    phrase = _normalize(question)
     hits = [g for g in GUIDES if any(term in phrase for term in g[1])]
     for area, _, title, answer, permission, folder in hits:
         if permission == "admin":
