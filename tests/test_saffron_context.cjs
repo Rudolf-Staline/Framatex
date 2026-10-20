@@ -22,6 +22,8 @@ const app={
 const folders=['jaune','rose','bleu','vert'].map(slug=>({slug,label:slug,can_read:true,can_write:true,documents:[]}));
 const doc=(id,title,ref,date,name='fiche.pdf')=>({id,title,folder:'jaune',orli_ref:ref,doc_type:'Fiche',created_at:date,latest:{number:2,original_name:name,created_at:date},versions:[{number:1,original_name:name,created_at:date},{number:2,original_name:name,created_at:date}]});
 folders[0].documents=[doc('one','Zèbre <script>',' ORLI-1 ','2026-10-20T12:00:00Z'),doc('two','Alpha','ORLI-2','2026-10-19T12:00:00Z','fiche.xlsx')];
+folders[0].documents[0].latest.size=204800;
+folders[0].documents[0].latest.uploaded_by='Nadia <svg>';
 const archive={folders};
 const pair=[{value:'1500',unit:'pièce'},{value:'1450',unit:'pièce'}];
 const report={rules:[{id:'r'}],comparisons:[
@@ -36,7 +38,7 @@ const report={rules:[{id:'r'}],comparisons:[
 const ctx={console,app,archive,report,
  state:{view:'dossier',me:{admin:true}},document:{activeElement:null},
  controlState:{},api:async path=>path.endsWith('/controls')?report:archive,
- mount:body=>{page=body},e:escaped,icon:()=>'<svg></svg>',niceDate:x=>x,
+ sizeText:n=>(n/1024)+' Ko',mount:body=>{page=body},e:escaped,icon:()=>'<svg></svg>',niceDate:x=>x,
  can:()=>writable,showErr:e=>{throw e},
  modal:(_title,body)=>{modalBody=body},
  overlay:{querySelector:selector=>actionNodes[selector]||(actionNodes[selector]={onclick:null,addEventListener(_event,fn){this.click=fn}}),querySelectorAll:()=>[]},
@@ -48,6 +50,10 @@ const run=code=>vm.runInContext(code,ctx);
  await run('globalLibraryPage()');
  assert.equal(run('globalSelectedId'),'one');
  assert(table.innerHTML.includes('&lt;script&gt;'));
+ assert(table.innerHTML.includes('Nom du fichier')&&table.innerHTML.includes('Ajouté le')&&table.innerHTML.includes('Déposé par'));
+ assert(table.innerHTML.includes('200 Ko'));
+ assert(table.innerHTML.includes('Nadia &lt;svg&gt;'));
+ assert(!table.innerHTML.includes('Nadia <svg>'));
  assert(!table.innerHTML.includes('<script>'));
  assert.equal(run('globalContextIssues().length'),2);
  assert(contextPane.innerHTML.includes('1\u202f500 / 1\u202f450 pièce'));

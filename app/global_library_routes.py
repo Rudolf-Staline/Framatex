@@ -46,7 +46,7 @@ def authorized(db: Session, user: User, doc: Document, action: str):
     return entry
 
 
-def to_public(doc: Document, entry: GlobalDocumentEntry):
+def to_public(doc: Document, entry: GlobalDocumentEntry, uploaders=None):
     versions = sorted(doc.versions, key=lambda v: v.number)
     latest = versions[-1] if versions else None
     return {
@@ -62,6 +62,7 @@ def to_public(doc: Document, entry: GlobalDocumentEntry):
             "original_name": latest.original_name,
             "size": latest.size,
             "created_at": latest.created_at.isoformat(),
+            "uploaded_by": (uploaders or {}).get(latest.uploaded_by),
         } if latest else None,
         "versions": [
             {"number": v.number, "original_name": v.original_name,
@@ -84,6 +85,13 @@ def library(q: str = "", folder: str = "",
         select(Document).join(GlobalDocumentEntry)
         .order_by(Document.created_at.desc())
     ).all()
+    # Only resolve authors of rows already authorized for this user.
+    documents = [doc for doc in documents
+                 if permitted(user, "document.read", db.get(GlobalDocumentEntry, doc.id).folder_slug)
+                 and accessible(db, user, doc.folder.launch)]
+    uploader_ids = {max(doc.versions, key=lambda v: v.number).uploaded_by
+                    for doc in documents if doc.versions}
+    uploaders = dict(db.execute(select(User.id, User.name).where(User.id.in_(uploader_ids))).all()) if uploader_ids else {}
     groups = []
     for slug in SLUGS:
         can_read = permitted(user, "document.read", slug)
@@ -101,7 +109,7 @@ def library(q: str = "", folder: str = "",
                     *[v.original_name for v in doc.versions],
                 )).casefold():
                     continue
-                rows.append(to_public(doc, entry))
+                rows.append(to_public(doc, entry, uploaders))
         groups.append({
             "slug": slug, "label": LABELS[slug],
             "can_read": can_read, "can_write": can_write,

@@ -41,6 +41,17 @@ function globalFileIcon(doc){
  const format=globalDocumentFormat(doc);
  return '<span class="saffron-file-icon global-format-'+format+'">'+icon(({pdf:'file-pdf',word:'file-doc',excel:'file-xls',image:'file-image'})[format]||'file')+'</span>';
 }
+function globalFileSize(doc){
+ const size=doc.latest?.size;
+ if(size===undefined||size===null)return '—';
+ return sizeText(size);
+}
+function globalUploader(doc){
+ const name=doc.latest?.uploaded_by?.trim();
+ if(!name)return '<span class="saffron-muted">Non renseigné</span>';
+ const initials=name.split(/\s+/).map(word=>word[0]).slice(0,2).join('').toLocaleUpperCase('fr');
+ return '<span class="saffron-uploader"><span class="saffron-uploader-avatar" aria-hidden="true">'+e(initials)+'</span><span title="'+e(name)+'">'+e(name)+'</span></span>';
+}
 function globalDocumentsVisible(){
  const group=globalIndex?.folders.find(f=>f.slug===globalFolder);
  if(!group?.can_read)return [];
@@ -65,11 +76,10 @@ function globalRenderRows(){
  const nameOrder=globalSort==='name'?'ascending':globalSort==='name-desc'?'descending':'none';
  const dateOrder=globalSort==='recent'?'descending':globalSort==='oldest'?'ascending':'none';
  host.innerHTML=rows.length?'<div class="saffron-table-scroll"><table class="saffron-table"><caption class="sr-only">Documents accessibles du sous-dossier '+GLOB_COLORS[globalFolder]+'</caption>'+
- '<thead><tr><th scope="col" aria-sort="'+nameOrder+'"><button type="button" data-global-sort="name">Nom '+icon('sort')+'</button></th><th scope="col" class="saffron-type-col">Type</th><th scope="col" class="saffron-orli-col">Référence ORLI</th><th scope="col">Version</th><th scope="col" class="saffron-date-col" aria-sort="'+dateOrder+'"><button type="button" data-global-sort="date">Modifié '+icon('sort')+'</button></th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>'+
+ '<thead><tr><th scope="col" aria-sort="'+nameOrder+'"><button type="button" data-global-sort="name">Nom du fichier '+icon('sort')+'</button></th><th scope="col" class="saffron-size-col">Taille</th><th scope="col" class="saffron-added-col">Ajouté le</th><th scope="col" class="saffron-updated-col" aria-sort="'+dateOrder+'"><button type="button" data-global-sort="date">Mis à jour '+icon('sort')+'</button></th><th scope="col" class="saffron-uploader-col">Déposé par</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>'+
  '<tbody>'+rows.map(d=>'<tr class="'+(d.id===globalSelectedId?'is-selected':'')+'">'+
- '<td><button class="saffron-document-name" type="button" data-global-select="'+e(d.id)+'" aria-pressed="'+(d.id===globalSelectedId)+'" title="Afficher les contrôles de '+e(d.title)+'">'+globalFileIcon(d)+'<span><strong>'+e(d.title)+'</strong><small class="saffron-mobile-meta">'+e(d.doc_type||'Autre')+(d.orli_ref?' · '+e(d.orli_ref):'')+'</small></span></button></td>'+
- '<td class="saffron-type-col">'+e(d.doc_type||'Autre')+'</td><td class="saffron-orli-col">'+(d.orli_ref?e(d.orli_ref):'<span class="saffron-muted">Non renseignée</span>')+'</td>'+
- '<td><span class="global-version-pill">v'+(d.latest?.number||'—')+'</span></td><td class="saffron-date-col">'+niceDate(d.latest?.created_at||d.created_at)+'</td>'+
+ '<td><button class="saffron-document-name" type="button" data-global-select="'+e(d.id)+'" aria-pressed="'+(d.id===globalSelectedId)+'" title="Afficher les contrôles de '+e(d.title)+'">'+globalFileIcon(d)+'<span><strong>'+e(d.latest?.original_name||d.title)+'</strong><small class="saffron-file-meta">'+(d.latest?.original_name&&d.latest.original_name!==d.title?'<span>'+e(d.title)+'</span> · ':'')+(d.orli_ref?e(d.orli_ref):'ORLI : Non renseignée')+' · <span class="global-version-pill">v'+(d.latest?.number||'—')+'</span><span class="saffron-mobile-file-size"> · '+globalFileSize(d)+'</span></small></span></button></td>'+
+ '<td class="saffron-size-col">'+globalFileSize(d)+'</td><td class="saffron-added-col">'+niceDate(d.created_at)+'</td><td class="saffron-updated-col">'+niceDate(d.latest?.created_at||d.created_at)+'</td><td class="saffron-uploader-col">'+globalUploader(d)+'</td>'+
  '<td class="saffron-row-actions"><button type="button" class="saffron-more" data-global-actions="'+e(d.id)+'" aria-label="Actions pour '+e(d.title)+'">'+icon('more')+'</button></td></tr>').join('')+'</tbody></table></div>':
  '<div class="saffron-empty"><span class="saffron-empty-icon">'+icon('file')+'</span><strong>'+(globalQuery||globalType!=='all'?'Aucun résultat':'Aucun document pour le moment')+'</strong><p>'+(globalQuery||globalType!=='all'?'Modifiez les filtres pour élargir la recherche.':'Les fichiers déposés apparaîtront ici.')+'</p>'+(group.can_write&&!globalQuery&&globalType==='all'?'<button type="button" class="primary" id="global-empty-upload">'+icon('plus')+' Déposer un document</button>':'')+'</div>';
  host.querySelector('#global-empty-upload')?.addEventListener('click',globalUploadModal);

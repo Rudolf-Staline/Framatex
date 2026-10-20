@@ -1,0 +1,33 @@
+'use strict';
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync('static/app.js','utf8');
+let html='',sent=null,closed=false;
+const nodes={};
+const node=selector=>nodes[selector]||(nodes[selector]={checked:false,disabled:false,value:'Réception',textContent:'',addEventListener(event,handler){this[event]=handler}});
+const folders=['jaune','rose','bleu','vert'];
+const root={innerHTML:'',querySelector:node,querySelectorAll:()=>[]};
+const overlay={querySelector:node,querySelectorAll:selector=>selector==='[data-role-access]'?folders.map(s=>{const n=node('[data-role-access="'+s+'"]');n.dataset={roleAccess:s};return n}):[]};
+const ctx={document:{querySelector:selector=>selector==='#app'?root:overlay},window:{addEventListener(){}},setTimeout,clearTimeout,console,capture:body=>{html=body},captureRequest:body=>{sent=JSON.parse(body)},captureClose:()=>{closed=true}};
+vm.createContext(ctx);vm.runInContext(source.slice(0,source.lastIndexOf('(async function init(){')),ctx);
+vm.runInContext("modal=(title,body)=>capture(body);api=async(path,options)=>captureRequest(options.body);closeModal=captureClose;toast=()=>{};admin=async()=>{};openNewRole()",ctx);
+assert.equal((html.match(/data-role-access=/g)||[]).length,4);
+assert.equal((html.match(/data-role-modify=/g)||[]).length,4);
+assert(!html.includes('name="grant"'));
+assert(!html.includes('Autorisations globales'));
+const access=node('[data-role-access="rose"]'),modify=node('[data-role-modify="rose"]');
+access.checked=true;access.change();assert.equal(modify.disabled,false);
+modify.checked=true;access.checked=false;access.change();assert.equal(modify.checked,false);assert.equal(modify.disabled,true);
+access.checked=true;access.change();modify.checked=true;
+// Even a programmatically checked modification box cannot imply access.
+node('[data-role-modify="jaune"]').checked=true;
+const button={disabled:false};
+(async()=>{
+ await node('#role-form').onsubmit({preventDefault(){},currentTarget:{querySelector:()=>button}});
+ assert.equal(sent.folder_access.rose.access,true);assert.equal(sent.folder_access.rose.modify,true);
+ assert.deepEqual(sent.folder_access.jaune,{access:false,modify:false});
+ assert.equal(sent.permissions,undefined);assert(closed);
+ ctx.sample={name:'Ancien',permissions:[{action:'document.read',folder:'bleu'}]};
+ assert.equal(vm.runInContext("roleFolderAccess(sample,'bleu').access",ctx),true);
+ assert.equal(vm.runInContext("roleFolderAccess(sample,'bleu').modify",ctx),false);
+ console.log('Simple roles: 8 switches, modification dependency, scoped payload and legacy summary OK');
+})().catch(error=>{console.error(error);process.exitCode=1});

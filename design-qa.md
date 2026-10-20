@@ -8,7 +8,7 @@ final result: blocked
 
 La transposition et les tests techniques sont terminés. Le rendu navigateur n’a pas pu être capturé : l’ouverture de `http://terminal.local:4173/` a renvoyé `net::ERR_BLOCKED_BY_CLIENT`, puis le navigateur a explicitement refusé l’observation au titre de sa politique d’accès aux URL. Aucun autre mécanisme de navigateur ni autre adresse locale n’a été utilisé pour contourner ce refus. Une réponse HTTP ou le démarrage du service ne constitue pas une validation visuelle.
 
-La branche doit rester en brouillon jusqu’à la comparaison visuelle. Ce rapport ne valide ni la fidélité graphique ni l’absence de régression responsive.
+Après ce constat initial, l’utilisateur a explicitement demandé le déploiement, effectué le 20 octobre 2026. La comparaison visuelle reste à reprendre. Ce rapport ne valide ni la fidélité graphique ni l’absence de régression responsive.
 
 ## Cible et preuves
 
@@ -59,3 +59,12 @@ L’aperçu temporaire est distinct du dépôt. Il utilise les fichiers frontend
 4. Contrôler les largeurs indiquées, le clavier et les erreurs console.
 5. Corriger les défauts P0/P1/P2 éventuels, recapturer et comparer ; passer ce rapport à `final result: passed` uniquement après cette vérification.
 6. Fusionner et déployer après validation visuelle.
+
+
+## Itération suivante — rôles simples et registre de fichiers
+
+La demande du 20 octobre à 06:50 remplace la création de rôle détaillée par une matrice Accès / Modification pour Jaune, Rose, Bleu et Vert. Les nouveaux booléens sont traduits côté serveur vers les droits existants ; modification sans accès est rejetée, les rôles existants restent inchangés et aucun accès global aux anciens lancements n’est accordé implicitement.
+
+Le tableau reprend la capture fournie : nom du fichier avec métadonnées discrètes, taille réelle de la dernière version, date d’ajout du document, mise à jour et auteur réel du dernier dépôt. Les auteurs sont résolus après application des droits de lecture ; aucune adresse email n’est ajoutée à la réponse documentaire.
+
+Référence : `/workspace/scratch/53cc5695024c/upload/image(20261020-065003).png`, 478 × 205 pixels. Validation de cette itération : tests API de refus/autorisation, compatibilité des rôles, attribution de la dernière version, et tests frontend de la matrice, des métadonnées et de l’échappement HTML. Aucun nouveau rendu de l’espace connecté n’a été capturé ; les limites de validation visuelle restent inchangées.
