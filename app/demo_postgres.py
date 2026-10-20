@@ -15,9 +15,11 @@ from . import models, completeness_models, workflow_models, quality_models  # no
 from . import intake_models, spec_models, mail_models, impact_sim_models  # noqa: F401
 from . import orli_models, material_models, approval_models, sharing_models, pilot_models  # noqa: F401
 from . import global_library_models  # noqa: F401
+from . import experience_models  # noqa: F401
 
 REQUIRED = {"users", "roles", "launches", "folders", "documents", "document_versions", "audit_events",
-            "global_folders", "global_document_entries", "global_library_config"}
+            "global_folders", "global_document_entries", "global_library_config",
+            "experience_records", "document_expectations"}
 
 
 def assert_ready():

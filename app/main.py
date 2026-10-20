@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 from .core import Base, COOKIE, DATA_DIR, ROOT, engine, get_current_user, get_db, hash_password, check_password, make_token, login_limit_key, login_attempt_allowed, record_login_failure, clear_login_failures
 from .models import AuditEvent, Document, DocumentVersion, Folder, Launch, LaunchMember, Role, RolePermission, User
 from .global_library_models import GlobalFolder, GlobalDocumentEntry, GlobalLibraryConfig  # noqa: F401
+from .experience_models import ExperienceRecord, DocumentExpectation  # noqa: F401
 from .completeness_models import CompletenessProfile, RequirementRule, LaunchCompleteness, RequirementValidation, RequirementException
 from .completeness import PHASES, PHASE_RANK, evaluate
 from .workflow_models import DocumentReview, BusinessValueRevision, ImpactRule, ImpactAlert
@@ -41,6 +42,7 @@ from .cloud_storage import upload_local as cloud_upload, ensure_local as cloud_f
 FOLDERS = [("jaune", "Technique"), ("rose", "Réception"), ("bleu", "Douane"), ("vert", "Facturation")]
 SLUGS = {slug for slug, _ in FOLDERS}
 ACTIONS = {"launch.read", "launch.create", "launch.update", "document.read", "document.write", "audit.read", "completeness.review", "document.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"}
+ACTIONS.update({"rex.read", "rex.write"})
 STATUSES = {"À compléter", "En cours", "En validation", "Clôturé"}
 MAX_UPLOAD = 20 * 1024 * 1024
 STORAGE = DATA_DIR / "files"
@@ -489,7 +491,7 @@ def create_role(payload: RolePayload, user: User = Depends(get_current_user), db
     if payload.name.strip().lower() == "administrateur":
         raise HTTPException(422, "Ce rôle est réservé au système")
     for p in payload.permissions:
-        if p.action not in ACTIONS or p.folder not in (None, *SLUGS) or (p.folder and not (p.action.startswith("document.") or p.action in {"completeness.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"})):
+        if p.action not in ACTIONS or p.folder not in (None, *SLUGS) or (p.folder and not (p.action.startswith(("document.", "rex.")) or p.action in {"completeness.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"})):
             raise HTTPException(422, "Permission inconnue")
     role = Role(name=payload.name.strip())
     seen = set()
@@ -803,6 +805,13 @@ app.include_router(sharing_router)
 # Dossier Jaune V2 — bibliothèque commune, indépendante des lancements métier.
 from .global_library_routes import router as global_library_router
 app.include_router(global_library_router)
+
+from .experience_routes import router as experience_router
+from .library_controls import router as library_controls_router
+from .assistant_chat import router as assistant_chat_router
+app.include_router(experience_router)
+app.include_router(library_controls_router)
+app.include_router(assistant_chat_router)
 
 # 0.15 — Gestion des accès d'un lancement par l'administrateur.
 from .access_routes import router as access_router
