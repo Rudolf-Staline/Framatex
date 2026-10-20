@@ -391,8 +391,39 @@ function renderDetail(){
  bindCompleteness();bindWorkflow();bindQuality();bindIntake();bindPaper();bindSpec();bindMail();bindImpactSimulation();bindOrliReconciliation();bindMaterialReport();bindApprovals();bindSharing();
  bindDetailToolWorkspace();
 }
-function modal(title,content,wide=false){overlay.innerHTML=`<div class="modal-scrim"><div class="modal ${wide?'wide':''}" role="dialog" aria-modal="true" aria-label="${e(title)}"><div class="modal-head"><h2>${e(title)}</h2><button id="close-modal" aria-label="Fermer">${icon('x')}</button></div><div class="modal-body">${content}</div></div></div>`;overlay.querySelector('#close-modal').onclick=closeModal;overlay.querySelector('.modal-scrim').addEventListener('click',evt=>{if(evt.target.classList.contains('modal-scrim'))closeModal()})}
-function closeModal(){overlay.innerHTML=''}
+let modalReturnFocus=null;
+function modal(title,content,wide=false){
+ // Conserver le déclencheur d'origine quand un formulaire ouvre un second dialogue.
+ if(!overlay.querySelector('[role="dialog"]'))modalReturnFocus=document.activeElement;
+ overlay.innerHTML=`<div class="modal-scrim"><div class="modal ${wide?'wide':''}" role="dialog" aria-modal="true" aria-label="${e(title)}"><div class="modal-head"><h2>${e(title)}</h2><button type="button" id="close-modal" aria-label="Fermer">${icon('x')}</button></div><div class="modal-body">${content}</div></div></div>`;
+ const dialog=overlay.querySelector('[role="dialog"]');
+ overlay.querySelector('#close-modal').onclick=closeModal;
+ overlay.querySelector('.modal-scrim').addEventListener('click',evt=>{
+  if(evt.target.classList.contains('modal-scrim'))closeModal();
+ });
+ dialog.addEventListener('keydown',event=>{
+  if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closeModal();return}
+  if(event.key!=='Tab')return;
+  const controls=[...dialog.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+   .filter(el=>el.getClientRects().length>0);
+  if(!controls.length){event.preventDefault();dialog.focus();return}
+  const first=controls[0],last=controls[controls.length-1];
+  if(event.shiftKey&&(document.activeElement===first||!dialog.contains(document.activeElement))){
+   event.preventDefault();last.focus();
+  }else if(!event.shiftKey&&(document.activeElement===last||!dialog.contains(document.activeElement))){
+   event.preventDefault();first.focus();
+  }
+ });
+ (dialog.querySelector('input:not([disabled]):not([type="hidden"]),textarea:not([disabled]),select:not([disabled])')||
+  dialog.querySelector('#close-modal')).focus();
+}
+function closeModal(){
+ if(!overlay.querySelector('[role="dialog"]'))return;
+ overlay.innerHTML='';
+ const previous=modalReturnFocus;
+ modalReturnFocus=null;
+ if(previous?.isConnected&&typeof previous.focus==='function')previous.focus();
+}
 function val(id){return overlay.querySelector('#'+id)?.value.trim()||''}
 function openNewLaunch(){return orderEditor()}
 function openEditLaunch(){return orderEditor(state.detail)}
