@@ -94,7 +94,7 @@ function sidebar(){
          ${icon('folder')}<span class="nav-text">Dossier Jaune</span><span class="dossier-nav-chevron" aria-hidden="true">${icon('chevron')}</span>
        </button>
        <div class="dossier-nav-children" id="dossier-nav-children" role="group" aria-label="Sous-dossiers du Dossier Jaune" ${dossierOpen?'':'hidden'}>
-         ${subfolders.map(([slug,name])=>`<button type="button" class="dossier-nav-child ${state.view==='dossier'&&state.dossierFolder===slug?'active':''}" data-sidebar-folder="${slug}" aria-current="${state.view==='dossier'&&state.dossierFolder===slug?'location':'false'}"><span class="dossier-child-dot ${slug}" aria-hidden="true"></span><span>${name}</span></button>`).join('')}
+         ${subfolders.map(([slug,name])=>`<button type="button" class="dossier-nav-child ${state.view==='dossier'&&state.dossierFolder===slug?'active':''}" data-sidebar-folder="${slug}" aria-current="${state.view==='dossier'&&state.dossierFolder===slug?'location':'false'}"><span class="dossier-child-folder ${slug}" aria-hidden="true">${icon('folder')}</span><span>${name}</span></button>`).join('')}
        </div>
      </div>`;
    }
@@ -461,7 +461,7 @@ function roleFolderAccess(role,slug){
 function roleAccessSummary(role){
  return ['jaune','rose','bleu','vert'].map(slug=>{
   const flags=roleFolderAccess(role,slug);
-  return '<span class="role-folder-summary"><span class="dossier-child-dot '+slug+'" aria-hidden="true"></span><strong>'+({jaune:'Jaune',rose:'Rose',bleu:'Bleu',vert:'Vert'})[slug]+'</strong><span>'+(flags.modify?'Modification':flags.access?'Lecture':'Aucun accès')+'</span></span>';
+  return '<span class="role-folder-summary"><span class="dossier-child-folder '+slug+'" aria-hidden="true">'+icon('folder')+'</span><strong>'+({jaune:'Jaune',rose:'Rose',bleu:'Bleu',vert:'Vert'})[slug]+'</strong><span>'+(flags.modify?'Modification':flags.access?'Lecture':'Aucun accès')+'</span></span>';
  }).join('');
 }
 function openNewRole(){
