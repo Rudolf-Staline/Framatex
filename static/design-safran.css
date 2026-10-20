@@ -502,3 +502,7 @@ body:has(.app-shell[data-dossier-theme]) button.secondary:hover{border-color:var
 #floating-assistant-root .floating-assistant-trigger:active,
 #floating-assistant-root .floating-assistant-trigger:focus-visible{background:#fff;color:#344054;border:1px solid #e4e7ec;box-shadow:0 4px 18px #10182814}
 #floating-assistant-root .floating-assistant-trigger svg{stroke:currentColor}
+
+.document-register .register-folder-bar{justify-content:flex-end;border:0}
+.document-register .register-folder-bar:empty{display:none}
+.document-register .register-folder-bar .register-upload{margin:0}

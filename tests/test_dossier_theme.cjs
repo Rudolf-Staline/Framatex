@@ -75,7 +75,6 @@ for(const folder of Object.keys(colors)){
  vm.runInContext("globalFolder='"+folder+"';renderGlobalLibrary()",ctx);
  assert(app.innerHTML.includes('data-dossier-theme="'+folder+'"'),'mount must apply '+folder);
  assert(app.innerHTML.includes('data-sidebar-folder="'+folder+'" aria-current="location"'),'active sidebar must follow '+folder);
- assert(app.innerHTML.includes('class="saffron-folder-tab '+folder+' selected"'),'active folder card must follow '+folder);
 }
 vm.runInContext("state.view='notifications';mount('<p>Messages</p>','Notifications')",ctx);
 assert(!app.innerHTML.includes('data-dossier-theme'),'other screens must retain neutral theme');

@@ -138,19 +138,11 @@ function renderGlobalLibrary(){
  const folder=globalIndex.folders.find(f=>f.slug===globalFolder);
  mount('<div class="global-library saffron-workspace document-register">'+
  '<section class="saffron-library-main"><div class="register-folder-bar">'+
- '<nav class="saffron-folders" role="tablist" aria-label="Les quatre sous-dossiers">'+globalIndex.folders.map(f=>'<button type="button" role="tab" id="folder-tab-'+f.slug+'" data-global-folder="'+f.slug+'" aria-selected="'+(f.slug===globalFolder)+'" aria-controls="global-document-panel" aria-label="Sous-dossier '+GLOB_COLORS[f.slug]+' · '+e(f.label||GLOB_DESCRIPTIONS[f.slug])+'" tabindex="'+(f.slug===globalFolder?'0':'-1')+'" class="saffron-folder-tab '+f.slug+' '+(f.slug===globalFolder?'selected':'')+'"><span class="register-folder-icon '+f.slug+'">'+icon('folder')+'</span>'+GLOB_COLORS[f.slug]+(!f.can_read?'<span class="sr-only"> · Accès restreint</span>':'')+'</button>').join('')+'</nav>'+(folder.can_write?'<button type="button" class="primary register-upload" id="global-upload">'+icon('upload')+' Déposer un document</button>':'')+'</div>'+
- '<section id="global-document-panel" class="saffron-document-panel" role="tabpanel" aria-labelledby="folder-tab-'+globalFolder+'"><div class="saffron-document-toolbar"><label class="saffron-document-search">'+icon('search')+'<input type="search" id="global-search-input" aria-label="Rechercher dans ce sous-dossier" placeholder="Rechercher dans ce dossier…" value="'+e(globalQuery)+'" '+(folder.can_read?'':'disabled')+'></label>'+
+ (folder.can_write?'<button type="button" class="primary register-upload" id="global-upload">'+icon('upload')+' Déposer un document</button>':'')+'</div>'+
+ '<section id="global-document-panel" class="saffron-document-panel" aria-label="Documents du sous-dossier '+GLOB_COLORS[globalFolder]+'"><div class="saffron-document-toolbar"><label class="saffron-document-search">'+icon('search')+'<input type="search" id="global-search-input" aria-label="Rechercher dans ce sous-dossier" placeholder="Rechercher dans ce dossier…" value="'+e(globalQuery)+'" '+(folder.can_read?'':'disabled')+'></label>'+
  '<label class="saffron-type-filter"><span class="sr-only">Type de document</span><select id="global-type-filter" aria-label="Filtrer par type"><option value="all">Tous les types</option><option value="pdf">PDF</option><option value="word">Word</option><option value="excel">Excel</option><option value="image">Image</option><option value="other">Autres</option></select></label></div><span class="sr-only" id="global-result-count" role="status" aria-live="polite"></span><div id="global-doc-results"></div><div id="global-selection-actions" class="register-selection-bar" hidden><span id="global-selected-count" role="status" aria-live="polite"></span><button type="button" class="secondary" id="global-download-selection">'+icon('download')+' Télécharger la sélection</button><button type="button" class="link" id="global-clear-selection">Désélectionner</button></div></section></section></div>','Dossier Jaune');
  const typeSelect=app.querySelector('#global-type-filter');if(typeSelect)typeSelect.value=globalType;
  app.querySelector('#global-type-filter')?.addEventListener('change',event=>{globalType=event.target.value;globalRenderRows()});
- app.querySelectorAll('[data-global-folder]').forEach(button=>button.onclick=()=>openGlobalFolder(button.dataset.globalFolder).catch(showErr));
- app.querySelector('.saffron-folders')?.addEventListener('keydown',event=>{
-  if(!['ArrowRight','ArrowLeft','Home','End'].includes(event.key))return;
-  const tabs=[...app.querySelectorAll('[data-global-folder]')],current=tabs.indexOf(document.activeElement);if(current<0)return;
-  event.preventDefault();
-  const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
-  openGlobalFolder(tabs[next].dataset.globalFolder).then(()=>app.querySelector('[data-global-folder="'+tabs[next].dataset.globalFolder+'"]')?.focus()).catch(showErr);
- });
  app.querySelector('#global-search-input')?.addEventListener('input',event=>{globalQuery=event.target.value;globalRenderRows()});
  app.querySelector('#global-upload')?.addEventListener('click',globalUploadModal);
  app.querySelector('#global-download-selection')?.addEventListener('click',globalDownloadSelection);
