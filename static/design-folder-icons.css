@@ -1,0 +1,55 @@
+/* Sous-dossiers Framatex : icônes de dossier SVG harmonisées. */
+body .app-shell .dossier-child-folder{
+ --folder-icon-stroke:#9a731b;
+ --folder-icon-fill:#fff0c3;
+ display:inline-grid;place-items:center;
+ flex:0 0 21px;width:21px;height:21px;min-width:21px;
+ background:none;box-shadow:none;border:0;border-radius:0;
+ color:var(--folder-icon-stroke);
+}
+body .app-shell .dossier-child-folder.jaune{
+ --folder-icon-stroke:#ac8016;--folder-icon-fill:#fff0c3;
+}
+body .app-shell .dossier-child-folder.rose{
+ --folder-icon-stroke:#b6507e;--folder-icon-fill:#fce3ed;
+}
+body .app-shell .dossier-child-folder.bleu{
+ --folder-icon-stroke:#3579bd;--folder-icon-fill:#deefff;
+}
+body .app-shell .dossier-child-folder.vert{
+ --folder-icon-stroke:#328460;--folder-icon-fill:#dff4e8;
+}
+body .app-shell .dossier-child-folder .ui-icon{
+ width:19px;height:19px;display:block;flex:none;
+ fill:var(--folder-icon-fill);stroke:var(--folder-icon-stroke);
+ stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round;
+}
+body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child{
+ display:flex;align-items:center;gap:10px;
+}
+body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child.active .dossier-child-folder{
+ opacity:1;background:none;
+}
+body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child.active .dossier-child-folder .ui-icon{
+ fill:var(--folder-icon-fill);stroke:var(--folder-icon-stroke);
+}
+body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child:hover .dossier-child-folder .ui-icon{
+ stroke:var(--folder-icon-stroke);
+}
+body .app-shell .role-folder-summary{
+ grid-template-columns:21px auto;column-gap:8px;
+}
+body .app-shell .role-folder-summary .dossier-child-folder{
+ width:19px;height:19px;min-width:19px;flex-basis:19px;
+}
+body .app-shell .role-folder-summary .dossier-child-folder svg{
+ width:17px;height:17px;
+}
+@media(max-width:760px){
+ body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child .dossier-child-folder{
+  flex-basis:20px;width:20px;height:20px;min-width:20px;
+ }
+ body .app-shell .sidebar-rail.sidebar-light .dossier-nav-child .dossier-child-folder svg{
+  width:18px;height:18px;
+ }
+}
