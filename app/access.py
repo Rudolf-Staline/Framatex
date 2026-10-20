@@ -21,6 +21,9 @@ def accessible(db: Session, user: User, launch: Launch | None) -> bool:
         return False
     if any(r.name == "Administrateur" for r in user.roles):
         return True
+    from .models import ClientContact
+    if db.get(ClientContact,user.id):
+        return False
     if not launch.restricted or launch.created_by == user.id:
         return True
     return db.scalar(select(LaunchMember.id).where(
@@ -100,6 +103,27 @@ def guard_http_request(request: Request):
     Called for every /api/ request by the existing header-checking middleware.
     Endpoints must still enforce role and folder permissions as before.
     """
+    if request.url.path in ('/api/auth/login','/api/auth/logout'):
+        return None
+    # Client identities must never enter employee-only APIs.
+    token = request.cookies.get(COOKIE)
+    if token:
+        try:
+            client_subject = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])['sub']
+        except (jwt.InvalidTokenError, KeyError):
+            client_subject = None
+        if client_subject:
+            from .models import ClientContact, Client
+            with SessionLocal() as db:
+                contact = db.get(ClientContact, client_subject)
+                if contact:
+                    user = db.get(User,client_subject)
+                    client = db.get(Client,contact.client_id)
+                    if not user or not user.active or not client or not client.active:
+                        return JSONResponse({'detail':'Compte client désactivé'},status_code=403)
+                    if not (request.url.path.startswith('/api/portal/') or
+                            request.url.path in ('/api/auth/me','/api/auth/logout','/api/auth/login')):
+                        return JSONResponse({'detail':'Accès réservé à l’espace client'},status_code=403)
     params = {}
     for pattern, name in SCOPE_PATHS:
         match = pattern.match(request.url.path)

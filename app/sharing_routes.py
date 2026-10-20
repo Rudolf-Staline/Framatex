@@ -68,7 +68,8 @@ def pub_out(db: Session, p: ClientPublication, launch):
     v = db.get(DocumentVersion, p.document_version_id)
     doc = db.get(Document, v.document_id)
     stale = latest(doc).id != v.id
-    wrong_client = norm(p.client_name) != norm(launch.client_name or '')
+    wrong_client = (not launch.client_id or p.client_id != launch.client_id or
+                    norm(p.client_name) != norm(launch.client_name or ''))
     approved = is_approved(db, v, doc)
     visible = p.status == 'published' and not stale and not wrong_client and approved and is_safe(doc)
     return {'id':p.id,'document_id':doc.id,'document_title':doc.title,'document_type':doc.doc_type,
@@ -103,8 +104,8 @@ def publish(launch_id: str, payload: PublicationInput,
             user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     admin_only(user)
     launch = get_launch(db,launch_id)
-    if not (launch.client_name and launch.client_name.strip()):
-        raise HTTPException(422,'Renseigner le client du lancement avant une publication')
+    if not launch.client_id:
+        raise HTTPException(422,'Associer le dossier à un client du répertoire avant toute publication')
     v,doc = source(db,payload.document_version_id,launch.id)
     if not is_safe(doc):
         raise HTTPException(422,'Type de document non autorisé à la publication client')
@@ -117,7 +118,8 @@ def publish(launch_id: str, payload: PublicationInput,
     if active:
         raise HTTPException(409,'Cette version fait déjà l’objet d’une publication active')
     p = ClientPublication(launch_id=launch.id,document_version_id=v.id,
-          client_name=launch.client_name.strip(),reason=payload.reason.strip(),created_by=user.id)
+          client_id=launch.client_id,client_name=launch.client_name.strip(),
+          reason=payload.reason.strip(),created_by=user.id)
     db.add(p);db.flush()
     audit(db,user,'client.publish.simulated','client_publication',p.id,
           {'launch':launch.id,'version':v.id,'client':p.client_name})

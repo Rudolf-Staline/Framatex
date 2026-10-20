@@ -127,11 +127,15 @@ def audit(db: Session, user: User | None, action: str, entity: object, target_id
 
 
 def user_out(u: User):
-    return {"id": u.id, "email": u.email, "name": u.name, "active": u.active, "roles": [r.name for r in u.roles], "admin": is_admin(u)}
+    from sqlalchemy.orm import object_session
+    from .models import ClientContact
+    session = object_session(u)
+    client_account = bool(session and session.get(ClientContact, u.id))
+    return {"id": u.id, "email": u.email, "name": u.name, "active": u.active, "roles": [r.name for r in u.roles], "admin": is_admin(u), "client_account": client_account}
 
 
 def launch_out(l: Launch):
-    return {"identification": identification_values(l), "restricted": bool(l.restricted), "id": l.id, "name": l.name, "order_ref": l.order_ref, "client_name": l.client_name, "orli_ref": l.orli_ref, "status": l.status, "created_at": l.created_at.isoformat(), "updated_at": l.updated_at.isoformat()}
+    return {"client_id": l.client_id, "identification": identification_values(l), "restricted": bool(l.restricted), "id": l.id, "name": l.name, "order_ref": l.order_ref, "client_name": l.client_name, "orli_ref": l.orli_ref, "status": l.status, "created_at": l.created_at.isoformat(), "updated_at": l.updated_at.isoformat()}
 
 
 def version_out(v: DocumentVersion):
@@ -148,6 +152,7 @@ class LoginPayload(BaseModel):
     password: str
 
 class LaunchPayload(BaseModel):
+    client_id: str | None = None
     identification: OrderIdentification = Field(default_factory=OrderIdentification)
     name: str = Field(min_length=2, max_length=180)
     client_name: str | None = Field(default=None, max_length=150)
@@ -155,6 +160,7 @@ class LaunchPayload(BaseModel):
     orli_ref: str | None = Field(default=None, max_length=100)
 
 class LaunchPatch(BaseModel):
+    client_id: str | None = None
     identification: OrderIdentification | None = None
     name: str | None = Field(default=None, min_length=2, max_length=180)
     client_name: str | None = Field(default=None, max_length=150)
@@ -265,15 +271,20 @@ def login(payload: LoginPayload, response: Response, request: Request, db: Sessi
     return user_out(user)
 
 @app.post("/api/auth/logout")
-def logout(response: Response, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Deleting a cookie alone does not invalidate a copied signed JWT.
-    # Record its unique identifier server-side so reuse is denied immediately.
+def logout(response: Response, request: Request, db: Session = Depends(get_db)):
+    # Signing out must remain possible after a client or contact is disabled.
     import jwt
     from .core import SECRET_KEY
     token = request.cookies.get(COOKIE)
-    payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-    audit(db, user, "session.logout", "session", payload["jti"])
-    db.commit()
+    if token:
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            user = db.get(User, payload.get("sub"))
+            if user and isinstance(payload.get("jti"), str):
+                audit(db, user, "session.logout", "session", payload["jti"])
+                db.commit()
+        except jwt.InvalidTokenError:
+            pass
     response.delete_cookie(COOKIE, path="/")
     return {"ok": True}
 
@@ -323,6 +334,9 @@ def create_launch(payload: LaunchPayload, user: User = Depends(get_current_user)
     l = Launch(name=payload.name.strip(), client_name=payload.client_name or None, order_ref=payload.order_ref or None, orli_ref=payload.orli_ref or None, restricted=os.getenv("FRAMATEX_RESTRICT_NEW_LAUNCHES", "0") == "1", created_by=user.id)
     if len(l.name) < 2:
         raise HTTPException(422, "Le nom du dossier est requis")
+    if payload.client_id:
+        from .client_routes import assign_client
+        assign_client(db,l,payload.client_id)
     merge_identification(l, payload.identification)
     db.add(l)
     db.flush()
@@ -359,6 +373,13 @@ def update_launch(launch_id: str, payload: LaunchPatch, user: User = Depends(get
     l = get_launch(db, launch_id)
     changes = payload.model_dump(exclude_unset=True)
     changes.pop("identification", None)
+    if "client_id" in changes:
+        from .client_routes import assign_client
+        assign_client(db,l,changes.pop("client_id"))
+        if l.client_id:
+            changes.pop("client_name",None)
+    elif l.client_id and "client_name" in changes:
+        changes.pop("client_name")
     if payload.identification is not None:
         merge_identification(l, payload.identification)
     if "name" in changes and (not changes["name"] or len(changes["name"].strip()) < 2):
@@ -866,6 +887,9 @@ app.include_router(access_router)
 # 0.17 — Signalements pilotes anonymisés vis-à-vis des autres collaborateurs.
 from .pilot_routes import router as pilot_router
 app.include_router(pilot_router)
+
+from .client_routes import router as clients_router
+app.include_router(clients_router)
 
 # Le contrôle global de portée est effectué dans request_header_guard, avant
 # le dispatch FastAPI. Aucun routeur historique ne peut l'éviter.

@@ -43,6 +43,7 @@ class Launch(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     name: Mapped[str] = mapped_column(String(180))
     order_ref: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    client_id: Mapped[str | None] = mapped_column(ForeignKey('clients.id'), nullable=True, index=True)
     client_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
     orli_ref: Mapped[str | None] = mapped_column(String(100), nullable=True)
     identification_json: Mapped[str] = mapped_column(Text, default="{}", server_default="{}", nullable=False)
@@ -112,3 +113,16 @@ class LaunchMember(Base):
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
     granted_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+class Client(Base):
+    __tablename__ = "clients"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    name: Mapped[str] = mapped_column(String(150), unique=True)
+    contact_email: Mapped[str | None] = mapped_column(String(254), nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+class ClientContact(Base):
+    __tablename__ = "client_contacts"
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    client_id: Mapped[str] = mapped_column(ForeignKey("clients.id"), nullable=False, index=True)

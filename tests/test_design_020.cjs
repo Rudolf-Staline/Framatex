@@ -31,7 +31,8 @@ assert.equal(output.length,4);
 for(let i=0;i<4;i++){
  const folder=['jaune','rose','bleu','vert'][i];
  assert(output[i].includes('data-folder="'+folder+'" aria-pressed="true"'));
- assert.equal((output[i].match(/class="preserved-module"/g)||[]).length,12);
+ assert.equal((output[i].match(/class="preserved-module"/g)||[]).length,1); // le panneau actif est seul rendu
+ assert.equal((output[i].match(/data-detail-tool-panel=/g)||[]).length,12); // les 12 outils restent accessibles
  assert(output[i].indexOf('simple-document-section')<output[i].indexOf('id="detail-view-tools"'));
  assert(css.includes('data-folder-theme="'+folder+'"') || folder==='jaune'&&css.includes('data-folder-theme]{'));
 }

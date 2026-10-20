@@ -39,14 +39,17 @@ assert(markup.includes('id="launch-info"'));
 assert.equal((markup.match(/<optgroup\b/g)||[]).length,4);
 assert.equal((markup.match(/<option value="/g)||[]).length,12);
 assert.equal((markup.match(/data-detail-tool-panel="/g)||[]).length,12);
-assert.equal((markup.match(/class="preserved-module"/g)||[]).length,12);
+assert.equal((markup.match(/class="preserved-module"/g)||[]).length,1); // panneau courant uniquement
 assert.equal((markup.match(/data-detail-tool-panel="[^"]+" role="region" aria-label="[^"]+" hidden/g)||[]).length,11);
 assert(markup.includes('<option value="quality" selected>Cohérence et Excel</option>'));
 assert(markup.indexOf('simple-document-section')<markup.indexOf('id="detail-view-tools"'));
 
 const select={value:'quality'};
-const panels=['quality','intake','paper'].map(id=>({dataset:{detailToolPanel:id},hidden:id!=='quality'}));
-const container={querySelector:selector=>selector==='#detail-tool-select'?select:null,querySelectorAll:()=>panels};
+const panels=['quality','intake','paper'].map(id=>({dataset:{detailToolPanel:id,...(id==='quality'?{rendered:'true'}:{})},hidden:id!=='quality',innerHTML:''}));
+const container={querySelector:selector=>{
+ if(selector==='#detail-tool-select')return select;
+ return panels.find(p=>selector==='[data-detail-tool-panel="'+p.dataset.detailToolPanel+'"]')||null;
+},querySelectorAll:()=>panels};
 const tabs=['documents','tools'].map(view=>({dataset:{detailView:view},setAttribute(k,v){this[k]=v}}));
 const viewPanels=['documents','tools'].map(view=>({dataset:{detailViewPanel:view},hidden:view!=='documents'}));
 const documentArea={scrollIntoView(){this.scrolled=true}};
@@ -56,6 +59,8 @@ vm.runInContext("selectDetailTool('paper')",ctx);
 assert.equal(vm.runInContext('state.detailTool',ctx),'paper');
 assert.equal(select.value,'paper');
 assert(panels[2].hidden===false&&panels[0].hidden===true);
+assert(panels[2].innerHTML.includes('preserved-module')); // panneau calculé au premier accès
+assert.equal(panels[2].dataset.rendered,'true');
 vm.runInContext("switchDetailView('tools')",ctx);
 assert.equal(vm.runInContext('state.detailSection',ctx),'tools');
 assert(viewPanels[1].hidden===false&&viewPanels[0].hidden===true);

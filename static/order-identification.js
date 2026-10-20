@@ -27,28 +27,18 @@ function orderPayload(fields){
 async function orderEditor(d=null){
  try{
  const fields=await orderFields(),editing=!!d;
- const trigger=document.activeElement;
+ const companySelect=await clientSelect('order-client-id',d?.client_id||null);
  modal(editing?'Modifier la fiche commande':'Créer un dossier de commande',
   '<p class="modal-desc">Une commande, un dossier. Les informations peuvent être complétées au fur et à mesure.</p>'+
   '<form id="order-form"><div class="order-field-grid">'+fields.map(f=>orderFieldHtml(f,d)).join('')+
-  (editing?'<div class="field order-field-wide"><label for="order-status">Statut du dossier</label><select id="order-status">'+['À compléter','En cours','En validation','Clôturé'].map(s=>'<option'+(s===d.status?' selected':'')+'>'+e(s)+'</option>').join('')+'</select></div>':'')+
+  companySelect+(editing?'<div class="field order-field-wide"><label for="order-status">Statut du dossier</label><select id="order-status">'+['À compléter','En cours','En validation','Clôturé'].map(s=>'<option'+(s===d.status?' selected':'')+'>'+e(s)+'</option>').join('')+'</select></div>':'')+
   '</div><p id="order-error" class="error" role="alert" hidden></p><div class="modal-actions"><button type="button" class="secondary" id="order-cancel">Annuler</button><button type="submit" class="primary">'+icon(editing?'check':'plus')+(editing?' Enregistrer':' Créer le dossier')+'</button></div></form>',true);
- const dialog=overlay.querySelector('[role="dialog"]');
- const onKey=event=>{
-  if(event.key==='Escape'){event.preventDefault();closeModal();trigger?.focus();return}
-  if(event.key!=='Tab')return;
-  const controls=[...dialog.querySelectorAll('button,input,select,textarea')].filter(el=>!el.disabled);
-  const first=controls[0],last=controls[controls.length-1];
-  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
-  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
- };
- dialog.addEventListener('keydown',onKey);
- overlay.querySelector('#order-cancel').onclick=()=>{closeModal();trigger?.focus()};
- overlay.querySelector('#order-name').focus();
+ bindClientChoice('order');
+ overlay.querySelector('#order-cancel').onclick=closeModal;
  overlay.querySelector('#order-form').onsubmit=async event=>{
   event.preventDefault();const button=event.target.querySelector('[type="submit"]');button.disabled=true;
   const error=overlay.querySelector('#order-error');error.hidden=true;
-  const payload=orderPayload(fields);if(editing)payload.status=val('order-status');
+  const payload=orderPayload(fields);payload.client_id=val('order-client-id')||null;if(editing)payload.status=val('order-status');
   try{
    const saved=await api('/api/launches'+(editing?'/'+encodeURIComponent(d.id):''),{method:editing?'PATCH':'POST',body:JSON.stringify(payload)});
    if(editing&&state.detail?.id===saved.id)state.detail={...state.detail,...saved};
@@ -79,14 +69,23 @@ async function orderListPage(){
  if(state.view!=='launches')return;
  mount('<div class="page-heading"><div><h1 class="page-title">Commandes</h1><p class="page-lead">Un dossier par commande, avec ses quatre sous-dossiers.</p></div>'+
  (can('launch.create')?'<button type="button" class="primary" id="create-launch">'+icon('plus')+' Nouveau dossier</button>':'')+'</div>'+
- '<div class="toolbar"><label class="searchbar">'+icon('search')+'<input type="search" id="order-search" aria-label="Rechercher une commande" placeholder="Commande, client, atelier…" value="'+e(state.query)+'"></label><span id="order-count" role="status" aria-live="polite" class="muted small"></span></div><div class="panel" id="orders-table"></div>','Commandes');
+ '<div class="toolbar"><label class="searchbar">'+icon('search')+'<input type="search" id="order-search" aria-label="Rechercher une commande" placeholder="Commande, client, atelier…" value="'+e(state.query)+'"></label><span id="order-count" role="status" aria-live="polite" class="muted small"></span></div>'+
+ (state.clientFilter?'<div class="toolbar" role="status"><span class="tag">Client : '+e(state.clientFilter.name)+'</span><button type="button" class="secondary tiny" id="clear-client-filter">Afficher toutes les commandes</button></div>':'')+
+ '<div class="panel" id="orders-table"></div>','Commandes');
  const render=()=>{
   const term=state.query.trim().toLocaleLowerCase('fr');
-  const rows=state.launches.filter(d=>[d.name,d.order_ref,d.client_name,d.orli_ref,...Object.values(d.identification||{})].join(' ').toLocaleLowerCase('fr').includes(term));
+  const rows=state.launches.filter(d=>
+   (!state.clientFilter || d.client_id===state.clientFilter.id)&&
+   [d.name,d.order_ref,d.client_name,d.orli_ref,...Object.values(d.identification||{})].join(' ').toLocaleLowerCase('fr').includes(term));
   const host=app.querySelector('#orders-table');host.innerHTML=orderTable(rows);
   app.querySelector('#order-count').textContent=rows.length+' dossier'+(rows.length===1?'':'s');
   host.querySelectorAll('[data-order-open]').forEach(button=>button.addEventListener('click',()=>openLaunch(button.dataset.orderOpen,'jaune').catch(showErr)));
  };
  app.querySelector('#order-search').addEventListener('input',event=>{state.query=event.target.value;render()});
+ app.querySelector('#clear-client-filter')?.addEventListener('click',()=>{
+  state.clientFilter=null;
+  state.query='';
+  orderListPage().catch(showErr);
+ });
  app.querySelector('#create-launch')?.addEventListener('click',()=>orderEditor());render();
 }

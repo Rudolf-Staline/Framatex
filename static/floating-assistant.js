@@ -8,7 +8,9 @@ let floatingAssistantPriorFocus=null;
 const FLOATING_QUESTIONS=[
   ['Comment déposer un document ?','Déposer un document','file'],
   ['Comment retrouver un problème déjà résolu ?','Trouver une solution déjà utilisée','book'],
-  ['Comment consulter les procédures ?','Consulter une procédure','search']
+  ['Comment consulter les procédures ?','Consulter une procédure','search'],
+  ['Comment inscrire un client et le rattacher à une commande ?','Gérer les clients','users'],
+  ['Recherche une commande ou un document','Rechercher une pièce','search']
 ];
 const FLOATING_CHAT_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.4a8.2 8.2 0 0 1-8.6 8.2 9.5 9.5 0 0 1-3.5-.8L3.5 20l1.3-4.2a8.3 8.3 0 1 1 15.2-4.4Z"/><path d="M8 11.6h8M8 14.5h5.2"/></svg>';
 const FLOATING_SEND_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"/></svg>';
@@ -73,7 +75,7 @@ function buildFloatingAssistant(){
 function syncFloatingAssistant(){
  const host=floatingAssistantHost();
  if(!host)return;
- if(!state.me){
+ if(!state.me || state.me.client_account){
    if(floatingAssistantOpen)closeFloatingAssistant(false);
    floatingAssistantMessages=[];
    floatingAssistantBusy=false;
@@ -142,6 +144,7 @@ function floatingAssistantMessageMarkup(item,index){
   '<p>'+e(item.text)+'</p>'+
   (isBot&&item.response?.source?'<small>'+e(item.response.source)+'</small>':'')+
   (isBot&&item.response?.sources?.length?rexSourceButtons(item.response.sources):'')+
+  (isBot&&item.response?.results?.length?'<div class="floating-assistant-results">'+item.response.results.map((r,j)=>'<button type="button" data-floating-result="'+index+'-'+j+'">'+icon('folder')+'<span><strong>'+e(r.label)+'</strong><small>'+e(r.description||'Ouvrir le dossier')+'</small></span>'+icon('arrow')+'</button>').join('')+'</div>':'')+
   follow+'</div></div>';
 }
 function paintFloatingAssistant(){
@@ -175,6 +178,13 @@ function paintFloatingAssistant(){
   ...(floatingAssistantBusy?['<div class="floating-assistant-typing" role="status">Recherche dans l’aide et les fiches accessibles…</div>']:[])
  ].join('');
  chat.querySelectorAll('[data-floating-question]').forEach(button=>button.addEventListener('click',()=>askFloatingAssistant(FLOATING_QUESTIONS[+button.dataset.floatingQuestion][0])));
+ chat.querySelectorAll('[data-floating-result]').forEach(button=>button.addEventListener('click',async()=>{
+   const [i,j]=button.dataset.floatingResult.split('-').map(Number);
+   const target=floatingAssistantMessages[i]?.response?.results?.[j];
+   if(!target?.launch_id)return;
+   closeFloatingAssistant(false);
+   try{await openLaunch(target.launch_id,target.folder||'jaune')}catch(err){showErr(err)}
+ }));
  chat.querySelectorAll('[data-floating-destination]').forEach(button=>button.addEventListener('click',async()=>{
    const response=floatingAssistantMessages[+button.dataset.floatingDestination]?.response;
    if(!response?.destination)return;

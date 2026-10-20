@@ -25,7 +25,7 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
                         Column('version', String(80), primary_key=True),
                         Column('applied_at', String(50), nullable=False), extend_existing=True)
 
-REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_global_library', '0005_experience_controls', '0006_order_identification')
+REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_global_library', '0005_experience_controls', '0006_order_identification', '0007_client_portal')
 
 
 def _versions(conn):
@@ -106,6 +106,17 @@ def migrate():
             apply_to_connection(conn)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0006_order_identification','d':datetime.now(timezone.utc).isoformat()})
+        if '0007_client_portal' not in done:
+            for table_name in ('clients', 'client_contacts'):
+                Base.metadata.tables[table_name].create(bind=conn, checkfirst=True)
+            for table_name in ('launches', 'client_publications'):
+                columns = {c['name'] for c in inspect(conn).get_columns(table_name)}
+                if 'client_id' not in columns:
+                    conn.execute(text(f'ALTER TABLE {table_name} ADD COLUMN client_id VARCHAR(36) REFERENCES clients(id)'))
+            conn.execute(text('CREATE INDEX IF NOT EXISTS ix_launches_client_id ON launches (client_id)'))
+            conn.execute(text('CREATE INDEX IF NOT EXISTS ix_client_publications_client_id ON client_publications (client_id)'))
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0007_client_portal','d':datetime.now(timezone.utc).isoformat()})
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
         cols = {c['name'] for c in inspect(conn).get_columns('launches')}
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():

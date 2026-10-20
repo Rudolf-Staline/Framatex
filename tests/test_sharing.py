@@ -45,6 +45,20 @@ def launch(c,name='Tissus · lancement contrôle',client='Client-test'):
     return r.json()['id']
 
 
+def register_client(c, name):
+    """Création d'une société réelle du répertoire avant toute publication externe."""
+    r = c.post('/api/clients', json={'name': name}, headers=H)
+    assert r.status_code == 201, r.text
+    return r.json()['id']
+
+
+def bind_client(c, lid, name='Client partenaire'):
+    client_id = register_client(c, name)
+    linked = c.patch(f'/api/launches/{lid}', json={'client_id': client_id}, headers=H)
+    assert linked.status_code == 200, linked.text
+    return client_id
+
+
 def document(c,lid,folder='jaune',kind='Fiche technique',title='Fiche de composition'):
     r=c.post(f'/api/launches/{lid}/documents',data={'folder':folder,'title':title,'doc_type':kind},
              files={'file':('fiche.txt',b'Document fictif approuve','text/plain')},headers=H)
@@ -59,6 +73,8 @@ def test_client_publication_approval_withdrawal_staleness():
         d=document(c,lid)
         url=f'/api/launches/{lid}/client-publications'
         payload={'document_version_id':d['latest']['id'],'reason':'Transmission technique explicitement approuvee'}
+        assert c.post(url,json=payload,headers=H).status_code==422  # un client du répertoire est obligatoire
+        bind_client(c, lid)
         assert c.post(url,json=payload,headers=H).status_code==409  # validation obligatoire
         reviewed=c.post(f'/api/documents/{d["id"]}/reviews',json={'decision':'approved'},headers=H)
         assert reviewed.status_code==201,reviewed.text
@@ -87,6 +103,7 @@ def test_client_safe_types_and_changing_client():
     with TestClient(app) as c:
         setup();login(c,0)
         lid=launch(c)
+        bind_client(c, lid)
         private=document(c,lid,kind='Fiche de prix',title='Prix matière interne')
         c.post(f'/api/documents/{private["id"]}/reviews',json={'decision':'approved'},headers=H)
         endpoint=f'/api/launches/{lid}/client-publications'
@@ -95,7 +112,8 @@ def test_client_safe_types_and_changing_client():
         c.post(f'/api/documents/{d["id"]}/reviews',json={'decision':'approved'},headers=H)
         p=c.post(endpoint,json={'document_version_id':d['latest']['id'],'reason':'Rapport technique approuvé pour partage'},headers=H)
         assert p.status_code==201,p.text
-        changed=c.patch(f'/api/launches/{lid}',json={'client_name':'Nouveau client fictif'},headers=H)
+        nouveau_client_id = register_client(c, 'Nouveau client fictif')
+        changed=c.patch(f'/api/launches/{lid}',json={'client_id':nouveau_client_id},headers=H)
         assert changed.status_code==200
         assert c.get(endpoint).json()['items'][0]['client_changed'] is True
         assert c.get(f'/api/launches/{lid}/client-preview').json()['documents']==[]

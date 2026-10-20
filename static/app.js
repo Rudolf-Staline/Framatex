@@ -79,10 +79,21 @@ function showErr(err){toast(err.message||String(err))}
 function can(action,folder=null){return !!state.me?.admin||state.me?.permissions?.some(p=>p.action===action&&(folder?p.folder===null||p.folder===folder:p.folder===null))}
 function statusTag(s){return `<span class="tag ${s==='À compléter'?'orange':s==='Clôturé'?'green':s==='En validation'?'blue':''}">${e(s)}</span>`}
 function topbar(label){
+ if(state.me?.client_account)return `<header class="topbar"><span class="client-topbar-label">ESPACE CLIENT</span><div class="topbar-actions"><span class="lc-top-username">${e(state.me.name)}</span></div></header>`;
  return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher une commande">${icon('search')}<span>Rechercher une commande…</span></button><div class="topbar-actions"><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
 }
 function sidebar(){
- const primary=[...(can('launch.read')?[['launches','folder','Commandes']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s))?[['controls','shield','Vérifications']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s)&&can('rex.read',s))?[['rex','book','Mémoire métier']]:[])];
+ if(state.me?.client_account){
+   const active=state.view==='portal'||state.view==='portal-detail';
+   return `<aside class="sidebar sidebar-rail sidebar-light" aria-label="Navigation client">
+    <div class="rail-brand"><div class="rail-logo" aria-hidden="true">${icon('folder')}</div><span class="rail-brand-name">Framatex</span></div>
+    <button type="button" class="mobile-navigation-toggle" id="mobile-navigation-toggle" aria-expanded="false" aria-controls="framat-navigation">${icon('grid')} Menu</button>
+    <div class="rail-navigation-content" id="framat-navigation">
+    <nav class="sidebar-nav rail-primary"><button class="nav-btn ${active?'active':''}" data-view="portal" aria-current="${active?'page':'false'}">${icon('folder')}<span class="nav-text">Mes dossiers</span></button></nav>
+    <div class="sidebar-bottom rail-account"><div class="user"><span class="user-name">${e(state.me.name)}</span></div><button type="button" class="logout" id="logout">${icon('out')}<span>Quitter</span></button></div></div></aside>`;
+ }
+
+ const primary=[...(can('launch.read')?[['launches','folder','Commandes']]:[]),...(state.me?.admin?[['clients','users','Clients']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s))?[['controls','shield','Vérifications']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s)&&can('rex.read',s))?[['rex','book','Mémoire métier']]:[])];
  const tools=[['pilot','info','Aide & retours'],...(state.me.admin?[['orli','file','Imports ORLI'],['admin','users','Administration']]:[])];
  const active=view=>state.view===view||(state.view==='detail'&&view==='launches');
  const items=list=>list.map(([view,ico,label])=>{
@@ -103,11 +114,14 @@ function sidebar(){
 function mount(html,label){
  const dossierTheme=['dossier','controls','rex'].includes(state.view)&&['jaune','rose','bleu','vert'].includes(state.dossierFolder)?state.dossierFolder:null;
  app.innerHTML=`<div class="app-shell"${state.view==='detail'&&['jaune','rose','bleu','vert'].includes(state.folder)?` data-folder-theme="${state.folder}"`:''}${dossierTheme?` data-dossier-theme="${dossierTheme}"`:''}>${sidebar()}<div class="main">${topbar(label)}<main class="content">${html}</main></div></div>`;
- app.querySelectorAll('[data-view]').forEach(n=>n.addEventListener('click',()=>navigate(n.dataset.view)));
+ app.querySelectorAll('[data-view]').forEach(n=>n.addEventListener('click',()=>{
+  if(n.dataset.view==='launches'||n.dataset.view==='home')state.clientFilter=null;
+  navigate(n.dataset.view);
+ }));
  app.querySelector('.rail-management')?.addEventListener('toggle',event=>{state.sidebarAdminOpen=event.currentTarget.open});
  app.querySelector('#mobile-navigation-toggle')?.addEventListener('click',event=>{const button=event.currentTarget;const open=button.getAttribute('aria-expanded')!=='true';button.setAttribute('aria-expanded',String(open));app.querySelector('.sidebar')?.classList.toggle('is-mobile-open',open)});
  syncFloatingAssistant();
- app.querySelector('#global-search')?.addEventListener('click',async()=>{await navigate('launches');app.querySelector('#order-search')?.focus()});
+ app.querySelector('#global-search')?.addEventListener('click',async()=>{state.clientFilter=null;await navigate('launches');app.querySelector('#order-search')?.focus()});
 
  app.querySelector('#logout').addEventListener('click',async()=>{try{await api('/api/auth/logout',{method:'POST'})}catch{}state.me=null;state.detail=null;renderLogin()});
 }
@@ -122,7 +136,7 @@ function renderLogin(){overlay.innerHTML='';syncFloatingAssistant();app.innerHTM
       <button class="primary" type="submit">Se connecter</button>
     </form>
   </div></section></main></div>`;
-  app.querySelector('#login-form').addEventListener('submit',async evt=>{evt.preventDefault();const btn=evt.target.querySelector('button');btn.disabled=true;try{state.me=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:app.querySelector('#email').value,password:app.querySelector('#password').value})});state.me=await api('/api/auth/me');if(!(await paperOpenDeepLink()))await navigate('launches')}catch(err){app.querySelector('#login-error').innerHTML=`<div class="error">${e(err.message)}</div>`}finally{btn.disabled=false}})
+  app.querySelector('#login-form').addEventListener('submit',async evt=>{evt.preventDefault();const btn=evt.target.querySelector('button');btn.disabled=true;try{state.me=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:app.querySelector('#email').value,password:app.querySelector('#password').value})});state.me=await api('/api/auth/me');if(state.me.client_account)await navigate('portal');else if(!(await paperOpenDeepLink()))await navigate('launches')}catch(err){app.querySelector('#login-error').innerHTML=`<div class="error">${e(err.message)}</div>`}finally{btn.disabled=false}})
 }
 function tableLaunches(list){if(!list.length)return `<div class="empty"><div class="empty-icon">${icon('folder')}</div><strong>Aucun dossier pour l’instant</strong>Créez votre premier lancement de fabrication pour démarrer.</div>`;return `<div class="table-scroll"><table><thead><tr><th>Lancement</th><th>Client</th><th>Référence ORLI</th><th>Statut</th><th>Créé le</th><th></th></tr></thead><tbody>${list.map(l=>`<tr class="item-row" data-launch="${e(l.id)}" tabindex="0" aria-label="Ouvrir ${e(l.name)}"><td><div class="row-title">${e(l.name)}</div><div class="row-sub">${e(l.order_ref||'Aucune référence de commande')}</div></td><td>${e(l.client_name||'—')}</td><td>${l.orli_ref?`<span class="tag">${e(l.orli_ref)}</span>`:'<span class="muted small">Non attribuée</span>'}</td><td>${statusTag(l.status)}</td><td class="small">${niceDate(l.created_at)}</td><td>${icon('arrow')}</td></tr>`).join('')}</tbody></table></div>`}
 function bindLaunchRows(){
@@ -285,8 +299,8 @@ function renderDetailToolWorkspace(){
   ).join('')+'</optgroup>'
  ).join('');
  const panels=tools.map(([id,label,ico,description,renderer])=>
-  '<section id="detail-tool-'+id+'" class="detail-tool-panel" data-detail-tool-panel="'+id+'" role="region" aria-label="'+e(label)+'"'+(active===id?'':' hidden')+'>'+
-   (renderer()||'<div class="detail-tool-unavailable">Aucune donnée accessible pour cette fonctionnalité.</div>')+
+  '<section id="detail-tool-'+id+'" class="detail-tool-panel" data-detail-tool-panel="'+id+'" role="region" aria-label="'+e(label)+'"'+(active===id?' data-rendered="true"':' hidden')+'>'+
+   (active===id?(renderer()||'<div class="detail-tool-unavailable">Aucune donnée accessible pour cette fonctionnalité.</div>'):'')+
   '</section>'
  ).join('');
  return '<section class="detail-tool-workspace" id="detail-tool-workspace" aria-label="Outils du lancement">'+
@@ -294,6 +308,13 @@ function renderDetailToolWorkspace(){
    '<label class="detail-tool-picker" for="detail-tool-select"><span>Fonctionnalité</span><select id="detail-tool-select">'+groups+'</select></label>'+
   '</div><div class="detail-tool-panel-container">'+panels+'</div></section>';
 }
+const DETAIL_TOOL_BINDERS={
+ quality:()=>bindQuality(),completeness:()=>bindCompleteness(),workflow:()=>bindWorkflow(),
+ intake:()=>bindIntake(),paper:()=>bindPaper(),spec:()=>bindSpec(),mail:()=>bindMail(),
+ sim:()=>bindImpactSimulation(),orli:()=>bindOrliReconciliation(),
+ materials:()=>bindMaterialReport(),approvals:()=>bindApprovals(),sharing:()=>bindSharing()
+};
+function bindActiveDetailTool(id){DETAIL_TOOL_BINDERS[id]?.()}
 function selectDetailTool(id){
  const chosen=DETAIL_TOOL_GROUPS.flatMap(group=>group.tools).find(tool=>tool[0]===id);
  if(!chosen)return;
@@ -302,6 +323,12 @@ function selectDetailTool(id){
  state.detailTool=id;
  const select=container.querySelector('#detail-tool-select');
  if(select)select.value=id;
+ const target=container.querySelector('[data-detail-tool-panel="'+id+'"]');
+ if(target&&!target.dataset.rendered){
+  target.innerHTML=chosen[4]()||'<div class="detail-tool-unavailable">Aucune donnée accessible pour cette fonctionnalité.</div>';
+  target.dataset.rendered='true';
+  bindActiveDetailTool(id);
+ }
  container.querySelectorAll('[data-detail-tool-panel]').forEach(panel=>{
   panel.hidden=panel.dataset.detailToolPanel!==id;
  });
@@ -377,11 +404,43 @@ function renderDetail(){
  app.querySelector('#upload-doc')?.addEventListener('click',openUpload);
  app.querySelectorAll('[data-history]').forEach(el=>el.addEventListener('click',()=>openVersions(el.dataset.history)));
  app.querySelectorAll('[data-download]').forEach(el=>el.addEventListener('click',()=>download(el.dataset.download,+el.dataset.ver)));
- bindCompleteness();bindWorkflow();bindQuality();bindIntake();bindPaper();bindSpec();bindMail();bindImpactSimulation();bindOrliReconciliation();bindMaterialReport();bindApprovals();bindSharing();
+ const initialTool=DETAIL_TOOL_GROUPS.flatMap(group=>group.tools).find(tool=>tool[0]===state.detailTool)||DETAIL_TOOL_GROUPS[0].tools[0];
+ bindActiveDetailTool(initialTool[0]);
  bindDetailToolWorkspace();
 }
-function modal(title,content,wide=false){overlay.innerHTML=`<div class="modal-scrim"><div class="modal ${wide?'wide':''}" role="dialog" aria-modal="true" aria-label="${e(title)}"><div class="modal-head"><h2>${e(title)}</h2><button id="close-modal" aria-label="Fermer">${icon('x')}</button></div><div class="modal-body">${content}</div></div></div>`;overlay.querySelector('#close-modal').onclick=closeModal;overlay.querySelector('.modal-scrim').addEventListener('click',evt=>{if(evt.target.classList.contains('modal-scrim'))closeModal()})}
-function closeModal(){overlay.innerHTML=''}
+let modalReturnFocus=null;
+function modal(title,content,wide=false){
+ // Conserver le déclencheur d'origine quand un formulaire ouvre un second dialogue.
+ if(!overlay.querySelector('[role="dialog"]'))modalReturnFocus=document.activeElement;
+ overlay.innerHTML=`<div class="modal-scrim"><div class="modal ${wide?'wide':''}" role="dialog" aria-modal="true" aria-label="${e(title)}"><div class="modal-head"><h2>${e(title)}</h2><button type="button" id="close-modal" aria-label="Fermer">${icon('x')}</button></div><div class="modal-body">${content}</div></div></div>`;
+ const dialog=overlay.querySelector('[role="dialog"]');
+ overlay.querySelector('#close-modal').onclick=closeModal;
+ overlay.querySelector('.modal-scrim').addEventListener('click',evt=>{
+  if(evt.target.classList.contains('modal-scrim'))closeModal();
+ });
+ dialog.addEventListener('keydown',event=>{
+  if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closeModal();return}
+  if(event.key!=='Tab')return;
+  const controls=[...dialog.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+   .filter(el=>el.getClientRects().length>0);
+  if(!controls.length){event.preventDefault();dialog.focus();return}
+  const first=controls[0],last=controls[controls.length-1];
+  if(event.shiftKey&&(document.activeElement===first||!dialog.contains(document.activeElement))){
+   event.preventDefault();last.focus();
+  }else if(!event.shiftKey&&(document.activeElement===last||!dialog.contains(document.activeElement))){
+   event.preventDefault();first.focus();
+  }
+ });
+ (dialog.querySelector('input:not([disabled]):not([type="hidden"]),textarea:not([disabled]),select:not([disabled])')||
+  dialog.querySelector('#close-modal')).focus();
+}
+function closeModal(){
+ if(!overlay.querySelector('[role="dialog"]'))return;
+ overlay.innerHTML='';
+ const previous=modalReturnFocus;
+ modalReturnFocus=null;
+ if(previous?.isConnected&&typeof previous.focus==='function')previous.focus();
+}
 function val(id){return overlay.querySelector('#'+id)?.value.trim()||''}
 function openNewLaunch(){return orderEditor()}
 function openEditLaunch(){return orderEditor(state.detail)}
@@ -424,7 +483,7 @@ function openNewRole(){
 }
 function openNewUser(){modal('Créer un collaborateur',`<form id="user-form"><div class="field"><label>Nom complet</label><input id="u-name" required maxlength="120" /></div><div class="field"><label>Email</label><input id="u-email" type="email" required maxlength="254" /></div><div class="field"><label>Mot de passe initial (12 caractères minimum)</label><input id="u-pass" type="password" minlength="12" required autocomplete="new-password" /></div><div class="field"><label>Rôle</label><select id="u-role">${state.roles.map(r=>`<option value="${e(r.id)}">${e(r.name)}</option>`).join('')}</select></div><div class="modal-actions"><button type="button" class="secondary" id="cancel-modal">Annuler</button><button class="primary" type="submit">${icon('check')} Créer le compte</button></div></form>`);overlay.querySelector('#cancel-modal').onclick=closeModal;overlay.querySelector('#user-form').onsubmit=async evt=>{evt.preventDefault();try{await api('/api/admin/users',{method:'POST',body:JSON.stringify({name:val('u-name'),email:val('u-email'),password:overlay.querySelector('#u-pass').value,role_ids:[val('u-role')]})});closeModal();toast('Compte collaborateur créé');await admin()}catch(err){showErr(err)}}}
 async function auditView(){state.view='audit';state.audit=await api('/api/admin/audit');mount(`<div class="page-heading"><div><div class="page-kicker">${icon('activity')} TRAÇABILITÉ</div><h1 class="page-title">Journal d’activité</h1><p class="page-lead">100 dernières opérations sensibles.</p></div></div><div class="panel table-scroll"><table><thead><tr><th>Action</th><th>Utilisateur</th><th>Élément</th><th>Date</th></tr></thead><tbody>${state.audit.map(x=>`<tr><td class="row-title">${e(x.action)}</td><td class="audit-item">${e((x.actor_id||'—').slice(0,12))}</td><td class="audit-item">${e(x.target_type)} · ${e(x.target_id.slice(0,12))}</td><td class="small">${niceDate(x.occurred_at)}</td></tr>`).join('')}</tbody></table></div>`,'Journal d’activité')}
-async function navigate(view){try{if(view==='dossier'||view==='home')await launchList();else if(view==='controls')await libraryControlsPage();else if(view==='rex')await rexPage();else if(view==='launches')await launchList();else if(view==='actions')await workspaceActions();else if(view==='assistant')openFloatingAssistant();else if(view==='pilot')await pilotPage();else if(view==='orli'&&state.me.admin)await orliAdmin();else if(view==='admin'&&state.me.admin)await admin();else if(view==='audit'&&state.me.admin)await auditView()}catch(err){showErr(err)}}
+async function navigate(view){try{if(view==='dossier'||view==='home')await launchList();else if(view==='controls')await libraryControlsPage();else if(view==='rex')await rexPage();else if(view==='launches')await launchList();else if(view==='clients'&&state.me.admin)await clientsPage();else if(view==='portal'&&state.me.client_account)await clientPortal();else if(view==='actions')await workspaceActions();else if(view==='assistant')openFloatingAssistant();else if(view==='pilot')await pilotPage();else if(view==='orli'&&state.me.admin)await orliAdmin();else if(view==='admin'&&state.me.admin)await admin();else if(view==='audit'&&state.me.admin)await auditView()}catch(err){showErr(err)}}
 window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 // Partie intégrée dans app.js lors de la construction du MVP 0.2.
 function phaseLabel(code){return {'preparation':'Préparation','approvisionnement':'Approvisionnement','fabrication':'Fabrication','expedition':'Expédition','cloture':'Clôture'}[code]||code}
@@ -490,4 +549,4 @@ function createCompletenessRule(profileId){
  overlay.querySelector('#rule-form').onsubmit=async ev=>{ev.preventDefault();try{await api(`/api/admin/completeness/profiles/${profileId}/rules`,{method:'POST',body:JSON.stringify({title:val('r-title'),folder:val('r-folder'),document_type:val('r-doctype'),due_phase:val('r-phase'),requires_validation:val('r-review')==='yes',guidance:val('r-guidance')})});closeModal();toast('Règle ajoutée');await admin()}catch(err){showErr(err)}};
 }
 
-(async function init(){if(document.readyState!=='complete')await new Promise(resolve=>document.addEventListener('DOMContentLoaded',resolve,{once:true}));try{state.me=await api('/api/auth/me');if(!(await paperOpenDeepLink()))await navigate('home')}catch{renderLogin()}})();
+(async function init(){if(document.readyState!=='complete')await new Promise(resolve=>document.addEventListener('DOMContentLoaded',resolve,{once:true}));try{state.me=await api('/api/auth/me');if(state.me.client_account)await navigate('portal');else if(!(await paperOpenDeepLink()))await navigate('home')}catch{renderLogin()}})();
