@@ -198,7 +198,7 @@ async function askFloatingAssistant(question){
  floatingAssistantMessages.push({kind:'user',text:q});
  const input=host.querySelector('#floating-assistant-input');
  const send=host.querySelector('#floating-assistant-send');
- if(input){input.value='';input.style.height='';input.disabled=true}
+ if(input){input.value='';if(input.style)input.style.height='';input.disabled=true}
  if(send)send.disabled=true;
  paintFloatingAssistant();
  const launchId=state.view==='detail'&&state.detail?.id?state.detail.id:null;
