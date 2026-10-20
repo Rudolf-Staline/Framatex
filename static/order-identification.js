@@ -27,11 +27,12 @@ function orderPayload(fields){
 async function orderEditor(d=null){
  try{
  const fields=await orderFields(),editing=!!d;
+ const companySelect=await clientSelect('order-client-id',d?.client_id||null);
  const trigger=document.activeElement;
  modal(editing?'Modifier la fiche commande':'Créer un dossier de commande',
   '<p class="modal-desc">Une commande, un dossier. Les informations peuvent être complétées au fur et à mesure.</p>'+
   '<form id="order-form"><div class="order-field-grid">'+fields.map(f=>orderFieldHtml(f,d)).join('')+
-  (editing?'<div class="field order-field-wide"><label for="order-status">Statut du dossier</label><select id="order-status">'+['À compléter','En cours','En validation','Clôturé'].map(s=>'<option'+(s===d.status?' selected':'')+'>'+e(s)+'</option>').join('')+'</select></div>':'')+
+  companySelect+(editing?'<div class="field order-field-wide"><label for="order-status">Statut du dossier</label><select id="order-status">'+['À compléter','En cours','En validation','Clôturé'].map(s=>'<option'+(s===d.status?' selected':'')+'>'+e(s)+'</option>').join('')+'</select></div>':'')+
   '</div><p id="order-error" class="error" role="alert" hidden></p><div class="modal-actions"><button type="button" class="secondary" id="order-cancel">Annuler</button><button type="submit" class="primary">'+icon(editing?'check':'plus')+(editing?' Enregistrer':' Créer le dossier')+'</button></div></form>',true);
  const dialog=overlay.querySelector('[role="dialog"]');
  const onKey=event=>{
@@ -43,12 +44,13 @@ async function orderEditor(d=null){
   else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
  };
  dialog.addEventListener('keydown',onKey);
+ bindClientChoice('order');
  overlay.querySelector('#order-cancel').onclick=()=>{closeModal();trigger?.focus()};
  overlay.querySelector('#order-name').focus();
  overlay.querySelector('#order-form').onsubmit=async event=>{
   event.preventDefault();const button=event.target.querySelector('[type="submit"]');button.disabled=true;
   const error=overlay.querySelector('#order-error');error.hidden=true;
-  const payload=orderPayload(fields);if(editing)payload.status=val('order-status');
+  const payload=orderPayload(fields);payload.client_id=val('order-client-id')||null;if(editing)payload.status=val('order-status');
   try{
    const saved=await api('/api/launches'+(editing?'/'+encodeURIComponent(d.id):''),{method:editing?'PATCH':'POST',body:JSON.stringify(payload)});
    if(editing&&state.detail?.id===saved.id)state.detail={...state.detail,...saved};
