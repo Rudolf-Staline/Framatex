@@ -83,7 +83,7 @@ function topbar(label){
 }
 function sidebar(){
  const primary=[['dossier','folder','Dossier Jaune'],...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s))?[['controls','shield','Vérifications']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s)&&can('rex.read',s))?[['rex','book','Mémoire métier']]:[])];
- const tools=[...(state.me.admin?[['orli','file','Imports ORLI'],['admin','users','Administration']]:[])];
+ const tools=[['pilot','info','Aide & retours'],...(state.me.admin?[['orli','file','Imports ORLI'],['admin','users','Administration']]:[])];
  const active=view=>state.view===view||(state.view==='detail'&&view==='launches');
  const dossierOpen=!!state.sidebarDossierOpen;
  const subfolders=[['jaune','Jaune'],['rose','Rose'],['bleu','Bleu'],['vert','Vert']];
