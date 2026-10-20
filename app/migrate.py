@@ -25,7 +25,7 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
                         Column('version', String(80), primary_key=True),
                         Column('applied_at', String(50), nullable=False), extend_existing=True)
 
-REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_global_library', '0005_experience_controls', '0006_order_identification')
+REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_global_library', '0005_experience_controls', '0006_order_identification', '0007_client_portal')
 
 
 def _versions(conn):
