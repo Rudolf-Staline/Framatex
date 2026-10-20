@@ -114,11 +114,14 @@ function sidebar(){
 function mount(html,label){
  const dossierTheme=['dossier','controls','rex'].includes(state.view)&&['jaune','rose','bleu','vert'].includes(state.dossierFolder)?state.dossierFolder:null;
  app.innerHTML=`<div class="app-shell"${state.view==='detail'&&['jaune','rose','bleu','vert'].includes(state.folder)?` data-folder-theme="${state.folder}"`:''}${dossierTheme?` data-dossier-theme="${dossierTheme}"`:''}>${sidebar()}<div class="main">${topbar(label)}<main class="content">${html}</main></div></div>`;
- app.querySelectorAll('[data-view]').forEach(n=>n.addEventListener('click',()=>navigate(n.dataset.view)));
+ app.querySelectorAll('[data-view]').forEach(n=>n.addEventListener('click',()=>{
+  if(n.dataset.view==='launches'||n.dataset.view==='home')state.clientFilter=null;
+  navigate(n.dataset.view);
+ }));
  app.querySelector('.rail-management')?.addEventListener('toggle',event=>{state.sidebarAdminOpen=event.currentTarget.open});
  app.querySelector('#mobile-navigation-toggle')?.addEventListener('click',event=>{const button=event.currentTarget;const open=button.getAttribute('aria-expanded')!=='true';button.setAttribute('aria-expanded',String(open));app.querySelector('.sidebar')?.classList.toggle('is-mobile-open',open)});
  syncFloatingAssistant();
- app.querySelector('#global-search')?.addEventListener('click',async()=>{await navigate('launches');app.querySelector('#order-search')?.focus()});
+ app.querySelector('#global-search')?.addEventListener('click',async()=>{state.clientFilter=null;await navigate('launches');app.querySelector('#order-search')?.focus()});
 
  app.querySelector('#logout').addEventListener('click',async()=>{try{await api('/api/auth/logout',{method:'POST'})}catch{}state.me=null;state.detail=null;renderLogin()});
 }
@@ -296,8 +299,8 @@ function renderDetailToolWorkspace(){
   ).join('')+'</optgroup>'
  ).join('');
  const panels=tools.map(([id,label,ico,description,renderer])=>
-  '<section id="detail-tool-'+id+'" class="detail-tool-panel" data-detail-tool-panel="'+id+'" role="region" aria-label="'+e(label)+'"'+(active===id?'':' hidden')+'>'+
-   (renderer()||'<div class="detail-tool-unavailable">Aucune donnée accessible pour cette fonctionnalité.</div>')+
+  '<section id="detail-tool-'+id+'" class="detail-tool-panel" data-detail-tool-panel="'+id+'" role="region" aria-label="'+e(label)+'"'+(active===id?' data-rendered="true"':' hidden')+'>'+
+   (active===id?(renderer()||'<div class="detail-tool-unavailable">Aucune donnée accessible pour cette fonctionnalité.</div>'):'')+
   '</section>'
  ).join('');
  return '<section class="detail-tool-workspace" id="detail-tool-workspace" aria-label="Outils du lancement">'+
@@ -305,6 +308,13 @@ function renderDetailToolWorkspace(){
    '<label class="detail-tool-picker" for="detail-tool-select"><span>Fonctionnalité</span><select id="detail-tool-select">'+groups+'</select></label>'+
   '</div><div class="detail-tool-panel-container">'+panels+'</div></section>';
 }
+const DETAIL_TOOL_BINDERS={
+ quality:()=>bindQuality(),completeness:()=>bindCompleteness(),workflow:()=>bindWorkflow(),
+ intake:()=>bindIntake(),paper:()=>bindPaper(),spec:()=>bindSpec(),mail:()=>bindMail(),
+ sim:()=>bindImpactSimulation(),orli:()=>bindOrliReconciliation(),
+ materials:()=>bindMaterialReport(),approvals:()=>bindApprovals(),sharing:()=>bindSharing()
+};
+function bindActiveDetailTool(id){DETAIL_TOOL_BINDERS[id]?.()}
 function selectDetailTool(id){
  const chosen=DETAIL_TOOL_GROUPS.flatMap(group=>group.tools).find(tool=>tool[0]===id);
  if(!chosen)return;
@@ -313,6 +323,12 @@ function selectDetailTool(id){
  state.detailTool=id;
  const select=container.querySelector('#detail-tool-select');
  if(select)select.value=id;
+ const target=container.querySelector('[data-detail-tool-panel="'+id+'"]');
+ if(target&&!target.dataset.rendered){
+  target.innerHTML=chosen[4]()||'<div class="detail-tool-unavailable">Aucune donnée accessible pour cette fonctionnalité.</div>';
+  target.dataset.rendered='true';
+  bindActiveDetailTool(id);
+ }
  container.querySelectorAll('[data-detail-tool-panel]').forEach(panel=>{
   panel.hidden=panel.dataset.detailToolPanel!==id;
  });
@@ -388,7 +404,8 @@ function renderDetail(){
  app.querySelector('#upload-doc')?.addEventListener('click',openUpload);
  app.querySelectorAll('[data-history]').forEach(el=>el.addEventListener('click',()=>openVersions(el.dataset.history)));
  app.querySelectorAll('[data-download]').forEach(el=>el.addEventListener('click',()=>download(el.dataset.download,+el.dataset.ver)));
- bindCompleteness();bindWorkflow();bindQuality();bindIntake();bindPaper();bindSpec();bindMail();bindImpactSimulation();bindOrliReconciliation();bindMaterialReport();bindApprovals();bindSharing();
+ const initialTool=DETAIL_TOOL_GROUPS.flatMap(group=>group.tools).find(tool=>tool[0]===state.detailTool)||DETAIL_TOOL_GROUPS[0].tools[0];
+ bindActiveDetailTool(initialTool[0]);
  bindDetailToolWorkspace();
 }
 let modalReturnFocus=null;
