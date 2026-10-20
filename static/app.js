@@ -24,12 +24,13 @@ const ICON = {
   more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
   info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
 };
-function icon(name){return `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[name]||ICON.file}</svg>`}
+const PHOSPHOR_ICONS={shield:'checks',chevron:'caret-down',folder:'folder',file:'file',plus:'plus',search:'magnifying-glass',check:'check-circle',clock:'clock',arrow:'caret-right',pencil:'pencil-simple',x:'x',lock:'lock',info:'info',activity:'arrows-clockwise',grid:'squares-four',users:'users',out:'sign-out',download:'download-simple',upload:'upload-simple',more:'dots-three',settings:'gear-six',book:'book-open-text',chat:'chat-circle-text',warning:'warning-circle',bell:'bell',forward:'arrow-right',sort:'caret-up-down','file-pdf':'file-pdf','file-doc':'file-doc','file-xls':'file-xls','file-image':'file-image'};
+function icon(name){const asset=PHOSPHOR_ICONS[name];return asset?`<svg class="ui-icon" viewBox="0 0 256 256" aria-hidden="true"><use href="/assets/icons/phosphor.svg#${asset}"></use></svg>`:`<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[name]||ICON.file}</svg>`}
 function e(s){return String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function niceDate(value){if(!value)return '—';const s=String(value).trim();const hasZone=/(?:Z|[+-]\d{2}:?\d{2})$/i.test(s);const normalized=/^\d{4}-\d\d-\d\dT/.test(s)&&!hasZone?s+'Z':s;const date=new Date(normalized);if(Number.isNaN(date.getTime()))return '—';return date.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}
 function sizeText(n){return n>=1024*1024?`${(n/1024/1024).toFixed(1)} Mo`:`${Math.max(1,Math.ceil(n/1024))} Ko`}
 const app=document.querySelector('#app'), overlay=document.querySelector('#overlay-root');
-const state={me:null,view:'home',sidebarDossierOpen:false,dossierFolder:'jaune',priorities:null,launches:[],dashboard:null,detail:null,completeness:null,completionProfiles:[],completenessPhases:[{code:'preparation',label:'Préparation'},{code:'approvisionnement',label:'Approvisionnement'},{code:'fabrication',label:'Fabrication'},{code:'expedition',label:'Expédition'},{code:'cloture',label:'Clôture'}],folder:'jaune',roles:[],users:[],audit:[],workflowReviews:[],workflowValues:[],workflowImpacts:[],workflowFields:[],workflowRules:[],qualityReport:null,excelInspections:[],specReport:null,mailReport:null,simGraph:null,simHistory:[],orliReconciliation:null,orliBatches:[],materials:null,approvalOverview:null,clientPublications:null,supplierRequests:null,approvalTemplates:[],approvalRoles:[],notifications:null,query:''};
+const state={me:null,view:'home',sidebarDossierOpen:true,dossierFolder:'jaune',priorities:null,launches:[],dashboard:null,detail:null,completeness:null,completionProfiles:[],completenessPhases:[{code:'preparation',label:'Préparation'},{code:'approvisionnement',label:'Approvisionnement'},{code:'fabrication',label:'Fabrication'},{code:'expedition',label:'Expédition'},{code:'cloture',label:'Clôture'}],folder:'jaune',roles:[],users:[],audit:[],workflowReviews:[],workflowValues:[],workflowImpacts:[],workflowFields:[],workflowRules:[],qualityReport:null,excelInspections:[],specReport:null,mailReport:null,simGraph:null,simHistory:[],orliReconciliation:null,orliBatches:[],materials:null,approvalOverview:null,clientPublications:null,supplierRequests:null,approvalTemplates:[],approvalRoles:[],notifications:null,query:''};
 async function api(path,options={}){
   const headers={'X-Framatex-Request':'1',...options.headers};
   if(options.body && !(options.body instanceof FormData))headers['Content-Type']='application/json';
@@ -43,11 +44,11 @@ function showErr(err){toast(err.message||String(err))}
 function can(action,folder=null){return !!state.me?.admin||state.me?.permissions?.some(p=>p.action===action&&(folder?p.folder===null||p.folder===folder:p.folder===null))}
 function statusTag(s){return `<span class="tag ${s==='À compléter'?'orange':s==='Clôturé'?'green':s==='En validation'?'blue':''}">${e(s)}</span>`}
 function topbar(label){
- return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher un document">${icon('search')}<span>Rechercher un document, une référence ORLI…</span></button><div class="topbar-actions"><button type="button" class="lc-notification-btn" id="top-notifications" title="Notifications" aria-label="Consulter les notifications">${icon('clock')}</button><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
+ return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher un document">${icon('search')}<span>Rechercher un document…</span></button><div class="topbar-actions"><button type="button" class="lc-notification-btn" id="top-notifications" title="Notifications" aria-label="Consulter les notifications">${icon('clock')}</button><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
 }
 function sidebar(){
- const primary=[['dossier','folder','Dossier Jaune'],...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s))?[['controls','shield','Vérifications']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s)&&can('rex.read',s))?[['rex','activity','Mémoire métier']]:[]),['actions','clock','Suivi'],['notifications','info','Notifications']];
- const tools=[['pilot','info','Aide & retours'],...(state.me.admin?[['launches','layers','Anciens lancements'],['orli','file','Imports ORLI'],['admin','users','Administration'],['audit','shield','Journal d’activité']]:[])];
+ const primary=[['dossier','folder','Dossier Jaune'],...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s))?[['controls','shield','Vérifications']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s)&&can('rex.read',s))?[['rex','book','Mémoire métier']]:[]),['notifications','bell','Notifications']];
+ const tools=[['actions','clock','Suivi'],['pilot','info','Aide & retours'],...(state.me.admin?[['launches','layers','Anciens lancements'],['orli','file','Imports ORLI'],['admin','users','Administration'],['audit','shield','Journal d’activité']]:[])];
  const active=view=>state.view===view||(state.view==='detail'&&view==='launches');
  const dossierOpen=!!state.sidebarDossierOpen;
  const subfolders=[['jaune','Jaune'],['rose','Rose'],['bleu','Bleu'],['vert','Vert']];
@@ -55,7 +56,7 @@ function sidebar(){
    if(view==='dossier'){
      return `<div class="dossier-nav-block">
        <button type="button" class="nav-btn ${active(view)?'active':''}" data-view="dossier" title="Dossier Jaune" aria-current="${active(view)?'page':'false'}" data-dossier-toggle aria-expanded="${dossierOpen}" aria-controls="dossier-nav-children">
-         ${icon('folder')}<span class="nav-text">Dossier Jaune</span><span class="dossier-nav-chevron" aria-hidden="true">⌄</span>
+         ${icon('folder')}<span class="nav-text">Dossier Jaune</span><span class="dossier-nav-chevron" aria-hidden="true">${icon('chevron')}</span>
        </button>
        <div class="dossier-nav-children" id="dossier-nav-children" role="group" aria-label="Sous-dossiers du Dossier Jaune" ${dossierOpen?'':'hidden'}>
          ${subfolders.map(([slug,name])=>`<button type="button" class="dossier-nav-child ${state.view==='dossier'&&state.dossierFolder===slug?'active':''}" data-sidebar-folder="${slug}" aria-current="${state.view==='dossier'&&state.dossierFolder===slug?'location':'false'}"><span class="dossier-child-dot ${slug}" aria-hidden="true"></span><span>${name}</span></button>`).join('')}
@@ -67,12 +68,13 @@ function sidebar(){
  const toolsOpen=!!state.sidebarAdminOpen||tools.some(([view])=>active(view));
  return `<aside class="sidebar sidebar-rail sidebar-light" aria-label="Navigation Framatex">
    <div class="rail-brand"><div class="rail-logo" aria-hidden="true">${icon('folder')}</div><span class="rail-brand-name">Framatex</span></div>
-   <nav class="sidebar-nav rail-primary" aria-label="Navigation principale">${items(primary)}</nav>
-   <details class="rail-management" ${toolsOpen?'open':''}><summary title="Outils de gestion">${icon('users')}<span class="nav-text">Gestion</span><span class="rail-chevron" aria-hidden="true">⌄</span></summary>
+   <button type="button" class="mobile-navigation-toggle" id="mobile-navigation-toggle" aria-expanded="false" aria-controls="framat-navigation">${icon('grid')}<span>Menu</span></button>
+   <div class="rail-navigation-content" id="framat-navigation"><nav class="sidebar-nav rail-primary" aria-label="Navigation principale">${items(primary)}</nav>
+   <details class="rail-management" ${toolsOpen?'open':''}><summary title="Outils de gestion">${icon('users')}<span class="nav-text">Gestion</span><span class="rail-chevron" aria-hidden="true">${icon('chevron')}</span></summary>
      <nav class="sidebar-nav rail-management-links" aria-label="Gestion et contrôle">${items(tools)}</nav>
    </details>
-   <div class="sidebar-bottom rail-account"><div class="user"><div class="avatar" aria-hidden="true">${e(state.me.name.slice(0,2).toUpperCase())}</div><span class="user-name" title="${e(state.me.name)}">${e(state.me.name)}</span></div>
-     <button type="button" class="logout" id="logout" title="Déconnexion" aria-label="Déconnexion">${icon('out')}<span>Quitter</span></button></div>
+   <div class="sidebar-bottom rail-account"><div class="user"><div class="avatar" aria-hidden="true">${e(state.me.name.trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</div><span class="user-name" title="${e(state.me.name)}">${e(state.me.name)}</span></div>
+     <button type="button" class="logout" id="logout" title="Déconnexion" aria-label="Déconnexion">${icon('out')}<span>Quitter</span></button></div></div>
  </aside>`;
 }
 function mount(html,label){
@@ -93,6 +95,7 @@ function mount(html,label){
    openGlobalFolder(n.dataset.sidebarFolder).catch(showErr);
  }));
  app.querySelector('.rail-management')?.addEventListener('toggle',event=>{state.sidebarAdminOpen=event.currentTarget.open});
+ app.querySelector('#mobile-navigation-toggle')?.addEventListener('click',event=>{const button=event.currentTarget;const open=button.getAttribute('aria-expanded')!=='true';button.setAttribute('aria-expanded',String(open));app.querySelector('.sidebar')?.classList.toggle('is-mobile-open',open)});
  syncFloatingAssistant();
  app.querySelector('#global-search')?.addEventListener('click',async()=>{await navigate('dossier');app.querySelector('#global-search-input')?.focus()});
  app.querySelector('#top-notifications')?.addEventListener('click',()=>navigate('notifications'));

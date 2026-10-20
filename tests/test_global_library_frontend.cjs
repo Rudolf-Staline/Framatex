@@ -19,7 +19,7 @@ const app={
  querySelector(key){
   if(key==='#global-doc-results')return table;
   if(key==='#global-result-count')return count;
-  return {addEventListener(){},dataset:{},onclick:null};
+  return {querySelectorAll:()=>[],addEventListener(){},dataset:{},onclick:null};
  },
  querySelectorAll:()=>[]
 };
@@ -38,7 +38,7 @@ const sample={
  ]
 };
 const ctx={app,state:{view:'home'},console,
- api:async path=>{lastApi=path;return sample},
+ api:async path=>{lastApi=path;return path.endsWith('/controls')?{rules:[],expectations:[],comparisons:[]}:sample},
  mount:body=>{page=body},
  e:x=>String(x??'').replaceAll('&','&amp;').replaceAll('<','&lt;'),
  icon:()=>'□',niceDate:v=>v||'—',can:()=>true,
@@ -48,9 +48,9 @@ vm.createContext(ctx);
 vm.runInContext(source,ctx);
 (async()=>{
  await vm.runInContext('globalLibraryPage()',ctx);
- assert.equal(lastApi,'/api/dossier-jaune');
+ assert.equal(lastApi,'/api/dossier-jaune/controls');
  assert.equal(ctx.state.view,'dossier');
- assert(page.includes('Dossier Jaune')&&page.includes('Les quatre sous-dossiers'));
+ assert(page.includes('Espace documentaire')&&page.includes('Les quatre sous-dossiers'));
  assert(page.includes('data-global-folder="jaune"'));
  assert(page.includes('data-global-folder="rose"'));
  assert(page.includes('data-global-folder="bleu"'));
