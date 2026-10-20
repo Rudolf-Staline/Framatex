@@ -14,7 +14,7 @@ assert(!source.includes('Nouveau dossier'));
 assert(css.includes('.global-folders') && css.includes('@media(max-width:760px)'));
 assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length);
 
-let page='',lastApi='',count={textContent:''},table={innerHTML:'',querySelectorAll:()=>[]};
+let page='',lastApi='',count={textContent:''},table={innerHTML:'',querySelectorAll:()=>[],querySelector:()=>null};
 const app={
  querySelector(key){
   if(key==='#global-doc-results')return table;
@@ -59,7 +59,7 @@ vm.runInContext(source,ctx);
  assert(table.innerHTML.includes('ORLI-42'));
  assert(!page.includes('Nouveau dossier'));
  vm.runInContext("globalQuery='introuvable';globalRenderRows()",ctx);
- assert(table.innerHTML.includes('Aucun document correspondant'));
+ assert(table.innerHTML.includes('Aucun résultat'));
  vm.runInContext("globalFolder='bleu';globalQuery='';renderGlobalLibrary()",ctx);
  assert(table.innerHTML.includes('Accès à cette rubrique réservé'));
  console.log('Dossier Jaune V2: shared folders, version rows, search and restrictions OK');
