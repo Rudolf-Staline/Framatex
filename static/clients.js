@@ -3,13 +3,20 @@ let clientDirectory=[];
 async function clientsPage(){
  state.view='clients';
  clientDirectory=await api('/api/clients');
- mount(`<div class="page-heading"><div><div class="page-kicker">RELATIONS CLIENTS</div><h1 class="page-title">Vos clients<span class="brand-accent">.</span></h1><p class="page-lead">Un interlocuteur, ses dossiers jaunes, un espace de suivi dédié.</p></div><button class="primary" id="new-client">${icon('plus')} Inscrire un client</button></div><div class="client-summary"><div><strong>${clientDirectory.filter(c=>c.active).length}</strong><span>clients actifs</span></div><div><strong>${clientDirectory.reduce((n,c)=>n+c.launch_count,0)}</strong><span>dossiers associés</span></div><div><strong>${clientDirectory.reduce((n,c)=>n+c.contacts.filter(u=>u.active).length,0)}</strong><span>accès au portail</span></div></div><div class="toolbar"><label class="searchbar">${icon('search')}<input id="client-search" placeholder="Rechercher une société ou un contact…" aria-label="Rechercher un client"></label></div><div id="client-directory" class="client-grid"></div>`,'Clients');
+ mount(`<div class="page-heading"><div><div class="page-kicker">RELATIONS CLIENTS</div><h1 class="page-title">Vos clients<span class="brand-accent">.</span></h1><p class="page-lead">Un interlocuteur, ses dossiers jaunes, un espace de suivi dédié.</p></div><button class="primary" id="new-client">${icon('plus')} Inscrire un client</button></div><div class="client-summary"><div><strong>${clientDirectory.filter(c=>c.active).length}</strong><span>clients actifs</span></div><div><strong>${clientDirectory.reduce((n,c)=>n+c.launch_count,0)}</strong><span>dossiers associés</span></div><div><strong>${clientDirectory.reduce((n,c)=>n+c.contacts.filter(u=>u.active).length,0)}</strong><span>accès au portail</span></div></div><div class="toolbar"><label class="searchbar">${icon('search')}<input id="client-search" placeholder="Rechercher une société ou un contact…" aria-label="Rechercher un client"></label></div><div id="client-directory" class="client-grid" aria-live="polite"></div>`,'Clients');
  const draw=()=>{
-  const q=app.querySelector('#client-search').value.toLocaleLowerCase('fr');
-  const rows=clientDirectory.filter(c=>[c.name,c.contact_email,...c.contacts.map(u=>u.email)].join(' ').toLocaleLowerCase('fr').includes(q));
+  const normalize=text=>String(text||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr');
+  const q=normalize(app.querySelector('#client-search').value.trim());
+  const rows=clientDirectory.filter(c=>normalize([c.name,c.contact_email,...(c.contacts||[]).map(u=>[u.name,u.email].join(' '))].join(' ')).includes(q));
   app.querySelector('#client-directory').innerHTML=rows.length?rows.map(c=>`<article class="panel client-card"><div class="client-card-top"><div class="client-monogram">${e(c.name.slice(0,2).toUpperCase())}</div>${statusTag(c.active?'Actif':'Désactivé')}</div><h2>${e(c.name)}</h2><p>${e(c.contact_email||'Contact principal à renseigner')}</p><div class="client-card-counts"><span>${c.launch_count} dossier(s)</span><span>${c.contacts.filter(u=>u.active).length} accès actif(s)</span></div><div class="client-card-actions"><button class="primary tiny" data-client-open="${e(c.id)}">Gérer le client ${icon('arrow')}</button><button class="secondary tiny" data-client-folders="${e(c.id)}">Dossiers</button></div></article>`).join(''):`<div class="panel empty"><strong>${q?'Aucun client trouvé':'Votre répertoire commence ici'}</strong><p>${q?'Essayez le nom de la société ou une adresse email.':'Inscrivez une société, puis créez ses accès à l’espace client.'}</p></div>`;
   app.querySelectorAll('[data-client-open]').forEach(b=>b.onclick=()=>clientEditor(clientDirectory.find(c=>c.id===b.dataset.clientOpen)));
-  app.querySelectorAll('[data-client-folders]').forEach(b=>b.onclick=async()=>{await launchList();const search=app.querySelector('#order-search');search.value=clientDirectory.find(c=>c.id===b.dataset.clientFolders).name;search.dispatchEvent(new Event('input'))});
+  app.querySelectorAll('[data-client-folders]').forEach(b=>b.onclick=async()=>{
+   const client=clientDirectory.find(c=>c.id===b.dataset.clientFolders);
+   if(!client)return;
+   state.clientFilter={id:client.id,name:client.name};
+   state.query='';
+   await launchList();
+  });
  };
  app.querySelector('#new-client').onclick=()=>clientEditor();
  app.querySelector('#client-search').oninput=draw;draw();
