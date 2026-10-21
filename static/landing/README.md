@@ -31,3 +31,10 @@ Ce dossier est réservé aux visuels de la nouvelle page d’accueil. Ne pas gé
 8. Contact / footer inspiré du site institutionnel FRAMATEX
 
 Les détails fonctionnels et le prompt Claude seront définis séparément avant modification du frontend.
+
+## Intégration technique (landing v1)
+
+- `index.html`, `landing.css`, `landing.js`, `landing-redirect.js` : page d’accueil servie sur `/`.
+- `client.html` : entrée provisoire de l’Espace Client, servie sur `/espace-client`.
+- L’application interne (connexion FRAMATEX) est servie sur `/espace-framatex` ; les anciens liens QR `/#/launch/<id>` y sont redirigés.
+- Fichiers attendus par la page (noms exacts) : `logo-framatex.jpg`, `hero-textile-woman.jpg`, `partnership-meeting.jpg`. Tant qu’un fichier manque, la page affiche un repère technique en pointillés (jamais un visuel de remplacement).

@@ -83,7 +83,7 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 Si l'activation PowerShell échoue, utilisez directement `.venv\Scripts\python.exe` à la place de `python` pour les commandes suivantes. Le programme demande un mot de passe de 12 caractères minimum pour le premier administrateur : **aucun mot de passe par défaut n'est fourni**.
 
-Ouvrez **http://127.0.0.1:8000** puis connectez-vous. L'API documentée est disponible sur **http://127.0.0.1:8000/docs**.
+Ouvrez **http://127.0.0.1:8000** : la page d’accueil publique propose deux entrées. La connexion à l’espace interne FRAMATEX est servie sur **http://127.0.0.1:8000/espace-framatex** (l’entrée provisoire de l’espace Client sur `/espace-client`). L'API documentée est disponible sur **http://127.0.0.1:8000/docs**.
 
 ## Fonctions effectivement disponibles
 
