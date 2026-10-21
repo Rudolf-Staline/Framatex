@@ -7,14 +7,14 @@ const main=fs.readFileSync('static/app.js','utf8');
 const orders=fs.readFileSync('static/order-identification.js','utf8');
 const css=fs.readFileSync('static/atelier.css','utf8');
 const html=fs.readFileSync('static/index.html','utf8');
-const mark=fs.readFileSync('static/jauno-mark.svg','utf8');
+const mark=fs.readFileSync('static/dossier-jaune-mark.svg','utf8');
 
 for(const source of [main,orders,fs.readFileSync('static/clients.js','utf8'),
  fs.readFileSync('static/floating-assistant.js','utf8')]){
  new vm.Script(source);
 }
-assert(html.includes('<title>JAUNO · Dossiers Jaunes</title>'));
-assert(html.includes('/assets/jauno-mark.svg'));
+assert(html.includes('<title>Dossier Jaune · Gestion documentaire</title>'));
+assert(html.includes('/assets/dossier-jaune-mark.svg'));
 assert(mark.includes('viewBox="0 0 64 64"'));
 assert(main.includes("['launches','folder','Dossiers Jaunes']"));
 assert(orders.includes('>Dossiers Jaunes<span class="heading-count">'));
@@ -39,8 +39,8 @@ assert(login.includes('login-page login-rebalanced'));
 assert(renderChoice.includes('login-stage'));
 assert(renderChoice.includes('data-space="internal"'));
 assert(renderChoice.includes('data-space="client"'));
-assert(renderChoice.includes('JAUNO'));
-assert(login.includes('JAUNO'));
+assert(renderChoice.includes('Dossier Jaune'));
+assert(login.includes('Dossier Jaune'));
 assert(login.includes('Adresse e-mail') && login.includes('Mot de passe'));
 
 const app={innerHTML:'',inert:false,querySelectorAll(){return []}};
@@ -63,4 +63,4 @@ assert(css.includes('height:49px') && css.includes('background:#e5b43a'));
 assert(css.includes('border:1px solid #d6a52b'));
 assert(css.includes('color:#fff'));
 assert(!css.includes('.jauno-space-choice .login-stage{min-height:100dvh}'));
-console.log('JAUNO: identity, login-matched space choice, persistent folder colors and labels OK');
+console.log('Dossier Jaune: identity, login-matched space choice, persistent folder colors and labels OK');
