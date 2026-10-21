@@ -1113,3 +1113,98 @@ color:#5b667c}
 .app-shell .main .page-title{color:#14182a}
 .app-shell .main .detail-facts dd{color:#202638}
 @media(min-width:1451px){.app-shell .detail-facts{max-width:calc(100% - 280px)}}
+
+/* October 21 correction: an editorial entry experience, without changing the original sign-in screen. */
+.entry-page.entry-gateway{background:#fff;overflow:hidden;position:relative;padding:40px clamp(24px,5vw,90px) 26px;isolation:isolate}
+.entry-gateway::before{content:"";position:absolute;right:-7%;bottom:-33%;width:45vw;aspect-ratio:1;background:radial-gradient(circle,#f7edb9 0%,#fff6d988 39%,transparent 71%);z-index:-1;pointer-events:none}
+.entry-gateway .entry-brand{padding-bottom:20px;border-bottom:1px solid #e9e9e3}
+.entry-gateway .entry-brand span{color:#1f241e}
+.entry-gateway .space-choice{display:grid;grid-template-columns:minmax(340px,0.93fr) minmax(400px,1.07fr);grid-template-rows:repeat(4,auto) 1fr;column-gap:clamp(50px,7vw,140px);text-align:left;align-content:center;align-items:start;max-width:1320px;min-height:600px;flex:1;padding:56px 0 46px;margin:0 auto}
+.entry-gateway .entry-eyebrow{grid-column:1;grid-row:1;display:flex;align-items:center;gap:12px;color:#82732e;font-size:11px;font-weight:750;letter-spacing:.15em;margin:30px 0 26px}
+.entry-gateway .entry-eyebrow::before{content:"";width:33px;height:2px;background:#d8b03b}
+.entry-gateway .space-choice h1{grid-column:1;grid-row:2;margin:0;font:700 clamp(56px,5.35vw,92px)/1.02 Georgia,serif;letter-spacing:-.065em;color:#19201c}
+.entry-gateway .entry-intro{grid-column:1;grid-row:3;max-width:440px;font-size:16px;line-height:1.78;color:#58645a;margin:36px 0}
+.entry-gateway .entry-footnote{grid-column:1;grid-row:4;align-self:end;max-width:330px;font-size:12px;line-height:1.6;color:#778078;margin:45px 0 0;padding-top:22px;border-top:1px solid #daddd7}
+.entry-gateway .space-options{grid-column:2;grid-row:1/6;display:grid;grid-template-columns:1fr;align-self:center;gap:17px;min-width:0}
+.entry-gateway .space-options button{position:relative;min-height:210px;padding:32px 36px 28px;border-radius:19px;border:1px solid #e4e7e1;background:#fff;box-shadow:0 10px 42px rgba(25,36,29,.035);transition:transform .2s,border-color .2s,box-shadow .2s;overflow:hidden}
+.entry-gateway .space-options button::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:#d3ab2b;transform:scaleY(0);transform-origin:bottom;transition:transform .2s}
+.entry-gateway .space-options button[data-space="client"]{background:#f8f9f7}
+.entry-gateway .space-options button[data-space="client"]::before{background:#385c52}
+.entry-gateway .space-options button:hover,.entry-gateway .space-options button:focus-visible{transform:translateX(5px);border-color:#c4c9bf;box-shadow:0 20px 42px rgba(23,35,29,.09);outline:none}
+.entry-gateway .space-options button:hover::before,.entry-gateway .space-options button:focus-visible::before{transform:scaleY(1)}
+.entry-gateway .space-icon{width:54px;height:54px;border-radius:13px;background:#f7e8aa;color:#806119;margin-bottom:19px}
+.entry-gateway button[data-space="client"] .space-icon{background:#e1ece7;color:#385c52}
+.entry-gateway .space-icon .ui-icon{width:27px;height:27px}
+.entry-gateway .space-options strong{font-size:24px;letter-spacing:-.035em;color:#202c24}
+.entry-gateway .space-options button>span:not(.space-icon):not(.space-enter){color:#68736a;font-size:13px;line-height:1.55}
+.entry-gateway .space-enter{position:absolute;right:30px;bottom:33px;margin:0;font-size:11px;color:#333f36}
+.entry-gateway .space-enter .ui-icon{margin-left:8px}
+.entry-gateway .entry-footer{border-top:1px solid #e9e9e3;padding-top:22px;text-align:right;font-size:11px;color:#828a80}
+.entry-gateway .space-choice h1::after{content:"";display:block;height:7px;width:94px;margin-top:32px;background:#efc94c;border-radius:999px}
+
+/* The older login screen is intentionally untouched: only the route back is added. */
+.login-rebalanced .auth-return{border:0;background:transparent;display:inline-flex;align-items:center;gap:7px;color:#647064;font-size:12px;cursor:pointer;padding:7px 2px;margin-bottom:30px}
+.login-rebalanced .auth-return:hover,.login-rebalanced .auth-return:focus-visible{color:#171d19;text-decoration:underline}
+.login-rebalanced .auth-return .ui-icon{width:15px;height:15px}
+
+/* The workspace remains pure white. The active subfolder controls the rail and action accents. */
+.app-shell[data-folder-theme="jaune"],.app-shell[data-dossier-theme="jaune"]{
+ --folder-rail:#fff1ba;--folder-rail-border:#e7ce77;--folder-action:#bd8911;--folder-action-soft:#fff4ce}
+.app-shell[data-folder-theme="rose"],.app-shell[data-dossier-theme="rose"]{
+ --folder-rail:#fce5ed;--folder-rail-border:#e5a6be;--folder-action:#a53e68;--folder-action-soft:#fff0f5}
+.app-shell[data-folder-theme="bleu"],.app-shell[data-dossier-theme="bleu"]{
+ --folder-rail:#e1edff;--folder-rail-border:#9cbbe9;--folder-action:#315faf;--folder-action-soft:#edf3ff}
+.app-shell[data-folder-theme="vert"],.app-shell[data-dossier-theme="vert"]{
+ --folder-rail:#dff3e5;--folder-rail-border:#a1d7b4;--folder-action:#23734e;--folder-action-soft:#ebf8ee}
+body .app-shell:is([data-folder-theme],[data-dossier-theme]) .sidebar.sidebar-rail.sidebar-light{
+ background:var(--folder-rail)!important;border-color:var(--folder-rail-border);box-shadow:3px 0 18px #20242a12;transition:background-color .18s ease}
+body .app-shell:is([data-folder-theme],[data-dossier-theme]) .sidebar .nav-btn.active{
+ background:#fff;color:var(--folder-action);box-shadow:0 2px 8px #20242a0e;border-color:var(--folder-rail-border)}
+.app-shell:is([data-folder-theme],[data-dossier-theme]) .main{--accent:var(--folder-action);--accent-soft:var(--folder-action-soft);--accent-ink:#fff}
+.app-shell:is([data-folder-theme],[data-dossier-theme]) .main .primary{background:var(--folder-action);border-color:var(--folder-action);color:#fff}
+.app-shell:is([data-folder-theme],[data-dossier-theme]) .main .primary :is(span,strong,small,svg){color:#fff}
+.app-shell:is([data-folder-theme],[data-dossier-theme]) .main .folder-tab.selected{border:2px solid var(--folder-action);background:var(--folder-action-soft);box-shadow:0 8px 20px #232c3010}
+.app-shell:is([data-folder-theme],[data-dossier-theme]) .main .detail-main-tabs [aria-selected=true]{border-bottom-color:var(--folder-action);color:var(--folder-action)}
+.app-shell:is([data-folder-theme],[data-dossier-theme]) .main .content,.app-shell:is([data-folder-theme],[data-dossier-theme]) .main .topbar{background:#fff}
+.app-shell:is([data-folder-theme],[data-dossier-theme]) .main .lc-folder-symbol{color:var(--folder-action)}
+/* Client sees the dossier structure, while only authorized publications populate each folder. */
+.portal-sharing-notice{display:flex;gap:13px;align-items:center;padding:16px 20px;background:#f8f9f6;border:1px solid #e4e8df;border-radius:12px;margin:8px 0 26px;font-size:13px;line-height:1.6;color:#3e4b40}
+.portal-sharing-notice .ui-icon{flex:none;color:#567565}
+.portal-folder-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.portal-folder-group{background:#fff;border:1px solid #e6e9e2;border-radius:15px;overflow:hidden;box-shadow:0 8px 26px #172d2610}
+.portal-folder-head{display:flex;align-items:center;gap:13px;padding:20px 22px;background:#fcfcfb;border-bottom:1px solid #edf0ea}
+.portal-folder-emblem{display:grid;place-items:center;width:44px;height:44px;flex:none;background:#fff0bd;color:#b08920;border-radius:10px}
+.portal-folder-rose .portal-folder-emblem{background:#fce9f0;color:#a93f68}
+.portal-folder-bleu .portal-folder-emblem{background:#e5efff;color:#366cba}
+.portal-folder-vert .portal-folder-emblem{background:#e4f4e9;color:#2b8053}
+.portal-folder-head h3{font-size:16px;line-height:1.3;margin:3px 0 0}
+.portal-folder-kicker{font-size:9px;letter-spacing:.11em;font-weight:750;color:#6e766f}
+.portal-folder-count{margin-left:auto;font-size:11px;color:#6a776d;white-space:nowrap}
+.portal-folder-empty{padding:30px 22px;font-size:12px;color:#7b857e;line-height:1.55;margin:0}
+.portal-folder-group .client-document-list{padding:10px 16px}
+.portal-folder-group .client-document-list>div{gap:10px;padding:15px 5px;border-bottom:1px solid #edf0ec}
+.portal-folder-group .client-document-list>div:last-child{border-bottom:0}
+.portal-folder-group .client-document-list .doc-icon{flex:none}
+.portal-folder-group .client-document-list a{margin-left:auto;white-space:nowrap}
+@media(max-width:1000px){
+ .entry-gateway .space-choice{grid-template-columns:1fr;grid-template-rows:auto;gap:0;max-width:760px;min-height:0}
+ .entry-gateway .entry-eyebrow,.entry-gateway .space-choice h1,.entry-gateway .entry-intro,.entry-gateway .entry-footnote,.entry-gateway .space-options{grid-column:1;grid-row:auto}
+ .entry-gateway .space-choice h1{font-size:clamp(46px,8vw,74px)}
+ .entry-gateway .entry-intro{margin:25px 0 35px}
+ .entry-gateway .space-options{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .entry-gateway .space-options button{min-height:235px;padding:22px}
+ .entry-gateway .space-enter{left:22px;right:auto;bottom:18px}
+ .entry-gateway .entry-footnote{order:5;margin-top:20px}
+}
+@media(max-width:640px){
+ .entry-page.entry-gateway{padding:22px}
+ .entry-gateway .space-choice{padding:28px 0}
+ .entry-gateway .space-choice h1{font-size:48px}
+ .entry-gateway .space-options{grid-template-columns:1fr}
+ .entry-gateway .space-options button{min-height:195px;padding:22px}
+ .entry-gateway .entry-brand span{font-size:26px}
+ .entry-gateway .entry-footnote{margin:25px 0 0}
+ .portal-folder-grid{grid-template-columns:1fr}
+ .portal-folder-group .client-document-list>div{flex-wrap:wrap}
+}
+@media(prefers-reduced-motion:reduce){.entry-gateway .space-options button{transition:none;transform:none!important}}
