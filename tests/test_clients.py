@@ -163,7 +163,7 @@ def test_assistant_conversation_before_document_navigation(system):
     scenarios = [
         ('salut', 'Salut !'),
         ('Bonjour !', 'Bonjour !'),
-        ('bonsoir', 'Bonjour !'),
+        ('bonsoir', 'Bonsoir !'),
         ('merci beaucoup', 'Avec plaisir !'),
         ('qui es-tu ?', 'Je suis l’assistant JAUNO.'),
         ('que peux-tu faire ?', 'Comment puis-je vous aider ?'),
