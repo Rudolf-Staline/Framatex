@@ -1,4 +1,6 @@
 'use strict';
+// Historical sheets are bundled into the compatibility layer.
+const legacy=require('node:fs').readFileSync('static/legacy-ui.css','utf8');
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const src=fs.readFileSync('static/floating-assistant.js','utf8');
 const app=fs.readFileSync('static/app.js','utf8');
@@ -6,8 +8,8 @@ const css=fs.readFileSync('static/design-023.css','utf8');
 const html=fs.readFileSync('static/index.html','utf8');
 assert(html.includes('id="floating-assistant-root" hidden'));
 assert(html.includes('/assets/floating-assistant.js'));
-assert(html.includes('/assets/design-023.css'));
-assert(html.indexOf('design-023.css')>html.indexOf('design-022.css'));
+assert(legacy.includes('/* design-023.css */'));
+assert(legacy.indexOf('/* design-023.css */')>legacy.indexOf('/* design-022.css */'));
 assert(app.includes('syncFloatingAssistant()'));
 assert(!app.includes("['assistant','layers','Assistant']"));
 assert(src.includes('aria-modal="true"'));

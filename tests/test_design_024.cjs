@@ -1,4 +1,6 @@
 'use strict';
+// Historical sheets are bundled into the compatibility layer.
+const bundledLegacy=require('node:fs').readFileSync('static/legacy-ui.css','utf8');
 /* Visual contract for the yellow-dossier identity, including setup and chat. */
 const fs=require('node:fs');
 const assert=require('node:assert/strict');
@@ -6,8 +8,8 @@ const html=fs.readFileSync('static/index.html','utf8');
 const css=fs.readFileSync('static/design-024.css','utf8');
 const setup=fs.readFileSync('static/setup.css','utf8');
 const legacy=fs.readFileSync('static/design-023.css','utf8');
-assert(html.includes('/assets/design-024.css'));
-assert(html.indexOf('design-024.css')>html.indexOf('design-023.css'),
+assert(bundledLegacy.includes('/* design-024.css */'));
+assert(bundledLegacy.indexOf('/* design-024.css */')>bundledLegacy.indexOf('/* design-023.css */'),
  'Yellow overrides must follow the previous blue theme');
 assert(css.includes('--brand:#e5b43a'));
 assert(css.includes('--brand-ink:#30240b'));

@@ -15,4 +15,7 @@ assert(!noaccess.includes('id="share-preview"'));
 assert(!noaccess.includes('id="supplier-create"'));
 assert(!noaccess.includes('data-supplier-resolve'));
 assert(mod.includes('Aucun email ou lien d’accès n’est envoyé'));
-console.log('0.14 : vues simulées, boutons conditionnels et échappement HTML OK');
+assert(html.includes('Rattachez cette commande à un client du répertoire'));
+assert(html.includes('espace client'));
+assert(!mod.includes('Publication simulée'));
+console.log('Sharing: real client portal wording, required client association, permission buttons and HTML escaping OK');

@@ -1,4 +1,6 @@
 'use strict';
+// Historical sheets are bundled into the compatibility layer.
+const legacy=require('node:fs').readFileSync('static/legacy-ui.css','utf8');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const assert=require('node:assert/strict');
@@ -7,8 +9,8 @@ const css=fs.readFileSync('static/design-027.css','utf8');
 const html=fs.readFileSync('static/index.html','utf8');
 const loginCss=fs.readFileSync('static/design-026.css','utf8');
 const folderCss=fs.readFileSync('static/design-024.css','utf8');
-assert(html.includes('/assets/design-027.css'));
-assert(html.indexOf('/assets/design-027.css')>html.indexOf('/assets/design-026.css'));
+assert(legacy.includes('/* design-027.css */'));
+assert(legacy.indexOf('/* design-027.css */')>legacy.indexOf('/* design-026.css */'));
 assert(css.includes('.app-shell .page-heading'));
 assert(css.includes('.app-shell .toolbar .searchbar'));
 assert(css.includes('.app-shell .panel tbody tr.item-row:focus-visible'));
@@ -34,7 +36,7 @@ assert(app.includes('data-launch="${e(l.id)}" tabindex="0"'));
 assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length,'Malformed CSS braces');
 // Minimal rendering check for the redesigned launch listing with live mocked results.
 const root={innerHTML:'',querySelector:()=>({addEventListener(){},onclick:null}),querySelectorAll:()=>[]};
-const ctx={console,setTimeout,clearTimeout,document:{querySelector:()=>root},window:{addEventListener(){}},syncFloatingAssistant:()=>{}};
+const ctx={console,setTimeout,clearTimeout,document:{querySelector:()=>root,addEventListener(){}},window:{addEventListener(){}},syncFloatingAssistant:()=>{}};
 vm.createContext(ctx);
 vm.runInContext(app.slice(0,app.lastIndexOf('(async function init(){')),ctx);
 vm.runInContext(fs.readFileSync('static/order-identification.js','utf8'),ctx);

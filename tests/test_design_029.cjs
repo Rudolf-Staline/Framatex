@@ -1,11 +1,13 @@
 'use strict';
+// Historical sheets are bundled into the compatibility layer.
+const legacy=require('node:fs').readFileSync('static/legacy-ui.css','utf8');
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const js=fs.readFileSync('static/app.js','utf8');
 const quality=fs.readFileSync('static/quality.js','utf8');
 const css=fs.readFileSync('static/design-029.css','utf8');
 const html=fs.readFileSync('static/index.html','utf8');
-assert(html.includes('design-029.css'));
-assert(html.indexOf('design-029.css')>html.indexOf('design-028.css'));
+assert(legacy.includes('/* design-029.css */'));
+assert(legacy.indexOf('/* design-029.css */')>legacy.indexOf('/* design-028.css */'));
 assert(css.includes('.detail-main-tabs'));
 assert(css.includes('.detail-tool-picker select'));
 assert(css.includes('.quality-simple-row'));
@@ -13,7 +15,7 @@ assert(css.includes('.launch-information-list'));
 assert(css.includes('@media(max-width:540px)'));
 assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length);
 const root={innerHTML:'',querySelector:()=>({onclick:null,addEventListener(){}}),querySelectorAll:()=>[]};
-const ctx={console,setTimeout,clearTimeout,document:{querySelector:()=>root},window:{addEventListener(){}}};
+const ctx={console,setTimeout,clearTimeout,document:{querySelector:()=>root,addEventListener(){}},window:{addEventListener(){}}};
 vm.createContext(ctx);
 vm.runInContext(js.slice(0,js.lastIndexOf('(async function init(){')),ctx);
 vm.runInContext(quality,ctx);

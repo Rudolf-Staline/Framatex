@@ -1,4 +1,6 @@
 'use strict';
+// Historical sheets are bundled into the compatibility layer.
+const legacy=require('node:fs').readFileSync('static/legacy-ui.css','utf8');
 const fs=require('node:fs'), vm=require('node:vm'), assert=require('node:assert/strict');
 const appjs=fs.readFileSync('static/app.js','utf8');
 const approvals=fs.readFileSync('static/approvals.js','utf8');
@@ -7,9 +9,9 @@ const html=fs.readFileSync('static/index.html','utf8');
 const csp=fs.readFileSync('app/main.py','utf8');
 assert(csp.includes("style-src 'self' 'unsafe-inline' https://fonts.googleapis.com"), 'External Google Font stylesheet blocked by CSP');
 assert(csp.includes("font-src 'self' https://fonts.gstatic.com"), 'External font download blocked by CSP');
-assert(html.includes('family=DM+Sans') && html.includes('family=Plus+Jakarta+Sans'), 'approved typefaces missing');
-assert(html.includes('/assets/design-030.css'), 'stylesheet missing');
-assert(html.indexOf('design-030.css')>html.indexOf('design-029.css'));
+assert(fs.readFileSync('static/atelier.css','utf8').includes('@font-face'), 'local typeface missing');
+assert(legacy.includes('/* design-030.css */'), 'stylesheet missing');
+assert(legacy.indexOf('/* design-030.css */')>legacy.indexOf('/* design-029.css */'));
 assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length);
 for(const rule of ['lc-global-search','lc-folder-access','lc-documents-layout','lc-detail-summary','lc-approval-layout']){
  assert(css.includes(rule),rule+' style missing');

@@ -1,11 +1,13 @@
 'use strict';
+// Historical sheets are bundled into the compatibility layer.
+const legacy=require('node:fs').readFileSync('static/legacy-ui.css','utf8');
 const fs=require('node:fs'), vm=require('node:vm'),assert=require('node:assert/strict');
 const js=fs.readFileSync('static/app.js','utf8');
 const css=fs.readFileSync('static/design-026.css','utf8');
 const html=fs.readFileSync('static/index.html','utf8');
-assert(html.includes('/assets/design-024.css'));
-assert(html.includes('/assets/design-026.css'));
-assert(html.indexOf('design-026.css')>html.indexOf('design-024.css'));
+assert(legacy.includes('/* design-024.css */'));
+assert(legacy.includes('/* design-026.css */'));
+assert(legacy.indexOf('/* design-026.css */')>legacy.indexOf('/* design-024.css */'));
 assert(css.includes('.login-page.login-rebalanced'));
 assert(css.includes('grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)'));
 assert(css.includes('.login-rebalanced .login-visual'));

@@ -1,4 +1,6 @@
 'use strict';
+// Historical sheets are bundled into the compatibility layer.
+const legacy=require('node:fs').readFileSync('static/legacy-ui.css','utf8');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const assert=require('node:assert/strict');
@@ -8,8 +10,8 @@ const libraryJs=fs.readFileSync('static/global-library.js','utf8');
 const css=fs.readFileSync('static/design-033.css','utf8');
 const html=fs.readFileSync('static/index.html','utf8');
 
-assert(html.includes('/assets/design-033.css'),'stylesheet must be loaded');
-assert(html.indexOf('/assets/design-033.css')>html.indexOf('/assets/design-032.css'));
+assert(legacy.includes('/* design-033.css */'),'stylesheet must be loaded');
+assert(legacy.indexOf('/* design-033.css */')>legacy.indexOf('/* design-032.css */'));
 assert(css.includes('.app-shell[data-dossier-theme] .main'));
 assert(css.includes('.app-shell[data-dossier-theme] .sidebar.sidebar-rail.sidebar-light'));
 assert(css.includes('.app-shell[data-dossier-theme] .global-workspace-panel'));

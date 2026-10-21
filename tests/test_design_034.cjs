@@ -1,4 +1,6 @@
 'use strict';
+// Historical sheets are bundled into the compatibility layer.
+const legacy=require('node:fs').readFileSync('static/legacy-ui.css','utf8');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const assert=require('node:assert/strict');
@@ -6,9 +8,9 @@ const html=fs.readFileSync('static/index.html','utf8');
 const css=fs.readFileSync('static/design-034.css','utf8');
 const js=fs.readFileSync('static/global-library.js','utf8');
 
-assert(html.includes('family=DM+Sans'));
-assert(html.includes('family=Plus+Jakarta+Sans'));
-assert(html.indexOf('/assets/design-034.css')>html.indexOf('/assets/design-033.css'));
+assert(fs.readFileSync('static/atelier.css','utf8').includes('@font-face'));
+
+assert(legacy.indexOf('/* design-034.css */')>legacy.indexOf('/* design-033.css */'));
 assert(css.includes('--lc-font:"DM Sans"') && css.includes('--ui-display:"Plus Jakarta Sans"'));
 assert(css.includes('.global-card-overline'));
 assert(css.includes('.global-card-footer'));

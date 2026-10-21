@@ -1,11 +1,13 @@
 'use strict';
+// Historical sheets are bundled into the compatibility layer.
+const legacy=require('node:fs').readFileSync('static/legacy-ui.css','utf8');
 const fs=require('node:fs'),assert=require('node:assert/strict'),vm=require('node:vm');
 const source=fs.readFileSync('static/global-library.js','utf8');
 const html=fs.readFileSync('static/index.html','utf8');
 const originalApp=fs.readFileSync('static/app.js','utf8');
 const css=fs.readFileSync('static/design-031.css','utf8');
 assert(html.includes('/assets/global-library.js'));
-assert(html.includes('/assets/design-031.css'));
+assert(legacy.includes('/* design-031.css */'));
 assert(html.indexOf('/assets/global-library.js')>html.indexOf('/assets/app.js'));
 assert(originalApp.includes("if(view==='dossier'||view==='home')await launchList()"));
 assert(originalApp.includes("await navigate('launches')"));

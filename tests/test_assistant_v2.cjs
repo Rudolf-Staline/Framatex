@@ -1,10 +1,12 @@
 'use strict';
+// Historical sheets are bundled into the compatibility layer.
+const legacy=require('node:fs').readFileSync('static/legacy-ui.css','utf8');
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const html=fs.readFileSync('static/index.html','utf8');
 const src=fs.readFileSync('static/floating-assistant.js','utf8');
 const css=fs.readFileSync('static/design-assistant-v2.css','utf8');
-assert(html.includes('/assets/design-assistant-v2.css'));
-assert(html.indexOf('/assets/design-assistant-v2.css')>html.indexOf('/assets/design-cleanup.css'));
+assert(legacy.includes('/* design-assistant-v2.css */'));
+assert(legacy.indexOf('/* design-assistant-v2.css */')>legacy.indexOf('/* design-cleanup.css */'));
 assert(css.includes('.floating-assistant-suggestions button'));
 assert(css.includes('.floating-assistant-form textarea'));
 assert(css.includes('textarea:focus'));
