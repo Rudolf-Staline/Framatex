@@ -140,3 +140,112 @@ body,.app-shell .main,.app-shell .content,#overlay-root{color:#111111}
 /* Preserve white icon labels on explicitly dark controls and error toasts. */
 #toast{color:#fff}
 #toast :is(span,strong,small){color:inherit}
+
+
+/* Framatex elevation system: depth from light, not extra surface colors. */
+:root{
+  --elevation-panel:0 1px 2px rgba(20,27,24,.055),0 8px 24px rgba(20,27,24,.075);
+  --elevation-card:0 2px 3px rgba(20,27,24,.05),0 9px 20px rgba(20,27,24,.09),inset 0 1px 0 rgba(255,255,255,.95);
+  --elevation-card-hover:0 5px 12px rgba(20,27,24,.08),0 17px 34px rgba(20,27,24,.115),inset 0 1px 0 #fff;
+  --elevation-button:0 2px 0 rgba(17,17,17,.14),0 5px 11px rgba(17,17,17,.12),inset 0 1px 0 rgba(255,255,255,.5);
+  --elevation-button-hover:0 3px 0 rgba(17,17,17,.13),0 8px 15px rgba(17,17,17,.15),inset 0 1px 0 rgba(255,255,255,.68);
+}
+
+/* The colored rail sits visibly above the white page. */
+.app-shell .sidebar.sidebar-rail.sidebar-light{
+  box-shadow:3px 0 6px rgba(13,19,17,.09),10px 0 29px rgba(13,19,17,.11);
+  border-right:1px solid rgba(25,29,20,.12);
+  isolation:isolate;
+}
+.app-shell .sidebar .nav-btn.active{
+  box-shadow:0 2px 3px rgba(31,30,22,.07),0 7px 16px rgba(31,30,22,.11),
+             inset 0 1px 0 #fff;
+}
+.app-shell .sidebar .nav-btn:not(.active){
+  transition:background-color .18s ease,transform .18s ease;
+}
+.app-shell .sidebar .nav-btn:not(.active):hover{transform:translateX(2px)}
+.app-shell .sidebar .rail-logo{box-shadow:0 3px 0 rgba(0,0,0,.12),0 6px 12px rgba(0,0,0,.1)}
+
+/* Raised sheets: tables and large information panels stay calm. */
+.app-shell .main :is(.order-workspace,.panel,.detail-facts,.detail-tool-picker,
+                     .portal-welcome,.saffron-table-scroll){
+  box-shadow:var(--elevation-panel);
+}
+.app-shell .order-workspace #orders-table,
+.app-shell .order-workspace .panel,
+.app-shell .simple-document-section .table-scroll{
+  box-shadow:none;
+}
+
+/* Individually raised cards, with soft lift on interaction. */
+.app-shell .main :is(.order-card,.client-card,.folder-tab,.portal-folder){
+  box-shadow:var(--elevation-card);
+  border-color:#e1e4df;
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+}
+.app-shell .main :is(.order-card,.client-card,.folder-tab,.portal-folder):hover{
+  transform:translateY(-2px);
+  box-shadow:var(--elevation-card-hover);
+}
+.app-shell .main :is(.order-card,.client-card,.folder-tab,.portal-folder):focus-within{
+  box-shadow:var(--elevation-card-hover);
+}
+.app-shell .main .folder-tab.selected{
+  border-color:var(--folder-color);
+  box-shadow:0 3px 0 color-mix(in srgb,var(--folder-color) 25%,transparent),
+             0 9px 21px rgba(17,17,17,.095),
+             inset 0 1px 0 rgba(255,255,255,.95);
+}
+.app-shell .main .folder-tab.selected:hover{
+  box-shadow:0 3px 0 color-mix(in srgb,var(--folder-color) 27%,transparent),
+             var(--elevation-card-hover);
+}
+
+/* Buttons have a slight physical lip. Low-emphasis text links remain flat. */
+.app-shell .main :is(.primary,.secondary,.detail-back),
+#overlay-root :is(.primary,.secondary){
+  box-shadow:var(--elevation-button);
+  transition:transform .18s ease,box-shadow .18s ease,
+             background-color .18s ease,border-color .18s ease,filter .18s ease;
+}
+.app-shell .main :is(.primary,.secondary,.detail-back):hover:not(:disabled),
+#overlay-root :is(.primary,.secondary):hover:not(:disabled){
+  transform:translateY(-1px);
+  box-shadow:var(--elevation-button-hover);
+}
+.app-shell .main :is(.primary,.secondary,.detail-back):active:not(:disabled),
+#overlay-root :is(.primary,.secondary):active:not(:disabled){
+  transform:translateY(1px);
+  box-shadow:0 1px 2px rgba(17,17,17,.11),inset 0 2px 4px rgba(17,17,17,.11);
+}
+.app-shell .main .view-switch button[aria-pressed="true"]{
+  box-shadow:0 2px 5px rgba(17,17,17,.12),inset 0 1px 0 #fff;
+}
+
+/* Small icon tiles have a subtler, consistent dimensional edge. */
+.app-shell .main :is(.order-folder-mark,.doc-icon,.client-monogram){
+  box-shadow:0 2px 4px rgba(17,17,17,.065),inset 0 1px 0 rgba(255,255,255,.85);
+}
+#overlay-root .modal{
+  box-shadow:0 12px 34px rgba(17,17,17,.12),0 35px 85px rgba(17,17,17,.20),
+             inset 0 1px 0 #fff;
+}
+
+/* On mobile the rail stacks above the page, so depth points downward. */
+@media(max-width:760px){
+  .app-shell .sidebar.sidebar-rail.sidebar-light{
+    box-shadow:0 3px 6px rgba(13,19,17,.08),0 10px 23px rgba(13,19,17,.11);
+    border-right:0;
+    border-bottom:1px solid rgba(25,29,20,.12);
+  }
+  .app-shell .main :is(.order-card,.client-card,.folder-tab,.portal-folder):hover{
+    transform:none;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .app-shell .sidebar .nav-btn:not(.active):hover,
+  .app-shell .main :is(.order-card,.client-card,.folder-tab,.portal-folder):hover,
+  .app-shell .main :is(.primary,.secondary,.detail-back):hover:not(:disabled),
+  #overlay-root :is(.primary,.secondary):hover:not(:disabled){transform:none}
+}
