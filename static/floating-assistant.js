@@ -211,7 +211,10 @@ async function askFloatingAssistant(question){
  if(input){input.value='';if(input.style)input.style.height='';input.disabled=true}
  if(send)send.disabled=true;
  paintFloatingAssistant();
- const launchId=state.view==='detail'&&state.detail?.id?state.detail.id:null;
+ const activeLaunch=state.view==='detail'&&state.detail?.id?state.detail.id:null;
+ const isFollowUp=/^(et\b|dans (le|la)\b|pour ce dossier|pour cette commande|quels fichiers|quelles pieces)/i.test(q)||/\b(ce dossier|cette commande|ces documents|dans le (rose|bleu|vert|jaune))\b/i.test(q);
+ const previousLaunch=[...floatingAssistantMessages].reverse().find(message=>message.kind==='bot'&&message.response?.launch_id)?.response?.launch_id;
+ const launchId=activeLaunch||(isFollowUp?previousLaunch:null)||null;
  try{
    const response=await api('/api/assistant/chat',{
      method:'POST',body:JSON.stringify({question:q,launch_id:launchId,mode:'auto'})
