@@ -249,3 +249,103 @@ body,.app-shell .main,.app-shell .content,#overlay-root{color:#111111}
   .app-shell .main :is(.primary,.secondary,.detail-back):hover:not(:disabled),
   #overlay-root :is(.primary,.secondary):hover:not(:disabled){transform:none}
 }
+
+
+/* Refined navigation and semantic status chips — sober rail, precise color coding. */
+.app-shell{
+  --sidebar-bg:#EEE8D9;
+  --sidebar-divider:#D8D0BF;
+  --sidebar-ink:#242620;
+  --sidebar-nav-accent:#8A6F3A;
+}
+.app-shell:is([data-folder-theme="rose"],[data-dossier-theme="rose"]){
+  --sidebar-bg:#F0E4E7;--sidebar-divider:#E1D1D6;--sidebar-nav-accent:#A06A7E;
+}
+.app-shell:is([data-folder-theme="bleu"],[data-dossier-theme="bleu"]){
+  --sidebar-bg:#E3EAF2;--sidebar-divider:#D1DCE8;--sidebar-nav-accent:#607CA3;
+}
+.app-shell:is([data-folder-theme="vert"],[data-dossier-theme="vert"]){
+  --sidebar-bg:#E2EBE5;--sidebar-divider:#D0DFD4;--sidebar-nav-accent:#638873;
+}
+.app-shell .sidebar.sidebar-rail.sidebar-light,
+body .app-shell:is([data-folder-theme],[data-dossier-theme]) .sidebar.sidebar-rail.sidebar-light{
+  background:var(--sidebar-bg);
+  background-image:none;
+  color:var(--sidebar-ink);
+  border-color:var(--sidebar-divider);
+  box-shadow:3px 0 15px rgba(38,35,26,.065);
+}
+.app-shell .sidebar .rail-logo{
+  background:rgba(255,255,255,.7);
+  color:var(--sidebar-nav-accent);
+  border:1px solid var(--sidebar-divider);
+  box-shadow:0 2px 6px rgba(35,31,22,.055);
+}
+.app-shell .sidebar .rail-brand-name{color:var(--sidebar-ink);letter-spacing:-.65px}
+.app-shell .sidebar .nav-btn,
+.app-shell .sidebar .rail-management summary,
+.app-shell .sidebar .user-name,
+.app-shell .sidebar .logout{color:var(--sidebar-ink)}
+.app-shell .sidebar .nav-btn{border:1px solid transparent;border-radius:10px;font-weight:580}
+.app-shell .sidebar .nav-btn:hover{
+  background:rgba(255,255,255,.52);
+  border-color:rgba(52,45,35,.04);
+  color:var(--sidebar-ink);
+}
+.app-shell .sidebar .nav-btn.active,
+body .app-shell:is([data-folder-theme],[data-dossier-theme]) .sidebar .nav-btn.active{
+  background:#fff;
+  color:#171915;
+  border:1px solid rgba(74,60,41,.09);
+  border-radius:10px;
+  box-shadow:inset 3px 0 0 var(--sidebar-nav-accent),0 2px 9px rgba(32,30,23,.055);
+  font-weight:700;
+}
+.app-shell .sidebar .nav-btn:not(.active):hover{transform:none}
+.app-shell .sidebar .rail-management summary:hover,
+.app-shell .sidebar .logout:hover{background:rgba(255,255,255,.4)}
+.app-shell .sidebar .avatar{background:#fff;color:#242620;border:1px solid var(--sidebar-divider)}
+.app-shell .sidebar .sidebar-bottom.rail-account{border-top:1px solid var(--sidebar-divider)}
+
+/* Status chips intentionally differ from uncolored version/metadata tags. */
+.app-shell .main .tag.status-pill,
+#overlay-root .tag.status-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+  width:max-content;
+  max-width:100%;
+  min-height:27px;
+  padding:6px 12px;
+  border:0;
+  border-radius:999px;
+  background:#4B5563;
+  color:#fff;
+  font-size:11px;
+  font-weight:750;
+  line-height:1.2;
+  letter-spacing:.005em;
+  white-space:nowrap;
+  box-shadow:0 2px 5px rgba(25,32,41,.10);
+}
+.app-shell .main .tag.status-pill::before,
+#overlay-root .tag.status-pill::before{content:none}
+.app-shell .main .tag.status-pill.status-active,
+#overlay-root .tag.status-pill.status-active{background:#265BC5;color:#fff}
+.app-shell .main .tag.status-pill.status-draft,
+#overlay-root .tag.status-pill.status-draft{background:#AC5D0C;color:#fff}
+.app-shell .main .tag.status-pill.status-review,
+#overlay-root .tag.status-pill.status-review{background:#7048AC;color:#fff}
+.app-shell .main .tag.status-pill.status-complete,
+#overlay-root .tag.status-pill.status-complete{background:#176C47;color:#fff}
+.app-shell .main .tag.status-pill.status-cancelled,
+#overlay-root .tag.status-pill.status-cancelled{background:#AE3040;color:#fff}
+.app-shell .main .tag.status-pill.status-neutral,
+#overlay-root .tag.status-pill.status-neutral{background:#4B5563;color:#fff}
+@media(max-width:760px){
+  .app-shell .sidebar.sidebar-rail.sidebar-light,
+  body .app-shell:is([data-folder-theme],[data-dossier-theme]) .sidebar.sidebar-rail.sidebar-light{
+    box-shadow:0 3px 13px rgba(38,35,26,.075);
+  }
+}
