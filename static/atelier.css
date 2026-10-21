@@ -1,5 +1,5 @@
 /* Framatex Atelier — product interface. Legacy module styles stay in @layer legacy. */
-:root{--ink:#252b29;--muted:#707870;--line:#e5e8e2;--canvas:#ffffff;--accent:#f4cb21;--accent-soft:#fff8d9;--accent-ink:#383014;--font:Arial,Helvetica,sans-serif;--brand:var(--accent);--text:var(--ink);--border:var(--line);--bg:var(--canvas)}
+:root{--ink:#111111;--muted:#696969;--line:#e5e8e2;--canvas:#ffffff;--accent:#f4cb21;--accent-soft:#fff8d9;--accent-ink:#383014;--font:Arial,Helvetica,sans-serif;--brand:var(--accent);--text:var(--ink);--border:var(--line);--bg:var(--canvas)}
 /* Arial consistently overrides older typography declarations from legacy UI modules. */
 body,body :where(*){font-family:var(--font)}
 body :where(code,pre,kbd,samp){font-family:Consolas,"Liberation Mono",monospace}
@@ -74,3 +74,69 @@ html,body,#app,.app-shell,.app-shell>.main,.app-shell .content,.app-shell .topba
 .app-shell .order-workspace thead{background-color:#fff}
 .app-shell .portal-welcome{border-color:var(--line)}
 .app-shell .searchbar,.app-shell .order-toolbar select,.app-shell .lc-global-search kbd{background-color:#fff}
+
+/* High-contrast monochrome text system: reserve color for meaningful states. */
+:root{--ink:#111111;--text:#111111;--muted:#696969}
+body,.app-shell .main,.app-shell .content,#overlay-root{color:#111111}
+.app-shell{--sidebar-ink:#111111}
+.app-shell:is([data-folder-theme="rose"],[data-dossier-theme="rose"],
+             [data-folder-theme="bleu"],[data-dossier-theme="bleu"],
+             [data-folder-theme="vert"],[data-dossier-theme="vert"]){--sidebar-ink:#111111}
+
+/* Main content and forms: headings, tab labels, values, descriptions and controls. */
+.app-shell .main :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,b,em,li,dt,dd,th,td,
+                     label,legend,summary,button,a,input,select,textarea),
+#overlay-root :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,b,em,li,dt,dd,th,td,
+                  label,legend,summary,button,a,input,select,textarea),
+.login-page :is(h1,h2,h3,p,span,small,strong,label,button,input){
+ color:#111111;
+}
+.app-shell .main input::placeholder,#overlay-root input::placeholder,
+.app-shell .main textarea::placeholder{color:#8c8c8c;opacity:1}
+
+/* Metadata stays quieter rather than competing with primary information. */
+.app-shell .main :is(.muted,.page-lead,.page-kicker,.section-index,.row-sub,
+ .folder-description,.folder-tab-count,.document-count,.lc-global-search,
+ .lc-global-search kbd,.detail-inline-meta,.order-open small,.client-summary span,
+ .saffron-file-meta,.saffron-muted,.saffron-uploader-info small,
+ .table-footer,.modal-desc,.field small,.user-name,.lc-top-username,
+ .order-status-tabs small,.order-workspace thead th,.global-table th),
+#overlay-root :is(.muted,.modal-desc,.field small,.row-sub){
+ color:#696969;
+}
+
+/* Exceptions: action contrast, semantic status and file-format iconography. */
+.app-shell .main .primary,.app-shell .main .primary :is(span,strong,small),
+#overlay-root .primary,#overlay-root .primary :is(span,strong,small){
+ color:var(--accent-ink,#111111);
+}
+.app-shell .main .tag.orange{color:#967024}
+.app-shell .main .tag.blue{color:#356eae}
+.app-shell .main .tag.green{color:#287a49}
+.app-shell .main .lc-document-status.approved{color:#297849}
+.app-shell .main .lc-document-status.pending{color:#9a7020}
+.app-shell .main .error,#overlay-root .error{color:#ab3e36}
+.app-shell .main .brand-accent{color:#a88400}
+.app-shell .main .lc-folder-symbol{color:var(--folder-color,#c49a19)}
+.app-shell .main .doc-format-pdf{color:#c44736}
+.app-shell .main .doc-format-word{color:#326bbb}
+.app-shell .main .doc-format-excel{color:#27804d}
+.app-shell .main .doc-format-image{color:#845bc4}
+.app-shell .main .doc-format-archive{color:#a97228}
+.app-shell .main .doc-format-email{color:#3a8190}
+.app-shell .main .doc-format-text{color:#607089}
+.app-shell .main .doc-icon-ext{color:#fff}
+.app-shell .main .saffron-file-icon.global-format-pdf,
+.app-shell .main .saffron-file-icon.global-format-pdf :is(span,svg){color:#c44736}
+.app-shell .main .saffron-file-icon.global-format-word,
+.app-shell .main .saffron-file-icon.global-format-word :is(span,svg){color:#326bbb}
+.app-shell .main .saffron-file-icon.global-format-excel,
+.app-shell .main .saffron-file-icon.global-format-excel :is(span,svg){color:#27804d}
+.app-shell .main .saffron-file-icon.global-format-image,
+.app-shell .main .saffron-file-icon.global-format-image :is(span,svg){color:#845bc4}
+.app-shell .main .saffron-file-icon.global-format-other,
+.app-shell .main .saffron-file-icon.global-format-other :is(span,svg){color:#68717e}
+
+/* Preserve white icon labels on explicitly dark controls and error toasts. */
+#toast{color:#fff}
+#toast :is(span,strong,small){color:inherit}
