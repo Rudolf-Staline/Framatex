@@ -253,19 +253,19 @@ body,.app-shell .main,.app-shell .content,#overlay-root{color:#111111}
 
 /* Refined navigation and semantic status chips — sober rail, precise color coding. */
 .app-shell{
-  --sidebar-bg:#EEE8D9;
-  --sidebar-divider:#D8D0BF;
+  --sidebar-bg:#FFF2CE;
+  --sidebar-divider:#E8D8AA;
   --sidebar-ink:#242620;
-  --sidebar-nav-accent:#8A6F3A;
+  --sidebar-nav-accent:#916E27;
 }
 .app-shell:is([data-folder-theme="rose"],[data-dossier-theme="rose"]){
-  --sidebar-bg:#F0E4E7;--sidebar-divider:#E1D1D6;--sidebar-nav-accent:#A06A7E;
+  --sidebar-bg:#FFF2CE;--sidebar-divider:#E8D8AA;--sidebar-nav-accent:#A06A7E;
 }
 .app-shell:is([data-folder-theme="bleu"],[data-dossier-theme="bleu"]){
-  --sidebar-bg:#E3EAF2;--sidebar-divider:#D1DCE8;--sidebar-nav-accent:#607CA3;
+  --sidebar-bg:#FFF2CE;--sidebar-divider:#E8D8AA;--sidebar-nav-accent:#607CA3;
 }
 .app-shell:is([data-folder-theme="vert"],[data-dossier-theme="vert"]){
-  --sidebar-bg:#E2EBE5;--sidebar-divider:#D0DFD4;--sidebar-nav-accent:#638873;
+  --sidebar-bg:#FFF2CE;--sidebar-divider:#E8D8AA;--sidebar-nav-accent:#638873;
 }
 .app-shell .sidebar.sidebar-rail.sidebar-light,
 body .app-shell:is([data-folder-theme],[data-dossier-theme]) .sidebar.sidebar-rail.sidebar-light{
