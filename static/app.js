@@ -96,7 +96,7 @@ function sidebar(){
  if(state.me?.client_account){
    const active=state.view==='portal'||state.view==='portal-detail';
    return `<aside class="sidebar sidebar-rail sidebar-light" aria-label="Navigation client">
-    <div class="rail-brand"><img class="rail-brand-mark" src="/assets/jauno-mark.svg" width="34" height="42" alt=""><span class="rail-brand-name">JAUNO<small>par Framatex</small></span></div>
+    <div class="rail-brand"><img class="rail-brand-mark" src="/assets/dossier-jaune-mark.svg" width="34" height="42" alt=""><span class="rail-brand-name">Dossier Jaune<small>par Framatex</small></span></div>
     <button type="button" class="mobile-navigation-toggle" id="mobile-navigation-toggle" aria-expanded="false" aria-controls="framat-navigation">${icon('grid')} Menu</button>
     <div class="rail-navigation-content" id="framat-navigation">
     <nav class="sidebar-nav rail-primary"><button class="nav-btn ${active?'active':''}" data-view="portal" aria-current="${active?'page':'false'}">${icon('folder')}<span class="nav-text">Mes dossiers</span></button></nav>
@@ -110,8 +110,8 @@ function sidebar(){
    return `<button type="button" class="nav-btn ${active(view)?'active':''}" data-view="${view}" title="${label}" aria-current="${active(view)?'page':'false'}">${icon(ico)}<span class="nav-text">${label}</span>${active(view)?'<span class="nav-current" aria-hidden="true">›</span>':''}</button>`;
  }).join('');
  const toolsOpen=!!state.sidebarAdminOpen||tools.some(([view])=>active(view));
- return `<aside class="sidebar sidebar-rail sidebar-light" aria-label="Navigation JAUNO">
-   <div class="rail-brand"><img class="rail-brand-mark" src="/assets/jauno-mark.svg" width="34" height="42" alt=""><span class="rail-brand-name">JAUNO<small>par Framatex</small></span></div>
+ return `<aside class="sidebar sidebar-rail sidebar-light" aria-label="Navigation Dossier Jaune">
+   <div class="rail-brand"><img class="rail-brand-mark" src="/assets/dossier-jaune-mark.svg" width="34" height="42" alt=""><span class="rail-brand-name">Dossier Jaune<small>par Framatex</small></span></div>
    <button type="button" class="mobile-navigation-toggle" id="mobile-navigation-toggle" aria-expanded="false" aria-controls="framat-navigation">${icon('grid')}<span>Menu</span></button>
    <div class="rail-navigation-content" id="framat-navigation"><nav class="sidebar-nav rail-primary" aria-label="Navigation principale">${items(primary)}</nav>
    ${tools.length?`<details class="rail-management" ${toolsOpen?'open':''}><summary title="Outils de gestion">${icon('settings')}<span class="nav-text">Gestion</span><span class="rail-chevron" aria-hidden="true">${icon('chevron')}</span></summary>
@@ -141,7 +141,7 @@ function renderSpaceChoice(){
  app.innerHTML=`<div class="login-page login-rebalanced jauno-space-choice"><main class="login-stage">
   <div class="login-visual" aria-hidden="true"><div class="login-visual-orbit"></div><div class="login-visual-floor"></div><div class="login-folder login-folder-back"></div><div class="login-folder login-folder-middle"></div><div class="login-folder login-folder-front"><span class="login-folder-stripe"></span><span class="login-folder-line"></span><span class="login-folder-line login-folder-line-small"></span><span class="login-folder-dot"></span></div></div>
   <section class="login-form-wrap"><div class="login-auth-content">
-    <div class="login-form-brand"><span class="login-form-brand-icon"><img class="jauno-brand-mark" src="/assets/jauno-mark.svg" alt=""></span><strong>JAUNO</strong></div>
+    <div class="login-form-brand"><span class="login-form-brand-icon"><img class="jauno-brand-mark" src="/assets/dossier-jaune-mark.svg" alt=""></span><strong>Dossier Jaune</strong></div>
     <h1 id="space-title">Choisissez votre espace</h1>
     <div class="login-form jauno-space-actions" role="group" aria-labelledby="space-title">
       <button type="button" class="primary jauno-space-action" data-space="internal">Espace interne</button>
@@ -154,7 +154,7 @@ function renderLogin(space=state.authSpace){
  if(!space)return renderSpaceChoice();state.authSpace=space;
  resetModalState();overlay.innerHTML='';app.inert=false;document.body?.classList?.remove('modal-open');syncFloatingAssistant();app.innerHTML=`<div class="login-page login-rebalanced"><main class="login-stage">
   <div class="login-visual" aria-hidden="true"><div class="login-visual-orbit"></div><div class="login-visual-floor"></div><div class="login-folder login-folder-back"></div><div class="login-folder login-folder-middle"></div><div class="login-folder login-folder-front"><span class="login-folder-stripe"></span><span class="login-folder-line"></span><span class="login-folder-line login-folder-line-small"></span><span class="login-folder-dot"></span></div></div>
-  <section class="login-form-wrap"><div class="login-auth-content"><button type="button" class="auth-return" id="change-space">${icon('back')} Changer d’espace</button><div class="login-form-brand"><span class="login-form-brand-icon"><img class="jauno-brand-mark" src="/assets/jauno-mark.svg" alt=""></span><strong>JAUNO</strong></div>
+  <section class="login-form-wrap"><div class="login-auth-content"><button type="button" class="auth-return" id="change-space">${icon('back')} Changer d’espace</button><div class="login-form-brand"><span class="login-form-brand-icon"><img class="jauno-brand-mark" src="/assets/dossier-jaune-mark.svg" alt=""></span><strong>Dossier Jaune</strong></div>
     <h1 id="login-title">Connexion</h1>
     <form id="login-form" class="login-form" aria-labelledby="login-title">
       <div id="login-error" role="alert" aria-live="assertive"></div>
@@ -193,7 +193,7 @@ async function home(){
  const accessible=folders.filter(([slug])=>can('document.read',slug));
  const priorityPreview=(priorities.items||[]).slice(0,5);
  mount(`<div class="simple-home dashboard-022">
-  <header class="dash-welcome"><div><h1>Bonjour ${e((state.me?.name||'').trim().split(/\s+/)[0]||'')}</h1><p>Bienvenue sur JAUNO. Voici l’activité de vos dossiers jaunes.</p></div>
+  <header class="dash-welcome"><div><h1>Bonjour ${e((state.me?.name||'').trim().split(/\s+/)[0]||'')}</h1><p>Bienvenue dans Dossier Jaune. Voici l’activité de vos dossiers jaunes.</p></div>
   ${can('launch.create')?`<button class="primary dash-create" id="create-launch">${icon('plus')} Nouveau dossier</button>`:''}</header>
   <section class="simple-stats dash-stats" aria-label="Indicateurs de vos lancements">
    <article><span class="dash-metric-icon dash-gold">${icon('folder')}</span><div><span>Dossiers actifs</span><strong>${launches.filter(l=>l.status!=='Clôturé').length}</strong></div></article>
