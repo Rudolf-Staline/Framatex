@@ -26,16 +26,21 @@ def latest_document_versions(db: Session, launch_id: str, doc_type: str, folder:
 
 
 def comparison(db: Session, launch_id: str, rule: CrossDocumentRule):
-    """Do not guess when several documents could be the expected source."""
+    """Compare explicit current versions; cumulative receipts require an opted-in rule."""
     left = latest_document_versions(db, launch_id, rule.left_doc_type, rule.left_folder)
     right = latest_document_versions(db, launch_id, rule.right_doc_type, rule.right_folder)
-    status = 'unavailable'; reason = 'Pièce manquante'; pair = []
+    mode = rule.comparison_mode or 'equality'
+    status = 'unavailable'; reason = 'Pièce requise absente'; pair = []; totals = None
+    cumulative = mode == 'cumulative_delivery'
     if not left or not right:
-        reason = 'Pièce requise absente' if not left or not right else reason
-    elif len(left) != 1 or len(right) != 1 or left[0][0].id == right[0][0].id:
+        pass
+    elif len(left) != 1 or (not cumulative and len(right) != 1) or left[0][0].id in {d.id for d, _ in right}:
         status = 'ambiguous'; reason = 'Plusieurs documents candidats : sélectionner une source métier précise'
+    elif cumulative and len({v.sha256 for _, v in right}) != len(right):
+        status = 'ambiguous'; reason = 'Des justificatifs de réception identiques sont présents : vérifier les doublons avant de cumuler'
     else:
-        for d, v in [left[0], right[0]]:
+        sources = [left[0]] + right if cumulative else [left[0], right[0]]
+        for d, v in sources:
             datum = db.scalar(select(DocumentDatum).where(
                 DocumentDatum.document_version_id == v.id, DocumentDatum.field_key == rule.field_key
             ))
@@ -43,19 +48,36 @@ def comparison(db: Session, launch_id: str, rule: CrossDocumentRule):
                          'version': v.number, 'folder': d.folder.slug, 'value': datum.value_text if datum else None,
                          'unit': datum.unit if datum else None})
         if not all(x['value'] is not None for x in pair):
-            status = 'unavailable'; reason = 'Valeur non relevée sur une ou plusieurs versions courantes'
-        elif pair[0]['unit'] != pair[1]['unit']:
+            reason = 'Valeur non relevée sur une ou plusieurs versions courantes'
+        elif len({p['unit'] for p in pair}) != 1:
             status = 'unit_mismatch'; reason = 'Unités incompatibles : conversion manuelle requise'
+        elif cumulative and any(Decimal(p['value']) < 0 for p in pair):
+            reason = 'Une quantité négative exige un traitement distinct des retours ; aucun cumul automatique'
+        elif cumulative:
+            ordered = Decimal(pair[0]['value'])
+            received = sum((Decimal(p['value']) for p in pair[1:]), Decimal('0'))
+            remaining = max(Decimal('0'), ordered - received)
+            tolerance = Decimal(rule.tolerance_text)
+            totals = {'ordered': format(ordered, 'f'), 'received': format(received, 'f'),
+                      'remaining': format(remaining, 'f'), 'unit': pair[0]['unit'], 'receipt_count': len(right)}
+            if received > ordered + tolerance:
+                status = 'difference'; reason = 'Le cumul réceptionné dépasse la quantité commandée et la tolérance'
+            elif ordered - received > tolerance:
+                status = 'partial_delivery'; reason = 'Réception partielle : le solde reste attendu, sans incohérence démontrée'
+            else:
+                status = 'consistent'; reason = 'Quantité réceptionnée complète dans la tolérance'
         else:
             delta = abs(Decimal(pair[0]['value'])-Decimal(pair[1]['value']))
             status = 'consistent' if delta <= Decimal(rule.tolerance_text) else 'difference'
             reason = 'Écart dans la tolérance' if status == 'consistent' else 'Écart à examiner'
-    source = {'rule':rule.id,'pairs':[(p['version_id'],p['value'],p['unit']) for p in pair]}
-    signature = hashlib.sha256(json.dumps(source,sort_keys=True).encode()).hexdigest()
-    return {'rule_id':rule.id,'name':rule.name, 'field_key':rule.field_key,
-            'left_doc_type':rule.left_doc_type, 'right_doc_type':rule.right_doc_type,
-            'folders':[rule.left_folder,rule.right_folder], 'tolerance':rule.tolerance_text,
-            'status':status,'reason':reason,'pair':pair,'signature':signature}
+    source = {'rule': rule.id, 'mode': mode, 'tolerance': rule.tolerance_text,
+              'pairs': sorted((p['version_id'], p['value'], p['unit']) for p in pair)}
+    signature = hashlib.sha256(json.dumps(source, sort_keys=True).encode()).hexdigest()
+    return {'rule_id': rule.id, 'name': rule.name, 'field_key': rule.field_key,
+            'comparison_mode': mode, 'totals': totals,
+            'left_doc_type': rule.left_doc_type, 'right_doc_type': rule.right_doc_type,
+            'folders': [rule.left_folder, rule.right_folder], 'tolerance': rule.tolerance_text,
+            'status': status, 'reason': reason, 'pair': pair, 'signature': signature}
 
 
 def _read_cells(path: Path):

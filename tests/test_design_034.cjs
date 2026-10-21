@@ -8,7 +8,7 @@ const html=fs.readFileSync('static/index.html','utf8');
 const css=fs.readFileSync('static/design-034.css','utf8');
 const js=fs.readFileSync('static/global-library.js','utf8');
 
-assert(fs.readFileSync('static/atelier.css','utf8').includes('@font-face'));
+assert(fs.readFileSync('static/atelier.css','utf8').includes('Arial'));
 
 assert(legacy.indexOf('/* design-034.css */')>legacy.indexOf('/* design-033.css */'));
 assert(css.includes('--lc-font:"DM Sans"') && css.includes('--ui-display:"Plus Jakarta Sans"'));

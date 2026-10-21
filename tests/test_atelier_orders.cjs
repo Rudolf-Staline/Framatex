@@ -22,7 +22,7 @@ vm.createContext(context);vm.runInContext(fs.readFileSync('static/order-identifi
  node('#orders-next').onclick();assert(node('#orders-table').innerHTML.includes('data-order-open="L0"'));
  const html=fs.readFileSync('static/index.html','utf8'),css=fs.readFileSync('static/atelier.css','utf8');
  assert.equal((html.match(/rel="stylesheet"/g)||[]).length,2);
- assert(css.includes('prefers-reduced-motion'));assert(css.includes('@font-face'));
+ assert(css.includes('prefers-reduced-motion'));assert(css.includes('Arial'));
  console.log('Atelier: exact client filters, accents, escaping, paging, missing-date sorting and stylesheet loading OK');
 })().catch(err=>{console.error(err);process.exitCode=1});
 // A calendar date must not move to the previous day in a negative UTC offset.

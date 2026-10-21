@@ -28,6 +28,7 @@ from .experience_models import ExperienceRecord, DocumentExpectation  # noqa: F4
 from .completeness_models import CompletenessProfile, RequirementRule, LaunchCompleteness, RequirementValidation, RequirementException
 from .completeness import PHASES, PHASE_RANK, evaluate
 from .workflow_models import DocumentReview, BusinessValueRevision, ImpactRule, ImpactAlert
+from .document_comment_models import DocumentComment
 from .quality_models import DocumentDatum, CrossDocumentRule, QualityDecision, ExcelInspection
 from .intake_models import ConfirmedField
 from .spec_models import ClientRequirement, SpecificationAmbiguity
@@ -214,7 +215,7 @@ def health():
         from sqlalchemy import text
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-    return {"status": "ok", "version": "0.19.0"}
+    return {"status": "ok", "version": "0.20.0"}
 
 class FirstAdminSetup(BaseModel):
     token: str = Field(min_length=32, max_length=256)
@@ -326,7 +327,13 @@ def launches(q: str = "", user: User = Depends(get_current_user), db: Session = 
     term = q.strip().lower()
     if term:
         rows = [l for l in rows if term in " ".join((l.name, l.client_name or "", l.order_ref or "", l.orli_ref or "")).lower()]
-    return [launch_out(l) for l in rows]
+    result = []
+    for launch in rows:
+        check = evaluate(db, launch, user, permitted)
+        result.append({**launch_out(launch), 'document_check': {
+            'configured': check['configured'], 'partial_visibility': check['partial_visibility'],
+            **{key: check['counts'][key] for key in ('missing', 'pending_validation', 'not_due')}}})
+    return result
 
 @app.post("/api/launches", status_code=201)
 def create_launch(payload: LaunchPayload, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -887,6 +894,9 @@ app.include_router(access_router)
 # 0.17 — Signalements pilotes anonymisés vis-à-vis des autres collaborateurs.
 from .pilot_routes import router as pilot_router
 app.include_router(pilot_router)
+
+from .document_comment_routes import router as document_comments_router
+app.include_router(document_comments_router)
 
 from .client_routes import router as clients_router
 app.include_router(clients_router)

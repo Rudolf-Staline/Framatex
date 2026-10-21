@@ -60,15 +60,21 @@ async function orderInformation(){
  }catch(err){showErr(err)}
 }
 function normalizeOrderText(text){return String(text||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr')}
+function orderDocumentHint(d){
+ const c=d.document_check;if(!c)return '';
+ if(!c.configured)return '<small class="order-document-hint">Pièces attendues à définir</small>';
+ const text=c.missing?c.missing+' pièce(s) manquante(s)':c.pending_validation?c.pending_validation+' pièce(s) à valider':'Aucune pièce exigible manquante';
+ return '<small class="order-document-hint '+(c.missing?'has-missing':'')+'">'+e(text)+(c.partial_visibility?' · bilan partiel':'')+'</small>';
+}
 function orderTable(rows){
  if(!rows.length)return '<div class="empty"><div class="empty-icon">'+icon('search')+'</div><strong>Aucun dossier à afficher</strong><p>Essayez une autre recherche ou créez votre premier dossier de commande.</p></div>';
  return '<div class="table-scroll"><table><thead><tr><th scope="col">Commande / dossier</th><th scope="col">Client</th><th scope="col">Atelier</th><th scope="col">Statut</th><th scope="col"><span class="sr-only">Ouvrir</span></th></tr></thead><tbody>'+rows.map(d=>
- '<tr><td><button type="button" class="link order-open" data-order-open="'+e(d.id)+'"><span class="order-folder-mark">'+icon('folder')+'</span><span><strong>'+e(d.name)+'</strong><small>'+e(d.order_ref||'Référence à renseigner')+'</small></span></button></td><td><span class="client-cell">'+(d.client_name?'<span class="client-initial" aria-hidden="true">'+e(d.client_name.slice(0,2).toUpperCase())+'</span>':'')+e(d.client_name||'—')+'</span></td><td>'+e(d.identification?.workshop||'—')+'</td><td>'+statusTag(d.status)+'</td><td><button type="button" class="link" data-order-open="'+e(d.id)+'" aria-label="Ouvrir le dossier '+e(d.name)+'">'+icon('arrow')+'</button></td></tr>'
+ '<tr><td><button type="button" class="link order-open" data-order-open="'+e(d.id)+'"><span class="order-folder-mark">'+icon('folder')+'</span><span><strong>'+e(d.name)+'</strong><small>'+e(d.order_ref||'Référence à renseigner')+'</small>'+orderDocumentHint(d)+'</span></button></td><td><span class="client-cell">'+(d.client_name?'<span class="client-initial" aria-hidden="true">'+e(d.client_name.slice(0,2).toUpperCase())+'</span>':'')+e(d.client_name||'—')+'</span></td><td>'+e(d.identification?.workshop||'—')+'</td><td>'+statusTag(d.status)+'</td><td><button type="button" class="link" data-order-open="'+e(d.id)+'" aria-label="Ouvrir le dossier '+e(d.name)+'">'+icon('arrow')+'</button></td></tr>'
  ).join('')+'</tbody></table></div>';
 }
 function orderCards(rows){
  if(!rows.length)return orderTable(rows);
- return '<div class="order-card-grid">'+rows.map(d=>'<article class="order-card"><div class="order-card-top"><span class="order-folder-mark">'+icon('folder')+'</span>'+statusTag(d.status)+'</div><button class="link order-open" data-order-open="'+e(d.id)+'"><span><strong>'+e(d.name)+'</strong><small>'+e(d.order_ref||'Référence à renseigner')+'</small></span></button><p>'+e(d.client_name||'Client à renseigner')+'</p><small>Livraison · '+niceDate(d.identification?.delivery_date)+'</small></article>').join('')+'</div>';
+ return '<div class="order-card-grid">'+rows.map(d=>'<article class="order-card"><div class="order-card-top"><span class="order-folder-mark">'+icon('folder')+'</span>'+statusTag(d.status)+'</div><button class="link order-open" data-order-open="'+e(d.id)+'"><span><strong>'+e(d.name)+'</strong><small>'+e(d.order_ref||'Référence à renseigner')+'</small>'+orderDocumentHint(d)+'</span></button><p>'+e(d.client_name||'Client à renseigner')+'</p><small>Livraison · '+niceDate(d.identification?.delivery_date)+'</small></article>').join('')+'</div>';
 }
 async function orderListPage(){
  state.view='launches';state.launches=await api('/api/launches');

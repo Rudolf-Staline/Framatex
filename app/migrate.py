@@ -17,7 +17,7 @@ from .core import Base, engine
 from . import models, completeness_models, workflow_models, quality_models, intake_models  # noqa: F401
 from . import spec_models, mail_models, impact_sim_models, orli_models, material_models # noqa: F401
 from . import approval_models, sharing_models, pilot_models, global_library_models  # noqa: F401
-from . import experience_models  # noqa: F401
+from . import experience_models, document_comment_models  # noqa: F401
 
 # Include the migration ledger in SQLAlchemy metadata so test databases that
 # reset Base.metadata also reset this ledger; production upgrades remain explicit.
@@ -25,7 +25,7 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
                         Column('version', String(80), primary_key=True),
                         Column('applied_at', String(50), nullable=False), extend_existing=True)
 
-REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_global_library', '0005_experience_controls', '0006_order_identification', '0007_client_portal')
+REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_global_library', '0005_experience_controls', '0006_order_identification', '0007_client_portal', '0008_meeting_corrections')
 
 
 def _versions(conn):
@@ -63,7 +63,7 @@ def migrate():
                 if not expected.issubset(existing):
                     raise RuntimeError('Schéma existant partiel : migration interrompue pour éviter une perte de données')
                 # Old 0.14 installations must contain the complete pre-0.15 schema.
-                missing = (set(Base.metadata.tables) - {'schema_migrations', 'launch_members', 'global_folders', 'global_document_entries', 'global_library_config', 'experience_records', 'document_expectations'}) - existing
+                missing = (set(Base.metadata.tables) - {'schema_migrations', 'launch_members', 'global_folders', 'global_document_entries', 'global_library_config', 'experience_records', 'document_expectations', 'document_comments'}) - existing
                 if missing:
                     raise RuntimeError('Base antérieure incomplète : tables manquantes : ' + ', '.join(sorted(missing)))
             else:
@@ -117,6 +117,11 @@ def migrate():
             conn.execute(text('CREATE INDEX IF NOT EXISTS ix_client_publications_client_id ON client_publications (client_id)'))
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0007_client_portal','d':datetime.now(timezone.utc).isoformat()})
+        if '0008_meeting_corrections' not in done:
+            from tools.migrate_meeting_corrections import apply_to_connection
+            apply_to_connection(conn)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0008_meeting_corrections','d':datetime.now(timezone.utc).isoformat()})
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
         cols = {c['name'] for c in inspect(conn).get_columns('launches')}
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():

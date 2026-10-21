@@ -15,7 +15,7 @@ from . import models, completeness_models, workflow_models, quality_models  # no
 from . import intake_models, spec_models, mail_models, impact_sim_models  # noqa: F401
 from . import orli_models, material_models, approval_models, sharing_models, pilot_models  # noqa: F401
 from . import global_library_models  # noqa: F401
-from . import experience_models  # noqa: F401
+from . import experience_models, document_comment_models  # noqa: F401
 
 REQUIRED = {"users", "roles", "launches", "folders", "documents", "document_versions", "audit_events",
             "global_folders", "global_document_entries", "global_library_config",
@@ -32,6 +32,8 @@ def assert_ready():
             raise RuntimeError("Base demo non initialisee : executer explicitement python -m app.demo_postgres init")
         if 'identification_json' not in {c['name'] for c in inspect(conn).get_columns('launches')}:
             raise RuntimeError("Fiche commande non initialisée : python -m tools.migrate_order_identification --apply")
+        if 'document_comments' not in existing or 'comparison_mode' not in {c['name'] for c in inspect(conn).get_columns('cross_document_rules')}:
+            raise RuntimeError('Corrections meeting non initialisées : python -m tools.migrate_meeting_corrections --apply')
         # Public is an exposed Supabase Data API schema by default.
         rows = conn.execute(text("""SELECT c.relname, c.relrowsecurity FROM pg_class c
             JOIN pg_namespace n ON n.oid=c.relnamespace

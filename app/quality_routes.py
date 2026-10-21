@@ -31,7 +31,8 @@ class RuleIn(BaseModel):
     right_doc_type: str = Field(min_length=2,max_length=100)
     left_folder: str
     right_folder: str
-    tolerance: str = '0'
+    comparison_mode: Literal['equality', 'cumulative_delivery'] = 'equality'
+    tolerance: str = Field(default='0', max_length=35)
 
 
 class QualityDecisionIn(BaseModel):
@@ -60,7 +61,7 @@ def version_doc(db,version_id):
 def rule_out(r):
     return {'id':r.id,'name':r.name,'field_key':r.field_key,'left_doc_type':r.left_doc_type,
             'right_doc_type':r.right_doc_type,'left_folder':r.left_folder,'right_folder':r.right_folder,
-            'tolerance':r.tolerance_text,'active':r.active}
+            'tolerance':r.tolerance_text,'comparison_mode':r.comparison_mode,'active':r.active}
 
 
 @router.get('/api/quality/fields')
@@ -111,7 +112,7 @@ def quality_report(launch_id:str,user:User=Depends(get_current_user),db:Session=
         item['can_review']=permitted(user,'quality.review',r.left_folder) and permitted(user,'quality.review',r.right_folder)
         rows.append(item)
     return {'rows':rows,'counts':{name:sum(x['status']==name for x in rows) for name in
-            ('consistent','difference','unavailable','ambiguous','unit_mismatch')}}
+            ('consistent','difference','partial_delivery','unavailable','ambiguous','unit_mismatch')}}
 
 
 @router.post('/api/launches/{launch_id}/quality/{rule_id}/decisions',status_code=201)
@@ -145,9 +146,12 @@ def add_rule(payload:RuleIn,user:User=Depends(get_current_user),db:Session=Depen
         raise HTTPException(422,'Configuration de règle incorrecte')
     if payload.left_doc_type.strip()==payload.right_doc_type.strip() and payload.left_folder==payload.right_folder:
         raise HTTPException(422,'Deux sources documentaires distinctes sont nécessaires')
+    if payload.comparison_mode == 'cumulative_delivery' and payload.field_key not in {'quantite_lancement', 'besoin_matiere_total'}:
+        raise HTTPException(422, 'Le cumul des réceptions est réservé à une quantité totale, jamais à un prix ou une consommation unitaire')
     item=CrossDocumentRule(name=payload.name.strip(),field_key=payload.field_key,
         left_doc_type=payload.left_doc_type.strip(),right_doc_type=payload.right_doc_type.strip(),
         left_folder=payload.left_folder,right_folder=payload.right_folder,
+        comparison_mode=payload.comparison_mode,
         tolerance_text=normalized_decimal(payload.tolerance,tolerance=True),created_by=user.id)
     db.add(item);db.flush();audit(db,user,'quality.rule.create','quality_rule',item.id)
     db.commit()

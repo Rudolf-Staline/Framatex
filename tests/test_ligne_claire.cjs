@@ -9,7 +9,7 @@ const html=fs.readFileSync('static/index.html','utf8');
 const csp=fs.readFileSync('app/main.py','utf8');
 assert(csp.includes("style-src 'self' 'unsafe-inline' https://fonts.googleapis.com"), 'External Google Font stylesheet blocked by CSP');
 assert(csp.includes("font-src 'self' https://fonts.gstatic.com"), 'External font download blocked by CSP');
-assert(fs.readFileSync('static/atelier.css','utf8').includes('@font-face'), 'local typeface missing');
+assert(fs.readFileSync('static/atelier.css','utf8').includes('Arial'), 'Arial typeface missing');
 assert(legacy.includes('/* design-030.css */'), 'stylesheet missing');
 assert(legacy.indexOf('/* design-030.css */')>legacy.indexOf('/* design-029.css */'));
 assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length);

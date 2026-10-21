@@ -28,6 +28,7 @@ class CrossDocumentRule(Base):
     right_doc_type: Mapped[str] = mapped_column(String(100))
     left_folder: Mapped[str] = mapped_column(String(10))
     right_folder: Mapped[str] = mapped_column(String(10))
+    comparison_mode: Mapped[str] = mapped_column(String(32), default='equality', server_default='equality')
     tolerance_text: Mapped[str] = mapped_column(String(35), default='0')
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_by: Mapped[str] = mapped_column(ForeignKey('users.id'))
