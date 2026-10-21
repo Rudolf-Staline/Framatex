@@ -1209,28 +1209,57 @@ body .app-shell:is([data-folder-theme],[data-dossier-theme]) .sidebar .nav-btn.a
 }
 @media(prefers-reduced-motion:reduce){.entry-gateway .space-options button{transition:none;transform:none!important}}
 
-/* JAUNO identity: shared visual language for sign-in and space selection. */
+/* JAUNO identity and login-matched space selector.
+   Login and selector inherit the exact same 970px/540px stage and mobile layout.
+   The only visual difference is two yellow actions instead of the credentials form. */
 .login-page .jauno-brand-mark{display:block;width:24px;height:24px;object-fit:contain}
 .login-rebalanced .login-form-brand strong{letter-spacing:.055em;font-weight:800}
-.login-rebalanced.jauno-space-choice .login-form-wrap{background:inherit}
-.jauno-space-choice .login-auth-content{width:100%}
-.jauno-space-choice #space-title{max-width:440px}
-.jauno-space-actions{display:grid;gap:12px;width:100%;margin-top:30px}
-.jauno-space-action{display:flex;align-items:center;gap:13px;min-height:76px;width:100%;text-align:left;padding:13px 16px;border:1px solid #e3e5dc;border-radius:12px;background:#fff;color:#232a22;cursor:pointer;box-shadow:0 3px 12px rgba(38,40,25,.035);transition:border-color .15s ease,background-color .15s ease,transform .15s ease,box-shadow .15s ease}
-.jauno-space-action:hover,.jauno-space-action:focus-visible{border-color:#dab735;box-shadow:0 7px 20px rgba(78,70,17,.095);transform:translateX(2px);outline:none}
-.jauno-space-action:focus-visible{outline:3px solid #eac75b;outline-offset:2px}
-.jauno-space-action-icon{display:grid;place-items:center;flex-shrink:0;width:43px;height:43px;border-radius:9px;background:#fff0b8;color:#7d6014}
-.jauno-space-action[data-space="client"] .jauno-space-action-icon{background:#e7f0ec;color:#32634f}
-.jauno-space-action-copy{display:grid;gap:4px;flex:1;min-width:0}
-.jauno-space-action-copy strong{font-size:15px;font-weight:750;color:#272a24}
-.jauno-space-action-copy small{font-size:11px;color:#788076;font-weight:400}
-.jauno-space-action>.ui-icon{width:19px;height:19px;color:#747b6b}
-.jauno-space-choice .login-stage{min-height:100dvh}
 .app-shell .rail-brand-mark{width:36px;height:42px;object-fit:contain}
 .app-shell .rail-brand-name{font-weight:800;letter-spacing:.035em}
 .app-shell .rail-brand-name small{font-weight:500;letter-spacing:0}
-@media(max-width:760px){.jauno-space-action{min-height:72px}.jauno-space-actions{margin-top:24px}}
-@media(prefers-reduced-motion:reduce){.jauno-space-action{transition:none}.jauno-space-action:hover{transform:none}}
+.login-rebalanced.jauno-space-choice .jauno-space-actions{
+ display:grid;
+ grid-template-columns:1fr;
+ gap:12px;
+ width:100%;
+ max-width:100%;
+ padding:0;
+ margin:0;
+}
+.login-rebalanced.jauno-space-choice .login-form .jauno-space-action{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ width:100%;
+ min-height:49px;
+ height:49px;
+ margin:0;
+ padding:0 16px;
+ background:#e5b43a;
+ border:1px solid #d6a52b;
+ border-radius:10px;
+ color:#fff;
+ font-size:13px;
+ font-weight:800;
+ line-height:1.2;
+ text-align:center;
+ box-shadow:0 4px 12px rgba(168,113,0,.12);
+ cursor:pointer;
+ transition:background .16s ease,box-shadow .16s ease;
+}
+.login-rebalanced.jauno-space-choice .login-form .jauno-space-action:hover{
+ background:#d3a024;
+ border-color:#c09322;
+ color:#fff;
+ box-shadow:0 6px 16px rgba(168,113,0,.18);
+}
+.login-rebalanced.jauno-space-choice .login-form .jauno-space-action:focus-visible{
+ outline:3px solid rgba(172,120,0,.42);
+ outline-offset:3px;
+}
+@media(prefers-reduced-motion:reduce){
+ .login-rebalanced.jauno-space-choice .login-form .jauno-space-action{transition:none}
+}
 
 /* Underlying dossier colors are permanent — selected state intensifies the same hue. */
 .app-shell .main .folder-tab.folder-jaune{--tile-bg:#fff3c8;--tile-active:#ffe4a1;--tile-border:#e9d37c;--tile-border-active:#c9971c;--tile-icon:#9f7713}
