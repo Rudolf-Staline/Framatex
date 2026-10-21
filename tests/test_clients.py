@@ -70,7 +70,11 @@ def test_portal_isolation_and_lifecycle(system):
     assert 'orli_ref' not in home['launches'][0]
     assert alpha.get('/api/portal/launches/'+lb).status_code==404
     assert alpha.get('/api/portal/launches/'+unassigned).status_code==404
-    assert len(alpha.get('/api/portal/launches/'+la).json()['documents'])==1
+    client_documents=alpha.get('/api/portal/launches/'+la).json()['documents']
+    assert len(client_documents)==1
+    assert client_documents[0]['folder']=='jaune'
+    assert client_documents[0]['doc_type']=='Fiche technique'
+    assert client_documents[0]['filename']=='fiche.txt'
     assert alpha.get(f'/api/portal/documents/{pid}/download').content==b'Donnees autorisees'
     assert beta.get(f'/api/portal/documents/{pid}/download').status_code==404
     for path in ['/api/launches',f'/api/launches/{la}',f'/api/documents/{did}/versions/1/download','/api/clients','/api/admin/users','/api/workspace/priorities']:
@@ -131,3 +135,25 @@ def test_disabled_client_can_sign_in_as_another_account(system):
                                                 'password':PASSWORD},headers=H)
     assert result.status_code == 200, result.text
     assert result.json()['client_account'] is False
+
+
+def test_assistant_scoped_document_inventory_and_portal_rights(system):
+    client_id,_=add_client(system,'Client Assist','assist@portal.test')
+    lid=launch(system,client_id,'Échantillons automne')
+    document=system.post(
+        f'/api/launches/{lid}/documents',
+        data={'folder':'jaune','title':'Fiche matière coton','doc_type':'Fiche technique'},
+        files={'file':('coton.txt',b'contenu interne non publie','text/plain')},headers=H)
+    assert document.status_code==201,document.text
+    response=system.post('/api/assistant/chat',json={
+        'question':'Quels documents sont dans le sous-dossier jaune ?',
+        'launch_id':lid},headers=H)
+    assert response.status_code==200,response.text
+    data=response.json()
+    assert data['title']=='Documents accessibles'
+    assert any(item['label']=='Fiche matière coton' for item in data['results'])
+    client=login('assist@portal.test')
+    published=client.get('/api/portal/launches/'+lid).json()['documents']
+    assert published==[], 'Un fichier non publie ne doit pas etre expose au client'
+    assert client.post('/api/assistant/chat',json={
+        'question':'Quels documents sont dans ce dossier ?','launch_id':lid},headers=H).status_code==403
