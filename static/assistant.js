@@ -1,4 +1,4 @@
-/* JAUNO Assist 0.19 — white/blue UI, locally verified guide only.
+/* Dossier Jaune Assist 0.19 — white/blue UI, locally verified guide only.
  * This module never sends document contents to an external model. */
 'use strict';
 const FRAMAT_GUIDE_QUICK = [
@@ -20,11 +20,11 @@ function guideNavigation(response){
 }
 function guideMessage(kind, value, response=null){
  const isBot=kind==='bot';
- return `<div class="assistant-msg assistant-msg-${isBot?'bot':'user'}">${isBot?`<span class="assistant-msg-avatar">${icon('layers')}</span>`:''}<div class="assistant-bubble">${isBot?`<strong>${e(response?.title||'JAUNO Assist')}</strong><p>${e(value)}</p>${response?.source?`<small>${e(response.source)}</small>`:''}${guideNavigation(response)}`:`<p>${e(value)}</p>`}</div></div>`;
+ return `<div class="assistant-msg assistant-msg-${isBot?'bot':'user'}">${isBot?`<span class="assistant-msg-avatar">${icon('layers')}</span>`:''}<div class="assistant-bubble">${isBot?`<strong>${e(response?.title||'Dossier Jaune Assist')}</strong><p>${e(value)}</p>${response?.source?`<small>${e(response.source)}</small>`:''}${guideNavigation(response)}`:`<p>${e(value)}</p>`}</div></div>`;
 }
 function paintAssistantThread(){
  const area=app.querySelector('#assistant-thread');if(!area)return;
- area.innerHTML=`<div class="assistant-msg assistant-msg-bot"><span class="assistant-msg-avatar">${icon('layers')}</span><div class="assistant-bubble"><strong>Bonjour !</strong><p>Je peux vous guider dans JAUNO, retrouver une rubrique ou expliquer une procédure. Que souhaitez-vous faire ?</p></div></div>`+assistantThread.map(item=>guideMessage(item.kind,item.text,item.response)).join('');
+ area.innerHTML=`<div class="assistant-msg assistant-msg-bot"><span class="assistant-msg-avatar">${icon('layers')}</span><div class="assistant-bubble"><strong>Bonjour !</strong><p>Je peux vous guider dans Dossier Jaune, retrouver une rubrique ou expliquer une procédure. Que souhaitez-vous faire ?</p></div></div>`+assistantThread.map(item=>guideMessage(item.kind,item.text,item.response)).join('');
  area.querySelectorAll('[data-guide-destination]').forEach((button,i)=>{
   /* Each button lives inside its corresponding message; pair by DOM position. */
   const parent=button.closest('.assistant-msg');
@@ -84,7 +84,7 @@ async function assistantPage(){
  state.view='assistant';
  if(!state.launches?.length)try{state.launches=await api('/api/launches')}catch{state.launches=[]}
  const recent=state.launches.slice(0,3);
- mount(`<div class="assistant-page"><div class="assistant-main"><div class="assistant-page-heading"><div><div class="page-kicker"><span class="assistant-page-dot"></span> VOTRE ASSISTANT DOCUMENTAIRE</div><h1>JAUNO <span>Assist</span></h1><p>Je vous aide à retrouver une information, comprendre une procédure<br> ou naviguer dans JAUNO.</p></div><button type="button" id="assistant-reset" class="secondary">${icon('plus')} Nouvelle conversation</button></div><div class="assistant-thread" id="assistant-thread" role="log" aria-live="polite" aria-label="Conversation"></div><div class="assistant-composer-sticky"><div class="assistant-quick">${assistantQuickButtons()}</div><form id="assistant-form" class="assistant-chat-form"><label for="assistant-question" class="sr-only">Votre question</label>${icon('file')}<input id="assistant-question" autocomplete="off" maxlength="500" minlength="2" required placeholder="Écrivez votre question..."/><button type="submit" aria-label="Envoyer">${icon('arrow')}</button></form><small>Réponses basées sur les procédures locales, sans IA générative.</small></div></div></div>`,'JAUNO Assist');
+ mount(`<div class="assistant-page"><div class="assistant-main"><div class="assistant-page-heading"><div><div class="page-kicker"><span class="assistant-page-dot"></span> VOTRE ASSISTANT DOCUMENTAIRE</div><h1>Dossier Jaune <span>Assist</span></h1><p>Je vous aide à retrouver une information, comprendre une procédure<br> ou naviguer dans Dossier Jaune.</p></div><button type="button" id="assistant-reset" class="secondary">${icon('plus')} Nouvelle conversation</button></div><div class="assistant-thread" id="assistant-thread" role="log" aria-live="polite" aria-label="Conversation"></div><div class="assistant-composer-sticky"><div class="assistant-quick">${assistantQuickButtons()}</div><form id="assistant-form" class="assistant-chat-form"><label for="assistant-question" class="sr-only">Votre question</label>${icon('file')}<input id="assistant-question" autocomplete="off" maxlength="500" minlength="2" required placeholder="Écrivez votre question..."/><button type="submit" aria-label="Envoyer">${icon('arrow')}</button></form><small>Réponses basées sur les procédures locales, sans IA générative.</small></div></div></div>`,'Dossier Jaune Assist');
  paintAssistantThread();
  app.querySelector('#assistant-form')?.addEventListener('submit',ev=>{ev.preventDefault();askGuide(app.querySelector('#assistant-question')?.value)});
  app.querySelectorAll('[data-assistant-question]').forEach(b=>b.addEventListener('click',()=>askGuide(b.dataset.assistantQuestion)));
