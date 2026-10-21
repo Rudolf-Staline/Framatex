@@ -14,7 +14,7 @@ router = APIRouter(tags=["Assistant"])
 
 
 class ChatInput(BaseModel):
-    question: str = Field(min_length=3, max_length=500)
+    question: str = Field(min_length=2, max_length=500)
     launch_id: str | None = Field(default=None, max_length=36)
     folder: Literal["jaune", "rose", "bleu", "vert"] | None = None
     mode: Literal["auto", "memory"] = "auto"
@@ -27,10 +27,12 @@ def conversational_response(question: str):
         "salut", "bonjour", "bonsoir", "coucou", "hello", "hey", "hi", "yo",
         "bjr", "slt", "salut jauno", "bonjour jauno", "bonsoir jauno",
         "salut assistant", "bonjour assistant", "bonsoir assistant",
+        "salut bot", "bonjour bot", "bonsoir bot",
     }
     how_are_you = {
         "ca va", "comment ca va", "comment vas tu", "tu vas bien",
         "comment allez vous", "salut ca va", "bonjour ca va",
+        "salut comment ca va", "bonjour comment ca va",
     }
     thanks = {
         "merci", "merci beaucoup", "merci jauno", "super merci",
@@ -47,7 +49,7 @@ def conversational_response(question: str):
     }
     goodbyes = {"au revoir", "a bientot", "bye", "bonne journee", "bonne soiree", "a plus"}
     if phrase in greetings:
-        title, answer = ("Salut !" if phrase.startswith(("salut", "slt", "coucou", "hey", "yo", "hi")) else "Bonjour !"), (
+        title, answer = ("Bonsoir !" if phrase.startswith("bonsoir") else "Salut !" if phrase.startswith(("salut", "slt", "coucou", "hey", "yo", "hi")) else "Bonjour !"), (
             "Je suis l’assistant JAUNO. Je peux retrouver un dossier jaune, chercher "
             "un document, vérifier les pièces manquantes ou expliquer le partage client. "
             "De quoi avez-vous besoin ?"
