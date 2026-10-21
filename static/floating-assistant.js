@@ -1,4 +1,4 @@
-/* Framatex Assist · persistent floating guide.
+/* JAUNO Assist · persistent floating guide.
    Keeps permissions and document context in the existing FastAPI endpoint. */
 'use strict';
 let floatingAssistantMessages=[];
@@ -23,7 +23,7 @@ function buildFloatingAssistant(){
  if(!host||host.dataset.ready==='1')return;
  host.dataset.ready='1';
  host.innerHTML=[
-  '<button type="button" class="floating-assistant-trigger" id="floating-assistant-trigger" aria-label="Ouvrir Framatex Assist" aria-controls="floating-assistant-panel" aria-expanded="false">',
+  '<button type="button" class="floating-assistant-trigger" id="floating-assistant-trigger" aria-label="Ouvrir JAUNO Assist" aria-controls="floating-assistant-panel" aria-expanded="false">',
     '<span class="floating-assistant-trigger-icon">',FLOATING_CHAT_ICON,'</span>',
     '<span class="floating-assistant-trigger-spark">',FLOATING_SPARK_ICON,'</span>',
     '<span class="floating-assistant-trigger-tip" aria-hidden="true">Besoin d’aide ?</span>',
@@ -34,14 +34,14 @@ function buildFloatingAssistant(){
       '<div class="floating-assistant-brand-icon" aria-hidden="true">',FLOATING_CHAT_ICON,'</div>',
       '<div class="floating-assistant-brand-copy">',
         '<span class="floating-assistant-head-label">VOTRE ESPACE D’AIDE</span>',
-        '<h2 id="floating-assistant-title">Assistant Framatex</h2>',
+        '<h2 id="floating-assistant-title">Assistant JAUNO</h2>',
       '</div>',
       '<button type="button" id="floating-assistant-reset" class="floating-assistant-icon-button floating-assistant-reset" aria-label="Nouvelle discussion" hidden>',
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.8 6.5M3 4v7h7"/></svg>',
       '</button>',
       '<button type="button" id="floating-assistant-close" class="floating-assistant-icon-button floating-assistant-close" aria-label="Fermer l’assistant">',icon('x'),'</button>',
     '</header>',
-    '<div id="floating-assistant-chat" class="floating-assistant-chat" role="log" aria-live="polite" aria-label="Conversation avec Framatex Assist"></div>',
+    '<div id="floating-assistant-chat" class="floating-assistant-chat" role="log" aria-live="polite" aria-label="Conversation avec JAUNO Assist"></div>',
     '<div class="floating-assistant-bottom">',
       '<form id="floating-assistant-form" class="floating-assistant-form">',
         '<label for="floating-assistant-input" class="sr-only">Votre question</label>',
@@ -98,7 +98,7 @@ function openFloatingAssistant(){
  host.querySelector('#floating-assistant-backdrop').hidden=false;
  host.querySelector('#floating-assistant-panel').hidden=false;
  host.querySelector('#floating-assistant-trigger').setAttribute('aria-expanded','true');
- host.querySelector('#floating-assistant-trigger').setAttribute('aria-label','Framatex Assist ouvert');
+ host.querySelector('#floating-assistant-trigger').setAttribute('aria-label','JAUNO Assist ouvert');
  paintFloatingAssistant();
  document.addEventListener('keydown',floatingAssistantKeydown);
  host.querySelector('#floating-assistant-input')?.focus();
@@ -116,7 +116,7 @@ function closeFloatingAssistant(restoreFocus=true){
    if(backdrop)backdrop.hidden=true;
    const trigger=host.querySelector('#floating-assistant-trigger');
    trigger?.setAttribute('aria-expanded','false');
-   trigger?.setAttribute('aria-label','Ouvrir Framatex Assist');
+   trigger?.setAttribute('aria-label','Ouvrir JAUNO Assist');
    if(restoreFocus)(floatingAssistantPriorFocus?.isConnected?floatingAssistantPriorFocus:trigger)?.focus?.();
  }
  floatingAssistantPriorFocus=null;
