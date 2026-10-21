@@ -143,9 +143,9 @@ function renderSpaceChoice(){
   <section class="login-form-wrap"><div class="login-auth-content">
     <div class="login-form-brand"><span class="login-form-brand-icon"><img class="jauno-brand-mark" src="/assets/jauno-mark.svg" alt=""></span><strong>JAUNO</strong></div>
     <h1 id="space-title">Choisissez votre espace</h1>
-    <div class="jauno-space-actions" role="group" aria-labelledby="space-title">
-      <button type="button" class="jauno-space-action" data-space="internal"><span class="jauno-space-action-icon">${icon('folder')}</span><span class="jauno-space-action-copy"><strong>Espace interne</strong><small>Gestion des dossiers jaunes</small></span>${icon('forward')}</button>
-      <button type="button" class="jauno-space-action" data-space="client"><span class="jauno-space-action-icon">${icon('users')}</span><span class="jauno-space-action-copy"><strong>Espace client</strong><small>Suivi et documents partagés</small></span>${icon('forward')}</button>
+    <div class="login-form jauno-space-actions" role="group" aria-labelledby="space-title">
+      <button type="button" class="primary jauno-space-action" data-space="internal">Espace interne</button>
+      <button type="button" class="primary jauno-space-action" data-space="client">Espace client</button>
     </div>
   </div></section></main></div>`;
  app.querySelectorAll('[data-space]').forEach(b=>b.addEventListener('click',()=>renderLogin(b.dataset.space)));
