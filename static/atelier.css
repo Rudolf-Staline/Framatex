@@ -1275,3 +1275,10 @@ body .app-shell:is([data-folder-theme],[data-dossier-theme]) .sidebar .nav-btn.a
 .app-shell .main .folder-tabs .folder-tab .folder-tab-title span{color:#202820!important}
 .app-shell .main .folder-tabs .folder-tab .folder-tab-count{color:var(--tile-icon)!important}
 @media(prefers-reduced-motion:reduce){.app-shell .main .folder-tabs .folder-tab[class*="folder-"]{transition:none}}
+
+/* Singular product identity in the navigation, consistent with longer brand name. */
+.app-shell .sidebar .rail-brand-name{font-family:Arial,sans-serif;font-size:23px;line-height:1.12;letter-spacing:-.65px;white-space:nowrap}
+.app-shell .sidebar .rail-brand-name small{font-size:11px;letter-spacing:0;font-weight:500;margin-top:4px}
+.login-rebalanced .login-form-brand strong{font-size:19px;letter-spacing:-.45px}
+@media(max-width:1050px){.app-shell .sidebar .rail-brand-name{font-size:20px}}
+@media(max-width:760px){.app-shell .sidebar .rail-brand-name{font-size:21px}}
