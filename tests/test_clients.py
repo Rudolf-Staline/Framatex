@@ -157,3 +157,27 @@ def test_assistant_scoped_document_inventory_and_portal_rights(system):
     assert published==[], 'Un fichier non publie ne doit pas etre expose au client'
     assert client.post('/api/assistant/chat',json={
         'question':'Quels documents sont dans ce dossier ?','launch_id':lid},headers=H).status_code==403
+
+
+def test_assistant_conversation_before_document_navigation(system):
+    scenarios = [
+        ('salut', 'Salut !'),
+        ('Bonjour !', 'Bonjour !'),
+        ('bonsoir', 'Bonjour !'),
+        ('merci beaucoup', 'Avec plaisir !'),
+        ('qui es-tu ?', 'Je suis l’assistant JAUNO.'),
+        ('que peux-tu faire ?', 'Comment puis-je vous aider ?'),
+        ('ça va ?', 'Tout va bien, merci !'),
+    ]
+    for prompt,title in scenarios:
+        result=system.post('/api/assistant/chat',json={'question':prompt},headers=H)
+        assert result.status_code==200,(prompt,result.text)
+        data=result.json()
+        assert data['title']==title,(prompt,data)
+        assert data['source']=='Assistant JAUNO'
+        assert data['destination'] is None
+        assert 'Dossier Jaune : Jaune' not in data['answer']
+    normal=system.post('/api/assistant/chat',json={
+        'question':'Comment déposer un document ?'},headers=H)
+    assert normal.status_code==200
+    assert normal.json()['title']!='Salut !'
