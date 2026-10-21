@@ -90,28 +90,28 @@ function statusTag(s){
 }
 function topbar(label){
  if(state.me?.client_account)return `<header class="topbar"><span class="client-topbar-label">ESPACE CLIENT</span><div class="topbar-actions"><span class="lc-top-username">${e(state.me.name)}</span></div></header>`;
- return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher une commande">${icon('search')}<span>Rechercher une commande…</span><kbd>⌘ K</kbd></button><div class="topbar-actions"><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
+ return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher un dossier jaune">${icon('search')}<span>Rechercher un dossier…</span><kbd>⌘ K</kbd></button><div class="topbar-actions"><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
 }
 function sidebar(){
  if(state.me?.client_account){
    const active=state.view==='portal'||state.view==='portal-detail';
    return `<aside class="sidebar sidebar-rail sidebar-light" aria-label="Navigation client">
-    <div class="rail-brand"><img class="rail-brand-mark" src="/assets/images/brand-petals.png" width="34" height="42" alt=""><span class="rail-brand-name">Framatex<small>Votre espace de travail</small></span></div>
+    <div class="rail-brand"><img class="rail-brand-mark" src="/assets/jauno-mark.svg" width="34" height="42" alt=""><span class="rail-brand-name">JAUNO<small>par Framatex</small></span></div>
     <button type="button" class="mobile-navigation-toggle" id="mobile-navigation-toggle" aria-expanded="false" aria-controls="framat-navigation">${icon('grid')} Menu</button>
     <div class="rail-navigation-content" id="framat-navigation">
     <nav class="sidebar-nav rail-primary"><button class="nav-btn ${active?'active':''}" data-view="portal" aria-current="${active?'page':'false'}">${icon('folder')}<span class="nav-text">Mes dossiers</span></button></nav>
     <div class="sidebar-bottom rail-account"><div class="user"><span class="user-name">${e(state.me.name)}</span></div><button type="button" class="logout" id="logout">${icon('out')}<span>Quitter</span></button></div></div></aside>`;
  }
 
- const primary=[...(can('launch.read')?[['launches','folder','Commandes']]:[]),...(state.me?.admin?[['clients','users','Clients']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s))?[['controls','shield','Vérifications']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s)&&can('rex.read',s))?[['rex','book','Mémoire métier']]:[])];
+ const primary=[...(can('launch.read')?[['launches','folder','Dossiers Jaunes']]:[]),...(state.me?.admin?[['clients','users','Clients']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s))?[['controls','shield','Vérifications']]:[]),...(['jaune','rose','bleu','vert'].some(s=>can('document.read',s)&&can('rex.read',s))?[['rex','book','Mémoire métier']]:[])];
  const tools=[['pilot','info','Aide & retours'],...(state.me.admin?[['orli','file','Imports ORLI'],['admin','users','Administration']]:[])];
  const active=view=>state.view===view||(state.view==='detail'&&view==='launches');
  const items=list=>list.map(([view,ico,label])=>{
    return `<button type="button" class="nav-btn ${active(view)?'active':''}" data-view="${view}" title="${label}" aria-current="${active(view)?'page':'false'}">${icon(ico)}<span class="nav-text">${label}</span>${active(view)?'<span class="nav-current" aria-hidden="true">›</span>':''}</button>`;
  }).join('');
  const toolsOpen=!!state.sidebarAdminOpen||tools.some(([view])=>active(view));
- return `<aside class="sidebar sidebar-rail sidebar-light" aria-label="Navigation Framatex">
-   <div class="rail-brand"><img class="rail-brand-mark" src="/assets/images/brand-petals.png" width="34" height="42" alt=""><span class="rail-brand-name">Framatex<small>Votre espace de travail</small></span></div>
+ return `<aside class="sidebar sidebar-rail sidebar-light" aria-label="Navigation JAUNO">
+   <div class="rail-brand"><img class="rail-brand-mark" src="/assets/jauno-mark.svg" width="34" height="42" alt=""><span class="rail-brand-name">JAUNO<small>par Framatex</small></span></div>
    <button type="button" class="mobile-navigation-toggle" id="mobile-navigation-toggle" aria-expanded="false" aria-controls="framat-navigation">${icon('grid')}<span>Menu</span></button>
    <div class="rail-navigation-content" id="framat-navigation"><nav class="sidebar-nav rail-primary" aria-label="Navigation principale">${items(primary)}</nav>
    ${tools.length?`<details class="rail-management" ${toolsOpen?'open':''}><summary title="Outils de gestion">${icon('settings')}<span class="nav-text">Gestion</span><span class="rail-chevron" aria-hidden="true">${icon('chevron')}</span></summary>
@@ -136,18 +136,25 @@ function mount(html,label){
  app.querySelector('#logout').addEventListener('click',async()=>{try{await api('/api/auth/logout',{method:'POST'})}catch{}state.me=null;state.detail=null;state.authSpace=null;renderLogin()});
 }
 function renderSpaceChoice(){
+ state.authSpace=null;
  resetModalState();overlay.innerHTML='';app.inert=false;document.body?.classList?.remove('modal-open');syncFloatingAssistant();
- app.innerHTML=`<main class="entry-page entry-gateway"><header class="entry-brand"><img src="/assets/images/brand-petals.png" alt="" width="32" height="40"><span>Framatex</span></header>
- <section class="space-choice" aria-labelledby="space-title"><p class="entry-eyebrow">PORTAIL DOCUMENTAIRE</p><h1 id="space-title">Deux espaces.<br>Une même exigence.</h1><p class="entry-intro">Retrouvez vos commandes, vos documents et vos échanges dans un espace adapté à votre rôle.</p>
- <div class="space-options"><button type="button" data-space="internal"><span class="space-icon">${icon('folder')}</span><strong>Espace interne</strong><span>Commandes, documents et suivi de fabrication.</span><span class="space-enter">Accéder à mon espace ${icon('forward')}</span></button>
- <button type="button" data-space="client"><span class="space-icon">${icon('users')}</span><strong>Espace client</strong><span>Vos dossiers et les documents partagés par Framatex.</span><span class="space-enter">Accéder à mon espace ${icon('forward')}</span></button></div><p class="entry-footnote">Des accès distincts pour protéger les informations de chaque dossier.</p></section><footer class="entry-footer">Framatex · Le fil de vos projets</footer></main>`;
+ app.innerHTML=`<div class="login-page login-rebalanced jauno-space-choice"><main class="login-stage">
+  <div class="login-visual" aria-hidden="true"><div class="login-visual-orbit"></div><div class="login-visual-floor"></div><div class="login-folder login-folder-back"></div><div class="login-folder login-folder-middle"></div><div class="login-folder login-folder-front"><span class="login-folder-stripe"></span><span class="login-folder-line"></span><span class="login-folder-line login-folder-line-small"></span><span class="login-folder-dot"></span></div></div>
+  <section class="login-form-wrap"><div class="login-auth-content">
+    <div class="login-form-brand"><span class="login-form-brand-icon"><img class="jauno-brand-mark" src="/assets/jauno-mark.svg" alt=""></span><strong>JAUNO</strong></div>
+    <h1 id="space-title">Choisissez votre espace</h1>
+    <div class="jauno-space-actions" role="group" aria-labelledby="space-title">
+      <button type="button" class="jauno-space-action" data-space="internal"><span class="jauno-space-action-icon">${icon('folder')}</span><span class="jauno-space-action-copy"><strong>Espace interne</strong><small>Gestion des dossiers jaunes</small></span>${icon('forward')}</button>
+      <button type="button" class="jauno-space-action" data-space="client"><span class="jauno-space-action-icon">${icon('users')}</span><span class="jauno-space-action-copy"><strong>Espace client</strong><small>Suivi et documents partagés</small></span>${icon('forward')}</button>
+    </div>
+  </div></section></main></div>`;
  app.querySelectorAll('[data-space]').forEach(b=>b.addEventListener('click',()=>renderLogin(b.dataset.space)));
 }
 function renderLogin(space=state.authSpace){
  if(!space)return renderSpaceChoice();state.authSpace=space;
  resetModalState();overlay.innerHTML='';app.inert=false;document.body?.classList?.remove('modal-open');syncFloatingAssistant();app.innerHTML=`<div class="login-page login-rebalanced"><main class="login-stage">
   <div class="login-visual" aria-hidden="true"><div class="login-visual-orbit"></div><div class="login-visual-floor"></div><div class="login-folder login-folder-back"></div><div class="login-folder login-folder-middle"></div><div class="login-folder login-folder-front"><span class="login-folder-stripe"></span><span class="login-folder-line"></span><span class="login-folder-line login-folder-line-small"></span><span class="login-folder-dot"></span></div></div>
-  <section class="login-form-wrap"><div class="login-auth-content"><button type="button" class="auth-return" id="change-space">${icon('back')} Changer d’espace</button><div class="login-form-brand"><span class="login-form-brand-icon">${icon('folder')}</span><strong>Framatex</strong></div>
+  <section class="login-form-wrap"><div class="login-auth-content"><button type="button" class="auth-return" id="change-space">${icon('back')} Changer d’espace</button><div class="login-form-brand"><span class="login-form-brand-icon"><img class="jauno-brand-mark" src="/assets/jauno-mark.svg" alt=""></span><strong>JAUNO</strong></div>
     <h1 id="login-title">Connexion</h1>
     <form id="login-form" class="login-form" aria-labelledby="login-title">
       <div id="login-error" role="alert" aria-live="assertive"></div>
@@ -186,7 +193,7 @@ async function home(){
  const accessible=folders.filter(([slug])=>can('document.read',slug));
  const priorityPreview=(priorities.items||[]).slice(0,5);
  mount(`<div class="simple-home dashboard-022">
-  <header class="dash-welcome"><div><h1>Bonjour ${e((state.me?.name||'').trim().split(/\s+/)[0]||'')}</h1><p>Bienvenue sur Framatex. Voici l’activité de vos dossiers de fabrication.</p></div>
+  <header class="dash-welcome"><div><h1>Bonjour ${e((state.me?.name||'').trim().split(/\s+/)[0]||'')}</h1><p>Bienvenue sur JAUNO. Voici l’activité de vos dossiers jaunes.</p></div>
   ${can('launch.create')?`<button class="primary dash-create" id="create-launch">${icon('plus')} Nouveau dossier</button>`:''}</header>
   <section class="simple-stats dash-stats" aria-label="Indicateurs de vos lancements">
    <article><span class="dash-metric-icon dash-gold">${icon('folder')}</span><div><span>Dossiers actifs</span><strong>${launches.filter(l=>l.status!=='Clôturé').length}</strong></div></article>
@@ -404,8 +411,8 @@ function renderDetail(){
  const folderNames={jaune:'Jaune',rose:'Rose',bleu:'Bleu',vert:'Vert'};
  const count=f.can_read?docs.length:0;
  mount(`<div class="simple-detail">
- <div class="detail-breadcrumb"><span>Commandes</span>${icon('arrow')}<span>${e(d.order_ref||d.name)}</span></div><img class="detail-textile" src="/assets/images/textile-reference.webp" alt=""><header class="detail-head simple-detail-head detail-compact-header lc-detail-header">
-  <div class="detail-identity"><button type="button" class="detail-back" id="back-launches" title="Tous les dossiers" aria-label="Revenir aux commandes">${icon('back')}</button><div>
+ <div class="detail-breadcrumb"><span>Dossiers Jaunes</span>${icon('arrow')}<span>${e(d.order_ref||d.name)}</span></div><img class="detail-textile" src="/assets/images/textile-reference.webp" alt=""><header class="detail-head simple-detail-head detail-compact-header lc-detail-header">
+  <div class="detail-identity"><button type="button" class="detail-back" id="back-launches" title="Tous les dossiers" aria-label="Revenir aux dossiers jaunes">${icon('back')}</button><div>
   <div class="detail-title-line"><h1 class="page-title">${e(d.name)}</h1>${statusTag(d.status)}</div>
   </div></div>
   <div class="detail-header-actions"><button type="button" class="secondary" id="launch-info">${icon('info')} Informations</button>
@@ -429,7 +436,7 @@ function renderDetail(){
  <section class="detail-view-panel" data-detail-view-panel="tools" id="detail-view-tools" role="tabpanel" aria-labelledby="detail-tab-tools" ${state.detailSection==='tools'?'':'hidden'}>
    ${renderDetailToolWorkspace()}
  </section>
- </div>`,'Dossiers jaunes / '+d.name);
+ </div>`,'Dossiers Jaunes / '+d.name);
  app.querySelector('#back-launches').onclick=()=>navigate('launches');
  app.querySelector('#launch-info')?.addEventListener('click',showLaunchInformation);
  app.querySelector('#edit-launch')?.addEventListener('click',openEditLaunch);
