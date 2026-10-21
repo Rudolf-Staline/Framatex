@@ -77,7 +77,17 @@ async function api(path,options={}){
 let timeout;function toast(msg){const el=document.querySelector('#toast');el.textContent=msg;el.classList.add('visible');clearTimeout(timeout);timeout=setTimeout(()=>el.classList.remove('visible'),3400)}
 function showErr(err){toast(err.message||String(err))}
 function can(action,folder=null){return !!state.me?.admin||state.me?.permissions?.some(p=>p.action===action&&(folder?p.folder===null||p.folder===folder:p.folder===null))}
-function statusTag(s){return `<span class="tag ${s==='À compléter'?'orange':s==='Clôturé'?'green':s==='En validation'?'blue':''}">${e(s)}</span>`}
+function statusTag(s){
+ const tone={
+  'À compléter':'status-draft',
+  'En cours':'status-active',
+  'En validation':'status-review',
+  'Clôturé':'status-complete',
+  'Annulé':'status-cancelled',
+  'Annulée':'status-cancelled'
+ }[s]||'status-neutral';
+ return `<span class="tag status-pill ${tone}">${e(s)}</span>`;
+}
 function topbar(label){
  if(state.me?.client_account)return `<header class="topbar"><span class="client-topbar-label">ESPACE CLIENT</span><div class="topbar-actions"><span class="lc-top-username">${e(state.me.name)}</span></div></header>`;
  return `<header class="topbar"><button type="button" class="lc-global-search" id="global-search" title="Rechercher une commande">${icon('search')}<span>Rechercher une commande…</span><kbd>⌘ K</kbd></button><div class="topbar-actions"><span class="lc-user-avatar" aria-hidden="true">${e((state.me?.name||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</span><span class="lc-top-username">${e(state.me?.name||'Utilisateur')}</span></div></header>`;
