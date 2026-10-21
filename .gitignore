@@ -5,3 +5,10 @@ __pycache__/
 data/
 .env
 .coverage
+
+.preview-config.json
+
+.preview-runtime/
+.preview-data/
+
+qa_preview.py

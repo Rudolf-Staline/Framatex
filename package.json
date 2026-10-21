@@ -1,0 +1,1 @@
+{"name":"framatex","private":true,"scripts":{"dev":"node scripts/dev-preview.mjs"}}

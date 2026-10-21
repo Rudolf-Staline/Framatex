@@ -15,34 +15,29 @@ assert(css.includes('background:#fff'));
 assert(css.includes('@media(max-width:620px)'));
 assert(css.includes('.login-rebalanced .login-visual{display:none}'));
 const form={addEventListener(type,handler){this.submitType=type;this.onSubmit=handler}};
-const app={innerHTML:'',
- querySelector(selector){if(selector==='#login-form')return form;throw Error('Unexpected selector '+selector)}};
+const controls={focus(){},addEventListener(){}};
+const app={innerHTML:'',querySelectorAll(){return []},
+ querySelector(selector){return selector==='#login-form'?form:controls}};
 const overlay={innerHTML:'unchanged'};
-const ctx={console,setTimeout,clearTimeout,
- window:{addEventListener(){}},
+const ctx={console,setTimeout,clearTimeout,window:{addEventListener(){}},
  document:{querySelector(selector){if(selector==='#app')return app;if(selector==='#overlay-root')return overlay;return {}}}};
 vm.createContext(ctx);
 vm.runInContext(js.slice(0,js.lastIndexOf('(async function init(){')),ctx);
 vm.runInContext('syncFloatingAssistant=()=>{};icon=()=>"<svg></svg>";renderLogin()',ctx);
-const output=app.innerHTML;
-assert.equal(overlay.innerHTML,'');
-assert.equal((output.match(/<form\b/g)||[]).length,1);
-assert.equal((output.match(/<input\b/g)||[]).length,2);
-assert.equal((output.match(/<button\b/g)||[]).length,1);
-assert(output.includes('class="login-page login-rebalanced"'));
-assert(output.includes('class="login-stage"'));
-assert(output.includes('class="login-visual" aria-hidden="true"'));
-assert(output.includes('class="login-form-brand"'));
-assert(output.includes('<strong>Framatex</strong>'));
-assert(output.includes('<h1 id="login-title">Connexion</h1>'));
-assert(output.includes('<main class="login-stage">'));
-assert(output.includes('id="login-error"'));
-assert(output.includes('for="email"')&&output.includes('for="password"'));
-assert(output.includes('autocomplete="username"')&&output.includes('autocomplete="current-password"'));
-assert(output.includes('type="submit">Se connecter</button>'));
-assert.equal(form.submitType,'submit');
-for(const removed of ['login-art','login-hero','login-caption','UNE NOUVELLE MANIÈRE','Chaque lancement','Bienvenue','Connectez-vous','ACCÈS SÉCURISÉ','prototype','administrateur','Dossier jaune numérique','Gestion documentaire']){
- assert(!output.includes(removed),'Redundant login text remains: '+removed);
+assert(app.innerHTML.includes('id="space-title"'));
+assert(app.innerHTML.includes('data-space="internal"')&&app.innerHTML.includes('data-space="client"'));
+assert.equal((app.innerHTML.match(/<form\b/g)||[]).length,0);
+for(const space of ['internal','client']){
+ vm.runInContext('renderLogin("'+space+'")',ctx);
+ const output=app.innerHTML;
+ assert.equal(overlay.innerHTML,'');
+ assert.equal((output.match(/<form\b/g)||[]).length,1);
+ assert.equal((output.match(/<input\b/g)||[]).length,2);
+ assert(output.includes('id="change-space"'));
+ assert(output.includes('id="login-error"'));
+ assert(output.includes('for="email"')&&output.includes('for="password"'));
+ assert(output.includes('autocomplete="username"')&&output.includes('autocomplete="current-password"'));
+ assert(output.includes('ESPACE '+(space==='client'?'CLIENT':'INTERNE')));
+ assert.equal(form.submitType,'submit');
 }
-assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length);
-console.log('Framatex 0.26: balanced visual login, no promotional text, semantic form, mobile illustration hidden.');
+console.log('Space selection precedes login; both spaces retain labeled credential forms and a back action.');

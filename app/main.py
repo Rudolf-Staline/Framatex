@@ -65,7 +65,7 @@ async def lifespan(app: FastAPI):
         raise RuntimeError("Base de donnees non prise en charge")
     yield
 
-app = FastAPI(title="Framatex · Dossier jaune", version="0.17.0", lifespan=lifespan)
+app = FastAPI(title="Framatex · Dossier jaune", version="0.21.0", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
 @app.middleware("http")
@@ -151,6 +151,7 @@ def doc_out(d: Document):
 class LoginPayload(BaseModel):
     email: str
     password: str
+    space: Literal["internal", "client"] | None = None
 
 class LaunchPayload(BaseModel):
     client_id: str | None = None
@@ -215,7 +216,7 @@ def health():
         from sqlalchemy import text
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-    return {"status": "ok", "version": "0.20.0"}
+    return {"status": "ok", "version": "0.21.0"}
 
 class FirstAdminSetup(BaseModel):
     token: str = Field(min_length=32, max_length=256)
@@ -265,6 +266,10 @@ def login(payload: LoginPayload, response: Response, request: Request, db: Sessi
     if not user or not user.active or not check_password(user.password_hash, payload.password):
         record_login_failure(key)
         raise HTTPException(401, "Identifiants incorrects")
+    account = user_out(user)
+    if payload.space and (payload.space == "client") != account["client_account"]:
+        destination = "client" if account["client_account"] else "interne"
+        raise HTTPException(403, f"Ce compte appartient à l’espace {destination}. Revenez au choix de l’espace.")
     clear_login_failures(key)
     response.set_cookie(COOKIE, make_token(user.id), max_age=8*3600, httponly=True, secure=os.getenv("FRAMATEX_COOKIE_SECURE") == "1", samesite="strict", path="/")
     audit(db, user, "session.login", "user", user.id)
@@ -511,7 +516,11 @@ async def upload_document(launch_id: str, folder: str = Form(...), title: str = 
 
 @app.post("/api/documents/{doc_id}/versions", status_code=201)
 async def new_version(doc_id: str, file: UploadFile = File(...), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    d = get_doc(db, doc_id)
+    # Serialize all version writers, including PDF annotation saves.
+    d = db.scalar(select(Document).where(Document.id == doc_id).with_for_update())
+    if not d:
+        raise HTTPException(404, "Document introuvable")
+    db.expire(d, ["versions"])
     must(user, "document.write", d.folder.slug)
     original, disk_name, size, sha, mime = await store_upload(file)
     try:
@@ -903,3 +912,6 @@ app.include_router(clients_router)
 
 # Le contrôle global de portée est effectué dans request_header_guard, avant
 # le dispatch FastAPI. Aucun routeur historique ne peut l'éviter.
+
+from .pdf_routes import router as pdf_router
+app.include_router(pdf_router)
