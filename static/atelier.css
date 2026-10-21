@@ -1208,3 +1208,41 @@ body .app-shell:is([data-folder-theme],[data-dossier-theme]) .sidebar .nav-btn.a
  .portal-folder-group .client-document-list>div{flex-wrap:wrap}
 }
 @media(prefers-reduced-motion:reduce){.entry-gateway .space-options button{transition:none;transform:none!important}}
+
+/* JAUNO identity: shared visual language for sign-in and space selection. */
+.login-page .jauno-brand-mark{display:block;width:24px;height:24px;object-fit:contain}
+.login-rebalanced .login-form-brand strong{letter-spacing:.055em;font-weight:800}
+.login-rebalanced.jauno-space-choice .login-form-wrap{background:inherit}
+.jauno-space-choice .login-auth-content{width:100%}
+.jauno-space-choice #space-title{max-width:440px}
+.jauno-space-actions{display:grid;gap:12px;width:100%;margin-top:30px}
+.jauno-space-action{display:flex;align-items:center;gap:13px;min-height:76px;width:100%;text-align:left;padding:13px 16px;border:1px solid #e3e5dc;border-radius:12px;background:#fff;color:#232a22;cursor:pointer;box-shadow:0 3px 12px rgba(38,40,25,.035);transition:border-color .15s ease,background-color .15s ease,transform .15s ease,box-shadow .15s ease}
+.jauno-space-action:hover,.jauno-space-action:focus-visible{border-color:#dab735;box-shadow:0 7px 20px rgba(78,70,17,.095);transform:translateX(2px);outline:none}
+.jauno-space-action:focus-visible{outline:3px solid #eac75b;outline-offset:2px}
+.jauno-space-action-icon{display:grid;place-items:center;flex-shrink:0;width:43px;height:43px;border-radius:9px;background:#fff0b8;color:#7d6014}
+.jauno-space-action[data-space="client"] .jauno-space-action-icon{background:#e7f0ec;color:#32634f}
+.jauno-space-action-copy{display:grid;gap:4px;flex:1;min-width:0}
+.jauno-space-action-copy strong{font-size:15px;font-weight:750;color:#272a24}
+.jauno-space-action-copy small{font-size:11px;color:#788076;font-weight:400}
+.jauno-space-action>.ui-icon{width:19px;height:19px;color:#747b6b}
+.jauno-space-choice .login-stage{min-height:100dvh}
+.app-shell .rail-brand-mark{width:36px;height:42px;object-fit:contain}
+.app-shell .rail-brand-name{font-weight:800;letter-spacing:.035em}
+.app-shell .rail-brand-name small{font-weight:500;letter-spacing:0}
+@media(max-width:760px){.jauno-space-action{min-height:72px}.jauno-space-actions{margin-top:24px}}
+@media(prefers-reduced-motion:reduce){.jauno-space-action{transition:none}.jauno-space-action:hover{transform:none}}
+
+/* Underlying dossier colors are permanent — selected state intensifies the same hue. */
+.app-shell .main .folder-tab.folder-jaune{--tile-bg:#fff3c8;--tile-active:#ffe4a1;--tile-border:#e9d37c;--tile-border-active:#c9971c;--tile-icon:#9f7713}
+.app-shell .main .folder-tab.folder-rose{--tile-bg:#fce4ee;--tile-active:#f7ccdd;--tile-border:#e9aec6;--tile-border-active:#b85c81;--tile-icon:#a43e67}
+.app-shell .main .folder-tab.folder-bleu{--tile-bg:#e5efff;--tile-active:#cddfff;--tile-border:#afc7ef;--tile-border-active:#4679bf;--tile-icon:#3766ab}
+.app-shell .main .folder-tab.folder-vert{--tile-bg:#e2f3e7;--tile-active:#c6e9d2;--tile-border:#a4d5b7;--tile-border-active:#347c54;--tile-icon:#327452}
+.app-shell .main .folder-tabs .folder-tab[class*="folder-"]{background:var(--tile-bg)!important;border:1px solid var(--tile-border)!important;box-shadow:0 2px 5px rgba(24,34,40,.035)!important;transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.app-shell .main .folder-tabs .folder-tab[class*="folder-"].selected{background:var(--tile-active)!important;border:2px solid var(--tile-border-active)!important;box-shadow:0 5px 12px rgba(25,29,31,.105)!important}
+.app-shell .main .folder-tabs .folder-tab[class*="folder-"]:not(.selected):hover{border-color:var(--tile-border-active)!important;box-shadow:0 5px 14px rgba(25,29,31,.08)!important}
+.app-shell .main .folder-tabs .folder-tab .lc-folder-symbol,
+.app-shell .main .folder-tabs .folder-tab .lc-folder-symbol .ui-icon{color:var(--tile-icon)!important}
+.app-shell .main .folder-tabs .folder-tab .folder-tab-title,
+.app-shell .main .folder-tabs .folder-tab .folder-tab-title span{color:#202820!important}
+.app-shell .main .folder-tabs .folder-tab .folder-tab-count{color:var(--tile-icon)!important}
+@media(prefers-reduced-motion:reduce){.app-shell .main .folder-tabs .folder-tab[class*="folder-"]{transition:none}}
