@@ -165,7 +165,7 @@ def test_assistant_conversation_before_document_navigation(system):
         ('Bonjour !', 'Bonjour !'),
         ('bonsoir', 'Bonsoir !'),
         ('merci beaucoup', 'Avec plaisir !'),
-        ('qui es-tu ?', 'Je suis l’assistant JAUNO.'),
+        ('qui es-tu ?', 'Je suis l’assistant de Dossier Jaune.'),
         ('que peux-tu faire ?', 'Comment puis-je vous aider ?'),
         ('ça va ?', 'Tout va bien, merci !'),
     ]
@@ -174,7 +174,7 @@ def test_assistant_conversation_before_document_navigation(system):
         assert result.status_code==200,(prompt,result.text)
         data=result.json()
         assert data['title']==title,(prompt,data)
-        assert data['source']=='Assistant JAUNO'
+        assert data['source']=='Assistant Dossier Jaune'
         assert data['destination'] is None
         assert 'Dossier Jaune : Jaune' not in data['answer']
     normal=system.post('/api/assistant/chat',json={
