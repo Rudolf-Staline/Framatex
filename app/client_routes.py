@@ -204,7 +204,9 @@ def portal_detail(launch_id: str, user: User = Depends(get_current_user), db: Se
     documents = []
     for publication in portal_publications(db, launch):
         version = db.get(DocumentVersion, publication.document_version_id)
-        documents.append({'id':publication.id, 'title':version.document.title, 'version':version.number,
+        documents.append({'id':publication.id, 'title':version.document.title,
+                          'folder':version.document.folder.slug, 'doc_type':version.document.doc_type,
+                          'filename':version.original_name, 'version':version.number,
                           'published_at':publication.created_at.isoformat()})
     return {**summary(launch), 'documents':documents}
 
