@@ -55,6 +55,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Framatex · Dossier jaune", version="0.17.0", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
+# Pages HTML servies hors /api : landing publique, espace FRAMATEX (application
+# interne existante) et point d'entrée provisoire de l'espace Client.
+HTML_PAGES = {"/", "/espace-framatex", "/espace-client"}
+
 @app.middleware("http")
 async def request_header_guard(request: Request, call_next):
     if request.url.path.startswith("/api/") and request.method in {"POST", "PUT", "PATCH", "DELETE"}:
@@ -75,9 +79,9 @@ async def response_security_headers(request: Request, call_next):
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("Referrer-Policy", "same-origin")
     response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-    if request.url.path == "/" or request.url.path.startswith("/api/"):
+    if request.url.path in HTML_PAGES or request.url.path.startswith("/api/"):
         response.headers.setdefault("Cache-Control", "no-store")
-    if request.url.path == "/":
+    if request.url.path in HTML_PAGES:
         response.headers.setdefault("Content-Security-Policy",
             "default-src 'self'; base-uri 'none'; object-src 'none'; "
             "frame-ancestors 'none'; form-action 'self'; "
@@ -163,8 +167,17 @@ class UserPayload(BaseModel):
 
 
 @app.get("/")
+def landing():
+    return FileResponse(ROOT / "static" / "landing" / "index.html")
+
+@app.get("/espace-framatex")
 def index():
+    # Application interne inchangée (connexion + dossiers jaunes).
     return FileResponse(ROOT / "static" / "index.html")
+
+@app.get("/espace-client")
+def client_space():
+    return FileResponse(ROOT / "static" / "landing" / "client.html")
 
 @app.get("/api/health")
 def health():
