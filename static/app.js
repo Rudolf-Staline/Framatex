@@ -350,6 +350,26 @@ function switchDetailView(view){
 }
 function showLaunchInformation(){return orderInformation()}
 
+// Document iconography follows the actual uploaded filename, not the dossier category.
+function documentFileFormat(doc){
+ const filename=String(doc?.latest?.original_name||doc?.original_name||doc?.title||'').trim().toLowerCase();
+ const ext=/\.([a-z0-9]+)$/.exec(filename)?.[1]||'';
+ const kind=String(doc?.doc_type||'').toLowerCase();
+ if(ext==='pdf'||(!ext&&kind.includes('pdf')))return 'pdf';
+ if(['doc','docx','odt'].includes(ext)||(!ext&&/word|courrier/.test(kind)))return 'word';
+ if(['xls','xlsx','csv','ods'].includes(ext)||(!ext&&/excel|tableur/.test(kind)))return 'excel';
+ if(['png','jpg','jpeg','gif','webp','bmp','svg','tif','tiff'].includes(ext)||(!ext&&/image|photo/.test(kind)))return 'image';
+ if(['zip','rar','7z','tar','gz'].includes(ext))return 'archive';
+ if(['eml','msg'].includes(ext))return 'email';
+ if(['txt','rtf','md'].includes(ext))return 'text';
+ return 'other';
+}
+function documentFileIcon(doc){
+ const format=documentFileFormat(doc);
+ const glyph={pdf:'file-pdf',word:'file-doc',excel:'file-xls',image:'file-image'}[format]||'file';
+ const extensionLabel={archive:'ZIP',email:'EML',text:'TXT'}[format];
+ return '<span class="doc-icon doc-format-'+format+'" aria-hidden="true">'+icon(glyph)+(extensionLabel?'<span class="doc-icon-ext">'+extensionLabel+'</span>':'')+'</span>';
+}
 function renderDetail(){
  const d=state.detail;
  const f=d.folders.find(x=>x.slug===state.folder)||d.folders[0];
@@ -375,7 +395,7 @@ function renderDetail(){
  <span class="lc-folder-symbol" aria-hidden="true">${icon('folder')}</span><span class="folder-tab-title">${folderNames[folder.slug]||e(folder.slug)}</span><span class="folder-tab-count">${folder.can_read?folder.documents.length:'—'}</span><span class="folder-description">${e(folder.label)}</span></button>`).join('')}</nav>
  <section class="simple-document-section"><div class="simple-section-heading"><div><span class="section-index">${e(folderNames[f.slug]||f.slug)} · ${e(f.label)}</span><h2>Documents — ${e(folderNames[f.slug]||f.slug)} <span class="document-count">${count}</span></h2></div>
  ${f.can_write?`<button class="primary" id="upload-doc">${icon('plus')} Ajouter un document</button>`:''}</div>
- <label class="searchbar document-search">${icon('search')}<input id="document-search" type="search" aria-label="Rechercher un document" placeholder="Rechercher dans ce sous-dossier…"></label><p id="document-search-status" class="muted small" role="status" hidden></p><div class="panel">${!f.can_read?`<div class="denied">${icon('lock')}<p>Vous n’avez pas accès à cette rubrique.</p></div>`:docs.length?`<div class="table-scroll"><table><thead><tr><th>Document</th><th>Type</th><th>Version</th><th>Validation</th><th>Action</th></tr></thead><tbody>${docs.map(doc=>`<tr><td><div class="file-name"><div class="doc-icon">${icon('file')}</div><div><div class="row-title">${e(doc.title)}</div><div class="row-sub">${e(doc.latest.original_name)} · ${sizeText(doc.latest.size)}</div></div></div></td><td class="small">${e(doc.doc_type)}</td><td><span class="tag">v${doc.latest.number}</span></td><td>${(()=>{const record=(state.approvalOverview?.items||[]).find(x=>x.document_id===doc.id);const approval=record?.run?.status||(state.workflowReviews||[]).find(x=>x.document_id===doc.id&&x.version===doc.latest.number)?.status;const status=approval==='approved'?'Approuvée':approval==='pending'?'En validation':approval==='changes_requested'?'À corriger':approval==='rejected'?'Refusée':approval==='stale'?'Version remplacée':approval==='to_review'?'À examiner':'Non soumise';return `<span class="lc-document-status ${approval==='approved'?'approved':approval==='pending'?'pending':'neutral'}">${status}</span>`})()}</td><td><div class="doc-actions"><button class="link" data-history="${e(doc.id)}">${icon('clock')} Historique</button><button class="link" data-download="${e(doc.id)}" data-ver="${doc.latest.number}" title="Télécharger" aria-label="Télécharger ${e(doc.title)}">${icon('download')}</button></div></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty"><div class="empty-icon">${icon('file')}</div><strong>Ce sous-dossier est vide</strong>${f.can_write?'Déposez un premier document pour commencer.':'Aucun document pour le moment.'}</div>`}</div></section>
+ <label class="searchbar document-search">${icon('search')}<input id="document-search" type="search" aria-label="Rechercher un document" placeholder="Rechercher dans ce sous-dossier…"></label><p id="document-search-status" class="muted small" role="status" hidden></p><div class="panel">${!f.can_read?`<div class="denied">${icon('lock')}<p>Vous n’avez pas accès à cette rubrique.</p></div>`:docs.length?`<div class="table-scroll"><table><thead><tr><th>Document</th><th>Type</th><th>Version</th><th>Validation</th><th>Action</th></tr></thead><tbody>${docs.map(doc=>`<tr><td><div class="file-name">${documentFileIcon(doc)}<div><div class="row-title">${e(doc.title)}</div><div class="row-sub">${e(doc.latest.original_name)} · ${sizeText(doc.latest.size)}</div></div></div></td><td class="small">${e(doc.doc_type)}</td><td><span class="tag">v${doc.latest.number}</span></td><td>${(()=>{const record=(state.approvalOverview?.items||[]).find(x=>x.document_id===doc.id);const approval=record?.run?.status||(state.workflowReviews||[]).find(x=>x.document_id===doc.id&&x.version===doc.latest.number)?.status;const status=approval==='approved'?'Approuvée':approval==='pending'?'En validation':approval==='changes_requested'?'À corriger':approval==='rejected'?'Refusée':approval==='stale'?'Version remplacée':approval==='to_review'?'À examiner':'Non soumise';return `<span class="lc-document-status ${approval==='approved'?'approved':approval==='pending'?'pending':'neutral'}">${status}</span>`})()}</td><td><div class="doc-actions"><button class="link" data-history="${e(doc.id)}">${icon('clock')} Historique</button><button class="link" data-download="${e(doc.id)}" data-ver="${doc.latest.number}" title="Télécharger" aria-label="Télécharger ${e(doc.title)}">${icon('download')}</button></div></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty"><div class="empty-icon">${icon('file')}</div><strong>Ce sous-dossier est vide</strong>${f.can_write?'Déposez un premier document pour commencer.':'Aucun document pour le moment.'}</div>`}</div></section>
 
  </section>
  <section class="detail-view-panel" data-detail-view-panel="tools" id="detail-view-tools" role="tabpanel" aria-labelledby="detail-tab-tools" ${state.detailSection==='tools'?'':'hidden'}>
