@@ -1,0 +1,285 @@
+# Couverture fonctionnelle — 10 novembre 2026
+
+**76 / 273 exigences terminées et vérifiées : 27.8 %. Objectif 90 % non atteint.**
+
+Décompte conservateur des puces fonctionnelles des sections 4 à 16 de la mission, plus dix exigences narratives structurantes. Chaque puce reste dans le dénominateur, y compris les exigences bloquées ; les recouvrements de la mission sont conservés. Cette granularité n'est pas une pondération d'effort et doit être revue avec Framatex. Les tests existants ne suffisent pas à certifier toutes les extensions d'une exigence large : elle reste partielle. Les scénarios A–H sont suivis séparément dans IMPLEMENTATION_STATUS.md pour éviter de les compter une seconde fois.
+
+États : {'terminé': 76, 'absent': 36, 'partiel': 158, 'bloqué': 3}. « Terminé » signifie opérationnel en environnement contrôlé, pas approuvé pour production. **Aucune exigence n'est déclarée validée avec Framatex.** Les capacités SMTP sont testées par transport contrôlé ; l'intégration réelle reste bloquée et distincte. Tous les autres éléments partiels/absents restent dans le périmètre de reprise.
+
+Source exploitable : `docs/requirements.json`. Le taux est calculé par nombre de statuts « terminé » / nombre total d'entrées. Les modules déjà fonctionnels avant ce lot sont décrits dans AUDIT_FONCTIONNEL.md. Le journal exact des commandes et résultats est dans IMPLEMENTATION_STATUS.md.
+
+| ID | Priorité | Exigence | État | Implémentation | Validation | Résultat / dépendance |
+|---|---|---|---|---|---|---|
+| R4.1-01 | P0 | Identifiant stable | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.1-02 | P0 | Nom légal et nom commercial | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.1-03 | P0 | Contacts | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.1-04 | P0 | Adresses email autorisées | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.1-05 | P0 | Statut actif / suspendu | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.1-06 | P0 | Informations administratives configurables | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.1-07 | P0 | Documents administratifs | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.1-08 | P0 | Historique des modifications | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.1-09 | P0 | Invitations sécurisées | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.1-10 | P0 | Activation de compte | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.1-11 | P0 | Connexion | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.1-12 | P0 | Déconnexion | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.1-13 | P0 | Récupération de compte sécurisée | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.1-14 | P0 | Gestion des sessions | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.1-15 | P0 | Révocation des accès | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.1-16 | P0 | Rôles fournisseurs | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.1-17 | P0 | Administration des utilisateurs par Framatex | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.2-01 | P0 | L'accès aux documents d'un autre fournisseur | terminé | app/partner_routes.py | tests/test_partners.py | 404 entre organisations ; 401 après révocation et sur API interne ; — |
+| R4.2-02 | P0 | L'accès direct par URL | terminé | app/partner_routes.py | tests/test_partners.py | 404 entre organisations ; 401 après révocation et sur API interne ; — |
+| R4.2-03 | P0 | La modification des identifiants dans les requêtes | terminé | app/partner_routes.py | tests/test_partners.py | 404 entre organisations ; 401 après révocation et sur API interne ; — |
+| R4.2-04 | P0 | Les téléchargements | terminé | app/partner_routes.py | tests/test_partners.py | 404 entre organisations ; 401 après révocation et sur API interne ; — |
+| R4.2-05 | P0 | Les recherches | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.2-06 | P0 | Les notifications | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.2-07 | P0 | Les pièces jointes | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.2-08 | P0 | La révocation des droits | terminé | app/partner_routes.py | tests/test_partners.py | 404 entre organisations ; 401 après révocation et sur API interne ; — |
+| R4.3-01 | P0 | Les demandes documentaires reçues | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.3-02 | P0 | Les commandes ou références autorisées | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.3-03 | P0 | Les échéances | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.3-04 | P0 | Les documents attendus | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.3-05 | P0 | Les documents déjà transmis | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.3-06 | P0 | Les corrections demandées | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.3-07 | P0 | Les livraisons enregistrées ou déclarées | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.3-08 | P0 | Les validations en attente | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.3-09 | P0 | Les communications utiles | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.4-01 | P0 | Consulter une demande qui lui est adressée | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.4-02 | P0 | Ouvrir son détail | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.4-03 | P0 | Déposer le document demandé | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.4-04 | P0 | Consulter les pièces déjà transmises | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.4-05 | P0 | Remplacer une pièce refusée | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.4-06 | P0 | Voir son état de vérification | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.4-07 | P0 | Consulter le motif d'un refus | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.4-08 | P0 | Ajouter une réponse ou une justification | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.4-09 | P0 | Suivre les versions | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.5-01 | P0 | Consulter les pièces fournisseurs | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.5-02 | P0 | Vérifier les documents | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.5-03 | P0 | Approuver | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.5-04 | P0 | Refuser avec justification | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.5-05 | P0 | Demander une nouvelle version | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.5-06 | P0 | Clôturer la demande | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.5-07 | P0 | Rechercher les transmissions | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.6-01 | P0 | Référence de commande | terminé | app/partner_delivery_routes.py; static/partners.js | tests/test_partners.py::test_partial_deliveries_separate_declarations_confirmations_returns | Déclarations distinctes, deux matières, réceptions partielles et retour vérifiés ; — |
+| R4.6-02 | P0 | Matière ou article | terminé | app/partner_delivery_routes.py; static/partners.js | tests/test_partners.py::test_partial_deliveries_separate_declarations_confirmations_returns | Déclarations distinctes, deux matières, réceptions partielles et retour vérifiés ; — |
+| R4.6-03 | P0 | Quantité commandée | terminé | app/partner_delivery_routes.py; static/partners.js | tests/test_partners.py::test_partial_deliveries_separate_declarations_confirmations_returns | Déclarations distinctes, deux matières, réceptions partielles et retour vérifiés ; — |
+| R4.6-04 | P0 | Quantité annoncée | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.6-05 | P0 | Quantité livrée enregistrée | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.6-06 | P0 | Quantité effectivement réceptionnée et confirmée par Framatex | terminé | app/partner_delivery_routes.py; static/partners.js | tests/test_partners.py::test_partial_deliveries_separate_declarations_confirmations_returns | Déclarations distinctes, deux matières, réceptions partielles et retour vérifiés ; — |
+| R4.6-07 | P0 | Unité | terminé | app/partner_delivery_routes.py; static/partners.js | tests/test_partners.py::test_partial_deliveries_separate_declarations_confirmations_returns | Déclarations distinctes, deux matières, réceptions partielles et retour vérifiés ; — |
+| R4.6-08 | P0 | Date prévue | terminé | app/partner_delivery_routes.py; static/partners.js | tests/test_partners.py::test_partial_deliveries_separate_declarations_confirmations_returns | Déclarations distinctes, deux matières, réceptions partielles et retour vérifiés ; — |
+| R4.6-09 | P0 | Date déclarée | terminé | app/partner_delivery_routes.py; static/partners.js | tests/test_partners.py::test_partial_deliveries_separate_declarations_confirmations_returns | Déclarations distinctes, deux matières, réceptions partielles et retour vérifiés ; — |
+| R4.6-10 | P0 | Justificatifs | terminé | app/partner_delivery_routes.py; static/partners.js | tests/test_partners.py::test_partial_deliveries_separate_declarations_confirmations_returns | Déclarations distinctes, deux matières, réceptions partielles et retour vérifiés ; — |
+| R4.6-11 | P0 | Réceptions partielles | terminé | app/partner_delivery_routes.py; static/partners.js | tests/test_partners.py::test_partial_deliveries_separate_declarations_confirmations_returns | Déclarations distinctes, deux matières, réceptions partielles et retour vérifiés ; — |
+| R4.6-12 | P0 | Historique des écarts | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.7-01 | P0 | Messages | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.7-02 | P0 | Pièces jointes autorisées | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.7-03 | P0 | Auteur | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.7-04 | P0 | Date | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.7-05 | P0 | Historique | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R4.7-06 | P0 | Statut de lecture si pertinent | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.7-07 | P0 | Notifications | partiel | app/partner_routes.py; app/partner_mail.py | tests/test_partners.py | Dépôt notifié en interne et événements employés en file selon préférence ; pièces jointes/lecture absentes ; — |
+| R4.7-08 | P0 | Restrictions d'accès | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R5-01 | P0 | Un référentiel des sociétés clientes | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R5-02 | P0 | Des contacts et comptes utilisateurs | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R5-03 | P0 | Des invitations et révocations | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R5-04 | P0 | Des accès isolés par client | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R5-05 | P0 | Une liste des commandes autorisées | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R5-06 | P0 | Un état d'avancement fondé sur des données réellement disponibles | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R5-07 | P0 | La consultation des documents officiellement publiés | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R5-08 | P0 | Le téléchargement sécurisé des versions publiées | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R5-09 | P0 | Les demandes d'informations et clarifications | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R5-10 | P0 | Le suivi des réponses | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R5-11 | P0 | Un historique des échanges | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R5-12 | P0 | La classification documentaire | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R5-13 | P0 | La validation préalable | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R5-14 | P0 | Les droits de publication | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R5-15 | P0 | Le destinataire | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R5-16 | P0 | La version précise | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
+| R5-17 | P0 | L'historique et les autorisations | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R6-01 | P1 | Dossiers liés aux lancements de fabrication | partiel | app/models.py; app/migrate.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R6-02 | P1 | Dossier Jaune global | partiel | app/models.py; app/migrate.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R6-03 | P1 | Rattachement aux commandes | partiel | app/models.py; app/migrate.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R6-04 | P1 | Références ORLI | partiel | app/models.py; app/migrate.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R6-05 | P1 | Jaune : technique et commercial selon les règles validées | partiel | app/models.py; app/migrate.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R6-06 | P1 | Rose : réception | partiel | app/models.py; app/migrate.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R6-07 | P1 | Bleu : douane | partiel | app/models.py; app/migrate.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R6-08 | P1 | Vert : facturation Framatex | partiel | app/models.py; app/migrate.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.1-01 | P1 | Type de commande | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.1-02 | P1 | Phase de fabrication | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.1-03 | P1 | Type de document | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.1-04 | P1 | Rubrique | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.1-05 | P1 | Conditions d'exigibilité | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.1-06 | P1 | Exigences spécifiques | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.1-07 | P1 | Documents facultatifs | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.1-08 | P1 | Exceptions justifiées | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.1-09 | P1 | Validations | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.1-10 | P1 | Versions | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.1-11 | P1 | Échéances | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.1-12 | P1 | Documents fournisseur et client | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.2-01 | P1 | Le dépôt par glisser-déposer | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.2-02 | P1 | Le dépôt multiple | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.2-03 | P1 | Le contrôle des types et tailles de fichiers | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.2-04 | P1 | La sélection du bon dossier | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.2-05 | P1 | Le classement proposé | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.2-06 | P1 | La recherche | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.2-07 | P1 | Les métadonnées | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.2-08 | P1 | Le remplacement et le versionnement | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.2-09 | P1 | La consultation | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.2-10 | P1 | Le téléchargement | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.3-01 | P1 | Référence de commande | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.3-02 | P1 | Référence ORLI | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.3-03 | P1 | Client | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.3-04 | P1 | Fournisseur | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.3-05 | P1 | Type documentaire | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.3-06 | P1 | Sous-dossier | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.3-07 | P1 | Auteur | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.3-08 | P1 | Statut | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.3-09 | P1 | Date | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R7.3-10 | P1 | Version | partiel | app/completeness.py; app/main.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.1-01 | P1 | Références | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.1-02 | P1 | Quantités | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.1-03 | P1 | Consommations | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.1-04 | P1 | Unités | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.1-05 | P1 | Prix | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.1-06 | P1 | Besoins | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.1-07 | P1 | Livraisons | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.1-08 | P1 | Réceptions | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.1-09 | P1 | Données absentes | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.1-10 | P1 | Sources multiples | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.1-11 | P1 | Valeurs contradictoires | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.1-12 | P1 | Unités incompatibles | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.1-13 | P1 | Tolérances | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.1-14 | P1 | Justifications d'écarts | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.1-15 | P1 | Nouvelle version de document | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.2-01 | P1 | Détection des formules supprimées | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.2-02 | P1 | Détection des formules modifiées | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.2-03 | P1 | Références cassées | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.2-04 | P1 | Changements de structure | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.2-05 | P1 | Modifications de cellules critiques configurées | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.2-06 | P1 | Comparaison des versions | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.2-07 | P1 | Provenance des alertes | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.2-08 | P1 | Gestion des limites d'analyse | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.3-01 | P1 | Une extraction robuste | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.3-02 | P1 | Des contrôles de ressources | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.3-03 | P1 | Des avertissements lorsque la lecture est partielle | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.3-04 | P1 | Des champs candidats avec provenance | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.3-05 | P1 | Une interface de vérification humaine | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.3-06 | P1 | Un raccordement contrôlé des champs confirmés aux moteurs de cohérence | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R9-01 | P1 | Profils de correspondance CSV/XLSX configurables | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-02 | P1 | Validation des colonnes | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-03 | P1 | Validation des formats | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-04 | P1 | Rapports d'erreurs | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-05 | P1 | Import traçable | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-06 | P1 | Gestion des doublons | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-07 | P1 | Identifiants métier stables | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-08 | P1 | Conservation des instantanés | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-09 | P1 | Détection des changements | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-10 | P1 | Rapprochement avec commandes et lancements | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-11 | P1 | Confirmation des associations ambiguës | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-12 | P1 | Historique des imports | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-13 | P1 | Réimportation contrôlée | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-14 | P1 | Protection contre les écrasements involontaires | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-15 | P1 | Données ORLI importées | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-16 | P1 | Données internes | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-17 | P1 | Données en conflit | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R9-18 | P1 | Données confirmées | partiel | app/orli_import.py; app/orli_routes.py | — | Socle existant conservé ; extensions complètes non validées ; Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement |
+| R10-01 | P1 | Besoins matières | partiel | app/material_routes.py; app/partner_delivery_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R10-02 | P1 | Quantités prévues | partiel | app/material_routes.py; app/partner_delivery_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R10-03 | P1 | Quantités commandées | partiel | app/material_routes.py; app/partner_delivery_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R10-04 | P1 | Quantités déclarées livrées | partiel | app/material_routes.py; app/partner_delivery_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R10-05 | P1 | Quantités réceptionnées | partiel | app/material_routes.py; app/partner_delivery_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R10-06 | P1 | Documents justificatifs | partiel | app/material_routes.py; app/partner_delivery_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R10-07 | P1 | Révisions des besoins | partiel | app/material_routes.py; app/partner_delivery_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R10-08 | P1 | Livraisons partielles | terminé | app/partner_delivery_routes.py; static/partners.js | tests/test_partners.py::test_partial_deliveries_separate_declarations_confirmations_returns | Déclarations distinctes, deux matières, réceptions partielles et retour vérifiés ; — |
+| R10-09 | P1 | Réceptions fractionnées | terminé | app/partner_delivery_routes.py; static/partners.js | tests/test_partners.py::test_partial_deliveries_separate_declarations_confirmations_returns | Déclarations distinctes, deux matières, réceptions partielles et retour vérifiés ; — |
+| R10-10 | P1 | Annulations | partiel | app/material_routes.py; app/partner_delivery_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R10-11 | P1 | Retours | terminé | app/partner_delivery_routes.py; static/partners.js | tests/test_partners.py::test_partial_deliveries_separate_declarations_confirmations_returns | Déclarations distinctes, deux matières, réceptions partielles et retour vérifiés ; — |
+| R10-12 | P1 | Écarts de quantités | partiel | app/material_routes.py; app/partner_delivery_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R10-13 | P1 | Unités explicites | terminé | app/partner_delivery_routes.py; static/partners.js | tests/test_partners.py::test_partial_deliveries_separate_declarations_confirmations_returns | Déclarations distinctes, deux matières, réceptions partielles et retour vérifiés ; — |
+| R10-14 | P1 | Versions de justificatifs | terminé | app/partner_delivery_routes.py; static/partners.js | tests/test_partners.py::test_partial_deliveries_separate_declarations_confirmations_returns | Déclarations distinctes, deux matières, réceptions partielles et retour vérifiés ; — |
+| R10-15 | P1 | Modifications et historique | partiel | app/material_routes.py; app/partner_delivery_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R11-01 | P1 | Nouvelles demandes fournisseurs | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R11-02 | P1 | Dépôt documentaire | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R11-03 | P1 | Demande de correction | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R11-04 | P1 | Validation | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R11-05 | P1 | Échéance | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R11-06 | P1 | Nouvelle version importante | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R11-07 | P1 | Nouvelle publication client | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R11-08 | P1 | Message reçu | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R11-09 | P1 | Une file d'envoi persistante | terminé | app/partner_mail.py; static/partners.js | tests/test_partners.py::test_mail_outbox_real_states_retry_optout_and_disabled_transport | File/reprises/préférence vérifiées avec transport contrôlé ; aucun SMTP réel ; SMTP réel non validé |
+| R11-10 | P1 | Des événements idempotents | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R11-11 | P1 | Des tentatives et reprises | terminé | app/partner_mail.py; static/partners.js | tests/test_partners.py::test_mail_outbox_real_states_retry_optout_and_disabled_transport | File/reprises/préférence vérifiées avec transport contrôlé ; aucun SMTP réel ; SMTP réel non validé |
+| R11-12 | P1 | Un état exact des messages | terminé | app/partner_mail.py; static/partners.js | tests/test_partners.py::test_mail_outbox_real_states_retry_optout_and_disabled_transport | File/reprises/préférence vérifiées avec transport contrôlé ; aucun SMTP réel ; SMTP réel non validé |
+| R11-13 | P1 | Un journal d'erreurs | terminé | app/partner_mail.py; static/partners.js | tests/test_partners.py::test_mail_outbox_real_states_retry_optout_and_disabled_transport | File/reprises/préférence vérifiées avec transport contrôlé ; aucun SMTP réel ; SMTP réel non validé |
+| R11-14 | P1 | Des modèles email | terminé | app/partner_mail.py; static/partners.js | tests/test_partners.py::test_mail_outbox_real_states_retry_optout_and_disabled_transport | File/reprises/préférence vérifiées avec transport contrôlé ; aucun SMTP réel ; SMTP réel non validé |
+| R11-15 | P1 | Des préférences de notification | terminé | app/partner_mail.py; static/partners.js | tests/test_partners.py::test_mail_outbox_real_states_retry_optout_and_disabled_transport | File/reprises/préférence vérifiées avec transport contrôlé ; aucun SMTP réel ; SMTP réel non validé |
+| R12-01 | P1 | Étapes configurables | partiel | app/approval_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R12-02 | P1 | Responsables | partiel | app/approval_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R12-03 | P1 | Délégations contrôlées | partiel | app/approval_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R12-04 | P1 | Délais et échéances | partiel | app/approval_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R12-05 | P1 | Commentaires | partiel | app/approval_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R12-06 | P1 | Refus motivés | partiel | app/approval_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R12-07 | P1 | Demandes de reprise | partiel | app/approval_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R12-08 | P1 | Historique des décisions | partiel | app/approval_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R12-09 | P1 | Approbations liées à une version | partiel | app/approval_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R12-10 | P1 | Réouverture contrôlée | partiel | app/approval_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R12-11 | P1 | Séparation entre auteur et approbateur lorsque nécessaire | partiel | app/approval_routes.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-01 | P0 | Authentification | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-02 | P0 | Autorisations | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-03 | P0 | Isolation des clients | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-04 | P0 | Isolation des fournisseurs | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-05 | P0 | Permissions documentaires | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-06 | P0 | Téléchargements sécurisés | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-07 | P0 | Sessions et révocations | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-08 | P0 | Protection contre l'accès direct non autorisé | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-09 | P0 | Validation des entrées | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-10 | P0 | Téléversements dangereux | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-11 | P0 | Limitation des tentatives de connexion | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-12 | P0 | Gestion des erreurs | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-13 | P0 | Secrets | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-14 | P0 | CORS et protection des requêtes selon l'architecture d'authentification retenue | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-15 | P0 | Journalisation sans exposition d'informations sensibles | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-16 | P0 | Migrations | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-17 | P0 | Sauvegardes et restaurations | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R14-01 | P1 | La compatibilité du schéma | partiel | app/migrate.py; app/backup.py | — | Socle existant conservé ; extensions complètes non validées ; PostgreSQL non validé, aucun déploiement |
+| R14-02 | P1 | La conservation des données | partiel | app/migrate.py; app/backup.py | — | Socle existant conservé ; extensions complètes non validées ; PostgreSQL non validé, aucun déploiement |
+| R14-03 | P1 | L'intégrité référentielle | partiel | app/migrate.py; app/backup.py | — | Socle existant conservé ; extensions complètes non validées ; PostgreSQL non validé, aucun déploiement |
+| R14-04 | P1 | Les contraintes d'unicité | partiel | app/migrate.py; app/backup.py | — | Socle existant conservé ; extensions complètes non validées ; PostgreSQL non validé, aucun déploiement |
+| R14-05 | P1 | Les index utiles | partiel | app/migrate.py; app/backup.py | — | Socle existant conservé ; extensions complètes non validées ; PostgreSQL non validé, aucun déploiement |
+| R14-06 | P1 | Les transactions | partiel | app/migrate.py; app/backup.py | — | Socle existant conservé ; extensions complètes non validées ; PostgreSQL non validé, aucun déploiement |
+| R14-07 | P1 | Les migrations versionnées | partiel | app/migrate.py; app/backup.py | — | Socle existant conservé ; extensions complètes non validées ; PostgreSQL non validé, aucun déploiement |
+| R14-08 | P1 | La restauration | partiel | app/migrate.py; app/backup.py | — | Socle existant conservé ; extensions complètes non validées ; PostgreSQL non validé, aucun déploiement |
+| R15-01 | P1 | Navigation compréhensible | partiel | static/partners.js; static/app.js | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R15-02 | P1 | Organisation cohérente des dossiers | partiel | static/partners.js; static/app.js | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R15-03 | P1 | Tableaux lisibles | partiel | static/partners.js; static/app.js | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R15-04 | P1 | Recherche et filtres | partiel | static/partners.js; static/app.js | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R15-05 | P1 | États explicites | partiel | static/partners.js; static/app.js | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R15-06 | P1 | Confirmation des actions sensibles | partiel | static/partners.js; static/app.js | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R15-07 | P1 | Messages d'erreur utiles | partiel | static/partners.js; static/app.js | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R15-08 | P1 | Affichage mobile | partiel | static/partners.js; static/app.js | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R15-09 | P1 | Chargement, écrans vides et erreurs réseau | partiel | static/partners.js; static/app.js | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R15-10 | P1 | Accessibilité | partiel | static/partners.js; static/app.js | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R15-11 | P1 | Cohérence visuelle entre espaces internes et externes | partiel | static/partners.js; static/app.js | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R16-01 | P1 | `app/seed_demo.py` | partiel | app/seed_*demo.py; app/demo_guard.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R16-02 | P1 | `app/seed_completeness_demo.py` | partiel | app/seed_*demo.py; app/demo_guard.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R16-03 | P1 | `app/seed_workflow_demo.py` | partiel | app/seed_*demo.py; app/demo_guard.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R16-04 | P1 | `app/seed_quality_demo.py` | partiel | app/seed_*demo.py; app/demo_guard.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R16-05 | P1 | Organisations clientes fictives | partiel | app/seed_*demo.py; app/demo_guard.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R16-06 | P1 | Fournisseurs fictifs | partiel | app/seed_*demo.py; app/demo_guard.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R16-07 | P1 | Comptes de test | partiel | app/seed_*demo.py; app/demo_guard.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R16-08 | P1 | Commandes fictives | partiel | app/seed_*demo.py; app/demo_guard.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R16-09 | P1 | Documents fictifs | partiel | app/seed_*demo.py; app/demo_guard.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R16-10 | P1 | Exemples de validations | partiel | app/seed_*demo.py; app/demo_guard.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R16-11 | P1 | Exemples d'incohérences | partiel | app/seed_*demo.py; app/demo_guard.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R16-12 | P1 | Exemples de réceptions partielles | partiel | app/seed_*demo.py; app/demo_guard.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| N-01 | P0 | Réconciliation par commande avec plusieurs lancements, sans perte historique | partiel | ARCHITECTURE.md; app/models.py | tests/test_partner_migration_backup.py | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; — |
+| N-02 | P0 | Restauration complète locale DB + fichiers sans écrasement | terminé | app/backup.py | tests/test_partner_migration_backup.py | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; — |
+| N-03 | P0 | Refus des seeds hors environnement DEMO | terminé | app/demo_guard.py; app/seed_*demo.py | tests/test_partner_migration_backup.py::test_demo_requires_explicit_mode | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; — |
+| N-04 | P0 | Scénario fournisseur A de bout en bout navigateur | terminé | tools/check_partner_browser.py | tools/check_partner_browser.py | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; — |
+| N-05 | P0 | Synchronisation directe ORLI | bloqué | app/orli_import.py | — | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; Configuration/décision externe |
+| N-06 | P0 | Envoi SMTP autorisé réellement accepté par le service | bloqué | app/partner_mail.py | — | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; Configuration/décision externe |
+| N-07 | P0 | Pilotage et validation métier Framatex avant ouverture externe | bloqué | SECURITE.md | — | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; Configuration/décision externe |
+| N-08 | P0 | Publication client retirée ou obsolète inaccessible | terminé | app/partner_routes.py | tests/test_partners.py::test_client_publication_download_stale_and_withdrawal | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; — |
+| N-09 | P0 | Scan malware et politique en cas de scanner indisponible | absent | — | — | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; — |
+| N-10 | P0 | Pièces fournisseurs raccordées au moteur de complétude et aux documents internes | absent | — | — | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; — |
