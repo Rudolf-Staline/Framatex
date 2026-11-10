@@ -95,3 +95,34 @@ class LoginBucket(Base):
     key: Mapped[str]=mapped_column(String(64),primary_key=True)
     window_start: Mapped[int]=mapped_column(Integer,index=True)
     failures: Mapped[int]=mapped_column(Integer,default=0)
+
+class PartnerMovementCancellation(Base):
+    __tablename__='partner_movement_cancellations'
+    movement_id: Mapped[str]=mapped_column(ForeignKey('partner_deliveries.id'),primary_key=True)
+    actor: Mapped[str]=mapped_column(String(80))
+    reason: Mapped[str]=mapped_column(Text)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow)
+
+class OrliMappingProfile(Base):
+    __tablename__='orli_mapping_profiles'
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=uid)
+    name: Mapped[str]=mapped_column(String(100))
+    mapping_json: Mapped[str]=mapped_column(Text)
+    created_by: Mapped[str]=mapped_column(ForeignKey('users.id'))
+
+class OrliRefreshDecision(Base):
+    __tablename__='orli_refresh_decisions'
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=uid)
+    launch_id: Mapped[str]=mapped_column(ForeignKey('launches.id'),index=True)
+    previous_record_id: Mapped[str]=mapped_column(ForeignKey('orli_imported_launches.id'))
+    next_record_id: Mapped[str]=mapped_column(ForeignKey('orli_imported_launches.id'))
+    decision: Mapped[str]=mapped_column(String(20))
+    reason: Mapped[str]=mapped_column(Text)
+    decided_by: Mapped[str]=mapped_column(ForeignKey('users.id'))
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow)
+
+class DocumentExcelPolicy(Base):
+    __tablename__='document_excel_policies'
+    document_id: Mapped[str]=mapped_column(ForeignKey('documents.id'),primary_key=True)
+    cells_json: Mapped[str]=mapped_column(Text,default='[]')
+    configured_by: Mapped[str]=mapped_column(ForeignKey('users.id'))

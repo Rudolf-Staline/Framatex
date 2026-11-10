@@ -33,7 +33,7 @@ class MovementInput(BaseModel):
     occurred_on: date
 
 class ConfirmationInput(MovementInput):
-    kind: Literal['received','returned']
+    kind: Literal['received','returned','planned']
 
 def get_line(db, lid, account=None):
     row=db.get(PartnerOrderLine,lid)
@@ -43,14 +43,18 @@ def get_line(db, lid, account=None):
 
 def output(db,row):
     movements=db.scalars(select(PartnerDelivery).where(PartnerDelivery.line_id==row.id).order_by(PartnerDelivery.created_at,PartnerDelivery.id)).all()
-    total=lambda kind:sum((m.quantity for m in movements if m.kind==kind),Decimal('0'))
+    from .partner_phase2_models import PartnerMovementCancellation
+    cancellations={m.id:db.get(PartnerMovementCancellation,m.id) for m in movements}
+    total=lambda kind:sum((m.quantity for m in movements if m.kind==kind and not cancellations[m.id]),Decimal('0'))
+    plans=[m for m in movements if m.kind=='planned' and not cancellations[m.id]]
     received=total('received')-total('returned')
     return {'id':row.id,'partner_id':row.partner_id,'order_ref':row.order_ref,'material_ref':row.material_ref,
             'unit':row.unit,'ordered':format(row.ordered,'.3f'),'declared':format(total('declared'),'.3f'),'received':format(received,'.3f'),
+            'planned':format(plans[-1].quantity,'.3f') if plans else None,'announced':format(total('announced'),'.3f'),'returned':format(total('returned'),'.3f'),
             'remaining':format(max(Decimal('0'),row.ordered-received),'.3f'), 'expected_date':row.expected_date,
             'status':'excess' if received>row.ordered else 'complete' if received==row.ordered else 'partial' if received else 'awaiting',
             'movements':[{'id':m.id,'kind':m.kind,'quantity':str(m.quantity),'source_id':m.source_id,
-                          'note':m.note,'occurred_on':m.occurred_on,'created_at':m.created_at} for m in movements]}
+                          'cancelled':bool(cancellations[m.id]),'cancellation_reason':cancellations[m.id].reason if cancellations[m.id] else None,'note':m.note,'occurred_on':m.occurred_on,'created_at':m.created_at} for m in movements]}
 
 @router.post('/api/partners/order-lines',status_code=201)
 def create_line(payload:LineInput,user=Depends(staff),db:Session=Depends(get_db)):
@@ -80,7 +84,10 @@ def record(db,row,payload,kind,actor,user=None):
     request=db.get(PartnerRequest,source.request_id) if source else None
     if not request or request.partner_id!=row.partner_id or request.order_ref!=row.order_ref or request.launch_id!=row.launch_id:
         raise HTTPException(422,'Justificatif étranger à cette commande')
-    if kind!='declared' and source.status!='approved':
+    from .partner_phase2_models import PartnerIntegration
+    integrated=db.get(PartnerIntegration,source.id)
+    if integrated and not integrated.active:raise HTTPException(409,'Justificatif retiré')
+    if kind not in ('declared','announced') and source.status!='approved':
         raise HTTPException(409,'Justificatif approuvé requis pour une réception ou un retour')
     changed=db.execute(update(PartnerOrderLine).where(PartnerOrderLine.id==row.id,PartnerOrderLine.revision==row.revision).values(revision=row.revision+1),execution_options={'synchronize_session':False})
     if changed.rowcount!=1:raise HTTPException(409,'Ligne modifiée : actualiser')
@@ -103,3 +110,33 @@ def declare(lid:str,payload:MovementInput,account=Depends(partner),db:Session=De
 @router.post('/api/partners/order-lines/{lid}/receipts',status_code=201)
 def receive(lid:str,payload:ConfirmationInput,user=Depends(staff),db:Session=Depends(get_db)):
     return record(db,get_line(db,lid),payload,payload.kind,'staff:'+user.id,user)
+
+
+@router.post('/api/partner/order-lines/{lid}/announcements',status_code=201)
+def announce(lid:str,payload:MovementInput,account=Depends(partner),db:Session=Depends(get_db)):
+    from .partner_permissions import require
+    require(db,account,'delivery.write')
+    return record(db,get_line(db,lid,account),payload,'announced','partner:'+account.id)
+
+class CancellationInput(BaseModel):
+    reason:str=Field(min_length=3,max_length=2000)
+
+def cancel(db,lid,mid,payload,actor,account=None,user=None):
+    from .partner_phase2_models import PartnerMovementCancellation
+    line=get_line(db,lid,account);movement=db.get(PartnerDelivery,mid)
+    if not movement or movement.line_id!=lid or (account and (movement.actor!=actor or movement.kind not in ('declared','announced'))):raise HTTPException(404,'Mouvement introuvable')
+    changed=db.execute(update(PartnerOrderLine).where(PartnerOrderLine.id==lid,PartnerOrderLine.revision==line.revision).values(revision=line.revision+1),execution_options={'synchronize_session':False})
+    if changed.rowcount!=1:raise HTTPException(409,'Ligne modifiée : actualiser')
+    if db.get(PartnerMovementCancellation,mid):raise HTTPException(409,'Mouvement déjà annulé')
+    if movement.kind=='received' and Decimal(output(db,line)['received'])<movement.quantity:raise HTTPException(409,'Annuler les retours associés avant cette réception')
+    db.add(PartnerMovementCancellation(movement_id=mid,actor=actor,reason=payload.reason))
+    audit(db,user,'partner.delivery.cancel','partner_delivery',mid,{'actor':actor,'reason':payload.reason});db.commit();return output(db,line)
+
+@router.post('/api/partner/order-lines/{lid}/movements/{mid}/cancel')
+def supplier_cancel(lid:str,mid:str,payload:CancellationInput,account=Depends(partner),db:Session=Depends(get_db)):
+    from .partner_permissions import require
+    require(db,account,'delivery.write');return cancel(db,lid,mid,payload,'partner:'+account.id,account=account)
+
+@router.post('/api/partners/order-lines/{lid}/movements/{mid}/cancel')
+def staff_cancel(lid:str,mid:str,payload:CancellationInput,user=Depends(staff),db:Session=Depends(get_db)):
+    return cancel(db,lid,mid,payload,'staff:'+user.id,user=user)

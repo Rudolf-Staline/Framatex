@@ -149,3 +149,23 @@ def test_search_notifications_and_concurrent_upload_quota(monkeypatch):
         with ThreadPoolExecutor(max_workers=2) as pool:results=list(pool.map(submit,requests))
         assert sorted(results)==[201,413]
 
+
+
+def test_planned_announced_delivered_and_cancellations():
+    with TestClient(app) as staff, TestClient(app) as supplier:
+        lid=setup(staff);org=organization(staff,'Logistics');activate(staff,supplier,org,'logistics@sample.local')
+        rid=post(staff,'/api/partners/requests',{'partner_id':org,'launch_id':lid,'order_ref':'CMD','title':'Livraison','doc_type':'Bon'})['id']
+        v=upload(supplier,rid)
+        post(staff,f'/api/partners/requests/{rid}/decision',{'version_id':v['id'],'decision':'approved','reason':'Conforme'},200)
+        line=post(staff,'/api/partners/order-lines',{'partner_id':org,'launch_id':lid,'order_ref':'CMD','material_ref':'Coton','unit':'m','ordered':'100'})
+        payload={'source_id':v['id'],'quantity':'60','note':'Livraison partielle','occurred_on':'2026-11-10','operation_key':'announcement-1'}
+        announced=post(supplier,f'/api/partner/order-lines/{line["id"]}/announcements',payload)
+        assert announced['announced']=='60.000' and announced['declared']=='0.000' and announced['received']=='0.000'
+        planned=post(staff,f'/api/partners/order-lines/{line["id"]}/receipts',{**payload,'kind':'planned','quantity':'110','operation_key':'planned-1'})
+        assert planned['planned']=='110.000' and planned['ordered']=='100.000'
+        received=post(staff,f'/api/partners/order-lines/{line["id"]}/receipts',{**payload,'kind':'received','operation_key':'received-1'})
+        movement=next(m for m in received['movements'] if m['kind']=='received')
+        post(supplier,f'/api/partner/order-lines/{line["id"]}/movements/{movement["id"]}/cancel',{'reason':'Interdit'},404)
+        cancelled=post(staff,f'/api/partners/order-lines/{line["id"]}/movements/{movement["id"]}/cancel',{'reason':'Saisie erronée'},200)
+        assert cancelled['received']=='0.000' and cancelled['remaining']=='100.000'
+        assert next(m for m in cancelled['movements'] if m['id']==movement['id'])['cancelled'] is True
