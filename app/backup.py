@@ -26,7 +26,7 @@ def validate(database, files):
         if db.execute('PRAGMA foreign_key_check').fetchone():
             raise ValueError('Relations invalides')
         tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        for table in ('document_versions','partner_submissions'):
+        for table in ('document_versions','partner_submissions','partner_attachments'):
             if table not in tables:continue
             for name, expected in db.execute(f'SELECT disk_name, sha256 FROM {table}'):
                 if Path(name).name != name or not (files/name).is_file() or sha(files/name) != expected:

@@ -9,7 +9,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile, File, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import select, update
+from sqlalchemy import select, update, or_
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from .core import (get_db, get_current_user, utcnow, hash_password, check_password,
@@ -83,6 +83,7 @@ def detail(db, row):
     from .models import DocumentVersion
     links = list(db.scalars(select(PartnerIntegration).where(PartnerIntegration.submission_id.in_([v.id for v in versions]))))
     return {**request_out(row), 'integrated_document_id': db.get(DocumentVersion,links[0].version_id).document_id if links else None, 'versions': [submission_out(v) for v in versions],
+            'attachments': attachments_for_request(db,row.id),
             'history': [{'id': e.id, 'author': 'Framatex' if e.actor.startswith('staff:') else 'Fournisseur',
                          'kind': e.kind, 'message': e.message, 'created_at': e.created_at} for e in events]}
 
@@ -262,12 +263,12 @@ def create_request(payload: RequestInput, user=Depends(staff), db: Session = Dep
     return request_out(row)
 
 @router.get('/api/partners/requests')
-def staff_requests(user=Depends(staff), db: Session = Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=100)):
-    return [request_out(r) for r in db.scalars(select(PartnerRequest).order_by(PartnerRequest.created_at.desc()).offset(offset).limit(limit))]
+def staff_requests(user=Depends(staff), db: Session = Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=100), q: str = Query('',max_length=200), status: str | None = None, sort: Literal['newest','oldest','due']='newest'):
+    return request_search(db,None,q,status,sort,offset,limit)
 
 @router.get('/api/partner/requests')
-def supplier_requests(account=Depends(partner), db: Session = Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=100)):
-    return [request_out(r) for r in db.scalars(select(PartnerRequest).where(PartnerRequest.partner_id == account.partner_id).order_by(PartnerRequest.created_at.desc()).offset(offset).limit(limit))]
+def supplier_requests(account=Depends(partner), db: Session = Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=100), q: str = Query('',max_length=200), status: str | None = None, sort: Literal['newest','oldest','due']='newest'):
+    return request_search(db,account.partner_id,q,status,sort,offset,limit)
 
 @router.get('/api/partners/requests/{rid}')
 def staff_detail(rid: str, user=Depends(staff), db: Session = Depends(get_db)):
@@ -287,8 +288,11 @@ async def upload(rid: str, file: UploadFile = File(...), account=Depends(partner
     if row.status not in ('requested','rejected'):
         raise HTTPException(409, 'Dépôt autorisé pour une demande ouverte ou refusée uniquement')
     claim(db, row)
+    from .partner_uploads import lock_budget,verify_budget,scan
+    lock_budget(db,row.partner_id)
     original, disk, size, sha, mime = await store_upload(file)
     try:
+        verify_budget(db,row.partner_id,size);scan(STORAGE/disk)
         latest = db.scalar(select(PartnerSubmission).where(PartnerSubmission.request_id == rid).order_by(PartnerSubmission.number.desc()).limit(1))
         version = PartnerSubmission(request_id=rid, number=latest.number+1 if latest else 1,
             account_id=account.id, original_name=original, disk_name=disk, size=size, sha256=sha, content_type=mime)
@@ -435,3 +439,35 @@ def mail_queue(user=Depends(staff), db: Session = Depends(get_db)):
              'next_at':m.next_at,'accepted_at':m.accepted_at}
             for m in db.scalars(select(PartnerMail).order_by(PartnerMail.next_at.desc()).limit(100))]
 
+
+def attachments_for_request(db,rid):
+    from .partner_phase2_models import PartnerAttachment
+    from .partner_attachment_routes import out
+    return [out(a) for a in db.scalars(select(PartnerAttachment).join(PartnerEvent).where(PartnerEvent.request_id==rid))]
+
+
+def request_search(db,partner_id,q,status,sort,offset,limit):
+    query=select(PartnerRequest)
+    if partner_id:query=query.where(PartnerRequest.partner_id==partner_id)
+    if q:query=query.where(or_(PartnerRequest.title.ilike('%'+q+'%'),PartnerRequest.order_ref.ilike('%'+q+'%'),PartnerRequest.doc_type.ilike('%'+q+'%')))
+    if status:query=query.where(PartnerRequest.status==status)
+    order={'newest':PartnerRequest.created_at.desc(),'oldest':PartnerRequest.created_at.asc(),'due':PartnerRequest.due_date.asc().nulls_last()}[sort]
+    return [request_out(row) for row in db.scalars(query.order_by(order,PartnerRequest.id).offset(offset).limit(limit))]
+
+@router.get('/api/partner/notifications')
+def partner_notifications(account=Depends(partner),db:Session=Depends(get_db),offset:int=Query(0,ge=0),limit:int=Query(50,ge=1,le=100)):
+    from .partner_phase2_models import PartnerEventRead
+    rows=db.scalars(select(PartnerEvent).join(PartnerRequest).where(PartnerRequest.partner_id==account.partner_id,PartnerEvent.actor.like('staff:%')).order_by(PartnerEvent.created_at.desc(),PartnerEvent.id).offset(offset).limit(limit))
+    return [{'id':e.id,'request_id':e.request_id,'kind':e.kind,'message':e.message,'created_at':e.created_at,'read':db.get(PartnerEventRead,(account.id,e.id)) is not None} for e in rows]
+
+@router.post('/api/partner/notifications/{nid}/read')
+def mark_partner_notification(nid:str,account=Depends(partner),db:Session=Depends(get_db)):
+    from .partner_phase2_models import PartnerEventRead
+    e=db.get(PartnerEvent,nid)
+    if not e:raise HTTPException(404,'Notification introuvable')
+    req_get(db,e.request_id,account)
+    if not db.get(PartnerEventRead,(account.id,nid)):
+        db.add(PartnerEventRead(account_id=account.id,event_id=nid))
+        try:db.commit()
+        except IntegrityError:db.rollback()
+    return {'read':True}

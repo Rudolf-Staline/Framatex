@@ -748,3 +748,7 @@ app.include_router(partner_profile_router)
 from .partner_integration_routes import router as integration_router
 app.include_router(integration_router)
 
+from .partner_client_routes import router as partner_client_router
+app.include_router(partner_client_router)
+from .partner_attachment_routes import router as partner_attachment_router
+app.include_router(partner_attachment_router)

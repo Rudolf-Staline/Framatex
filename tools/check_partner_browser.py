@@ -6,7 +6,7 @@ import tempfile
 import time
 import socket
 import httpx
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, expect
 
 ROOT=Path(__file__).resolve().parents[1]
 PWD='BrowserTestPassword2026!'
@@ -67,8 +67,44 @@ def main():
                         assert not errors,errors
                         screenshot=ROOT/'artifacts/partner-browser.png';screenshot.parent.mkdir(exist_ok=True)
                         page.screenshot(path=str(screenshot),full_page=True)
+                        # Client journey: explicit order grant, publication, clarification and withdrawal.
+                        client_org=post('/api/partners/organizations',{'name':'Client fictif','kind':'client'})['id']
+                        client_invite=post(f'/api/partners/organizations/{client_org}/invitations',{'email':'client@example.local'})
+                        order=post('/api/partners/client-orders',{'partner_id':client_org,'launch_id':lid,'reference':'Commande client navigateur','status':'Confirmée'})
+                        doc_response=api.post(f'/api/launches/{lid}/documents',data={'folder':'jaune','title':'Fiche client','doc_type':'Fiche technique'},files={'file':('client.txt',b'Publication client fictive','text/plain')})
+                        doc_response.raise_for_status();doc=doc_response.json()
+                        post(f'/api/documents/{doc["id"]}/reviews',{'decision':'approved'})
+                        publication=post(f'/api/launches/{lid}/client-publications',{'document_version_id':doc['latest']['id'],'reason':'Publication client contrôlée navigateur'})
+                        post('/api/partners/publications',{'partner_id':client_org,'publication_id':publication['id']})
+                        client_context=browser.new_context();cp=client_context.new_page();cp.on('pageerror',lambda e:errors.append(str(e)))
+                        cp.goto(base+'/partners');cp.get_by_text('Activer ou récupérer mon compte').click()
+                        cp.locator('#activate input[name=token]').fill(client_invite['activation_token']);cp.locator('#activate input[name=password]').fill(PWD)
+                        cp.locator('#activate button').click();cp.get_by_text('Compte activé. Vous pouvez vous connecter.').wait_for()
+                        cp.locator('#login input[name=email]').fill('client@example.local');cp.locator('#login input[name=password]').fill(PWD);cp.locator('#login button').click()
+                        cp.get_by_role('heading',name='Commande client navigateur',exact=True).wait_for()
+                        with cp.expect_download() as download_info:cp.get_by_role('link',name='Télécharger la version publiée').click()
+                        download=download_info.value
+                        assert Path(download.path()).read_bytes()==b'Publication client fictive'
+                        cp.get_by_label('Objet de la demande').fill('Clarification navigateur');cp.get_by_label('Votre question',exact=True).fill('Quelle version utiliser ?')
+                        cp.get_by_role('button',name='Poser une question').click();cp.get_by_role('heading',name='Clarification navigateur · open',exact=True).wait_for()
+                        thread_panel=cp.locator('#client-orders section').first
+                        thread_panel.get_by_label('Pièce jointe privée').set_input_files({'name':'question.txt','mimeType':'text/plain','buffer':b'Question client fictive'})
+                        thread_panel.get_by_label('Description de la pièce').fill('Information client');thread_panel.get_by_role('button',name='Joindre le fichier').click()
+                        cp.get_by_role('link',name='Pièce jointe : question.txt',exact=False).wait_for()
+                        review.get_by_role('button',name='Actualiser',exact=True).click()
+                        review.get_by_label('Réponse à la clarification').fill('Utiliser la version publiée');review.get_by_role('button',name='Répondre',exact=True).click();review.get_by_text('Framatex : Utiliser la version publiée',exact=False).wait_for()
+                        review.get_by_label('Motif du changement de traitement').fill('Réponse complète');review.get_by_role('button',name='Clôturer l’échange',exact=True).click()
+                        review.get_by_role('heading',name='Clarification navigateur · closed',exact=True).wait_for()
+                        cp.get_by_role('button',name='Actualiser',exact=True).click();cp.get_by_role('heading',name='Clarification navigateur · closed',exact=True).wait_for()
+                        cp.set_viewport_size({'width':390,'height':844});assert cp.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
+                        cp.screenshot(path=str(ROOT/'artifacts/client-browser.png'),full_page=True)
+                        post(f'/api/client-publications/{publication["id"]}/revoke',{'reason':'Retrait confirmé pendant recette navigateur'})
+                        cp.get_by_role('button',name='Actualiser',exact=True).click()
+                        cp.get_by_role('heading',name='Clarification navigateur · closed',exact=True).wait_for()
+                        expect(cp.get_by_role('link',name='Télécharger la version publiée')).to_have_count(0)
+                        assert not errors,errors
                         browser.close()
-                        print('PASS: activation, login, upload, correction, new version, approval, closure, mobile layout')
+                        print('PASS: supplier integration and client order/publication/download/conversation/attachment/closure/withdrawal, mobile layouts')
             finally:
                 server.terminate();server.wait(timeout=10)
 
