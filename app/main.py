@@ -735,3 +735,6 @@ app.include_router(pilot_router)
 
 # Le contrôle global de portée est effectué dans request_header_guard, avant
 # le dispatch FastAPI. Aucun routeur historique ne peut l'éviter.
+
+from .partner_routes import router as partner_router
+app.include_router(partner_router)
