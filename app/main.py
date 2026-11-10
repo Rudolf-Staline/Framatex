@@ -752,3 +752,6 @@ from .partner_client_routes import router as partner_client_router
 app.include_router(partner_client_router)
 from .partner_attachment_routes import router as partner_attachment_router
 app.include_router(partner_attachment_router)
+
+from .orli_phase2_routes import router as orli_phase2_router
+app.include_router(orli_phase2_router)

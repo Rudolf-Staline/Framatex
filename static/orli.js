@@ -12,6 +12,7 @@ async function orliAdmin(){
    const fd=new FormData();fd.append('file',file);fd.append('mapping',app.querySelector('#orli-map').value);
    try{const imported=await api('/api/orli/imports',{method:'POST',body:fd});toast(`${imported.valid_rows}/${imported.total_rows} lignes valides importées`);await orliAdmin();await orliInspectBatch(imported.id)}catch(err){showErr(err)}
  });
+ await orliProfileControls(batches);
  app.querySelectorAll('[data-orli-batch]').forEach(b=>b.addEventListener('click',()=>orliInspectBatch(b.dataset.orliBatch)));
 }
 async function orliInspectBatch(batchId){
@@ -42,4 +43,17 @@ function orliConfirmDialog(id){
  overlay.querySelector('#orli-link-form').onsubmit=async evt=>{
   evt.preventDefault();try{await api('/api/launches/'+encodeURIComponent(state.detail.id)+'/orli-reconciliation/link',{method:'POST',body:JSON.stringify({record_id:row.id,confirmation:overlay.querySelector('#orli-confirm').checked,reason:overlay.querySelector('#orli-reason').value,override_conflicts:!!overlay.querySelector('#orli-override')?.checked})});closeModal();toast('Rapprochement enregistré · ORLI inchangé');await openLaunch(state.detail.id,state.folder)}catch(err){showErr(err)}
  };
+}
+
+async function orliProfileControls(batches){
+ const profiles=await api('/api/orli/profiles');
+ const panel=document.createElement('section');panel.className='panel';
+ panel.innerHTML=`<h2>Profils et comparaison des instantanés</h2><label>Profil enregistré <select id="orli-profile"><option value="">Choisir</option>${profiles.map(p=>`<option value="${e(p.id)}">${e(p.name)}</option>`).join('')}</select></label><label>Nom du nouveau profil <input id="orli-profile-name" maxlength="100"></label><button id="orli-save-profile">Enregistrer le mapping affiché</button><label>Instantané précédent <select id="orli-before">${batches.map(b=>`<option value="${e(b.id)}">${e(b.file_name)} · ${e(b.imported_at)}</option>`).join('')}</select></label><label>Nouvel instantané <select id="orli-after">${batches.map(b=>`<option value="${e(b.id)}">${e(b.file_name)} · ${e(b.imported_at)}</option>`).join('')}</select></label><button id="orli-compare">Comparer sans modifier les données</button><div id="orli-diff"></div>`;
+ app.querySelector('.orli-import').after(panel);
+ panel.querySelector('#orli-profile').onchange=evt=>{const p=profiles.find(p=>p.id===evt.target.value);if(p)app.querySelector('#orli-map').value=JSON.stringify(p.mapping,null,2);};
+ panel.querySelector('#orli-save-profile').onclick=async()=>{try{await api('/api/orli/profiles',{method:'POST',body:JSON.stringify({name:panel.querySelector('#orli-profile-name').value,mapping:JSON.parse(app.querySelector('#orli-map').value)})});await orliAdmin();}catch(err){showErr(err);}};
+ panel.querySelector('#orli-compare').onclick=async()=>{try{const previous=panel.querySelector('#orli-before').value,current=panel.querySelector('#orli-after').value;const result=await api(`/api/orli/compare?previous=${encodeURIComponent(previous)}&current=${encodeURIComponent(current)}`);const slot=panel.querySelector('#orli-diff');slot.innerHTML=result.rows.map(r=>`<article><h3>${e(r.reference)} · ${e(r.status)}</h3><pre>${e(JSON.stringify(r.changes,null,2))}</pre></article>`).join('');const launches=await api('/api/partners/launch-options');
+ for(const row of result.rows.filter(r=>r.status==='changed'&&r.before.length===1&&r.after.length===1)){const f=document.createElement('form');f.innerHTML=`<h3>Décider pour ${e(row.reference)}</h3><label>Lancement associé <select name="launch">${launches.map(l=>`<option value="${e(l.id)}">${e(l.label)}</option>`).join('')}</select></label><label>Décision <select name="decision"><option value="keep">Conserver la source actuelle</option><option value="accept">Associer le nouvel instantané</option></select></label><label>Justification <input name="reason" required minlength="12"></label><button>Confirmer la décision</button>`;f.onsubmit=async evt=>{evt.preventDefault();try{const values=Object.fromEntries(new FormData(f));await api(`/api/orli/launches/${encodeURIComponent(values.launch)}/refresh`,{method:'POST',body:JSON.stringify({expected_record_id:row.before[0].id,record_id:row.after[0].id,decision:values.decision,reason:values.reason})});toast('Décision enregistrée ; données internes et ORLI inchangés');await orliAdmin();}catch(err){showErr(err);}};slot.append(f);}
+ const history=await api('/api/orli/refresh-decisions');const h=document.createElement('pre');h.textContent=JSON.stringify(history,null,2);slot.append(h);
+ }catch(err){showErr(err);}};
 }
