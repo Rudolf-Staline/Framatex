@@ -258,3 +258,7 @@ Depuis la fiche d'un lancement, l'administrateur dispose du bouton **Gérer les 
 Si tous les nouveaux dossiers doivent être restreints dès leur création, définir `FRAMATEX_RESTRICT_NEW_LAUNCHES=1`.
 
 La version actuelle constitue encore un démonstrateur local. L'accès réel aux données Framatex reste subordonné à une validation technique, juridique et organisationnelle.
+
+## Industrialisation — branche de travail partenaires
+
+Le portail ajouté est accessible à `/partners` : fournisseurs, publications client autorisées, déclarations et réceptions. Ce travail reste partiel et n'est pas validé pour un pilote externe. Consulter [l'état d'implémentation](IMPLEMENTATION_STATUS.md), [la couverture](COUVERTURE_FONCTIONNELLE.md), [l'installation et les tests](GUIDE_DEPLOIEMENT.md), [la sécurité](SECURITE.md) et [l'API partenaires](docs/API_PARTENAIRES.md). Les démonstrations exigent désormais `FRAMATEX_MODE=DEMO` dans une installation dédiée.

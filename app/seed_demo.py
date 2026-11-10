@@ -13,6 +13,8 @@ ROWS = [
 ]
 
 def main():
+    from .demo_guard import require_demo
+    require_demo()
     Base.metadata.create_all(engine)
     with SessionLocal() as db:
         user = db.scalar(select(User).join(User.roles).where(User.email.is_not(None)))
