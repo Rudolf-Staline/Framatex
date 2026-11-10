@@ -63,7 +63,7 @@ def version_intake(version_id:str,user:User=Depends(get_current_user),db:Session
     # Analyse demandée explicitement par l'utilisateur. Aucune extraction poussée vers l'ERP.
     result=preview(path,v.original_name)
     result['version_id']=v.id
-    result['confirmed']=[{'key':x.field_key,'value':x.value,'unit':x.unit,'confirmed_at':x.confirmed_at.isoformat()} for x in db.scalars(select(ConfirmedField).where(ConfirmedField.document_version_id==v.id)).all()]
+    result['confirmed']=[{'id':x.id,'key':x.field_key,'value':x.value,'unit':x.unit,'confirmed_at':x.confirmed_at.isoformat()} for x in db.scalars(select(ConfirmedField).where(ConfirmedField.document_version_id==v.id)).all()]
     return result
 
 @router.post('/api/document-versions/{version_id}/intake/confirm',status_code=201)

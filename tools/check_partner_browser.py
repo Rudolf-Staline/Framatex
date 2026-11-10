@@ -58,6 +58,7 @@ def main():
                         page.get_by_role('button',name='Transmettre une version').click();page.get_by_text('Version 2 · Vérification en attente',exact=False).wait_for()
                         review.get_by_role('button',name='Actualiser',exact=True).click();review.get_by_role('button',name='Ouvrir',exact=True).click()
                         review.get_by_label('Motif de la décision').fill('Certificat conforme');review.get_by_role('button',name='Approuver',exact=True).click()
+                        review.get_by_role('button',name='Intégrer au dossier interne',exact=True).click();review.get_by_text('Document intégré : Certificat navigateur',exact=True).wait_for()
                         review.get_by_role('button',name='Clôturer',exact=True).click();review.locator('#detail > p').filter(has_text='Clôturé').wait_for()
                         page.get_by_role('button',name='Actualiser',exact=True).click();page.get_by_role('button',name='Ouvrir',exact=True).click()
                         page.locator('#detail > p').filter(has_text='Clôturé').wait_for()

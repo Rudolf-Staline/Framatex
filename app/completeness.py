@@ -38,7 +38,9 @@ def evaluate(db: Session, launch: Launch, user, permitted):
         for document in matching:
             if document.versions:
                 version = max(document.versions, key=lambda v: v.number)
-                candidates.append((document, version))
+                from .partner_integration_routes import business_available
+                if business_available(db, version.id):
+                    candidates.append((document, version))
         # Une validation d'une version ancienne ne valide jamais la version courante.
         validated = set()
         if candidates and rule.requires_validation:
@@ -51,7 +53,13 @@ def evaluate(db: Session, launch: Launch, user, permitted):
             validated = {v.document_version_id for v in validations}
             # Les décisions documentaires 0.3 ont priorité sur les validations 0.2
             # lorsqu'elles portent sur la même version courante.
-            for _, current_version in candidates:
+            for candidate_doc, current_version in candidates:
+                from .approval_routes import applicable_template
+                from .sharing_routes import is_approved
+                if applicable_template(db,candidate_doc):
+                    if is_approved(db,current_version,candidate_doc): validated.add(current_version.id)
+                    else: validated.discard(current_version.id)
+                    continue
                 decision = latest_review(db, current_version.id)
                 if decision:
                     if decision.decision == 'approved':

@@ -1,8 +1,8 @@
 # Couverture fonctionnelle
 
-**81 / 273 exigences terminées : 29.7 %. Objectif 90 % non atteint.**
+**82 / 273 exigences terminées : 30.0 %. Objectif 90 % non atteint.**
 
-États : {'terminé': 81, 'absent': 31, 'partiel': 158, 'bloqué': 3}. Périmètre fixe conservé depuis la phase 1. Aucun blocage exclu du dénominateur. Terminé signifie testé en environnement contrôlé, jamais validé pour production par Framatex. Voir IMPLEMENTATION_STATUS.md pour les commandes exécutées et limites.
+États : {'terminé': 82, 'absent': 30, 'partiel': 158, 'bloqué': 3}. Périmètre fixe conservé depuis la phase 1. Aucun blocage exclu du dénominateur. Terminé signifie testé en environnement contrôlé, jamais validé pour production par Framatex. Voir IMPLEMENTATION_STATUS.md pour les commandes exécutées et limites.
 
 | ID | Priorité | Exigence | État | Implémentation | Test | Résultat / dépendance |
 |---|---|---|---|---|---|---|
@@ -278,4 +278,4 @@
 | N-07 | P0 | Pilotage et validation métier Framatex avant ouverture externe | bloqué | SECURITE.md | — | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; Configuration/décision externe |
 | N-08 | P0 | Publication client retirée ou obsolète inaccessible | terminé | app/partner_routes.py | tests/test_partners.py::test_client_publication_download_stale_and_withdrawal | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; — |
 | N-09 | P0 | Scan malware et politique en cas de scanner indisponible | absent | — | — | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; — |
-| N-10 | P0 | Pièces fournisseurs raccordées au moteur de complétude et aux documents internes | absent | — | — | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; — |
+| N-10 | P0 | Pièces fournisseurs raccordées au moteur de complétude et aux documents internes | terminé | app/partner_integration_routes.py; app/completeness.py; app/quality.py; static/partners.js | tests/test_partner_phase2.py::test_supplier_integration_preserves_blob_provenance_and_completeness; tools/check_partner_browser.py | Intégration sans copie, provenance/version conservées, complétude et quantité confirmée, remplacement et retrait testés ; — |

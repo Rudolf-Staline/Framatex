@@ -744,3 +744,7 @@ app.include_router(partner_delivery_router)
 
 from .partner_profile_routes import router as partner_profile_router
 app.include_router(partner_profile_router)
+
+from .partner_integration_routes import router as integration_router
+app.include_router(integration_router)
+

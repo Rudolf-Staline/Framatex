@@ -79,7 +79,10 @@ def submission_out(row):
 def detail(db, row):
     versions = db.scalars(select(PartnerSubmission).where(PartnerSubmission.request_id == row.id).order_by(PartnerSubmission.number)).all()
     events = db.scalars(select(PartnerEvent).where(PartnerEvent.request_id == row.id).order_by(PartnerEvent.created_at, PartnerEvent.id)).all()
-    return {**request_out(row), 'versions': [submission_out(v) for v in versions],
+    from .partner_phase2_models import PartnerIntegration
+    from .models import DocumentVersion
+    links = list(db.scalars(select(PartnerIntegration).where(PartnerIntegration.submission_id.in_([v.id for v in versions]))))
+    return {**request_out(row), 'integrated_document_id': db.get(DocumentVersion,links[0].version_id).document_id if links else None, 'versions': [submission_out(v) for v in versions],
             'history': [{'id': e.id, 'author': 'Framatex' if e.actor.startswith('staff:') else 'Fournisseur',
                          'kind': e.kind, 'message': e.message, 'created_at': e.created_at} for e in events]}
 
@@ -272,7 +275,9 @@ def staff_detail(rid: str, user=Depends(staff), db: Session = Depends(get_db)):
 
 @router.get('/api/partner/requests/{rid}')
 def supplier_detail(rid: str, account=Depends(partner), db: Session = Depends(get_db)):
-    return detail(db, req_get(db, rid, account))
+    result = detail(db, req_get(db, rid, account))
+    result.pop('integrated_document_id',None)
+    return result
 
 @router.post('/api/partner/requests/{rid}/versions', status_code=201)
 async def upload(rid: str, file: UploadFile = File(...), account=Depends(partner), db: Session = Depends(get_db)):
@@ -429,3 +434,4 @@ def mail_queue(user=Depends(staff), db: Session = Depends(get_db)):
     return [{'id':m.id,'status':m.status,'attempts':m.attempts,'last_error':m.last_error,
              'next_at':m.next_at,'accepted_at':m.accepted_at}
             for m in db.scalars(select(PartnerMail).order_by(PartnerMail.next_at.desc()).limit(100))]
+

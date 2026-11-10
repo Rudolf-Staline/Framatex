@@ -48,6 +48,9 @@ def latest(doc: Document):
 
 
 def is_approved(db: Session, v: DocumentVersion, doc: Document) -> bool:
+    from .partner_integration_routes import business_available
+    if not business_available(db, v.id):
+        return False
     template = applicable_template(db, doc)
     if template:
         return db.scalar(select(ApprovalRun.id).where(

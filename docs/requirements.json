@@ -2995,10 +2995,10 @@
     "id": "N-10",
     "section": "narratif",
     "requirement": "Pièces fournisseurs raccordées au moteur de complétude et aux documents internes",
-    "status": "absent",
-    "files": "—",
-    "test": "—",
-    "observed": "Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md",
+    "status": "terminé",
+    "files": "app/partner_integration_routes.py; app/completeness.py; app/quality.py; static/partners.js",
+    "test": "tests/test_partner_phase2.py::test_supplier_integration_preserves_blob_provenance_and_completeness; tools/check_partner_browser.py",
+    "observed": "Intégration sans copie, provenance/version conservées, complétude et quantité confirmée, remplacement et retrait testés",
     "dependency": "—",
     "priority": "P0"
   }
