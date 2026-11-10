@@ -1,23 +1,19 @@
-# Couverture fonctionnelle — 10 novembre 2026
+# Couverture fonctionnelle
 
-**76 / 273 exigences terminées et vérifiées : 27.8 %. Objectif 90 % non atteint.**
+**81 / 273 exigences terminées : 29.7 %. Objectif 90 % non atteint.**
 
-Décompte conservateur des puces fonctionnelles des sections 4 à 16 de la mission, plus dix exigences narratives structurantes. Chaque puce reste dans le dénominateur, y compris les exigences bloquées ; les recouvrements de la mission sont conservés. Cette granularité n'est pas une pondération d'effort et doit être revue avec Framatex. Les tests existants ne suffisent pas à certifier toutes les extensions d'une exigence large : elle reste partielle. Les scénarios A–H sont suivis séparément dans IMPLEMENTATION_STATUS.md pour éviter de les compter une seconde fois.
+États : {'terminé': 81, 'absent': 31, 'partiel': 158, 'bloqué': 3}. Périmètre fixe conservé depuis la phase 1. Aucun blocage exclu du dénominateur. Terminé signifie testé en environnement contrôlé, jamais validé pour production par Framatex. Voir IMPLEMENTATION_STATUS.md pour les commandes exécutées et limites.
 
-États : {'terminé': 76, 'absent': 36, 'partiel': 158, 'bloqué': 3}. « Terminé » signifie opérationnel en environnement contrôlé, pas approuvé pour production. **Aucune exigence n'est déclarée validée avec Framatex.** Les capacités SMTP sont testées par transport contrôlé ; l'intégration réelle reste bloquée et distincte. Tous les autres éléments partiels/absents restent dans le périmètre de reprise.
-
-Source exploitable : `docs/requirements.json`. Le taux est calculé par nombre de statuts « terminé » / nombre total d'entrées. Les modules déjà fonctionnels avant ce lot sont décrits dans AUDIT_FONCTIONNEL.md. Le journal exact des commandes et résultats est dans IMPLEMENTATION_STATUS.md.
-
-| ID | Priorité | Exigence | État | Implémentation | Validation | Résultat / dépendance |
+| ID | Priorité | Exigence | État | Implémentation | Test | Résultat / dépendance |
 |---|---|---|---|---|---|---|
 | R4.1-01 | P0 | Identifiant stable | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
-| R4.1-02 | P0 | Nom légal et nom commercial | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.1-02 | P0 | Nom légal et nom commercial | terminé | app/partner_profile_routes.py; app/partner_permissions.py; static/partners.js | tests/test_partner_phase2.py::test_roles_domains_and_no_self_escalation | Profil persisté/historisé, domaine contrôlé, lecteur refusé en écriture, rôle étranger et auto-attribution refusés ; — |
 | R4.1-03 | P0 | Contacts | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
-| R4.1-04 | P0 | Adresses email autorisées | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.1-04 | P0 | Adresses email autorisées | terminé | app/partner_profile_routes.py; app/partner_permissions.py; static/partners.js | tests/test_partner_phase2.py::test_roles_domains_and_no_self_escalation | Profil persisté/historisé, domaine contrôlé, lecteur refusé en écriture, rôle étranger et auto-attribution refusés ; — |
 | R4.1-05 | P0 | Statut actif / suspendu | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
-| R4.1-06 | P0 | Informations administratives configurables | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.1-06 | P0 | Informations administratives configurables | terminé | app/partner_profile_routes.py; app/partner_permissions.py; static/partners.js | tests/test_partner_phase2.py::test_roles_domains_and_no_self_escalation | Profil persisté/historisé, domaine contrôlé, lecteur refusé en écriture, rôle étranger et auto-attribution refusés ; — |
 | R4.1-07 | P0 | Documents administratifs | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
-| R4.1-08 | P0 | Historique des modifications | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.1-08 | P0 | Historique des modifications | terminé | app/partner_profile_routes.py; app/partner_permissions.py; static/partners.js | tests/test_partner_phase2.py::test_roles_domains_and_no_self_escalation | Profil persisté/historisé, domaine contrôlé, lecteur refusé en écriture, rôle étranger et auto-attribution refusés ; — |
 | R4.1-09 | P0 | Invitations sécurisées | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
 | R4.1-10 | P0 | Activation de compte | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
 | R4.1-11 | P0 | Connexion | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
@@ -25,7 +21,7 @@ Source exploitable : `docs/requirements.json`. Le taux est calculé par nombre d
 | R4.1-13 | P0 | Récupération de compte sécurisée | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
 | R4.1-14 | P0 | Gestion des sessions | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
 | R4.1-15 | P0 | Révocation des accès | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
-| R4.1-16 | P0 | Rôles fournisseurs | absent | — | — | Non implémenté ou non validé dans ce lot ; — |
+| R4.1-16 | P0 | Rôles fournisseurs | terminé | app/partner_profile_routes.py; app/partner_permissions.py; static/partners.js | tests/test_partner_phase2.py::test_roles_domains_and_no_self_escalation | Profil persisté/historisé, domaine contrôlé, lecteur refusé en écriture, rôle étranger et auto-attribution refusés ; — |
 | R4.1-17 | P0 | Administration des utilisateurs par Framatex | terminé | app/partner_models.py; app/partner_routes.py; static/partners.js | tests/test_partners.py | Validé par assertions API persistées ; contrôle navigateur du cycle fournisseur ; — |
 | R4.2-01 | P0 | L'accès aux documents d'un autre fournisseur | terminé | app/partner_routes.py | tests/test_partners.py | 404 entre organisations ; 401 après révocation et sur API interne ; — |
 | R4.2-02 | P0 | L'accès direct par URL | terminé | app/partner_routes.py | tests/test_partners.py | 404 entre organisations ; 401 après révocation et sur API interne ; — |

@@ -37,6 +37,10 @@ def partner(request: Request, db: Session = Depends(get_db)):
     org = db.get(Partner, account.partner_id) if account else None
     if not account or not account.active or not account.password_hash or not org or not org.active:
         raise HTTPException(401, 'Accès partenaire révoqué')
+    from .partner_permissions import require, email_allowed
+    if not email_allowed(db, account.partner_id, account.email):
+        raise HTTPException(403, "Domaine email non autorisé")
+    require(db, account, "read")
     return account
 
 def org_get(db, org_id, kind=None):
@@ -160,6 +164,9 @@ def invite(org_id: str, payload: InviteInput, user=Depends(staff), db: Session =
     org = org_get(db, org_id)
     if not org.active:
         raise HTTPException(409, 'Organisation suspendue')
+    from .partner_permissions import email_allowed
+    if not email_allowed(db, org_id, payload.email):
+        raise HTTPException(422, 'Domaine email non autorisé')
     account = db.scalar(select(PartnerAccount).where(PartnerAccount.email == payload.email))
     if account and account.partner_id != org_id:
         raise HTTPException(409, 'Adresse déjà enregistrée')
@@ -236,7 +243,8 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
 @router.get('/api/partner/home')
 def home(account=Depends(partner), db: Session = Depends(get_db)):
     org = org_get(db, account.partner_id)
-    return {'organization': org.name, 'kind': org.kind, 'email': account.email}
+    from .partner_permissions import permissions
+    return {'organization': org.name, 'kind': org.kind, 'email': account.email, 'permissions': sorted(permissions(db, account))}
 
 @router.post('/api/partners/requests', status_code=201)
 def create_request(payload: RequestInput, user=Depends(staff), db: Session = Depends(get_db)):
@@ -268,6 +276,8 @@ def supplier_detail(rid: str, account=Depends(partner), db: Session = Depends(ge
 
 @router.post('/api/partner/requests/{rid}/versions', status_code=201)
 async def upload(rid: str, file: UploadFile = File(...), account=Depends(partner), db: Session = Depends(get_db)):
+    from .partner_permissions import require
+    require(db, account, 'document.write')
     row = req_get(db, rid, account)
     if row.status not in ('requested','rejected'):
         raise HTTPException(409, 'Dépôt autorisé pour une demande ouverte ou refusée uniquement')
@@ -314,6 +324,8 @@ def close(rid: str, user=Depends(staff), db: Session = Depends(get_db)):
 
 @router.post('/api/partner/requests/{rid}/messages', status_code=201)
 def supplier_message(rid: str, payload: MessageInput, account=Depends(partner), db: Session = Depends(get_db)):
+    from .partner_permissions import require
+    require(db, account, 'message.write')
     row = req_get(db, rid, account)
     event(db, row, 'partner:'+account.id, 'message', payload.message)
     db.commit(); return {'recorded':True, 'email_status':'not_sent'}

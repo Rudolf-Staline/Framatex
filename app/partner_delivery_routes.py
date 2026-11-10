@@ -96,6 +96,8 @@ def record(db,row,payload,kind,actor,user=None):
 
 @router.post('/api/partner/order-lines/{lid}/declarations',status_code=201)
 def declare(lid:str,payload:MovementInput,account=Depends(partner),db:Session=Depends(get_db)):
+    from .partner_permissions import require
+    require(db,account,'delivery.write')
     return record(db,get_line(db,lid,account),payload,'declared','partner:'+account.id)
 
 @router.post('/api/partners/order-lines/{lid}/receipts',status_code=201)
