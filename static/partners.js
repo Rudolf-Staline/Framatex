@@ -35,6 +35,9 @@ async function refresh(){
    $('organizations').append(a);if(o.active){const opt=node('option',o.name);opt.value=o.id;$(o.kind==='supplier'?'supplier-options':'client-options').append(opt);if(o.kind==='supplier')$('order-supplier-options').append(opt.cloneNode(true));}
   }
  }
+ $('mail-state').replaceChildren();
+ if(internal){const queue=await api('/api/partners/mail');$('mail-state').append(node('h4','File email (accepté ≠ livré ou lu)'));for(const m of queue)$('mail-state').append(node('p',`${m.status} · Tentatives : ${m.attempts} · ${m.last_error}`));}
+ else {const pref=await api('/api/partner/mail-preference');$('mail-state').append(node('p',`Emails : ${pref.enabled?'préférence activée':'préférence désactivée'} · Transport ${pref.transport_configured?'activé par administrateur':'désactivé'}`),button(pref.enabled?'Désactiver les emails':'Activer la préférence email',async()=>{await api('/api/partner/mail-preference','PUT',{active:!pref.enabled});await refresh();}));}
  await renderDeliveries();
  const rows=await api(internal?'/api/partners/requests':'/api/partner/requests');$('items').replaceChildren();
  if(!rows.length)$('items').append(node('p','Aucune demande accessible.'));

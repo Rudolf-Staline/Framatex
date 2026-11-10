@@ -160,3 +160,34 @@ def test_partial_deliveries_separate_declarations_confirmations_returns():
         assert returned['received']=='90.000' and returned['status']=='partial'
         post(staff,receive,{**payload,'quantity':'91','kind':'returned','operation_key':'return-bad'},409)
         post(staff,receive,{**payload,'quantity':'-1','kind':'received','operation_key':'bad-negative'},422)
+
+
+def test_mail_outbox_real_states_retry_optout_and_disabled_transport(monkeypatch):
+    from app.partner_mail import process_batch
+    from app.partner_models import PartnerMail
+    from app.core import utcnow
+    from datetime import timedelta
+    with TestClient(app) as staff, TestClient(app) as supplier:
+        lid=setup(staff);org=organization(staff,'Mail Supplier');activate(staff,supplier,org,'mail@sample.local')
+        assert supplier.put('/api/partner/mail-preference',json={'active':True},headers=H).status_code==200
+        rid=post(staff,'/api/partners/requests',{'partner_id':org,'launch_id':lid,'order_ref':'M','title':'Certificat','doc_type':'Certificat'})['id']
+        monkeypatch.delenv('FRAMATEX_EMAIL_ENABLED',raising=False)
+        assert process_batch()['status']=='disabled'
+        assert staff.get('/api/partners/mail').json()[0]['status']=='pending'
+        def failure(recipient,event_id):raise ConnectionError('secret must not enter log')
+        process_batch(transport=failure)
+        row=staff.get('/api/partners/mail').json()[0]
+        assert row['status']=='failed' and row['last_error']=='ConnectionError'
+        sent=[]
+        with SessionLocal() as db:
+            m=db.scalar(select(PartnerMail));m.next_at=utcnow()-timedelta(seconds=1);db.commit()
+        process_batch(transport=lambda recipient,event_id:sent.append((recipient,event_id)))
+        assert len(sent)==1
+        assert staff.get('/api/partners/mail').json()[0]['status']=='accepted'
+        process_batch(transport=lambda *args:sent.append(args))
+        assert len(sent)==1
+        post(staff,f'/api/partners/requests/{rid}/messages',{'message':'Une information complémentaire'})
+        supplier.put('/api/partner/mail-preference',json={'active':False},headers=H)
+        process_batch(transport=lambda *args:sent.append(args))
+        assert len(sent)==1
+        assert 'cancelled' in {r['status'] for r in staff.get('/api/partners/mail').json()}

@@ -106,3 +106,20 @@ class PartnerDelivery(Base):
     note: Mapped[str] = mapped_column(Text)
     occurred_on: Mapped[date] = mapped_column(Date)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+class PartnerMail(Base):
+    __tablename__ = 'partner_mail'
+    __table_args__ = (UniqueConstraint('event_id','account_id'),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    event_id: Mapped[str] = mapped_column(ForeignKey('partner_events.id'))
+    account_id: Mapped[str] = mapped_column(ForeignKey('partner_accounts.id'), index=True)
+    status: Mapped[str] = mapped_column(String(20), default='pending')
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    next_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_error: Mapped[str] = mapped_column(String(100), default='')
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+class PartnerMailPreference(Base):
+    __tablename__ = 'partner_mail_preferences'
+    account_id: Mapped[str] = mapped_column(ForeignKey('partner_accounts.id'), primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)

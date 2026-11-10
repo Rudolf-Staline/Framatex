@@ -52,7 +52,11 @@ def req_get(db, request_id, account=None):
     return row
 
 def event(db, row, actor, kind, message=''):
-    db.add(PartnerEvent(request_id=row.id, actor=actor, kind=kind, message=message))
+    entry = PartnerEvent(request_id=row.id, actor=actor, kind=kind, message=message)
+    db.add(entry); db.flush()
+    if actor.startswith('staff:'):
+        from .partner_mail import enqueue
+        enqueue(db, entry)
 
 def claim(db, row):
     # Compare-and-swap serializes decisions and uploads, including concurrent requests.
@@ -390,3 +394,26 @@ def client_download(pid: str, account=Depends(partner), db: Session = Depends(ge
     audit(db, None, 'partner.download', 'partner_publication', pid, {'account_id':account.id})
     db.commit()
     return FileResponse(path, filename=version.original_name, media_type=version.content_type)
+
+
+@router.get('/api/partner/mail-preference')
+def mail_preference(account=Depends(partner), db: Session = Depends(get_db)):
+    from .partner_models import PartnerMailPreference
+    row = db.get(PartnerMailPreference, account.id)
+    return {'enabled': bool(row and row.enabled), 'transport_configured': os.getenv('FRAMATEX_EMAIL_ENABLED') == '1'}
+
+@router.put('/api/partner/mail-preference')
+def set_mail_preference(payload: ActiveInput, account=Depends(partner), db: Session = Depends(get_db)):
+    from .partner_models import PartnerMailPreference
+    row = db.get(PartnerMailPreference, account.id)
+    if not row:
+        row = PartnerMailPreference(account_id=account.id); db.add(row)
+    row.enabled = payload.active
+    db.commit(); return {'enabled': row.enabled}
+
+@router.get('/api/partners/mail')
+def mail_queue(user=Depends(staff), db: Session = Depends(get_db)):
+    from .partner_models import PartnerMail
+    return [{'id':m.id,'status':m.status,'attempts':m.attempts,'last_error':m.last_error,
+             'next_at':m.next_at,'accepted_at':m.accepted_at}
+            for m in db.scalars(select(PartnerMail).order_by(PartnerMail.next_at.desc()).limit(100))]
