@@ -1,8 +1,8 @@
 # Couverture fonctionnelle
 
-**123 / 273 exigences terminées : 45.1 %. Objectif 90 % non atteint.**
+**131 / 273 exigences terminées : 48.0 %. Objectif 90 % non atteint.**
 
-États : {'terminé': 123, 'absent': 14, 'partiel': 133, 'bloqué': 3}. Périmètre fixe conservé depuis la phase 1. Aucun blocage exclu du dénominateur. Terminé signifie testé en environnement contrôlé, jamais validé pour production par Framatex. Voir IMPLEMENTATION_STATUS.md pour les commandes exécutées et limites.
+États : {'terminé': 131, 'absent': 13, 'partiel': 126, 'bloqué': 3}. Périmètre fixe conservé depuis la phase 1. Aucun blocage exclu du dénominateur. Terminé signifie testé en environnement contrôlé, jamais validé pour production par Framatex. Voir IMPLEMENTATION_STATUS.md pour les commandes exécutées et limites.
 
 | ID | Priorité | Exigence | État | Implémentation | Test | Résultat / dépendance |
 |---|---|---|---|---|---|---|
@@ -148,14 +148,14 @@
 | R8.1-13 | P1 | Tolérances | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
 | R8.1-14 | P1 | Justifications d'écarts | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
 | R8.1-15 | P1 | Nouvelle version de document | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
-| R8.2-01 | P1 | Détection des formules supprimées | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
-| R8.2-02 | P1 | Détection des formules modifiées | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
-| R8.2-03 | P1 | Références cassées | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
-| R8.2-04 | P1 | Changements de structure | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
-| R8.2-05 | P1 | Modifications de cellules critiques configurées | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
-| R8.2-06 | P1 | Comparaison des versions | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
-| R8.2-07 | P1 | Provenance des alertes | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
-| R8.2-08 | P1 | Gestion des limites d'analyse | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R8.2-01 | P1 | Détection des formules supprimées | terminé | app/quality.py; app/quality_routes.py; static/quality.js | tests/test_excel_phase2.py; tests/test_quality.py | Formules, feuilles ajoutées/supprimées, structure, cellules critiques, références invalides, plafonds et troncature testés ; inspection statique uniquement ; Aucun calcul mathématique Excel revendiqué |
+| R8.2-02 | P1 | Détection des formules modifiées | terminé | app/quality.py; app/quality_routes.py; static/quality.js | tests/test_excel_phase2.py; tests/test_quality.py | Formules, feuilles ajoutées/supprimées, structure, cellules critiques, références invalides, plafonds et troncature testés ; inspection statique uniquement ; Aucun calcul mathématique Excel revendiqué |
+| R8.2-03 | P1 | Références cassées | terminé | app/quality.py; app/quality_routes.py; static/quality.js | tests/test_excel_phase2.py; tests/test_quality.py | Formules, feuilles ajoutées/supprimées, structure, cellules critiques, références invalides, plafonds et troncature testés ; inspection statique uniquement ; Aucun calcul mathématique Excel revendiqué |
+| R8.2-04 | P1 | Changements de structure | terminé | app/quality.py; app/quality_routes.py; static/quality.js | tests/test_excel_phase2.py; tests/test_quality.py | Formules, feuilles ajoutées/supprimées, structure, cellules critiques, références invalides, plafonds et troncature testés ; inspection statique uniquement ; Aucun calcul mathématique Excel revendiqué |
+| R8.2-05 | P1 | Modifications de cellules critiques configurées | terminé | app/quality.py; app/quality_routes.py; static/quality.js | tests/test_excel_phase2.py; tests/test_quality.py | Formules, feuilles ajoutées/supprimées, structure, cellules critiques, références invalides, plafonds et troncature testés ; inspection statique uniquement ; Aucun calcul mathématique Excel revendiqué |
+| R8.2-06 | P1 | Comparaison des versions | terminé | app/quality.py; app/quality_routes.py; static/quality.js | tests/test_excel_phase2.py; tests/test_quality.py | Formules, feuilles ajoutées/supprimées, structure, cellules critiques, références invalides, plafonds et troncature testés ; inspection statique uniquement ; Aucun calcul mathématique Excel revendiqué |
+| R8.2-07 | P1 | Provenance des alertes | terminé | app/quality.py; app/quality_routes.py; static/quality.js | tests/test_excel_phase2.py; tests/test_quality.py | Formules, feuilles ajoutées/supprimées, structure, cellules critiques, références invalides, plafonds et troncature testés ; inspection statique uniquement ; Aucun calcul mathématique Excel revendiqué |
+| R8.2-08 | P1 | Gestion des limites d'analyse | terminé | app/quality.py; app/quality_routes.py; static/quality.js | tests/test_excel_phase2.py; tests/test_quality.py | Formules, feuilles ajoutées/supprimées, structure, cellules critiques, références invalides, plafonds et troncature testés ; inspection statique uniquement ; Aucun calcul mathématique Excel revendiqué |
 | R8.3-01 | P1 | Une extraction robuste | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
 | R8.3-02 | P1 | Des contrôles de ressources | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
 | R8.3-03 | P1 | Des avertissements lorsque la lecture est partielle | partiel | app/quality.py; app/intake.py | — | Socle existant conservé ; extensions complètes non validées ; — |
@@ -277,5 +277,5 @@
 | N-06 | P0 | Envoi SMTP autorisé réellement accepté par le service | bloqué | app/partner_mail.py | — | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; Configuration/décision externe |
 | N-07 | P0 | Pilotage et validation métier Framatex avant ouverture externe | bloqué | SECURITE.md | — | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; Configuration/décision externe |
 | N-08 | P0 | Publication client retirée ou obsolète inaccessible | terminé | app/partner_routes.py | tests/test_partners.py::test_client_publication_download_stale_and_withdrawal | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; — |
-| N-09 | P0 | Scan malware et politique en cas de scanner indisponible | absent | — | — | Voir tests exécutés et limites dans IMPLEMENTATION_STATUS.md ; — |
+| N-09 | P0 | Scan malware et politique en cas de scanner indisponible | partiel | app/partner_uploads.py | tests/test_partner_phase2.py::test_client_orders_conversations_attachments_and_revocation | Adaptateur à commande bornée ; mode requis refuse un scanner absent ; scanner réel non configuré ; Scanner réel et validation de sa politique |
 | N-10 | P0 | Pièces fournisseurs raccordées au moteur de complétude et aux documents internes | terminé | app/partner_integration_routes.py; app/completeness.py; app/quality.py; static/partners.js | tests/test_partner_phase2.py::test_supplier_integration_preserves_blob_provenance_and_completeness; tools/check_partner_browser.py | Intégration sans copie, provenance/version conservées, complétude et quantité confirmée, remplacement et retrait testés ; — |

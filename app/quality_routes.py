@@ -177,7 +177,9 @@ def auto_inspect_excel(db:Session,version:DocumentVersion, user_id:str):
     doc=db.get(Document,version.document_id)
     prev=next((v for v in doc.versions if v.number==version.number-1),None)
     baseline=prev if prev and Path(prev.original_name).suffix.lower()=='.xlsx' else None
-    result=analyze_workbook(STORAGE/version.disk_name,STORAGE/baseline.disk_name if baseline else None)
+    from .partner_phase2_models import DocumentExcelPolicy
+    policy=db.get(DocumentExcelPolicy,doc.id)
+    result=analyze_workbook(STORAGE/version.disk_name,STORAGE/baseline.disk_name if baseline else None,json.loads(policy.cells_json) if policy else [])
     item=ExcelInspection(document_version_id=version.id,baseline_version_id=baseline.id if baseline else None,
          status=result['status'],scanned_cells=result['scanned_cells'],formula_count=result['formula_count'],
          findings_json=json.dumps(result['findings'],ensure_ascii=False),inspected_by=user_id)
@@ -198,3 +200,27 @@ def list_excel_inspections(launch_id:str,user:User=Depends(get_current_user),db:
                          'version_id':v.id,'version':v.number,
                          'inspection':inspection_out(db,inspection) if inspection else None})
     return sorted(rows,key=lambda x:(x['document_title'],x['version']))
+
+
+class CriticalCell(BaseModel):
+    sheet: str=Field(min_length=1,max_length=31)
+    cell: str=Field(pattern=r'^[A-Z]{1,3}[1-9][0-9]{0,6}$')
+class ExcelPolicyInput(BaseModel):
+    cells: list[CriticalCell]=Field(max_length=200)
+
+@router.put('/api/documents/{doc_id}/excel-policy')
+def configure_excel(doc_id:str,payload:ExcelPolicyInput,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
+    from .partner_phase2_models import DocumentExcelPolicy
+    doc=get_doc(db,doc_id);must(user,'document.read',doc.folder.slug);must(user,'document.write',doc.folder.slug)
+    row=db.get(DocumentExcelPolicy,doc_id)
+    if not row:row=DocumentExcelPolicy(document_id=doc_id,configured_by=user.id);db.add(row)
+    row.cells_json=json.dumps([cell.model_dump() for cell in payload.cells]);row.configured_by=user.id
+    audit(db,user,'excel.policy','document',doc_id,payload.model_dump());db.commit()
+    return {'cells':payload.cells,'applies_to':'future_inspections'}
+
+@router.get('/api/documents/{doc_id}/excel-policy')
+def excel_policy(doc_id:str,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
+    from .partner_phase2_models import DocumentExcelPolicy
+    doc=get_doc(db,doc_id);must(user,'document.read',doc.folder.slug)
+    row=db.get(DocumentExcelPolicy,doc_id)
+    return {'cells':json.loads(row.cells_json) if row else []}

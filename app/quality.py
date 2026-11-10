@@ -71,9 +71,10 @@ def _read_cells(path: Path):
     except Exception:
         stream.close()
         raise
-    data = {}; seen = 0; formula_count=0
+    data = {}; structure = {}; seen = 0; formula_count=0
     try:
         for sheet in book:
+            structure[sheet.title] = (sheet.max_row, sheet.max_column)
             if sheet.max_row * sheet.max_column > MAX_CELLS * 10:
                 raise ValueError('Classeur trop volumineux : inspection manuelle nécessaire')
             for row in sheet.iter_rows():
@@ -89,14 +90,14 @@ def _read_cells(path: Path):
     finally:
         book.close()
         stream.close()
-    return data,seen,formula_count
+    return data,seen,formula_count,structure
 
 
-def analyze_workbook(path: Path, baseline: Path | None):
+def analyze_workbook(path: Path, baseline: Path | None, critical_cells=None):
     """Static formula-integrity checks only; does not calculate or execute Excel."""
     try:
-        current, scanned, formulas = _read_cells(path)
-        before,_,_ = _read_cells(baseline) if baseline else ({},0,0)
+        current, scanned, formulas, structure = _read_cells(path)
+        before,_,_,old_structure = _read_cells(baseline) if baseline else ({},0,0,{})
     except Exception as ex:
         return {'status':'limited','scanned_cells':0,'formula_count':0,
                 'findings':[{'type':'inspection_limit','level':'warning','sheet':'','cell':'',
@@ -109,6 +110,17 @@ def analyze_workbook(path: Path, baseline: Path | None):
         if is_formula and '#REF!' in value.upper():
             add('broken_reference','critical',sheet,coord,'Référence #REF! détectée dans la formule')
     if baseline:
+        for sheet in sorted(set(structure)-set(old_structure)):
+            add('sheet_added','warning',sheet,'','Feuille ajoutée depuis la version précédente')
+        for sheet in sorted(set(old_structure)-set(structure)):
+            add('sheet_removed','critical',sheet,'','Feuille supprimée depuis la version précédente')
+        for sheet in sorted(set(structure)&set(old_structure)):
+            if structure[sheet]!=old_structure[sheet]:
+                add('structure_changed','warning',sheet,'',f'Dimensions modifiées : {old_structure[sheet]} → {structure[sheet]}')
+        for item in critical_cells or []:
+            key=(item['sheet'],item['cell'])
+            if before.get(key)!=current.get(key):
+                add('critical_cell_changed','critical',*key,'Cellule critique configurée modifiée : contrôle humain requis')
         for (sheet,coord),(was_formula, prev) in before.items():
             if not was_formula:continue
             now=current.get((sheet,coord))
@@ -120,5 +132,5 @@ def analyze_workbook(path: Path, baseline: Path | None):
     else:
         status='first_version'
     if len(findings)==MAX_FINDINGS:
-        add('truncated','warning','','','Affichage plafonné à 200 constats')
+        findings[-1]={'type':'truncated','level':'warning','sheet':'','cell':'','message':'Affichage plafonné à 200 constats ; inspection partielle'}
     return {'status':status,'scanned_cells':scanned,'formula_count':formulas,'findings':findings}
