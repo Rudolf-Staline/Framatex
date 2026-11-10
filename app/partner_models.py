@@ -75,3 +75,34 @@ class PartnerPublication(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     publication_id: Mapped[str] = mapped_column(ForeignKey('client_publications.id'))
     partner_id: Mapped[str] = mapped_column(ForeignKey('partners.id'), index=True)
+
+from decimal import Decimal
+from sqlalchemy import Numeric
+
+class PartnerOrderLine(Base):
+    __tablename__ = 'partner_order_lines'
+    __table_args__ = (UniqueConstraint('partner_id', 'order_ref', 'material_ref'),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    partner_id: Mapped[str] = mapped_column(ForeignKey('partners.id'), index=True)
+    launch_id: Mapped[str] = mapped_column(ForeignKey('launches.id'))
+    order_ref: Mapped[str] = mapped_column(String(100))
+    material_ref: Mapped[str] = mapped_column(String(100))
+    unit: Mapped[str] = mapped_column(String(20))
+    ordered: Mapped[Decimal] = mapped_column(Numeric(18,3))
+    expected_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    created_by: Mapped[str] = mapped_column(ForeignKey('users.id'))
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+
+class PartnerDelivery(Base):
+    __tablename__ = 'partner_deliveries'
+    __table_args__ = (UniqueConstraint('line_id', 'operation_key'),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    line_id: Mapped[str] = mapped_column(ForeignKey('partner_order_lines.id'), index=True)
+    operation_key: Mapped[str] = mapped_column(String(80))
+    kind: Mapped[str] = mapped_column(String(20))
+    quantity: Mapped[Decimal] = mapped_column(Numeric(18,3))
+    source_id: Mapped[str] = mapped_column(ForeignKey('partner_submissions.id'))
+    actor: Mapped[str] = mapped_column(String(80))
+    note: Mapped[str] = mapped_column(Text)
+    occurred_on: Mapped[date] = mapped_column(Date)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

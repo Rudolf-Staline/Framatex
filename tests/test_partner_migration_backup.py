@@ -21,7 +21,7 @@ def test_additive_migration_and_complete_restore(tmp_path,monkeypatch):
         c.execute(text("INSERT INTO folders(id,launch_id,slug,label) VALUES ('f','l','jaune','Technique')"))
         c.execute(text("INSERT INTO documents(id,folder_id,title,doc_type,created_by,created_at) VALUES ('d','f','Pièce','Certificat','u','2026-01-01')"))
         c.execute(text("INSERT INTO document_versions(id,document_id,number,original_name,disk_name,size,sha256,content_type,uploaded_by,created_at) VALUES ('v','d',1,'doc.txt','blob1',:size,:sha,'text/plain','u','2026-01-01')"),{'size':len(data),'sha':sha})
-        for revision in migrate.REVISIONS[:-1]:c.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),{'v':revision,'d':'2026-01-01'})
+        for revision in migrate.REVISIONS[:3]:c.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),{'v':revision,'d':'2026-01-01'})
     monkeypatch.setattr(migrate,'engine',old)
     migrate.migrate();migrate.migrate()
     with old.connect() as c:

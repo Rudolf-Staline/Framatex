@@ -738,3 +738,6 @@ app.include_router(pilot_router)
 
 from .partner_routes import router as partner_router
 app.include_router(partner_router)
+
+from .partner_delivery_routes import router as partner_delivery_router
+app.include_router(partner_delivery_router)

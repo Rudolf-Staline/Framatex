@@ -132,3 +132,31 @@ def test_tokens_logout_recovery_expiry_and_upload_validation():
         assert supplier.post('/api/partner-auth/logout').status_code==403
         staff.patch(f'/api/partners/organizations/{a}',json={'active':False},headers=H)
         assert supplier.get('/api/partner/home').status_code==401
+
+
+def test_partial_deliveries_separate_declarations_confirmations_returns():
+    with TestClient(app) as staff, TestClient(app) as supplier, TestClient(app) as other:
+        lid=setup(staff);a=organization(staff,'Supply A');b=organization(staff,'Supply B')
+        activate(staff,supplier,a,'delivery@sample.local');activate(staff,other,b,'otherdelivery@sample.local')
+        rid=post(staff,'/api/partners/requests',{'partner_id':a,'launch_id':lid,'order_ref':'CMD-PARTIAL','title':'Livraison','doc_type':'Bon livraison'})['id']
+        version=upload(supplier,rid)
+        line=post(staff,'/api/partners/order-lines',{'partner_id':a,'launch_id':lid,'order_ref':'CMD-PARTIAL','material_ref':'Coton','unit':'m','ordered':'100'})
+        post(staff,'/api/partners/order-lines',{'partner_id':a,'launch_id':lid,'order_ref':'CMD-PARTIAL','material_ref':'Bouton','unit':'piece','ordered':'50'})
+        assert other.get('/api/partner/order-lines').json()==[]
+        payload={'quantity':'40','source_id':version['id'],'note':'Livraison partielle prévue','occurred_on':'2026-11-10','operation_key':'delivery-1'}
+        post(other,f'/api/partner/order-lines/{line["id"]}/declarations',payload,404)
+        declared=post(supplier,f'/api/partner/order-lines/{line["id"]}/declarations',payload)
+        assert declared['declared']=='40.000' and declared['received']=='0.000'
+        assert post(supplier,f'/api/partner/order-lines/{line["id"]}/declarations',payload)['declared']=='40.000'
+        receive=f'/api/partners/order-lines/{line["id"]}/receipts'
+        post(supplier,receive,{**payload,'kind':'received','operation_key':'receive-1'},401)
+        post(staff,receive,{**payload,'kind':'received','operation_key':'receive-1'},409)
+        post(staff,f'/api/partners/requests/{rid}/decision',{'version_id':version['id'],'decision':'approved','reason':'Bon conforme'},200)
+        first=post(staff,receive,{**payload,'kind':'received','operation_key':'receive-1'})
+        assert first['status']=='partial' and first['remaining']=='60.000'
+        second=post(staff,receive,{**payload,'quantity':'60','kind':'received','operation_key':'receive-2'})
+        assert second['status']=='complete' and second['declared']=='40.000'
+        returned=post(staff,receive,{**payload,'quantity':'10','kind':'returned','operation_key':'return-1'})
+        assert returned['received']=='90.000' and returned['status']=='partial'
+        post(staff,receive,{**payload,'quantity':'91','kind':'returned','operation_key':'return-bad'},409)
+        post(staff,receive,{**payload,'quantity':'-1','kind':'received','operation_key':'bad-negative'},422)

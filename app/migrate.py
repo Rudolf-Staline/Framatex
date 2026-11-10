@@ -25,7 +25,7 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
                         Column('version', String(80), primary_key=True),
                         Column('applied_at', String(50), nullable=False), extend_existing=True)
 
-REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_partners')
+REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_partners', '0005_partner_deliveries')
 
 
 def _versions(conn):
@@ -42,7 +42,7 @@ def migrate():
         legacy = ('launches' in tables and
                   'restricted' not in {c['name'] for c in inspect(probe).get_columns('launches')})
         has_migrations = 'schema_migrations' in tables
-        pending_pilot = has_migrations and '0004_partners' not in {
+        pending_pilot = has_migrations and '0005_partner_deliveries' not in {
             v for v, in probe.execute(text('SELECT version FROM schema_migrations'))}
     if legacy or pending_pilot:
         saved = backup_sqlite()
@@ -90,10 +90,15 @@ def migrate():
                          {'v':'0003_pilot_reports','d':datetime.now(timezone.utc).isoformat()})
         if '0004_partners' not in done:
             for table in Base.metadata.sorted_tables:
-                if table.name.startswith('partner'):
+                if table.name.startswith('partner') and table.name not in ('partner_order_lines','partner_deliveries'):
                     table.create(bind=conn, checkfirst=True)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0004_partners','d':datetime.now(timezone.utc).isoformat()})
+        if '0005_partner_deliveries' not in done:
+            for name in ('partner_order_lines','partner_deliveries'):
+                Base.metadata.tables[name].create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0005_partner_deliveries','d':datetime.now(timezone.utc).isoformat()})
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
         cols = {c['name'] for c in inspect(conn).get_columns('launches')}
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():
