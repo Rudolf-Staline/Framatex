@@ -57,3 +57,5 @@ Autorisations/configurations Framatex nécessaires : organisation documentaire d
 ## Livraison Git
 
 Commits séparés pour audit, portail, restauration/DEMO, livraisons, communications et documentation. Brouillon de description dans `docs/PULL_REQUEST.md`. Résultat de publication Git/PR consigné ci-dessous après tentative.
+
+Résultat Git : branche poussée avec succès sur `origin/feat/framat-industrialization`. Création de PR tentée avec `gh pr create --draft --base main --head feat/framat-industrialization --title 'Portails partenaires : parcours fournisseur, publications contrôlées et réceptions' --body-file docs/PULL_REQUEST.md` ; refus de l'API : `Post "https://api.github.com/graphql": Forbidden`. La PR n'a donc pas été créée. Lien de création : https://github.com/Rudolf-Staline/Framatex/pull/new/feat/framat-industrialization . Description prête dans `docs/PULL_REQUEST.md`. Aucun refus d'auto-approbation, aucun déploiement ou merge tenté.
