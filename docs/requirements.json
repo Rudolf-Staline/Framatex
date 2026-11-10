@@ -2478,11 +2478,11 @@
     "id": "R13-11",
     "section": "13",
     "requirement": "Limitation des tentatives de connexion",
-    "status": "partiel",
-    "files": "app/core.py; app/access.py; SECURITE.md",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
+    "status": "terminé",
+    "files": "app/login_throttle.py; app/core.py",
+    "test": "tests/test_login_throttle.py; tests/test_stabilization.py",
+    "observed": "Budget réservé atomiquement avant Argon2 ; 12 accès concurrents limités à 5 ; second processus bloqué",
+    "dependency": "SQLite partagé testé ; architecture distribuée PostgreSQL non certifiée",
     "priority": "P0"
   },
   {

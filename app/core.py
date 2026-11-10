@@ -61,31 +61,18 @@ def login_limit_key(ip: str, email: str) -> tuple[str, str]:
 
 
 def login_attempt_allowed(key: tuple[str, str]) -> bool:
-    current = time.monotonic()
-    with _LOGIN_FAILURE_LOCK:
-        recent = [t for t in _LOGIN_FAILURES.get(key, ()) if t > current - LOGIN_WINDOW_SECONDS]
-        if recent:
-            _LOGIN_FAILURES[key] = recent
-        else:
-            _LOGIN_FAILURES.pop(key, None)
-        return len(recent) < LOGIN_MAX_FAILURES
+    from .login_throttle import reserve
+    return reserve(key)
 
 
 def record_login_failure(key: tuple[str, str]):
-    current = time.monotonic()
-    with _LOGIN_FAILURE_LOCK:
-        # Bound the number of tracked pairs to limit memory abuse.
-        if len(_LOGIN_FAILURES) > 4000:
-            for pair, times in list(_LOGIN_FAILURES.items()):
-                if all(t < current - LOGIN_WINDOW_SECONDS for t in times):
-                    _LOGIN_FAILURES.pop(pair, None)
-        if len(_LOGIN_FAILURES) <= 5000 or key in _LOGIN_FAILURES:
-            _LOGIN_FAILURES.setdefault(key, []).append(current)
+    # The attempt is reserved before password verification, including concurrent workers.
+    pass
 
 
 def clear_login_failures(key: tuple[str, str]):
-    with _LOGIN_FAILURE_LOCK:
-        _LOGIN_FAILURES.pop(key, None)
+    from .login_throttle import clear
+    clear(key)
 
 
 def hash_password(password: str) -> str:

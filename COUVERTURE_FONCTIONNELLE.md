@@ -1,8 +1,8 @@
 # Couverture fonctionnelle
 
-**82 / 273 exigences terminées : 30.0 %. Objectif 90 % non atteint.**
+**83 / 273 exigences terminées : 30.4 %. Objectif 90 % non atteint.**
 
-États : {'terminé': 82, 'absent': 30, 'partiel': 158, 'bloqué': 3}. Périmètre fixe conservé depuis la phase 1. Aucun blocage exclu du dénominateur. Terminé signifie testé en environnement contrôlé, jamais validé pour production par Framatex. Voir IMPLEMENTATION_STATUS.md pour les commandes exécutées et limites.
+États : {'terminé': 83, 'absent': 30, 'partiel': 157, 'bloqué': 3}. Périmètre fixe conservé depuis la phase 1. Aucun blocage exclu du dénominateur. Terminé signifie testé en environnement contrôlé, jamais validé pour production par Framatex. Voir IMPLEMENTATION_STATUS.md pour les commandes exécutées et limites.
 
 | ID | Priorité | Exigence | État | Implémentation | Test | Résultat / dépendance |
 |---|---|---|---|---|---|---|
@@ -231,7 +231,7 @@
 | R13-08 | P0 | Protection contre l'accès direct non autorisé | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
 | R13-09 | P0 | Validation des entrées | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
 | R13-10 | P0 | Téléversements dangereux | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
-| R13-11 | P0 | Limitation des tentatives de connexion | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
+| R13-11 | P0 | Limitation des tentatives de connexion | terminé | app/login_throttle.py; app/core.py | tests/test_login_throttle.py; tests/test_stabilization.py | Budget réservé atomiquement avant Argon2 ; 12 accès concurrents limités à 5 ; second processus bloqué ; SQLite partagé testé ; architecture distribuée PostgreSQL non certifiée |
 | R13-12 | P0 | Gestion des erreurs | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
 | R13-13 | P0 | Secrets | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |
 | R13-14 | P0 | CORS et protection des requêtes selon l'architecture d'authentification retenue | partiel | app/core.py; app/access.py; SECURITE.md | — | Socle existant conservé ; extensions complètes non validées ; — |

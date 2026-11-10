@@ -83,3 +83,15 @@ class PartnerAttachment(Base):
     sha256: Mapped[str]=mapped_column(String(64))
     size: Mapped[int]=mapped_column(Integer)
     created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow)
+
+class PartnerEventRead(Base):
+    __tablename__='partner_event_reads'
+    account_id: Mapped[str]=mapped_column(ForeignKey('partner_accounts.id'),primary_key=True)
+    event_id: Mapped[str]=mapped_column(ForeignKey('partner_events.id'),primary_key=True)
+    read_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow)
+
+class LoginBucket(Base):
+    __tablename__='security_login_buckets'
+    key: Mapped[str]=mapped_column(String(64),primary_key=True)
+    window_start: Mapped[int]=mapped_column(Integer,index=True)
+    failures: Mapped[int]=mapped_column(Integer,default=0)
