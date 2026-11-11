@@ -58,6 +58,9 @@ def req_get(db, request_id, account=None):
 def event(db, row, actor, kind, message=''):
     entry = PartnerEvent(request_id=row.id, actor=actor, kind=kind, message=message)
     db.add(entry); db.flush()
+    if actor.startswith('partner:') and kind=='message':
+        from .internal_notifications import emit_to_user
+        emit_to_user(db,user_id=row.created_by,launch_id=row.launch_id,folder='jaune',event_key='supplier-message:'+entry.id,kind='supplier_message',title='Message fournisseur reçu',message=f'{row.title} : {message[:300]}')
     if actor.startswith('staff:'):
         from .partner_mail import enqueue
         enqueue(db, entry)
@@ -396,6 +399,8 @@ def publish(payload: PublicationInput, user=Depends(staff), db: Session = Depend
         db.flush()
     except IntegrityError:
         db.rollback(); raise HTTPException(409, 'Publication déjà attribuée')
+    from .partner_notice_routes import emit
+    emit(db,org.id,'publication',row.id,'publication','publication:'+row.id,'Une nouvelle version documentaire est publiée pour votre organisation')
     audit(db, user, 'partner.publish', 'partner_publication', row.id)
     db.commit(); return {'id':row.id}
 

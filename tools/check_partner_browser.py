@@ -128,7 +128,7 @@ def main():
                         review.locator('#business-order select').select_option(client_org)
                         review.locator('#business-order input[name=reference]').fill('CMD-BROWSER')
                         review.get_by_role('button',name='Créer la commande',exact=True).click()
-                        review.get_by_role('button',name='Rattacher à cette commande').click()
+                        review.get_by_role('button',name='Rattacher à cette commande').click();review.get_by_role('button',name='Détacher ce lancement').wait_for()
                         review.get_by_role('button',name='Consulter la synthèse commande').click()
                         review.get_by_text('2 document(s), 1 demande(s) fournisseur',exact=False).wait_for()
                         profile=post('/api/admin/completeness/profiles',{'name':'Navigateur','description':'Profil contrôlé'})
@@ -142,6 +142,26 @@ def main():
                         expect(review.locator('#notice')).to_have_text('Opération confirmée.')
                         policy=api.get('/api/admin/completeness/policies').json()[0]
                         assert policy['order_type']=='Export' and policy['optional']
+                        permissions=[{'action':'launch.read'},{'action':'document.read','folder':'jaune'},{'action':'document.review','folder':'jaune'}]
+                        role=post('/api/admin/roles',{'name':'Valideur navigateur','permissions':permissions})
+                        deputy_role=post('/api/admin/roles',{'name':'Suppléant navigateur','permissions':permissions})
+                        deputy=post('/api/admin/users',{'name':'Suppléant','email':'deputy@example.local','password':PWD,'role_ids':[deputy_role['id']]})
+                        internal_page=admin.new_page();internal_page.on('pageerror',lambda e:errors.append(str(e)))
+                        internal_page.goto(base+'/');internal_page.locator('[data-view=admin]').click()
+                        internal_page.locator('#approval-new-template').click()
+                        internal_page.locator('#at-name').fill('Circuit navigateur');internal_page.locator('#at-type').fill('Certificat')
+                        internal_page.locator('.approval-stage-name').fill('Validation technique');internal_page.locator('.approval-stage-role').select_option(role['id'])
+                        internal_page.locator('.approval-stage-days').fill('2');internal_page.locator('#approval-template-form button[type=submit]').click()
+                        expect(internal_page.locator('#approval-template-form')).to_have_count(0)
+                        internal_page.locator('[data-view=launches]').click();internal_page.locator(f'[data-launch="{lid}"]').click()
+                        internal_page.locator('[data-approval-start]').click();internal_page.get_by_text('Échéance :',exact=False).wait_for()
+                        internal_page.get_by_role('button',name='Déléguer l’étape').click()
+                        internal_page.locator('#delegation-user').select_option(deputy['id'])
+                        from datetime import datetime,timedelta
+                        internal_page.locator('#delegation-expiry').fill((datetime.now()+timedelta(days=1)).strftime('%Y-%m-%dT%H:%M'))
+                        internal_page.locator('#delegation-reason').fill('Remplacement temporaire du valideur')
+                        internal_page.locator('#delegation-form button').click()
+                        internal_page.get_by_text('Délégation : Suppléant',exact=False).wait_for()
                         assert not errors,errors
                         browser.close()
                         print('PASS: supplier integration and client order/publication/download/conversation/attachment/closure/withdrawal, mobile layouts')

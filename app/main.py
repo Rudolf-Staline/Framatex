@@ -776,3 +776,6 @@ app.include_router(completeness_policy_router)
 
 from .order_registry_routes import router as order_registry_router
 app.include_router(order_registry_router)
+
+from .partner_notice_routes import router as partner_notice_router
+app.include_router(partner_notice_router)

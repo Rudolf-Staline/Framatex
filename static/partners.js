@@ -48,6 +48,7 @@ async function refresh(){
  await renderClientOrders();
  $('administrative-files').replaceChildren();if(!internal)await renderAdministrative($('administrative-files'));
  await renderDeliveries();
+ await renderNoticeCenter();
  const params=new URLSearchParams({...requestFilters,offset:String(requestOffset),limit:'20'});
  const rows=await api(`${internal?'/api/partners/requests':'/api/partner/requests'}?${params}`);$('request-prev').disabled=requestOffset===0;$('request-next').disabled=rows.length<20;
  $('partner-notifications').replaceChildren();if(!internal){for(const n of await api('/api/partner/notifications')){const line=node('p',`${n.read?'Lu':'Nouveau'} · ${n.created_at} · ${n.message}`);line.append(button('Ouvrir la demande',()=>openRequest(n.request_id)));if(!n.read)line.append(button('Marquer lu',async()=>{await api(`/api/partner/notifications/${n.id}/read`,'POST');await refresh();}));$('partner-notifications').append(line);}}$('items').replaceChildren();
@@ -159,4 +160,15 @@ async function renderOrderRegistry(){
  const label=node('label','Lancement à rattacher'),select=node('select');for(const launch of launches){const option=node('option',launch.label);option.value=launch.id;select.append(option);}label.append(select);card.append(label,button('Rattacher à cette commande',async()=>{await api(`/api/orders/${order.id}/launches`,'POST',{launch_id:select.value});await renderOrderRegistry();}));
  card.append(button('Consulter la synthèse commande',async()=>{const data=await api(`/api/orders/${order.id}`);const summary=node('section');summary.append(node('p',`${data.documents.length} document(s), ${data.supplier_requests.length} demande(s) fournisseur, ${data.internal_materials.length+data.supplier_materials.length} matière(s), ${data.publications.length} publication(s) enregistrée(s)`));for(const doc of data.documents){const latest=doc.versions.at(-1);if(latest){const line=node('p',''),link=node('a',`${doc.title} · ${doc.folder} · v${latest.number}`);link.href=`/api/documents/${doc.id}/versions/${latest.number}/download`;line.append(link);summary.append(line);}}for(const line of data.supplier_materials)summary.append(node('p',`${line.material_ref} · commandé ${line.ordered} ${line.unit} · réceptionné ${line.received} · restant ${line.remaining}`));for(const link of data.orli_links)summary.append(node('p',`Référence ORLI rapprochée : ${link.reference}`));card.append(summary);}));$('business-orders').append(card);
  }
+}
+
+$('refresh-deadlines').onclick=()=>run(async()=>{await api('/api/partners/notifications/refresh-deadlines','POST');$('notice').textContent='Rappels internes actualisés. Aucun email envoyé.';});
+async function renderNoticeCenter(){
+ const box=$('notice-center');box.replaceChildren();if(internal)return;
+ const rows=await api('/api/partner/notice-center');
+ for(const n of rows){const card=node('article');card.append(node('p',`${n.read?'Lu':'Nouveau'} · ${n.message}`));
+ if(n.scope==='request')card.append(button('Consulter la demande',()=>openRequest(n.target_id)));
+ if(n.scope==='order')card.append(button('Consulter les commandes',async()=>{await renderClientOrders();$('client-orders').scrollIntoView({behavior:'smooth'});}));
+ if(n.scope==='publication'){const link=node('a','Consulter cette publication');link.href=`/api/partner/publications/${n.target_id}/download`;card.append(link);}
+ if(!n.read)card.append(button('Marquer cette notification comme lue',async()=>{await api(`/api/partner/notice-center/${n.id}/read`,'POST');await renderNoticeCenter();}));box.append(card);}
 }

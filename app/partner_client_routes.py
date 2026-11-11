@@ -102,26 +102,35 @@ def staff_threads(oid:str,user=Depends(staff),db:Session=Depends(get_db)):
 def create_thread(oid:str,payload:ThreadInput,account=Depends(partner),db:Session=Depends(get_db)):
     require(db,account,'message.write');order_get(db,oid,account)
     row=PartnerThread(order_id=oid,title=payload.title);db.add(row);db.flush()
-    db.add(PartnerMessage(thread_id=row.id,author='partner:'+account.id,text=payload.message))
+    msg=PartnerMessage(thread_id=row.id,author='partner:'+account.id,text=payload.message);db.add(msg);db.flush()
+    from .partner_notice_routes import incoming_client
+    incoming_client(db,order_get(db,oid),msg)
     audit(db,None,'client.thread.create','partner_thread',row.id,{'account_id':account.id});db.commit();return thread_out(db,row)
 
 @router.post('/api/partner/threads/{tid}/messages',status_code=201)
 def client_message(tid:str,payload:MessageInput,account=Depends(partner),db:Session=Depends(get_db)):
     require(db,account,'message.write');row=thread_get(db,tid,account)
     if row.status=='closed':raise HTTPException(409,'Échange clôturé')
-    db.add(PartnerMessage(thread_id=tid,author='partner:'+account.id,text=payload.message));row.status='open'
+    msg=PartnerMessage(thread_id=tid,author='partner:'+account.id,text=payload.message);db.add(msg);db.flush();row.status='open'
+    from .partner_notice_routes import incoming_client
+    incoming_client(db,order_get(db,row.order_id),msg)
     db.commit();return thread_out(db,row)
 
 @router.post('/api/partners/threads/{tid}/messages',status_code=201)
 def staff_message(tid:str,payload:MessageInput,user=Depends(staff),db:Session=Depends(get_db)):
     row=thread_get(db,tid)
     if row.status=='closed':raise HTTPException(409,'Échange clôturé')
-    db.add(PartnerMessage(thread_id=tid,author='staff:'+user.id,text=payload.message));db.commit();return thread_out(db,row)
+    msg=PartnerMessage(thread_id=tid,author='staff:'+user.id,text=payload.message);db.add(msg);db.flush()
+    from .partner_notice_routes import emit
+    order=order_get(db,row.order_id);emit(db,order.partner_id,'order',order.id,'message','message:'+msg.id,f'{row.title} : {msg.text}')
+    db.commit();return thread_out(db,row)
 
 @router.post('/api/partners/threads/{tid}/status')
 def thread_status(tid:str,payload:StatusInput,user=Depends(staff),db:Session=Depends(get_db)):
     row=thread_get(db,tid);row.status=payload.status
-    db.add(PartnerMessage(thread_id=tid,author='staff:'+user.id,text=f'{payload.status} : {payload.reason}'))
+    msg=PartnerMessage(thread_id=tid,author='staff:'+user.id,text=f'{payload.status} : {payload.reason}');db.add(msg);db.flush()
+    from .partner_notice_routes import emit
+    order=order_get(db,row.order_id);emit(db,order.partner_id,'order',order.id,'message','message:'+msg.id,f'{row.title} : {msg.text}')
     audit(db,user,'client.thread.status','partner_thread',tid,payload.model_dump());db.commit();return thread_out(db,row)
 
 @router.get('/api/partners/launch-options')

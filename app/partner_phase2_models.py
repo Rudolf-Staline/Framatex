@@ -180,3 +180,36 @@ class BusinessOrderLaunch(Base):
     order_id: Mapped[str]=mapped_column(ForeignKey('business_orders.id'),index=True)
     linked_by: Mapped[str]=mapped_column(ForeignKey('users.id'))
     linked_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow)
+
+class ApprovalStagePolicy(Base):
+    __tablename__='approval_stage_policies'
+    stage_id: Mapped[str]=mapped_column(ForeignKey('approval_stages.id'),primary_key=True)
+    due_days: Mapped[int]=mapped_column(Integer)
+
+class ApprovalStageAssignment(Base):
+    __tablename__='approval_stage_assignments'
+    run_id: Mapped[str]=mapped_column(ForeignKey('approval_runs.id'),primary_key=True)
+    stage_id: Mapped[str]=mapped_column(ForeignKey('approval_stages.id'),primary_key=True)
+    due_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True),nullable=True)
+    delegate_id: Mapped[str | None]=mapped_column(ForeignKey('users.id'),nullable=True)
+    expires_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True),nullable=True)
+    assigned_by: Mapped[str | None]=mapped_column(ForeignKey('users.id'),nullable=True)
+    reason: Mapped[str]=mapped_column(Text,default='')
+
+class PartnerNotice(Base):
+    __tablename__='partner_notices'
+    __table_args__=(UniqueConstraint('partner_id','event_key'),)
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=uid)
+    partner_id: Mapped[str]=mapped_column(ForeignKey('partners.id'),index=True)
+    event_key: Mapped[str]=mapped_column(String(160))
+    scope: Mapped[str]=mapped_column(String(20))
+    target_id: Mapped[str]=mapped_column(String(36))
+    kind: Mapped[str]=mapped_column(String(30))
+    message: Mapped[str]=mapped_column(Text)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow,index=True)
+
+class PartnerNoticeRead(Base):
+    __tablename__='partner_notice_reads'
+    account_id: Mapped[str]=mapped_column(ForeignKey('partner_accounts.id'),primary_key=True)
+    notice_id: Mapped[str]=mapped_column(ForeignKey('partner_notices.id'),primary_key=True)
+    read_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow)
