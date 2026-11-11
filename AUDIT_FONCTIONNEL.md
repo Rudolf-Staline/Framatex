@@ -1,4 +1,6 @@
-# Audit initial — 10 novembre 2026
+# Audit initial archivé — 10 novembre 2026
+
+Ce document conserve les constats antérieurs à la phase 1. Ils ne décrivent plus l’état courant. La phase 2 part de `e94e3c6` (PR #32 fusionnée) ; consulter `IMPLEMENTATION_STATUS.md`, `COUVERTURE_FONCTIONNELLE.md` et `docs/requirements.json` pour les réalisations et limites actuelles. Les hypothèses métier globales restent à confirmer.
 
 Base : main 845d7de. Branche de travail : feat/framat-industrialization.
 Audit statique initial, complété par les résultats exécutés dans IMPLEMENTATION_STATUS.md.

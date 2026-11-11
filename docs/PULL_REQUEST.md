@@ -1,20 +1,25 @@
-## Problème et comportement livré
+## Problème et résultat
 
-Les demandes fournisseurs et publications client du socle étaient limitées à des simulations internes. Cette branche ajoute des comptes partenaires isolés, un portail fournisseur avec dépôts versionnés, refus motivé, nouvelle version, approbation et clôture, et l'accès client aux versions explicitement publiées. Elle conserve les données et contrôles existants.
+Après la phase 1, les transmissions fournisseurs restaient séparées du dossier interne et le portail client ne couvrait pas les échanges complets. Cette phase intègre explicitement les versions fournisseur approuvées, sans recopier les fichiers ni perdre leur provenance, et ajoute les commandes client autorisées, conversations, pièces jointes, notifications et révocations associées.
 
-Les commandes matières distinguent les déclarations fournisseurs des réceptions confirmées et des retours. Une file email persistante, avec préférence utilisateur et transport SMTP désactivé par défaut, expose les états réels. Migrations additives, sauvegarde/restauration vérifiée et garde DEMO accompagnent ces parcours.
+Le référentiel commande relie plusieurs lancements sans migration destructive. Les profils ORLI et décisions de réimport, la complétude conditionnelle, les rapprochements sourcés, Excel statique, les délais et délégations de validation, les réceptions et leur historique sont persistants. Recherche par ACL, dépôt multiple, démonstration reproductible et contrôles de sessions/quotas/reprise complètent les parcours.
+
+La matrice fixe conserve 273 exigences : **76 → 248 terminées (27,8 % → 90,8 %)**, 22 partielles, 3 bloquées. Six P0 restent non terminées. Les fonctions existantes ont aussi été vérifiées ; ce décompte ne prétend pas représenter 172 modules nouveaux.
 
 ## Validation
 
-- 74 tests Python réussis (67 avant modifications).
-- Tests JavaScript existants et vérifications de syntaxe réussis.
-- Parcours fournisseur complet dans Chromium, y compris correction/version 2 et affichage mobile.
-- Tests d'isolation deux clients/deux fournisseurs, révocation et publications obsolètes.
-- Tests de migration et restauration DB + fichiers sur données synthétiques.
-- Transport email testé par fonction contrôlée, aucun envoi SMTP réel.
+- 105 tests Python réussis, un avertissement de dépréciation Starlette/httpx.
+- 13 scripts frontend et vérification de syntaxe de tous les JavaScript réussis.
+- Chromium réel : parcours fournisseur/client, fichiers, intégration, recherche, commandes, règles, délégation, dépôt multiple avec échec partiel et reprise, classement et confirmation humaine, révocation employé et mobile 390 px.
+- Tests d'isolation interorganisations et de portée, concurrence des connexions/migrations/secrets, clés étrangères et rollback, sauvegarde/restauration des fichiers et sessions.
+- Scripts DEMO exécutés et relancés sans doublons. Aucun SMTP réel ou antivirus externe utilisé.
 
-## Limites et risques
+Preuves : `artifacts/phase2-validation.txt`, `IMPLEMENTATION_STATUS.md`, `docs/requirements.json` et tests cités par exigence.
 
-Travail partiel, non prêt pour pilote externe : 76 exigences vérifiées sur 273 (27,8 %), objectif 90 % non atteint. Portail client complet, intégration documentaire fournisseur, réconciliation commande, extensions ORLI/cohérence, scan malware et durcissement opérationnel restent à faire. Administration nouvelle réservée aux administrateurs. Aucune migration PostgreSQL ni déploiement. Les branches alternatives ont été inspectées sans fusion automatique. Aucun changement IA.
+## Migration et limites
 
-Voir IMPLEMENTATION_STATUS.md pour les résultats, le périmètre restant et la reprise ; SECURITE.md et docs/MIGRATIONS_PARTENAIRES.md avant toute mise en service. Cette PR doit rester en brouillon jusqu'à la validation métier et sécurité requise.
+Migrations additives SQLite 0007–0020. Sauvegarder DB et fichiers en maintenance avant mise à niveau ; la restauration invalide les sessions. Les comptes partenaires historiques conservent leurs droits via la migration 0015 ; les nouvelles invitations sans rôle explicite sont en lecture seule.
+
+Cette PR reste en brouillon pour revue. Aucun déploiement, aucune fusion automatique, aucune donnée réelle. Scanner réel, SMTP autorisé, spécification ORLI directe et recette Framatex manquent. Le Dossier Jaune global, la résolution complète des associations ambiguës, la réouverture d'un circuit sur la même version, la validation exhaustive des entrées et les finitions transversales restent partiels. Les tests ne certifient pas la charge, l'accessibilité générale, PostgreSQL ou la sécurité de production.
+
+Voir `GUIDE_DEPLOIEMENT.md`, `SECURITE.md` et `docs/MIGRATIONS_PARTENAIRES.md` pour la recette et la reprise.

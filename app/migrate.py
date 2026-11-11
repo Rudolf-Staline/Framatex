@@ -16,6 +16,7 @@ from .core import Base, engine
 # Import every registered model before inspecting metadata.
 from . import models, completeness_models, workflow_models, quality_models, intake_models  # noqa: F401
 from . import spec_models, mail_models, impact_sim_models, orli_models, material_models # noqa: F401
+from . import partner_phase2_models
 from . import partner_models
 from . import approval_models, sharing_models, pilot_models # noqa: F401
 
@@ -25,7 +26,7 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
                         Column('version', String(80), primary_key=True),
                         Column('applied_at', String(50), nullable=False), extend_existing=True)
 
-REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_partners', '0005_partner_deliveries', '0006_partner_mail')
+REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_partners', '0005_partner_deliveries', '0006_partner_mail', '0007_partner_phase2', '0008_confirmed_sources', '0009_client_conversations', '0010_security_notifications', '0011_delivery_cancellations', '0012_orli_profiles', '0013_excel_policies', '0014_partner_administration', '0015_partner_default_roles', '0016_completeness_policies', '0017_order_registry', '0018_approval_assignments', '0019_partner_notice_center', '0020_audit_session_index')
 
 
 def _versions(conn):
@@ -42,13 +43,14 @@ def migrate():
         legacy = ('launches' in tables and
                   'restricted' not in {c['name'] for c in inspect(probe).get_columns('launches')})
         has_migrations = 'schema_migrations' in tables
-        pending_pilot = has_migrations and '0006_partner_mail' not in {
+        pending_pilot = has_migrations and '0020_audit_session_index' not in {
             v for v, in probe.execute(text('SELECT version FROM schema_migrations'))}
     if legacy or pending_pilot:
         saved = backup_sqlite()
         if saved:
             print('Sauvegarde automatique avant migration :', saved)
     with engine.begin() as conn:
+        conn.exec_driver_sql("BEGIN IMMEDIATE")  # Serialize concurrent SQLite worker startups.
         done = _versions(conn)
         unknown = done.difference(REVISIONS)
         if unknown:
@@ -60,7 +62,7 @@ def migrate():
                 if not expected.issubset(existing):
                     raise RuntimeError('Schéma existant partiel : migration interrompue pour éviter une perte de données')
                 # Old 0.14 installations must contain the complete pre-0.15 schema.
-                missing = (set(Base.metadata.tables) - {'schema_migrations', 'launch_members', 'pilot_reports'} - {t for t in Base.metadata.tables if t.startswith('partner')}) - existing
+                missing = (set(Base.metadata.tables) - {'schema_migrations', 'launch_members', 'pilot_reports','security_login_buckets','orli_mapping_profiles','orli_refresh_decisions','document_excel_policies','requirement_policies','launch_order_contexts','business_orders','business_order_launches','approval_stage_policies','approval_stage_assignments'} - {t for t in Base.metadata.tables if t.startswith('partner')}) - existing
                 if missing:
                     raise RuntimeError('Base antérieure incomplète : tables manquantes : ' + ', '.join(sorted(missing)))
             else:
@@ -90,7 +92,7 @@ def migrate():
                          {'v':'0003_pilot_reports','d':datetime.now(timezone.utc).isoformat()})
         if '0004_partners' not in done:
             for table in Base.metadata.sorted_tables:
-                if table.name.startswith('partner') and table.name not in ('partner_order_lines','partner_deliveries','partner_mail','partner_mail_preferences'):
+                if table.name not in {'partner_notices','partner_notice_reads','partner_administrative_documents','partner_client_order_events','partner_movement_cancellations','partner_event_reads','partner_client_orders','partner_threads','partner_messages','partner_attachments','partner_confirmed_datum_sources','partner_profiles','partner_roles','partner_role_assignments','partner_integrations'} and table.name.startswith('partner') and table.name not in ('partner_order_lines','partner_deliveries','partner_mail','partner_mail_preferences'):
                     table.create(bind=conn, checkfirst=True)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0004_partners','d':datetime.now(timezone.utc).isoformat()})
@@ -104,6 +106,83 @@ def migrate():
                 Base.metadata.tables[name].create(bind=conn,checkfirst=True)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0006_partner_mail','d':datetime.now(timezone.utc).isoformat()})
+        if '0007_partner_phase2' not in done:
+            for table in Base.metadata.sorted_tables:
+                if table.name in {'partner_profiles','partner_roles','partner_role_assignments','partner_integrations'}:
+                    table.create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0007_partner_phase2','d':datetime.now(timezone.utc).isoformat()})
+        if '0008_confirmed_sources' not in done:
+            Base.metadata.tables['partner_confirmed_datum_sources'].create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0008_confirmed_sources','d':datetime.now(timezone.utc).isoformat()})
+        if '0009_client_conversations' not in done:
+            for name in ('partner_client_orders','partner_threads','partner_messages','partner_attachments'):
+                Base.metadata.tables[name].create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0009_client_conversations','d':datetime.now(timezone.utc).isoformat()})
+        if '0010_security_notifications' not in done:
+            for name in ('partner_event_reads','security_login_buckets'):
+                Base.metadata.tables[name].create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0010_security_notifications','d':datetime.now(timezone.utc).isoformat()})
+        if '0011_delivery_cancellations' not in done:
+            Base.metadata.tables['partner_movement_cancellations'].create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0011_delivery_cancellations','d':datetime.now(timezone.utc).isoformat()})
+        if '0012_orli_profiles' not in done:
+            for name in ('orli_mapping_profiles','orli_refresh_decisions'):
+                Base.metadata.tables[name].create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0012_orli_profiles','d':datetime.now(timezone.utc).isoformat()})
+        if '0013_excel_policies' not in done:
+            Base.metadata.tables['document_excel_policies'].create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0013_excel_policies','d':datetime.now(timezone.utc).isoformat()})
+        if '0014_partner_administration' not in done:
+            for name in ('partner_administrative_documents','partner_client_order_events'):
+                Base.metadata.tables[name].create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0014_partner_administration','d':datetime.now(timezone.utc).isoformat()})
+        if '0015_partner_default_roles' not in done:
+            # Preserve existing accounts, while new unassigned invitations default to read-only.
+            import json
+            from .models import uid
+            for partner_id, in conn.execute(text('SELECT DISTINCT partner_id FROM partner_accounts')):
+                role_id=uid()
+                conn.execute(text('INSERT INTO partner_roles(id,partner_id,name,permissions_json) VALUES (:id,:org,:name,:permissions)'),
+                    {'id':role_id,'org':partner_id,'name':'Contributeur historique','permissions':json.dumps(['read','document.write','message.write','delivery.write'])})
+                for account_id, in conn.execute(text('SELECT id FROM partner_accounts WHERE partner_id=:org AND id NOT IN (SELECT account_id FROM partner_role_assignments)'),{'org':partner_id}):
+                    conn.execute(text('INSERT INTO partner_role_assignments(account_id,role_id) VALUES (:a,:r)'),{'a':account_id,'r':role_id})
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0015_partner_default_roles','d':datetime.now(timezone.utc).isoformat()})
+        if '0016_completeness_policies' not in done:
+            for name in ('requirement_policies','launch_order_contexts'):
+                Base.metadata.tables[name].create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0016_completeness_policies','d':datetime.now(timezone.utc).isoformat()})
+        if '0017_order_registry' not in done:
+            for name in ('business_orders','business_order_launches'):
+                Base.metadata.tables[name].create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0017_order_registry','d':datetime.now(timezone.utc).isoformat()})
+        if '0018_approval_assignments' not in done:
+            for name in ('approval_stage_policies','approval_stage_assignments'):
+                Base.metadata.tables[name].create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0018_approval_assignments','d':datetime.now(timezone.utc).isoformat()})
+        if '0019_partner_notice_center' not in done:
+            for name in ('partner_notices','partner_notice_reads'):
+                Base.metadata.tables[name].create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0019_partner_notice_center','d':datetime.now(timezone.utc).isoformat()})
+        if '0020_audit_session_index' not in done:
+            for index in Base.metadata.tables['audit_events'].indexes:
+                index.create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0020_audit_session_index','d':datetime.now(timezone.utc).isoformat()})
+        if conn.exec_driver_sql('PRAGMA foreign_key_check').first():
+            raise RuntimeError('Relations historiques invalides : migration annulée, corriger la copie de travail avant reprise')
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
         cols = {c['name'] for c in inspect(conn).get_columns('launches')}
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():

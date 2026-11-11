@@ -9,7 +9,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile, File, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import select, update
+from sqlalchemy import select, update, or_
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from .core import (get_db, get_current_user, utcnow, hash_password, check_password,
@@ -37,6 +37,10 @@ def partner(request: Request, db: Session = Depends(get_db)):
     org = db.get(Partner, account.partner_id) if account else None
     if not account or not account.active or not account.password_hash or not org or not org.active:
         raise HTTPException(401, 'Accès partenaire révoqué')
+    from .partner_permissions import require, email_allowed
+    if not email_allowed(db, account.partner_id, account.email):
+        raise HTTPException(403, "Domaine email non autorisé")
+    require(db, account, "read")
     return account
 
 def org_get(db, org_id, kind=None):
@@ -54,6 +58,9 @@ def req_get(db, request_id, account=None):
 def event(db, row, actor, kind, message=''):
     entry = PartnerEvent(request_id=row.id, actor=actor, kind=kind, message=message)
     db.add(entry); db.flush()
+    if actor.startswith('partner:') and kind=='message':
+        from .internal_notifications import emit_to_user
+        emit_to_user(db,user_id=row.created_by,launch_id=row.launch_id,folder='jaune',event_key='supplier-message:'+entry.id,kind='supplier_message',title='Message fournisseur reçu',message=f'{row.title} : {message[:300]}')
     if actor.startswith('staff:'):
         from .partner_mail import enqueue
         enqueue(db, entry)
@@ -75,7 +82,11 @@ def submission_out(row):
 def detail(db, row):
     versions = db.scalars(select(PartnerSubmission).where(PartnerSubmission.request_id == row.id).order_by(PartnerSubmission.number)).all()
     events = db.scalars(select(PartnerEvent).where(PartnerEvent.request_id == row.id).order_by(PartnerEvent.created_at, PartnerEvent.id)).all()
-    return {**request_out(row), 'versions': [submission_out(v) for v in versions],
+    from .partner_phase2_models import PartnerIntegration
+    from .models import DocumentVersion
+    links = list(db.scalars(select(PartnerIntegration).where(PartnerIntegration.submission_id.in_([v.id for v in versions]))))
+    return {**request_out(row), 'integrated_document_id': db.get(DocumentVersion,links[0].version_id).document_id if links else None, 'versions': [submission_out(v) for v in versions],
+            'attachments': attachments_for_request(db,row.id),
             'history': [{'id': e.id, 'author': 'Framatex' if e.actor.startswith('staff:') else 'Fournisseur',
                          'kind': e.kind, 'message': e.message, 'created_at': e.created_at} for e in events]}
 
@@ -96,6 +107,9 @@ class InviteInput(BaseModel):
         if value.count('@') != 1 or any(c.isspace() for c in value) or '.' not in value.split('@')[1]:
             raise ValueError('Adresse email invalide')
         return value
+
+class InvitationInput(InviteInput):
+    role_id: str | None = None
 
 class ActivationInput(BaseModel):
     token: str = Field(min_length=30, max_length=200)
@@ -156,10 +170,17 @@ def accounts(org_id: str, user=Depends(staff), db: Session = Depends(get_db)):
             for a in db.scalars(select(PartnerAccount).where(PartnerAccount.partner_id == org_id))]
 
 @router.post('/api/partners/organizations/{org_id}/invitations', status_code=201)
-def invite(org_id: str, payload: InviteInput, user=Depends(staff), db: Session = Depends(get_db)):
+def invite(org_id: str, payload: InvitationInput, user=Depends(staff), db: Session = Depends(get_db)):
     org = org_get(db, org_id)
+    from .partner_phase2_models import PartnerRole,PartnerRoleAssignment
+    role = db.get(PartnerRole,payload.role_id) if payload.role_id else None
+    if payload.role_id and (not role or role.partner_id != org_id):
+        raise HTTPException(422,'Rôle étranger à cette organisation')
     if not org.active:
         raise HTTPException(409, 'Organisation suspendue')
+    from .partner_permissions import email_allowed
+    if not email_allowed(db, org_id, payload.email):
+        raise HTTPException(422, 'Domaine email non autorisé')
     account = db.scalar(select(PartnerAccount).where(PartnerAccount.email == payload.email))
     if account and account.partner_id != org_id:
         raise HTTPException(409, 'Adresse déjà enregistrée')
@@ -172,6 +193,10 @@ def invite(org_id: str, payload: InviteInput, user=Depends(staff), db: Session =
             db.flush()
         except IntegrityError:
             db.rollback(); raise HTTPException(409, 'Adresse déjà enregistrée')
+    if role:
+        assignment=db.get(PartnerRoleAssignment,account.id)
+        if assignment:assignment.role_id=role.id
+        else:db.add(PartnerRoleAssignment(account_id=account.id,role_id=role.id))
     db.execute(update(PartnerToken).where(PartnerToken.account_id == account.id,
         PartnerToken.kind == 'invite').values(consumed=True))
     token = secrets.token_urlsafe(48)
@@ -224,7 +249,8 @@ def login(payload: LoginInput, request: Request, response: Response, db: Session
     token = secrets.token_urlsafe(48)
     db.add(PartnerToken(digest=digest(token), account_id=account.id, kind='session', expires_at=utcnow()+timedelta(hours=8)))
     db.commit()
-    response.set_cookie(COOKIE, token, httponly=True, samesite='strict', secure=os.getenv('FRAMATEX_SECURE_COOKIE','0') == '1', max_age=28800)
+    from .core import cookie_secure
+    response.set_cookie(COOKIE, token, httponly=True, samesite='strict', secure=cookie_secure(), max_age=28800)
     return {'id': account.id, 'organization': org_get(db, account.partner_id).name}
 
 @router.post('/api/partner-auth/logout')
@@ -236,13 +262,16 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
 @router.get('/api/partner/home')
 def home(account=Depends(partner), db: Session = Depends(get_db)):
     org = org_get(db, account.partner_id)
-    return {'organization': org.name, 'kind': org.kind, 'email': account.email}
+    from .partner_permissions import permissions
+    return {'organization': org.name, 'kind': org.kind, 'email': account.email, 'permissions': sorted(permissions(db, account))}
 
 @router.post('/api/partners/requests', status_code=201)
 def create_request(payload: RequestInput, user=Depends(staff), db: Session = Depends(get_db)):
     org = org_get(db, payload.partner_id, 'supplier')
     if not org.active or not db.get(Launch, payload.launch_id):
         raise HTTPException(422, 'Organisation inactive ou lancement inexistant')
+    from .order_registry_routes import check_order_scope
+    check_order_scope(db,payload.launch_id,reference=payload.order_ref)
     row = PartnerRequest(**payload.model_dump(), created_by=user.id)
     db.add(row); db.flush()
     event(db, row, 'staff:'+user.id, 'requested', payload.title)
@@ -251,12 +280,12 @@ def create_request(payload: RequestInput, user=Depends(staff), db: Session = Dep
     return request_out(row)
 
 @router.get('/api/partners/requests')
-def staff_requests(user=Depends(staff), db: Session = Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=100)):
-    return [request_out(r) for r in db.scalars(select(PartnerRequest).order_by(PartnerRequest.created_at.desc()).offset(offset).limit(limit))]
+def staff_requests(user=Depends(staff), db: Session = Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=100), q: str = Query('',max_length=200), status: str | None = None, sort: Literal['newest','oldest','due']='newest'):
+    return request_search(db,None,q,status,sort,offset,limit)
 
 @router.get('/api/partner/requests')
-def supplier_requests(account=Depends(partner), db: Session = Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=100)):
-    return [request_out(r) for r in db.scalars(select(PartnerRequest).where(PartnerRequest.partner_id == account.partner_id).order_by(PartnerRequest.created_at.desc()).offset(offset).limit(limit))]
+def supplier_requests(account=Depends(partner), db: Session = Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=100), q: str = Query('',max_length=200), status: str | None = None, sort: Literal['newest','oldest','due']='newest'):
+    return request_search(db,account.partner_id,q,status,sort,offset,limit)
 
 @router.get('/api/partners/requests/{rid}')
 def staff_detail(rid: str, user=Depends(staff), db: Session = Depends(get_db)):
@@ -264,16 +293,23 @@ def staff_detail(rid: str, user=Depends(staff), db: Session = Depends(get_db)):
 
 @router.get('/api/partner/requests/{rid}')
 def supplier_detail(rid: str, account=Depends(partner), db: Session = Depends(get_db)):
-    return detail(db, req_get(db, rid, account))
+    result = detail(db, req_get(db, rid, account))
+    result.pop('integrated_document_id',None)
+    return result
 
 @router.post('/api/partner/requests/{rid}/versions', status_code=201)
 async def upload(rid: str, file: UploadFile = File(...), account=Depends(partner), db: Session = Depends(get_db)):
+    from .partner_permissions import require
+    require(db, account, 'document.write')
     row = req_get(db, rid, account)
     if row.status not in ('requested','rejected'):
         raise HTTPException(409, 'Dépôt autorisé pour une demande ouverte ou refusée uniquement')
     claim(db, row)
+    from .partner_uploads import lock_budget,verify_budget
+    lock_budget(db,row.partner_id)
     original, disk, size, sha, mime = await store_upload(file)
     try:
+        verify_budget(db,row.partner_id,size)
         latest = db.scalar(select(PartnerSubmission).where(PartnerSubmission.request_id == rid).order_by(PartnerSubmission.number.desc()).limit(1))
         version = PartnerSubmission(request_id=rid, number=latest.number+1 if latest else 1,
             account_id=account.id, original_name=original, disk_name=disk, size=size, sha256=sha, content_type=mime)
@@ -314,6 +350,8 @@ def close(rid: str, user=Depends(staff), db: Session = Depends(get_db)):
 
 @router.post('/api/partner/requests/{rid}/messages', status_code=201)
 def supplier_message(rid: str, payload: MessageInput, account=Depends(partner), db: Session = Depends(get_db)):
+    from .partner_permissions import require
+    require(db, account, 'message.write')
     row = req_get(db, rid, account)
     event(db, row, 'partner:'+account.id, 'message', payload.message)
     db.commit(); return {'recorded':True, 'email_status':'not_sent'}
@@ -351,12 +389,19 @@ def publish(payload: PublicationInput, user=Depends(staff), db: Session = Depend
     launch = db.get(Launch, publication.launch_id) if publication else None
     if not org.active or not publication or not pub_out(db, publication, launch)['effective'] or norm(org.name) != norm(publication.client_name):
         raise HTTPException(409, 'Publication approuvée effective et destinataire correspondant requis')
+    from .partner_phase2_models import PartnerClientOrder
+    grant=db.scalar(select(PartnerClientOrder).where(PartnerClientOrder.partner_id==org.id,PartnerClientOrder.launch_id==publication.launch_id))
+    if grant and not grant.active:raise HTTPException(409,'Accès à la commande retiré')
+    from .order_registry_routes import check_order_scope
+    check_order_scope(db,publication.launch_id,client_id=org.id)
     row = PartnerPublication(**payload.model_dump())
     db.add(row)
     try:
         db.flush()
     except IntegrityError:
         db.rollback(); raise HTTPException(409, 'Publication déjà attribuée')
+    from .partner_notice_routes import emit
+    emit(db,org.id,'publication',row.id,'publication','publication:'+row.id,'Une nouvelle version documentaire est publiée pour votre organisation')
     audit(db, user, 'partner.publish', 'partner_publication', row.id)
     db.commit(); return {'id':row.id}
 
@@ -366,6 +411,10 @@ def visible_publication(db, row, account):
     if not row or row.partner_id != account.partner_id or org_get(db, account.partner_id).kind != 'client':
         return None
     publication = db.get(ClientPublication, row.publication_id)
+    from .partner_phase2_models import PartnerClientOrder
+    grant = db.scalar(select(PartnerClientOrder).where(PartnerClientOrder.partner_id==account.partner_id,PartnerClientOrder.launch_id==publication.launch_id))
+    if grant and not grant.active:
+        return None
     launch = db.get(Launch, publication.launch_id)
     if not pub_out(db, publication, launch)['effective']:
         return None
@@ -417,3 +466,36 @@ def mail_queue(user=Depends(staff), db: Session = Depends(get_db)):
     return [{'id':m.id,'status':m.status,'attempts':m.attempts,'last_error':m.last_error,
              'next_at':m.next_at,'accepted_at':m.accepted_at}
             for m in db.scalars(select(PartnerMail).order_by(PartnerMail.next_at.desc()).limit(100))]
+
+
+def attachments_for_request(db,rid):
+    from .partner_phase2_models import PartnerAttachment
+    from .partner_attachment_routes import out
+    return [out(a) for a in db.scalars(select(PartnerAttachment).join(PartnerEvent).where(PartnerEvent.request_id==rid))]
+
+
+def request_search(db,partner_id,q,status,sort,offset,limit):
+    query=select(PartnerRequest)
+    if partner_id:query=query.where(PartnerRequest.partner_id==partner_id)
+    if q:query=query.where(or_(PartnerRequest.title.ilike('%'+q+'%'),PartnerRequest.order_ref.ilike('%'+q+'%'),PartnerRequest.doc_type.ilike('%'+q+'%')))
+    if status:query=query.where(PartnerRequest.status==status)
+    order={'newest':PartnerRequest.created_at.desc(),'oldest':PartnerRequest.created_at.asc(),'due':PartnerRequest.due_date.asc().nulls_last()}[sort]
+    return [request_out(row) for row in db.scalars(query.order_by(order,PartnerRequest.id).offset(offset).limit(limit))]
+
+@router.get('/api/partner/notifications')
+def partner_notifications(account=Depends(partner),db:Session=Depends(get_db),offset:int=Query(0,ge=0),limit:int=Query(50,ge=1,le=100)):
+    from .partner_phase2_models import PartnerEventRead
+    rows=db.scalars(select(PartnerEvent).join(PartnerRequest).where(PartnerRequest.partner_id==account.partner_id,PartnerEvent.actor.like('staff:%')).order_by(PartnerEvent.created_at.desc(),PartnerEvent.id).offset(offset).limit(limit))
+    return [{'id':e.id,'request_id':e.request_id,'kind':e.kind,'message':e.message,'created_at':e.created_at,'read':db.get(PartnerEventRead,(account.id,e.id)) is not None} for e in rows]
+
+@router.post('/api/partner/notifications/{nid}/read')
+def mark_partner_notification(nid:str,account=Depends(partner),db:Session=Depends(get_db)):
+    from .partner_phase2_models import PartnerEventRead
+    e=db.get(PartnerEvent,nid)
+    if not e:raise HTTPException(404,'Notification introuvable')
+    req_get(db,e.request_id,account)
+    if not db.get(PartnerEventRead,(account.id,nid)):
+        db.add(PartnerEventRead(account_id=account.id,event_id=nid))
+        try:db.commit()
+        except IntegrityError:db.rollback()
+    return {'read':True}

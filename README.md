@@ -1,5 +1,7 @@
 # Framatex — Dossier jaune numérique (MVP 0.19)
 
+> **Phase 2 d’industrialisation — 11 novembre 2026.** 248/273 exigences vérifiées en environnement contrôlé (90,8 %), 105 tests Python, parcours navigateur fournisseur et client. [État et limites](IMPLEMENTATION_STATUS.md), [installation locale](GUIDE_DEPLOIEMENT.md), [sécurité](SECURITE.md). Recette Framatex et revue indépendante requises avant ouverture externe. Les versions ci-dessous restent un historique.
+
 > **Version 0.19 — interface blanche, accents bleus et nouvel espace Framatex Assist.** Tableau de bord, navigation, bibliothèque documentaire et assistant harmonisés. [Détails](VERSION_0.19.md). Aucune migration supplémentaire.
 
 > **Version 0.18 — refonte visuelle sombre inspirée des interfaces documentaires SaaS.** Tableau de bord restructuré, barre latérale, fiches et assistant conversationnel (toujours fondé sur des règles locales). [Détails](VERSION_0.18.md). Aucune migration supplémentaire.

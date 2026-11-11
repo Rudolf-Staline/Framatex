@@ -5,10 +5,12 @@ les circuits mais ne peut pas se substituer à un valideur dont il n'a pas le r�
 """
 from __future__ import annotations
 from typing import Literal
+from datetime import datetime, timedelta, timezone
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -18,6 +20,7 @@ from .workflow_models import DocumentReview
 from .approval_models import ApprovalTemplate, ApprovalStage, ApprovalRun, ApprovalDecision, InternalNotification
 from .internal_notifications import emit_to_role, emit_to_user, permitted_now
 from .main import admin_only, audit, get_doc, get_launch, must, permitted
+from .partner_phase2_models import ApprovalStagePolicy, ApprovalStageAssignment
 
 router = APIRouter(tags=['0.13 — Validations et notifications'])
 
@@ -25,6 +28,7 @@ router = APIRouter(tags=['0.13 — Validations et notifications'])
 class StageInput(BaseModel):
     name: str = Field(min_length=3, max_length=140)
     reviewer_role_id: str
+    due_days: int | None = Field(default=None, ge=1, le=365)
 
 
 class TemplateInput(BaseModel):
@@ -46,6 +50,23 @@ class StageDecisionInput(BaseModel):
 def steps(db: Session, template_id: str):
     return db.scalars(select(ApprovalStage).where(ApprovalStage.template_id == template_id)
                       .order_by(ApprovalStage.position.asc())).all()
+
+
+def activate_stage(db,run,stage):
+    policy=db.get(ApprovalStagePolicy,stage.id)
+    row=ApprovalStageAssignment(run_id=run.id,stage_id=stage.id,
+        due_at=utcnow()+timedelta(days=policy.due_days) if policy else None)
+    db.add(row)
+
+
+def locked_run(db,run_id):
+    # Serialize delegation changes and decisions in the supported SQLite backend.
+    db.execute(update(ApprovalRun).where(ApprovalRun.id==run_id).values(status=ApprovalRun.status),
+               execution_options={'synchronize_session':False})
+    run=db.get(ApprovalRun,run_id)
+    if not run:raise HTTPException(404,'Circuit introuvable')
+    db.refresh(run)
+    return run
 
 
 def applicable_template(db: Session, doc: Document):
@@ -70,7 +91,10 @@ def can_decide(db: Session, user: User, run: ApprovalRun, doc: Document):
              and permitted(user, 'document.read', doc.folder.slug)
              and permitted(user, 'launch.read')):
         return False
-    if not any(role.id == current.reviewer_role_id for role in user.roles):
+    assignment = db.get(ApprovalStageAssignment, (run.id, current.id))
+    delegated = bool(assignment and assignment.delegate_id == user.id and assignment.expires_at
+                     and assignment.expires_at.replace(tzinfo=None) > utcnow().replace(tzinfo=None))
+    if not delegated and not any(role.id == current.reviewer_role_id for role in user.roles):
         return False
     if user.id == version.uploaded_by:  # séparation rédacteur / valideur
         return False
@@ -86,12 +110,17 @@ def run_out(db: Session, run: ApprovalRun, user: User, doc: Document):
     decisions = {d.stage_id: d for d in db.scalars(select(ApprovalDecision)
                  .where(ApprovalDecision.run_id == run.id)).all()}
     template = db.get(ApprovalTemplate, run.template_id)
+    assignments = {a.stage_id:a for a in db.scalars(select(ApprovalStageAssignment).where(ApprovalStageAssignment.run_id==run.id))}
     return {'id': run.id, 'document_id': doc.id, 'document_title': doc.title, 'folder': doc.folder.slug,
             'version_id': version.id, 'version': version.number, 'template_name': template.name,
             'status': 'stale' if stale else run.status, 'can_decide':
                 not stale and run.status == 'pending' and can_decide(db, user, run, doc),
             'current_position': run.current_position, 'started_at': run.started_at.isoformat(),
+            'can_delegate': not stale and run.status=='pending' and any(r.name=='Administrateur' for r in user.roles),
             'stages': [{'name': s.name, 'position': s.position, 'role_id': s.reviewer_role_id,
+                        'due_at': assignments[s.id].due_at if s.id in assignments else None,
+                        'delegate_name': db.get(User,assignments[s.id].delegate_id).name if s.id in assignments and assignments[s.id].delegate_id else None,
+                        'delegation_expires': assignments[s.id].expires_at if s.id in assignments else None,
                         'role_name': db.get(Role, s.reviewer_role_id).name,
                         'decision': decisions[s.id].decision if s.id in decisions else None,
                         'comment': decisions[s.id].comment if s.id in decisions else None,
@@ -105,7 +134,8 @@ def get_templates(user: User = Depends(get_current_user), db: Session = Depends(
     templates = db.scalars(select(ApprovalTemplate).order_by(ApprovalTemplate.created_at.desc())).all()
     return [{'id': t.id, 'name': t.name, 'folder_slug': t.folder_slug, 'document_type': t.document_type,
              'active': t.active, 'stages': [{'name': s.name, 'role_id': s.reviewer_role_id,
-              'role_name': db.get(Role, s.reviewer_role_id).name, 'position': s.position} for s in steps(db,t.id)]}
+              'role_name': db.get(Role, s.reviewer_role_id).name, 'position': s.position,
+              'due_days': db.get(ApprovalStagePolicy,s.id).due_days if db.get(ApprovalStagePolicy,s.id) else None} for s in steps(db,t.id)]}
             for t in templates]
 
 
@@ -131,8 +161,9 @@ def create_template(payload: TemplateInput, user: User = Depends(get_current_use
                          document_type=payload.document_type.strip(), created_by=user.id)
     db.add(t);db.flush()
     for position, stage in enumerate(payload.stages, 1):
-        db.add(ApprovalStage(template_id=t.id, name=stage.name.strip(),
-                             reviewer_role_id=stage.reviewer_role_id, position=position))
+        row=ApprovalStage(template_id=t.id, name=stage.name.strip(),reviewer_role_id=stage.reviewer_role_id, position=position)
+        db.add(row);db.flush()
+        if stage.due_days is not None:db.add(ApprovalStagePolicy(stage_id=row.id,due_days=stage.due_days))
     audit(db, user, 'approval.template.create', 'approval_template', t.id,
           {'folder': t.folder_slug, 'document_type': t.document_type, 'stages': len(payload.stages)})
     db.commit()
@@ -179,7 +210,7 @@ def get_approval_overview(launch_id: str, user: User = Depends(get_current_user)
                 'can_start': bool(template and not active and (permitted(user,'document.write',folder.slug)
                                                   or permitted(user,'document.review',folder.slug))),
                 'run': run_out(db,active,user,doc) if active else None,
-                'previous': [run_out(db,r,user,doc) for r in runs if r.document_version_id != version.id][:2]})
+                'previous': [run_out(db,r,user,doc) for r in runs if r.document_version_id != version.id]})
     return {'launch_id': launch_id, 'items':visible}
 
 
@@ -200,6 +231,7 @@ def start_run(doc_id: str, user: User = Depends(get_current_user), db: Session =
         raise HTTPException(422,'Aucune étape dans le circuit')
     run = ApprovalRun(template_id=template.id, document_version_id=version.id, started_by=user.id)
     db.add(run);db.flush()
+    activate_stage(db,run,order[0])
     emit_to_role(db, role_id=order[0].reviewer_role_id, launch_id=doc.folder.launch_id,
         folder=doc.folder.slug, event_key=f'approval:{run.id}:stage:1', kind='approval',
         title='Validation documentaire demandée',
@@ -218,9 +250,7 @@ def start_run(doc_id: str, user: User = Depends(get_current_user), db: Session =
 @router.post('/api/approval-runs/{run_id}/decisions')
 def decide_stage(run_id: str, payload: StageDecisionInput,
                  user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    run = db.get(ApprovalRun,run_id)
-    if not run:
-        raise HTTPException(404,'Circuit introuvable')
+    run = locked_run(db,run_id)
     version = db.get(DocumentVersion,run.document_version_id)
     doc = db.get(Document,version.document_id)
     must(user,'launch.read');must(user,'document.read',doc.folder.slug)
@@ -250,6 +280,7 @@ def decide_stage(run_id: str, payload: StageDecisionInput,
     else:
         run.current_position += 1
         following = next(s for s in order if s.position == run.current_position)
+        activate_stage(db,run,following)
         emit_to_role(db, role_id=following.reviewer_role_id, launch_id=doc.folder.launch_id,
             folder=doc.folder.slug, event_key=f'approval:{run.id}:stage:{following.position}',
             kind='approval', title='Votre validation est demandée',
@@ -268,6 +299,43 @@ def decide_stage(run_id: str, payload: StageDecisionInput,
         db.rollback()
         raise HTTPException(409,'Une décision a déjà été enregistrée pour cette étape')
     return run_out(db,run,user,doc)
+
+
+class DelegationInput(BaseModel):
+    delegate_id: str | None = None
+    expires_at: datetime | None = None
+    reason: str = Field(min_length=12,max_length=1800)
+
+
+@router.put('/api/approval-runs/{run_id}/delegation')
+def delegate_stage(run_id:str,payload:DelegationInput,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
+    admin_only(user)
+    run=locked_run(db,run_id);version=db.get(DocumentVersion,run.document_version_id);doc=version.document
+    if run.status!='pending' or latest_version(doc).id!=version.id:raise HTTPException(409,'Seule une étape courante en attente peut être déléguée')
+    stage=next(s for s in steps(db,run.template_id) if s.position==run.current_position)
+    if payload.delegate_id:
+        target=db.get(User,payload.delegate_id)
+        from .access import accessible
+        previous={d.actor_id for d in db.scalars(select(ApprovalDecision).where(ApprovalDecision.run_id==run.id))}
+        if not target or not target.active or target.id in previous|{user.id,version.uploaded_by}:
+            raise HTTPException(422,'Délégataire distinct de l’auteur, du délégant et des valideurs précédents requis')
+        if not accessible(db,target,doc.folder.launch) or not all(permitted(target,a,doc.folder.slug if a!='launch.read' else None) for a in ('launch.read','document.read','document.review')):
+            raise HTTPException(422,'Le délégataire doit déjà être habilité au dossier et à la validation')
+        if payload.expires_at and payload.expires_at.tzinfo:
+            payload.expires_at=payload.expires_at.astimezone(timezone.utc)
+        if not payload.expires_at or not payload.expires_at.tzinfo or not utcnow().replace(tzinfo=None)<payload.expires_at.replace(tzinfo=None)<=utcnow().replace(tzinfo=None)+timedelta(days=30):
+            raise HTTPException(422,'Expiration future obligatoire, dans les 30 jours')
+    assignment=db.get(ApprovalStageAssignment,(run.id,stage.id))
+    if not assignment:activate_stage(db,run,stage);db.flush();assignment=db.get(ApprovalStageAssignment,(run.id,stage.id))
+    before=assignment.delegate_id
+    assignment.delegate_id=payload.delegate_id;assignment.expires_at=payload.expires_at if payload.delegate_id else None
+    assignment.assigned_by=user.id;assignment.reason=payload.reason
+    audit(db,user,'approval.delegation','approval_run',run.id,{'stage':stage.position,'previous_delegate':before,**payload.model_dump(mode='json')})
+    if payload.delegate_id:
+        emit_to_user(db,user_id=payload.delegate_id,launch_id=doc.folder.launch_id,folder=doc.folder.slug,
+            event_key=f'approval:{run.id}:delegation:{stage.id}:{uuid4()}',kind='approval_delegation',
+            title='Validation temporairement déléguée',message=f'{doc.title} · {stage.name} · Jusqu’au {payload.expires_at.isoformat()}')
+    db.commit();return run_out(db,run,user,doc)
 
 
 def notification_out(n: InternalNotification):

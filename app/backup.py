@@ -26,7 +26,7 @@ def validate(database, files):
         if db.execute('PRAGMA foreign_key_check').fetchone():
             raise ValueError('Relations invalides')
         tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        for table in ('document_versions','partner_submissions'):
+        for table in ('document_versions','partner_submissions','partner_attachments','partner_administrative_documents'):
             if table not in tables:continue
             for name, expected in db.execute(f'SELECT disk_name, sha256 FROM {table}'):
                 if Path(name).name != name or not (files/name).is_file() or sha(files/name) != expected:
@@ -82,6 +82,11 @@ def restore(archive: Path, destination: Path):
         with sqlite3.connect(stage/'framat.db') as db:
             if db.execute("SELECT name FROM sqlite_master WHERE name='partner_tokens'").fetchone():
                 db.execute('UPDATE partner_tokens SET consumed=1')
+            if db.execute("SELECT name FROM sqlite_master WHERE name='audit_events'").fetchone():
+                from uuid import uuid4
+                from datetime import datetime,timezone
+                db.execute("INSERT INTO audit_events(id,action,actor_id,target_type,target_id,detail,occurred_at) VALUES (?, 'session.restore', NULL, 'session', 'all', '{}', ?)",
+                           (str(uuid4()),datetime.now(timezone.utc).isoformat()))
         stage.rename(destination)
     return destination
 

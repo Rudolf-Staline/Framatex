@@ -15,7 +15,7 @@ def test_additive_migration_and_complete_restore(tmp_path,monkeypatch):
     data=b'Synthetic historical document';sha=hashlib.sha256(data).hexdigest();(source/'files'/'blob1').write_bytes(data)
     with old.begin() as c:
         for table in reversed(Base.metadata.sorted_tables):
-            if table.name.startswith('partner'):table.drop(c)
+            if table.name.startswith('partner') or table.name in {'security_login_buckets','orli_mapping_profiles','orli_refresh_decisions','document_excel_policies','requirement_policies','launch_order_contexts','business_orders','business_order_launches','approval_stage_policies','approval_stage_assignments'}:table.drop(c)
         c.execute(text("INSERT INTO users(id,email,name,password_hash,active,created_at) VALUES ('u','u@example.local','Ancien','hash',1,'2026-01-01')"))
         c.execute(text("INSERT INTO launches(id,name,status,created_by,created_at,updated_at,restricted) VALUES ('l','Commande existante','En cours','u','2026-01-01','2026-01-01',1)"))
         c.execute(text("INSERT INTO folders(id,launch_id,slug,label) VALUES ('f','l','jaune','Technique')"))
@@ -26,6 +26,8 @@ def test_additive_migration_and_complete_restore(tmp_path,monkeypatch):
     migrate.migrate();migrate.migrate()
     with old.connect() as c:
         assert 'partner_accounts' in inspect(c).get_table_names()
+        assert {'business_orders','business_order_launches','requirement_policies','partner_administrative_documents'}.issubset(inspect(c).get_table_names())
+        assert c.execute(text('SELECT count(*) FROM schema_migrations')).scalar_one()==len(migrate.REVISIONS)
         assert c.execute(text('SELECT restricted FROM launches')).scalar_one()==1
         assert c.execute(text('SELECT sha256 FROM document_versions')).scalar_one()==sha
     archive=backup(source,tmp_path/'backup.zip');restored=restore(archive,tmp_path/'restored')

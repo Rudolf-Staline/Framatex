@@ -131,8 +131,8 @@ def doc_out(d: Document):
 
 
 class LoginPayload(BaseModel):
-    email: str
-    password: str
+    email: str = Field(min_length=3,max_length=254)
+    password: str = Field(min_length=1,max_length=256)
 
 class LaunchPayload(BaseModel):
     name: str = Field(min_length=2, max_length=180)
@@ -181,7 +181,8 @@ def login(payload: LoginPayload, response: Response, request: Request, db: Sessi
         record_login_failure(key)
         raise HTTPException(401, "Identifiants incorrects")
     clear_login_failures(key)
-    response.set_cookie(COOKIE, make_token(user.id), max_age=8*3600, httponly=True, secure=os.getenv("FRAMATEX_COOKIE_SECURE") == "1", samesite="strict", path="/")
+    from .core import cookie_secure
+    response.set_cookie(COOKIE, make_token(user.id,db), max_age=8*3600, httponly=True, secure=cookie_secure(), samesite="strict", path="/")
     audit(db, user, "session.login", "user", user.id)
     db.commit()
     return user_out(user)
@@ -265,6 +266,15 @@ def update_launch(launch_id: str, payload: LaunchPatch, user: User = Depends(get
     changes = payload.model_dump(exclude_unset=True)
     if "status" in changes and changes["status"] not in STATUSES:
         raise HTTPException(422, "Statut inconnu")
+    from .partner_phase2_models import BusinessOrderLaunch, BusinessOrder
+    from .partner_models import Partner
+    from .sharing_routes import norm
+    relation = db.get(BusinessOrderLaunch, l.id)
+    if relation:
+        order = db.get(BusinessOrder, relation.order_id)
+        if ('order_ref' in changes and (changes['order_ref'] or '').strip() != order.reference
+            or 'client_name' in changes and norm(changes['client_name']) != norm(db.get(Partner, order.client_id).name)):
+            raise HTTPException(409, "Commande rattachée : détacher le lancement avec justification avant de modifier son client ou sa référence")
     if "orli_ref" in changes and db.scalar(select(OrliLink).where(OrliLink.launch_id == l.id)):
         current_ref = l.orli_ref or ''
         requested_ref = changes['orli_ref'] or ''
@@ -328,6 +338,8 @@ async def store_upload(file: UploadFile):
         if total == 0:
             raise HTTPException(422, "Fichier vide")
         verify_file(target, suffix)
+        from .partner_uploads import scan
+        scan(target)
         return original_name, disk_name, total, sha.hexdigest(), MIMES[suffix]
     except Exception:
         target.unlink(missing_ok=True)
@@ -741,3 +753,43 @@ app.include_router(partner_router)
 
 from .partner_delivery_routes import router as partner_delivery_router
 app.include_router(partner_delivery_router)
+
+from .partner_profile_routes import router as partner_profile_router
+app.include_router(partner_profile_router)
+
+from .partner_integration_routes import router as integration_router
+app.include_router(integration_router)
+
+from .partner_client_routes import router as partner_client_router
+app.include_router(partner_client_router)
+from .partner_attachment_routes import router as partner_attachment_router
+app.include_router(partner_attachment_router)
+
+from .orli_phase2_routes import router as orli_phase2_router
+app.include_router(orli_phase2_router)
+
+from .document_search_routes import router as document_search_router
+app.include_router(document_search_router)
+
+from .partner_administrative_routes import router as partner_administrative_router
+app.include_router(partner_administrative_router)
+
+from .completeness_policy_routes import router as completeness_policy_router
+app.include_router(completeness_policy_router)
+
+from .order_registry_routes import router as order_registry_router
+app.include_router(order_registry_router)
+
+from .partner_notice_routes import router as partner_notice_router
+app.include_router(partner_notice_router)
+
+from .admin_access_routes import router as admin_access_router
+app.include_router(admin_access_router)
+
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+@app.exception_handler(RequestValidationError)
+async def safe_validation_errors(request,exception):
+    return JSONResponse(status_code=422,content={'detail':[
+        {'loc':list(error['loc']),'msg':error['msg'],'type':error['type']} for error in exception.errors()
+    ]})

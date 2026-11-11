@@ -8,7 +8,8 @@ os.environ['FRAMATEX_SECRET_KEY'] = 'framat-v10-test-secret-' * 4
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from app.main import app
-from app.core import SessionLocal, hash_password
+from app.core import Base, engine, SessionLocal, hash_password
+import pytest
 from app.models import User, Role, RolePermission
 from app.workflow_models import BusinessValueRevision
 from app.impact_sim_models import ImpactSimulation
@@ -37,8 +38,10 @@ def field(client, launch, key, value, version):
     assert r.status_code==201, r.text
 
 
-def test_scenarios_graph_privacy_and_immutable_history():
-  with TestClient(app) as c:
+@pytest.fixture(scope='module',autouse=True)
+def isolated_simulation_accounts():
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
     with SessionLocal() as db:
       admin=Role(name='Administrateur'); rose=Role(name='Collaborateur rose')
       rose.grants=[RolePermission(action='launch.read'), RolePermission(action='document.read',folder_slug='rose')]
@@ -48,6 +51,10 @@ def test_scenarios_graph_privacy_and_immutable_history():
               User(email='rose-v10@test.local',name='Réception',password_hash=hash_password(PASS),roles=[rose]),
               User(email='tech-v10@test.local',name='Technique',password_hash=hash_password(PASS),roles=[tech])]
       db.add_all(people);db.commit()
+
+
+def test_scenarios_graph_privacy_and_immutable_history():
+  with TestClient(app) as c:
     login(c, 'admin-v10@test.local')
     launch=c.post('/api/launches',headers=H,json={'name':'Vestes bleues lot 2026'}).json()['id']
     doc_id,version=file_version(c,launch)

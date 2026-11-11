@@ -35,7 +35,7 @@ def current_link(db, launch_id):
 
 
 @router.post('/api/orli/imports', status_code=201)
-async def import_export(file: UploadFile=File(...), mapping: str=Form(...),
+async def import_export(file: UploadFile=File(...), mapping: str | None=Form(None), profile_id: str | None=Form(None),
                         user: User=Depends(get_current_user), db: Session=Depends(get_db)):
     admin_only(user)
     original=(file.filename or '').replace('\\','/').split('/')[-1][:240]
@@ -43,6 +43,12 @@ async def import_export(file: UploadFile=File(...), mapping: str=Form(...),
         data=await file.read(MAX_BYTES+1)
     finally:
         await file.close()
+    if profile_id:
+        from .partner_phase2_models import OrliMappingProfile
+        profile=db.get(OrliMappingProfile,profile_id)
+        if not profile:raise HTTPException(404,'Profil de mapping absent')
+        if mapping is not None:raise HTTPException(422,'Choisir un profil ou un mapping explicite')
+        mapping=profile.mapping_json
     normalized_map=parse_mapping(mapping)
     parsed=read_export(data,original,normalized_map)
     if not parsed['rows']:

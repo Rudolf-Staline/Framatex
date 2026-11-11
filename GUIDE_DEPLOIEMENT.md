@@ -1,37 +1,50 @@
-# Installation et validation locale
+# Installation et validation locale — phase 2
 
-Aucun déploiement externe réalisé ni autorisé par ce guide. Utiliser une copie de test et SQLite.
+Utiliser une installation locale dédiée et SQLite. Aucun déploiement externe n'est autorisé par cette mission.
 
 ```bash
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt pytest httpx
 export FRAMATEX_DATA_DIR=/chemin/local/dedie
-# Configurer FRAMATEX_SECRET_KEY (au moins 32 caractères) dans l'environnement, jamais dans Git.
+# Fournir FRAMATEX_SECRET_KEY (au moins 32 caractères) par l'environnement.
 .venv/bin/python -m app.migrate upgrade
-.venv/bin/python -m app.bootstrap_admin
+.venv/bin/python -m app.bootstrap_admin --email admin@example.local
 .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Application interne : `/` ; portail : `/partners` ; documentation API : `/docs`.
-`DATABASE_URL` doit désigner SQLite pour le migrateur actuel. Ne pas pointer vers une base distante. Voir `docs/MIGRATIONS_PARTENAIRES.md` pour sauvegarde/retour arrière.
+Espaces : `/` interne, `/partners` partenaires, `/search` recherche documentaire, `/docs` API. Le migrateur prend en charge SQLite uniquement. Voir `docs/MIGRATIONS_PARTENAIRES.md` avant toute mise à niveau. Extraction bornée prévue pour Linux ; OCR selon disponibilité de Tesseract et des langues fra/eng. Les limites et indisponibilités sont affichées.
 
 ```bash
 .venv/bin/python -m pytest -q
 for file in tests/*.cjs; do node "$file" || exit; done
 for file in static/*.js; do node --check "$file" || exit; done
 .venv/bin/pip install playwright
-# Le script utilise Chromium déjà installé à /usr/bin/chromium.
 .venv/bin/python tools/check_partner_browser.py
 ```
 
-Le test navigateur crée sa propre base temporaire avec des données fictives ; il ne modifie pas les données configurées de l'installation. Capture : `artifacts/partner-browser.png`. Aucun transport email réel n'est lancé par les tests. La CI exécute les tests Python et JavaScript ; le navigateur reste une commande de validation dédiée.
+Le script navigateur utilise Chromium à `/usr/bin/chromium`, une base temporaire et un serveur loopback. Il couvre fournisseur, client, pièces jointes et administratives, intégration, recherche, commandes, conditions, délégation, dépôt multiple et champs confirmés. Captures : `artifacts/partner-browser.png` et `artifacts/client-browser.png`. Aucun transport SMTP réel n'est déclenché.
 
-## Démonstration
+## Démonstration reproductible
 
-Créer une installation distincte, puis définir `FRAMATEX_MODE=DEMO` avant d'exécuter les modules `app.seed_demo`, `app.seed_completeness_demo`, `app.seed_workflow_demo`, `app.seed_quality_demo`. Sans cette variable, les scripts refusent toute écriture. Ne pas activer DEMO sur les données opérationnelles. Les jeux partenaires sont créés dans les tests, pas injectés au démarrage.
+Sur un répertoire neuf distinct de toute donnée opérationnelle :
 
-## Email (après autorisation)
+```bash
+export FRAMATEX_DATA_DIR=/chemin/local/demo-framat-phase2
+export FRAMATEX_MODE=DEMO
+# Définir FRAMATEX_DEMO_PASSWORD dans l'environnement (12–256 caractères).
+.venv/bin/python -m app.seed_phase2_demo
+.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
 
-Configurer `FRAMATEX_EMAIL_ENABLED=1`, `FRAMATEX_SMTP_HOST`, `FRAMATEX_SMTP_PORT` (587), `FRAMATEX_SMTP_FROM`, et si nécessaire `FRAMATEX_SMTP_USER`/`FRAMATEX_SMTP_PASSWORD`. Le serveur doit accepter STARTTLS avec certificat valide. Le worker explicite est `.venv/bin/python -m app.partner_mail`. Prévoir un ordonnanceur et la supervision ; aucune tâche automatique n'a été installée. Le worker traite au plus 50 messages par invocation, avec cinq tentatives maximum et délai exponentiel.
+Le script réutilise `seed_demo`, `seed_completeness_demo`, `seed_workflow_demo`, `seed_quality_demo` et ajoute les partenaires. Comptes : `demo-admin@example.local`, `demo-client-a@example.local`, `demo-client-b@example.local`, `demo-supplier-a@example.local`, `demo-supplier-b@example.local`. Tous utilisent le mot de passe fourni ; aucune valeur de mot de passe n'est imprimée. Une relance ne réécrit pas les comptes ni les données. Les règles et validations de démonstration sont fictives.
 
-Avant un pilote : HTTPS et cookie Secure, domaines et SMTP approuvés, scan fichiers, sauvegarde/restauration complète, contrôles d'abus et validation des parcours métier. PostgreSQL, Supabase et Vercel restent non validés dans cette branche.
+## Exploitation locale et intégrations
+
+- Quota : `FRAMATEX_PARTNER_QUOTA_BYTES`, 104857600 par défaut.
+- Scan : `FRAMATEX_UPLOAD_SCAN_MODE=disabled|required`. En mode required, `FRAMATEX_SCANNER_COMMAND` doit désigner le scanner autorisé ; son argument final est le fichier. Exécution sans shell. Tester les codes 0, 1 et erreur avec le service réel avant ouverture. Aucun service n'a été installé ici.
+- HTTPS : activer `FRAMATEX_COOKIE_SECURE=1`. Pour un pilote restreint, `FRAMATEX_RESTRICT_NEW_LAUNCHES=1`.
+- Rappels internes : bouton administration partenaires ou `.venv/bin/python -m app.partner_notice_routes`. Cette commande est idempotente pour une échéance donnée, ne transmet aucun email et peut être planifiée après configuration locale. Aucun ordonnanceur n'a été installé.
+- ORLI : importer CSV/XLSX, sauvegarder un mapping, comparer les lots et décider explicitement d'une mise à jour. Le format réel et la synchronisation directe restent à fournir/autoriser.
+- SMTP désactivé par défaut. Après autorisation seulement : `FRAMATEX_EMAIL_ENABLED=1`, paramètres SMTP/TLS dans l'environnement, puis `.venv/bin/python -m app.partner_mail`. Le worker traite au plus 50 messages, avec cinq tentatives maximum. « Accepté SMTP » ne prouve ni livraison ni lecture. Ne pas rejouer automatiquement un état processing ambigu.
+
+Avant tout pilote externe : recette Framatex, revue de sécurité, scanner réel, limites réseau, sauvegarde/restauration indépendante et qualification de charge. PostgreSQL, Supabase, stockage objet et Vercel ne sont pas validés par cette branche.
