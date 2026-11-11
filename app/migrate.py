@@ -6,6 +6,7 @@ migration requires a maintenance window and independent backup verification.
 """
 from __future__ import annotations
 import argparse
+import os
 from contextlib import contextmanager
 import sqlite3
 import shutil
@@ -236,6 +237,7 @@ def backup_sqlite():
     if not src.exists() or src.stat().st_size == 0:
         return None
     dest = src.with_name(f'{src.name}.backup-{datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")}')
+    descriptor=os.open(dest,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600);os.close(descriptor)
     with sqlite3.connect(str(src)) as origin, sqlite3.connect(str(dest)) as backup:
         if origin.execute('PRAGMA integrity_check').fetchone()[0]!='ok' or origin.execute('PRAGMA foreign_key_check').fetchone():
             raise RuntimeError('Intégrité de la base source invalide : migration refusée')

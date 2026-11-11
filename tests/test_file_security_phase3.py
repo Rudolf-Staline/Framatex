@@ -58,3 +58,15 @@ def test_private_storage_quota_and_concurrent_writer_lock(tmp_path,monkeypatch):
             assert upload(b'x').status_code==409
         finally:fcntl.flock(fd,fcntl.LOCK_UN);os.close(fd)
         assert len(list(private.iterdir()))==2
+
+
+def test_blob_name_collision_never_deletes_an_existing_file(tmp_path,monkeypatch):
+    from app import main
+    private=tmp_path/'files';private.mkdir();historical=private/'collision';historical.write_bytes(b'Historical bytes')
+    monkeypatch.setattr(main,'STORAGE',private)
+    with TestClient(app) as c:
+        lid=setup(c)
+        monkeypatch.setattr(main.secrets,'token_hex',lambda _size:'collision')
+        response=c.post(f'/api/launches/{lid}/documents',data={'folder':'jaune','title':'Conflit'},files={'file':('x.txt',b'New bytes','text/plain')},headers=H)
+        assert response.status_code==409,response.text
+        assert historical.read_bytes()==b'Historical bytes'

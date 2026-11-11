@@ -341,10 +341,13 @@ async def store_upload(file: UploadFile):
     target = STORAGE / disk_name
     sha = hashlib.sha256()
     total = 0
+    created = False
     try:
         from .storage_budget import upload_budget
         with upload_budget(STORAGE) as remaining:
-            with os.fdopen(os.open(target,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),"wb") as out:
+            descriptor=os.open(target,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+            created=True
+            with os.fdopen(descriptor,"wb") as out:
                 while chunk := await file.read(1024 * 1024):
                     total += len(chunk)
                     if total > remaining:
@@ -359,8 +362,10 @@ async def store_upload(file: UploadFile):
             from .partner_uploads import scan
             await run_in_threadpool(scan,target)
             return original_name, disk_name, total, sha.hexdigest(), MIMES[suffix]
+    except FileExistsError:
+        raise HTTPException(409,"Conflit de stockage : aucun fichier existant n’a été modifié")
     except Exception:
-        target.unlink(missing_ok=True)
+        if created:target.unlink(missing_ok=True)
         raise
     finally:
         await file.close()

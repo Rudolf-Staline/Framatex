@@ -16,7 +16,7 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = Path(os.getenv("FRAMATEX_DATA_DIR", str(ROOT / "data"))).resolve()
-DATA_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / 'framat.db'}")
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}, pool_pre_ping=True)
 if engine.dialect.name=='sqlite':

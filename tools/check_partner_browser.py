@@ -1,5 +1,7 @@
 """Isolated browser acceptance: real local server, synthetic data, no external sends."""
 import os
+import json
+import sys
 from pathlib import Path
 import subprocess
 import tempfile
@@ -16,13 +18,13 @@ def main():
     with tempfile.TemporaryDirectory(prefix='framat-browser-') as directory:
         env={**os.environ,'FRAMATEX_DATA_DIR':directory,'FRAMATEX_SECRET_KEY':'browser-test-secret-'*4}
         env.pop('DATABASE_URL',None)
-        subprocess.run([str(ROOT/'.venv/bin/python'),'-c',
+        subprocess.run([sys.executable,'-c',
             "from app.main import app; from app.migrate import migrate; migrate(); from app.core import SessionLocal,hash_password; from app.models import User,Role; db=SessionLocal(); u=User(name='Admin',email='admin@example.local',password_hash=hash_password('BrowserTestPassword2026!')); u.roles.append(Role(name='Administrateur')); db.add(u); db.commit()"],cwd=ROOT,env=env,check=True)
         with socket.socket() as sock:
             sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
         base=f'http://127.0.0.1:{port}'
         with open(Path(directory)/'server.log','w') as log:
-            server=subprocess.Popen([str(ROOT/'.venv/bin/python'),'-m','uvicorn','app.main:app','--host','127.0.0.1','--port',str(port)],cwd=ROOT,env=env,stdout=log,stderr=log)
+            server=subprocess.Popen([sys.executable,'-m','uvicorn','app.main:app','--host','127.0.0.1','--port',str(port)],cwd=ROOT,env=env,stdout=log,stderr=log)
             try:
                 with httpx.Client(base_url=base,headers=H) as api:
                     for _ in range(100):
@@ -39,7 +41,15 @@ def main():
                     invitation=post(f'/api/partners/organizations/{org}/invitations',{'email':'supplier@example.local','role_id':supplier_role['id']})
                     post('/api/partners/requests',{'partner_id':org,'launch_id':lid,'order_ref':'CMD-BROWSER','title':'Certificat navigateur','doc_type':'Certificat'})
                     with sync_playwright() as p:
-                        browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+                        browser=p.chromium.launch(executable_path=os.getenv('FRAMATEX_BROWSER_EXECUTABLE'),headless=True,args=['--no-sandbox'])
+                        audits=[]
+                        def audit_page(target,name):
+                            for width in (360,390,768,1440):
+                                target.set_viewport_size({'width':width,'height':960})
+                                assert target.evaluate('document.documentElement.scrollWidth <= innerWidth'),(name,width)
+                                target.evaluate((ROOT/'node_modules/axe-core/axe.min.js').read_text())
+                                issues=target.evaluate("async()=>{const r=await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}});return r.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))}")
+                                audits.append({'screen':name,'width':width,'violations':issues})
                         supplier=browser.new_context();page=supplier.new_page();errors=[]
                         page.on('pageerror',lambda e:errors.append(str(e)))
                         page.goto(base+'/partners');page.get_by_text('Activer ou récupérer mon compte').click()
@@ -51,7 +61,7 @@ def main():
                         page.get_by_label('Document à transmettre').set_input_files({'name':'certificat.txt','mimeType':'text/plain','buffer':b'Certificat fictif version 1'})
                         page.get_by_role('button',name='Transmettre une version').click();page.get_by_text('Version 1 · Vérification en attente',exact=False).wait_for()
                         admin=browser.new_context();admin.add_cookies([{'name':c.name,'value':c.value,'url':base} for c in api.cookies.jar])
-                        review=admin.new_page();review.goto(base+'/partners');review.get_by_role('button',name='Administration',exact=False).click()
+                        review=admin.new_page();review.on('dialog',lambda dialog:dialog.accept());review.goto(base+'/partners');review.get_by_role('button',name='Administration',exact=False).click()
                         review.get_by_role('button',name='Ouvrir',exact=True).click();review.get_by_label('Motif de la décision').fill('Signature manquante')
                         review.get_by_role('button',name='Demander une correction').click();review.get_by_text('Version 1 · Correction demandée',exact=False).wait_for()
                         page.get_by_role('button',name='Actualiser',exact=True).click();page.get_by_role('button',name='Ouvrir',exact=True).click()
@@ -94,6 +104,7 @@ def main():
                         assert not errors,errors
                         screenshot=ROOT/'artifacts/partner-browser.png';screenshot.parent.mkdir(exist_ok=True)
                         page.screenshot(path=str(screenshot),full_page=True)
+                        audit_page(page,'supplier')
                         # Client journey: explicit order grant, publication, clarification and withdrawal.
                         client_org=post('/api/partners/organizations',{'name':'Client fictif','kind':'client'})['id']
                         client_role=post(f'/api/partners/organizations/{client_org}/roles',{'name':'Contact client','permissions':['read','message.write']})
@@ -114,7 +125,7 @@ def main():
                         download=download_info.value
                         assert Path(download.path()).read_bytes()==b'Publication client fictive'
                         cp.get_by_label('Objet de la demande').fill('Clarification navigateur');cp.get_by_label('Votre question',exact=True).fill('Quelle version utiliser ?')
-                        cp.get_by_role('button',name='Poser une question').click();cp.get_by_role('heading',name='Clarification navigateur · open',exact=True).wait_for()
+                        cp.get_by_role('button',name='Poser une question').click();cp.get_by_role('heading',name='Clarification navigateur · Ouvert',exact=True).wait_for()
                         thread_panel=cp.locator('#client-orders section').first
                         thread_panel.get_by_label('Pièce jointe privée').set_input_files({'name':'question.txt','mimeType':'text/plain','buffer':b'Question client fictive'})
                         thread_panel.get_by_label('Description de la pièce').fill('Information client');thread_panel.get_by_role('button',name='Joindre le fichier').click()
@@ -122,13 +133,14 @@ def main():
                         review.get_by_role('button',name='Actualiser',exact=True).click()
                         review.get_by_label('Réponse à la clarification').fill('Utiliser la version publiée');review.get_by_role('button',name='Répondre',exact=True).click();review.get_by_text('Framatex : Utiliser la version publiée',exact=False).wait_for()
                         review.get_by_label('Motif du changement de traitement').fill('Réponse complète');review.get_by_role('button',name='Clôturer l’échange',exact=True).click()
-                        review.get_by_role('heading',name='Clarification navigateur · closed',exact=True).wait_for()
-                        cp.get_by_role('button',name='Actualiser',exact=True).click();cp.get_by_role('heading',name='Clarification navigateur · closed',exact=True).wait_for()
+                        review.get_by_role('heading',name='Clarification navigateur · Terminé',exact=True).wait_for()
+                        cp.get_by_role('button',name='Actualiser',exact=True).click();cp.get_by_role('heading',name='Clarification navigateur · Terminé',exact=True).wait_for()
                         cp.set_viewport_size({'width':390,'height':844});assert cp.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
                         cp.screenshot(path=str(ROOT/'artifacts/client-browser.png'),full_page=True)
+                        audit_page(cp,'client')
                         post(f'/api/client-publications/{publication["id"]}/revoke',{'reason':'Retrait confirmé pendant recette navigateur'})
                         cp.get_by_role('button',name='Actualiser',exact=True).click()
-                        cp.get_by_role('heading',name='Clarification navigateur · closed',exact=True).wait_for()
+                        cp.get_by_role('heading',name='Clarification navigateur · Terminé',exact=True).wait_for()
                         expect(cp.get_by_role('link',name='Télécharger la version publiée')).to_have_count(0)
                         review.get_by_role('button',name='Actualiser',exact=True).click()
                         review.get_by_text('Référentiel commandes et lancements',exact=True).click()
@@ -169,6 +181,17 @@ def main():
                         internal_page.locator('#delegation-reason').fill('Remplacement temporaire du valideur')
                         internal_page.locator('#delegation-form button').click()
                         internal_page.get_by_text('Délégation : Suppléant',exact=False).wait_for()
+                        approved_run=api.get(f'/api/launches/{lid}/approval-overview').json()['items'][0]['run']['id']
+                        with httpx.Client(base_url=base,headers=H) as deputy_api:
+                            deputy_api.post('/api/auth/login',json={'email':'deputy@example.local','password':PWD}).raise_for_status()
+                            deputy_api.post(f'/api/approval-runs/{approved_run}/decisions',json={'decision':'approved','comment':'Contrôle navigateur par le suppléant habilité'}).raise_for_status()
+                        internal_page.locator('[data-view=launches]').click();internal_page.locator(f'[data-launch="{lid}"]').click()
+                        internal_page.get_by_role('button',name='Réouvrir la validation',exact=True).click()
+                        internal_page.get_by_label('Motif de réouverture',exact=True).fill('Nouvel examen demandé lors de la recette navigateur')
+                        internal_page.get_by_role('button',name='Confirmer la réouverture',exact=True).click()
+                        internal_page.get_by_role('button',name='Déléguer l’étape',exact=True).wait_for()
+                        reopened=api.get(f'/api/launches/{lid}/approval-overview').json()['items'][0]['run']
+                        assert reopened['previous_run_id']==approved_run and reopened['cycle']==2 and reopened['status']=='pending'
                         source=api.get('/api/document-search?supplier=Fournisseur%20navigateur').json()['items'][0]
                         post(f'/api/document-versions/{source["version_id"]}/intake/confirm',{'field_key':'reference_matiere','value':'TISSU-NAV','source_excerpt':'Référence vérifiée pour cet essai'})
                         internal_page.locator('#quality-add-data').click()
@@ -214,6 +237,9 @@ def main():
                         internal_page.locator('#employee-access-form button').click()
                         expect(internal_page.locator('#employee-access-form')).to_have_count(0)
                         assert next(u for u in api.get('/api/admin/users').json() if u['id']==deputy['id'])['active'] is False
+                        audit_page(review,'partner-administration')
+                        (ROOT/'artifacts/phase3-partner-axe.json').write_text(json.dumps(audits,indent=2))
+                        assert not [r for r in audits if r['violations']],[r for r in audits if r['violations']]
                         assert not errors,errors
                         browser.close()
                         print('PASS: supplier/client journeys, isolation revocation, administrative files, integration, search, order registry, completeness, approval delegation, batch drag-and-drop with partial failure, classification, human confirmation, employee access, mobile layouts')
