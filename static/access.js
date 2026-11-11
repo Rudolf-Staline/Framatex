@@ -28,3 +28,14 @@
   }
   new MutationObserver(inject).observe(document.querySelector('#app'),{childList:true,subtree:true});
 })();
+
+function bindEmployeeAccess(){
+ app.querySelectorAll('[data-user-access]').forEach(button=>button.onclick=()=>{
+  const user=state.users.find(u=>u.id===button.dataset.userAccess);if(!user)return;
+  modal('Modifier les accès de '+user.name,`<p>Les sessions existantes seront révoquées après confirmation. Le dernier administrateur actif reste protégé.</p><form id="employee-access-form"><label><input id="employee-active" type="checkbox" ${user.active?'checked':''}>Compte actif</label><fieldset><legend>Rôles autorisés</legend>${state.roles.map(r=>`<label><input type="checkbox" name="employee-role" value="${e(r.id)}" ${user.roles.includes(r.name)?'checked':''}>${e(r.name)}</label>`).join('')}</fieldset><label>Nouveau mot de passe (facultatif)<input id="employee-password" type="password" minlength="12" maxlength="256" autocomplete="new-password"></label><label>Motif du changement<textarea id="employee-reason" required minlength="12" maxlength="1800"></textarea></label><button class="primary" type="submit">Confirmer et révoquer les sessions</button></form>`);
+  overlay.querySelector('#employee-access-form').onsubmit=async ev=>{ev.preventDefault();try{
+   const roles=[...overlay.querySelectorAll('[name=employee-role]:checked')].map(el=>el.value);
+   await api(`/api/admin/users/${user.id}/access`,{method:'PATCH',body:JSON.stringify({active:overlay.querySelector('#employee-active').checked,role_ids:roles,password:val('employee-password')||null,reason:val('employee-reason')})});closeModal();if(user.id===state.me.id){location.reload();return;}toast('Accès modifiés, anciennes sessions révoquées');await admin();
+  }catch(err){showErr(err)}};
+ });
+}

@@ -11,7 +11,7 @@ import jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, VerificationError
 from fastapi import Depends, HTTPException, Request
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine,event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +19,13 @@ DATA_DIR = Path(os.getenv("FRAMATEX_DATA_DIR", str(ROOT / "data"))).resolve()
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / 'framat.db'}")
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}, pool_pre_ping=True)
+if engine.dialect.name=='sqlite':
+    @event.listens_for(engine,'connect')
+    def sqlite_integrity(connection,_record):
+        cursor=connection.cursor()
+        cursor.execute('PRAGMA foreign_keys=ON')
+        cursor.execute('PRAGMA busy_timeout=10000')
+        cursor.close()
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 class Base(DeclarativeBase):
@@ -38,17 +45,21 @@ def secret_key() -> str:
         return env
     path = DATA_DIR / ".session_secret"
     if not path.exists():
-        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-        with os.fdopen(fd, "w") as file:
-            file.write(secrets.token_urlsafe(48))
-    return path.read_text().strip()
+        # Publish a fully written key atomically, including simultaneous workers.
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w',dir=DATA_DIR,prefix='.secret-') as file:
+            file.write(secrets.token_urlsafe(48));file.flush();os.fsync(file.fileno())
+            try:os.link(file.name,path)
+            except FileExistsError:pass
+    value=path.read_text().strip()
+    if len(value)<32:raise RuntimeError('Clé de session locale invalide : au moins 32 caractères requis')
+    return value
 
 SECRET_KEY = secret_key()
 PASSWORDS = PasswordHasher(time_cost=2, memory_cost=32768, parallelism=2)
 COOKIE = "framat_session"
 
-# Local pilot protection against repeated password guesses. This deliberately
-# remains process-local; a production multi-worker setup needs a shared store.
+# Compatibility names retained for old callers; actual attempt budgets are in SQLite.
 _LOGIN_FAILURES: dict[tuple[str, str], list[float]] = {}
 _LOGIN_FAILURE_LOCK = Lock()
 LOGIN_WINDOW_SECONDS = 300
@@ -88,9 +99,23 @@ def check_password(digest: str, plain: str) -> bool:
         return False
 
 
-def make_token(user_id: str) -> str:
+def session_generation(db,user_id):
+    from .models import AuditEvent
+    from sqlalchemy import select
+    def latest(action,target):
+        return db.scalar(select(AuditEvent.id).where(AuditEvent.action==action,AuditEvent.target_id==target)
+            .order_by(AuditEvent.occurred_at.desc(),AuditEvent.id.desc()).limit(1))
+    return [latest('session.restore','all'),latest('session.revoke_all',user_id)]
+
+
+def cookie_secure():
+    return os.getenv('FRAMATEX_COOKIE_SECURE')=='1' or os.getenv('FRAMATEX_SECURE_COOKIE')=='1'
+
+
+def make_token(user_id: str, db:Session) -> str:
     now = datetime.now(timezone.utc)
-    return jwt.encode({"sub": user_id, "iat": now, "exp": now + timedelta(hours=8), "jti": secrets.token_hex(16)}, SECRET_KEY, algorithm="HS256")
+    return jwt.encode({"sub": user_id, "iat": now, "exp": now + timedelta(hours=8), "jti": secrets.token_hex(16),
+        'generation':session_generation(db,user_id)}, SECRET_KEY, algorithm="HS256")
 
 
 def utcnow():
@@ -114,6 +139,8 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
             AuditEvent.target_id == session_id).limit(1))
         if revoked is not None:
             raise HTTPException(401, "Session révoquée : veuillez vous reconnecter")
+        if payload.get('generation',[None,None])!=session_generation(db,payload['sub']):
+            raise HTTPException(401,'Session révoquée après modification des accès ou restauration')
         user = db.get(User, payload["sub"])
     except (jwt.InvalidTokenError, KeyError):
         raise HTTPException(401, "Session expirée ou invalide")

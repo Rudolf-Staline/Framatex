@@ -9,7 +9,7 @@ from .partner_permissions import require
 from .partner_models import PartnerEvent
 from .partner_phase2_models import PartnerAttachment,PartnerMessage
 from .partner_client_routes import thread_get,order_get
-from .partner_uploads import lock_budget,verify_budget,scan
+from .partner_uploads import lock_budget,verify_budget
 
 router=APIRouter(tags=['Pièces jointes partenaires'])
 
@@ -20,7 +20,7 @@ async def upload_attachment(db,file,org_id,actor,event_id=None,message_id=None):
     lock_budget(db,org_id)
     name,disk,size,sha,mime=await store_upload(file)
     try:
-        verify_budget(db,org_id,size);scan(STORAGE/disk)
+        verify_budget(db,org_id,size)
         row=PartnerAttachment(partner_id=org_id,event_id=event_id,message_id=message_id,owner=actor,original_name=name,disk_name=disk,size=size,sha256=sha)
         db.add(row);db.flush();audit(db,None,'partner.attachment','partner_attachment',row.id,{'author':actor,'sha256':sha});db.commit();return out(row)
     except Exception:

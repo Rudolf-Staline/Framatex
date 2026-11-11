@@ -131,8 +131,8 @@ def doc_out(d: Document):
 
 
 class LoginPayload(BaseModel):
-    email: str
-    password: str
+    email: str = Field(min_length=3,max_length=254)
+    password: str = Field(min_length=1,max_length=256)
 
 class LaunchPayload(BaseModel):
     name: str = Field(min_length=2, max_length=180)
@@ -181,7 +181,8 @@ def login(payload: LoginPayload, response: Response, request: Request, db: Sessi
         record_login_failure(key)
         raise HTTPException(401, "Identifiants incorrects")
     clear_login_failures(key)
-    response.set_cookie(COOKIE, make_token(user.id), max_age=8*3600, httponly=True, secure=os.getenv("FRAMATEX_COOKIE_SECURE") == "1", samesite="strict", path="/")
+    from .core import cookie_secure
+    response.set_cookie(COOKIE, make_token(user.id,db), max_age=8*3600, httponly=True, secure=cookie_secure(), samesite="strict", path="/")
     audit(db, user, "session.login", "user", user.id)
     db.commit()
     return user_out(user)
@@ -337,6 +338,8 @@ async def store_upload(file: UploadFile):
         if total == 0:
             raise HTTPException(422, "Fichier vide")
         verify_file(target, suffix)
+        from .partner_uploads import scan
+        scan(target)
         return original_name, disk_name, total, sha.hexdigest(), MIMES[suffix]
     except Exception:
         target.unlink(missing_ok=True)
@@ -779,3 +782,14 @@ app.include_router(order_registry_router)
 
 from .partner_notice_routes import router as partner_notice_router
 app.include_router(partner_notice_router)
+
+from .admin_access_routes import router as admin_access_router
+app.include_router(admin_access_router)
+
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+@app.exception_handler(RequestValidationError)
+async def safe_validation_errors(request,exception):
+    return JSONResponse(status_code=422,content={'detail':[
+        {'loc':list(error['loc']),'msg':error['msg'],'type':error['type']} for error in exception.errors()
+    ]})

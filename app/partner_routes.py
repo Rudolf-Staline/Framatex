@@ -249,7 +249,8 @@ def login(payload: LoginInput, request: Request, response: Response, db: Session
     token = secrets.token_urlsafe(48)
     db.add(PartnerToken(digest=digest(token), account_id=account.id, kind='session', expires_at=utcnow()+timedelta(hours=8)))
     db.commit()
-    response.set_cookie(COOKIE, token, httponly=True, samesite='strict', secure=os.getenv('FRAMATEX_SECURE_COOKIE','0') == '1', max_age=28800)
+    from .core import cookie_secure
+    response.set_cookie(COOKIE, token, httponly=True, samesite='strict', secure=cookie_secure(), max_age=28800)
     return {'id': account.id, 'organization': org_get(db, account.partner_id).name}
 
 @router.post('/api/partner-auth/logout')
@@ -304,11 +305,11 @@ async def upload(rid: str, file: UploadFile = File(...), account=Depends(partner
     if row.status not in ('requested','rejected'):
         raise HTTPException(409, 'Dépôt autorisé pour une demande ouverte ou refusée uniquement')
     claim(db, row)
-    from .partner_uploads import lock_budget,verify_budget,scan
+    from .partner_uploads import lock_budget,verify_budget
     lock_budget(db,row.partner_id)
     original, disk, size, sha, mime = await store_upload(file)
     try:
-        verify_budget(db,row.partner_id,size);scan(STORAGE/disk)
+        verify_budget(db,row.partner_id,size)
         latest = db.scalar(select(PartnerSubmission).where(PartnerSubmission.request_id == rid).order_by(PartnerSubmission.number.desc()).limit(1))
         version = PartnerSubmission(request_id=rid, number=latest.number+1 if latest else 1,
             account_id=account.id, original_name=original, disk_name=disk, size=size, sha256=sha, content_type=mime)

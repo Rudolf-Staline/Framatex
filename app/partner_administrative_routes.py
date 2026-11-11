@@ -9,7 +9,7 @@ from .core import get_db
 from .main import store_upload,STORAGE,audit
 from .partner_routes import partner,staff,org_get
 from .partner_permissions import require
-from .partner_uploads import lock_budget,verify_budget,scan
+from .partner_uploads import lock_budget,verify_budget
 from .partner_phase2_models import PartnerAdministrativeDocument
 
 router=APIRouter(tags=['Pièces administratives partenaires'])
@@ -34,7 +34,7 @@ async def save(db,oid,actor,title,file):
     lock_budget(db,oid)
     name,disk,size,sha,mime=await store_upload(file)
     try:
-        verify_budget(db,oid,size);scan(STORAGE/disk)
+        verify_budget(db,oid,size)
         previous=db.scalar(select(PartnerAdministrativeDocument).where(PartnerAdministrativeDocument.partner_id==oid,PartnerAdministrativeDocument.title==title).order_by(PartnerAdministrativeDocument.number.desc()).limit(1))
         row=PartnerAdministrativeDocument(partner_id=oid,title=title,number=previous.number+1 if previous else 1,owner=actor,original_name=name,disk_name=disk,size=size,sha256=sha)
         db.add(row);db.flush();audit(db,None,'partner.admin_document.upload','partner',oid,{'version_id':row.id,'owner':actor,'sha256':sha})

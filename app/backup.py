@@ -82,6 +82,11 @@ def restore(archive: Path, destination: Path):
         with sqlite3.connect(stage/'framat.db') as db:
             if db.execute("SELECT name FROM sqlite_master WHERE name='partner_tokens'").fetchone():
                 db.execute('UPDATE partner_tokens SET consumed=1')
+            if db.execute("SELECT name FROM sqlite_master WHERE name='audit_events'").fetchone():
+                from uuid import uuid4
+                from datetime import datetime,timezone
+                db.execute("INSERT INTO audit_events(id,action,actor_id,target_type,target_id,detail,occurred_at) VALUES (?, 'session.restore', NULL, 'session', 'all', '{}', ?)",
+                           (str(uuid4()),datetime.now(timezone.utc).isoformat()))
         stage.rename(destination)
     return destination
 

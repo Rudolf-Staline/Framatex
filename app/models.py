@@ -1,7 +1,7 @@
 from __future__ import annotations
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Text, Boolean, ForeignKey, DateTime, Integer, UniqueConstraint
+from sqlalchemy import String, Text, Boolean, ForeignKey, DateTime, Integer, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .core import Base, utcnow
 
@@ -90,6 +90,7 @@ class DocumentVersion(Base):
 
 class AuditEvent(Base):
     __tablename__ = "audit_events"
+    __table_args__=(Index('ix_audit_action_target_time','action','target_id','occurred_at'),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     action: Mapped[str] = mapped_column(String(70))
     actor_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
