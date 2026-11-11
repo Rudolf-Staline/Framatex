@@ -40,3 +40,16 @@ def test_reopen_preserves_decisions_invalidates_approval_and_rechecks_version():
         assert third.json()['version_id']==v2 and third.json()['status']=='pending'
         overview=c.get(f'/api/launches/{lid}/approval-overview').json()['items'][0]
         assert overview['run']['id']==third.json()['id'] and len(overview['previous'])==2
+        # Two operators reopening the same terminal sequence cannot create two successors.
+        login(c,1)
+        assert c.post(f'/api/approval-runs/{third.json()["id"]}/decisions',json={'decision':'approved'},headers=H).status_code==200
+        login(c,0)
+        cookies=dict(c.cookies)
+        from concurrent.futures import ThreadPoolExecutor
+        def reopen(_):
+            with TestClient(app) as concurrent:
+                concurrent.cookies.update(cookies)
+                return concurrent.post(f'/api/approval-runs/{third.json()["id"]}/reopen',json=payload,headers=H).status_code
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            statuses=list(pool.map(reopen,range(2)))
+        assert sorted(statuses)==[201,409]

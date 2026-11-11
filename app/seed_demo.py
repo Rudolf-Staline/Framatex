@@ -31,7 +31,7 @@ def main():
                 folder=Folder(launch_id=launch.id, slug=slug, label=label)
                 db.add(folder);db.flush();folders[slug]=folder
             if i==1:
-                doc=Document(folder_id=folders['jaune'].id,title='Fiche d’emploi — échantillon',doc_type='Fiche d’emploi',created_by=user.id)
+                doc=Document(launch_id=launch.id,folder_id=folders['jaune'].id,title='Fiche d’emploi — échantillon',doc_type='Fiche d’emploi',created_by=user.id)
                 db.add(doc);db.flush()
                 for n,consumption in enumerate(['1,8','1,9'],start=1):
                     contents=f"DEMONSTRATION (donnees entierement fictives)\nConsommation tissu : {consumption} m par piece\n".encode()

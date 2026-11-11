@@ -220,6 +220,7 @@ def get_approval_overview(launch_id: str, user: User = Depends(get_current_user)
 @router.post('/api/documents/{doc_id}/approval-runs', status_code=201)
 def start_run(doc_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     doc = get_doc(db, doc_id)
+    db.execute(update(Document).where(Document.id==doc.id).values(title=Document.title));db.refresh(doc)
     must(user,'launch.read');must(user,'document.read',doc.folder.slug)
     if not (permitted(user,'document.write',doc.folder.slug) or permitted(user,'document.review',doc.folder.slug)):
         raise HTTPException(403, 'Autorisation insuffisante pour soumettre une pièce')

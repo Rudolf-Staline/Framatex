@@ -38,3 +38,23 @@ def test_synthetic_docx_pdf_image_protected_and_provenance(tmp_path):
     Image.new('RGB',(32,32),'white').save(path,format='PNG')
     result=read_document(path,'image.png');assert result['method'] in ('image_ocr','ocr_unavailable')
     assert result['method']=='image_ocr' or result['warnings']
+
+
+def test_private_storage_quota_and_concurrent_writer_lock(tmp_path,monkeypatch):
+    import fcntl,os
+    from app import main
+    private=tmp_path/'files';private.mkdir()
+    monkeypatch.setattr(main,'STORAGE',private);monkeypatch.setenv('FRAMATEX_STORAGE_QUOTA_BYTES','32')
+    with TestClient(app) as c:
+        lid=setup(c)
+        def upload(data):return c.post(f'/api/launches/{lid}/documents',data={'folder':'jaune','title':'Quota'},files={'file':('quota.txt',data,'text/plain')},headers=H)
+        for _ in range(2):assert upload(b'x'*16).status_code==201
+        assert upload(b'x').status_code==413
+        assert sum(p.stat().st_size for p in private.iterdir())==32
+        assert all(p.stat().st_mode&0o077==0 for p in private.iterdir())
+        fd=os.open(tmp_path/'.upload-budget.lock',os.O_RDWR)
+        try:
+            fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            assert upload(b'x').status_code==409
+        finally:fcntl.flock(fd,fcntl.LOCK_UN);os.close(fd)
+        assert len(list(private.iterdir()))==2

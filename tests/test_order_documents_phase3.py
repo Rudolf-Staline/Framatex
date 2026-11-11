@@ -175,3 +175,28 @@ def test_business_navigation_sources_and_api_validation():
         post(c,'/api/orders',{'client_id':cid,'reference':'CMD','unexpected':'value'},422)
         assert c.put(f'/api/orders/{oid}/completeness/context',json={'phase':'unknown'},headers=H).status_code==422
         assert c.put(f'/api/orders/{oid}/completeness/context',json={'profile_id':'x'*36,'phase':'preparation'},headers=H).status_code==422
+
+
+def test_full_versioned_migrator_on_copy_and_automatic_archive_restore(tmp_path):
+    import os,subprocess,sys
+    from app.backup import backup,restore,validate
+    source=legacy_fixture(tmp_path)
+    archive=backup(source,tmp_path/'before.zip');copy=restore(archive,tmp_path/'copy')
+    env={**os.environ,'FRAMATEX_DATA_DIR':str(copy),'FRAMATEX_SECRET_KEY':'phase3-migration-copy-test-'*3};env.pop('DATABASE_URL',None)
+    command=[sys.executable,'-m','app.migrate']
+    preflight=subprocess.run(command+['preflight'],env=env,text=True,capture_output=True,timeout=30)
+    assert preflight.returncode==0,preflight.stderr
+    assert 'l2' in preflight.stdout and '"incompatible_links": []' in preflight.stdout
+    for _ in range(2):
+        run=subprocess.run(command+['upgrade'],env=env,text=True,capture_output=True,timeout=30)
+        assert run.returncode==0,run.stderr
+    validate(copy/'framat.db',copy/'files')
+    snapshots=list(copy.glob('framat.db.phase3-*.zip'));assert len(snapshots)==1
+    rescue=restore(snapshots[0],tmp_path/'rescued')
+    with sqlite3.connect(rescue/'framat.db') as db:
+        assert db.execute("SELECT folder_id FROM documents WHERE id='d1'").fetchone()[0]=='f1'
+    with sqlite3.connect(copy/'framat.db') as db:
+        from app.migrate import REVISIONS
+        assert db.execute('SELECT COUNT(*) FROM schema_migrations').fetchone()[0]==len(REVISIONS)
+        assert db.execute('SELECT cycle FROM approval_runs').fetchone()[0]==1
+        assert not db.execute('PRAGMA foreign_key_check').fetchall()

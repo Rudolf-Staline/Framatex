@@ -24,8 +24,8 @@ def search(q:str=Query('',max_length=200),order_ref:str=Query('',max_length=100)
            client:str=Query('',max_length=150),supplier:str=Query('',max_length=150),doc_type:str=Query('',max_length=100),
            folder:Literal['jaune','rose','bleu','vert']|None=None,author:str=Query('',max_length=120),
            status:Literal['approved','rejected','changes_requested','to_review']|None=None,
-           after:datetime|None=None,before:datetime|None=None,version:int|None=Query(None,ge=1),
-           sort:Literal['newest','oldest','title']='newest',offset:int=Query(0,ge=0),limit:int=Query(25,ge=1,le=100),
+           after:datetime|None=None,before:datetime|None=None,version:int|None=Query(None,ge=1,le=1000000),
+           sort:Literal['newest','oldest','title']='newest',offset:int=Query(0,ge=0,le=1000000000),limit:int=Query(25,ge=1,le=100),
            user=Depends(get_current_user),db:Session=Depends(get_db)):
     must(user,'launch.read')
     folders=[f for f in ('jaune','rose','bleu','vert') if permitted(user,'document.read',f)]

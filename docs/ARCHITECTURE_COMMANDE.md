@@ -17,3 +17,9 @@ Les lancements non rattachés restent dans un espace historique isolé. Aucune c
 Les droits de rubrique s'appliquent indépendamment des droits de commande. Pour une commande avec lancements, tous les droits historiques de lancement doivent être satisfaits ; un lancement restreint ne devient pas public par rattachement. Une commande sans lancement est accessible à son créateur, aux membres explicitement enregistrés et aux administrateurs. Les portails externes continuent de n'exposer que les publications et demandes expressément autorisées, jamais le dossier interne.
 
 Un verrou d'écriture sur la commande et les contraintes uniques empêchent les créations concurrentes. Les triggers de migration refusent les dépôts dans une ancienne rubrique convertie et les couples lancement/commande incompatibles.
+
+## Intégration métier
+
+Les contrôles de cohérence, matière, sources, réception, complétude et partage interrogent les rubriques canoniques. Les dépôts depuis un lancement ou un email enregistrent explicitement leur provenance. Le QR de commande pointe vers `/#/order/{id}` et exige une connexion ; les QR historiques de lancement restent compatibles. Les notifications de documents sans lancement transportent un `order_id` et rouvrent le véritable dossier.
+
+`OrderCompleteness` porte le profil, la phase et le type de commande. Le contrôle couvre toutes les pièces canoniques, y compris celles sans lancement. Les profils et circuits par type restent configurables dans l'administration. Les contextes historiques de lancement restent lisibles pour compatibilité ; ils ne possèdent plus les documents. Les règles par commande ne sont pas déclarées validées métier sans Framatex.

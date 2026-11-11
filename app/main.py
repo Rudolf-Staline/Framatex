@@ -13,9 +13,10 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
@@ -58,6 +59,8 @@ app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
 @app.middleware("http")
 async def request_header_guard(request: Request, call_next):
+    if request.url.path.startswith("/api/") and len(request.url.path)>512:
+        return JSONResponse({"detail":"Identifiant ou chemin trop long"},status_code=422)
     if request.url.path.startswith("/api/") and request.method in {"POST", "PUT", "PATCH", "DELETE"}:
         if request.headers.get("X-Framatex-Request") != "1":
             return Response("En-tête de protection manquant", status_code=403)
@@ -226,7 +229,7 @@ def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_
             "recent": [launch_out(l) for l in sorted(launches, key=lambda l: l.created_at, reverse=True)[:5]]}
 
 @app.get("/api/launches")
-def launches(q: str = "", user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def launches(q: str = Query("",max_length=200), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.read")
     from .access import visible
     rows = visible(db, user, db.scalars(select(Launch).order_by(Launch.created_at.desc())).all())
@@ -339,19 +342,23 @@ async def store_upload(file: UploadFile):
     sha = hashlib.sha256()
     total = 0
     try:
-        with os.fdopen(os.open(target,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),"wb") as out:
-            while chunk := await file.read(1024 * 1024):
-                total += len(chunk)
-                if total > MAX_UPLOAD:
-                    raise HTTPException(413, "Fichier trop volumineux (20 Mo maximum)")
-                sha.update(chunk)
-                out.write(chunk)
-        if total == 0:
-            raise HTTPException(422, "Fichier vide")
-        verify_file(target, suffix)
-        from .partner_uploads import scan
-        scan(target)
-        return original_name, disk_name, total, sha.hexdigest(), MIMES[suffix]
+        from .storage_budget import upload_budget
+        with upload_budget(STORAGE) as remaining:
+            with os.fdopen(os.open(target,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),"wb") as out:
+                while chunk := await file.read(1024 * 1024):
+                    total += len(chunk)
+                    if total > remaining:
+                        raise HTTPException(413,'Quota du stockage privé dépassé')
+                    if total > MAX_UPLOAD:
+                        raise HTTPException(413, "Fichier trop volumineux (20 Mo maximum)")
+                    sha.update(chunk)
+                    out.write(chunk)
+            if total == 0:
+                raise HTTPException(422, "Fichier vide")
+            await run_in_threadpool(verify_file,target,suffix)
+            from .partner_uploads import scan
+            await run_in_threadpool(scan,target)
+            return original_name, disk_name, total, sha.hexdigest(), MIMES[suffix]
     except Exception:
         target.unlink(missing_ok=True)
         raise
@@ -391,10 +398,10 @@ async def upload_document(launch_id: str, folder: str = Form(...), title: str = 
 async def new_version(doc_id: str, file: UploadFile = File(...), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     d = get_doc(db, doc_id)
     must(user, "document.write", d.folder.slug)
-    db.execute(update(Document).where(Document.id==d.id).values(title=Document.title))
-    db.refresh(d)
     original, disk_name, size, sha, mime = await store_upload(file)
     try:
+        db.execute(update(Document).where(Document.id==d.id).values(title=Document.title))
+        db.refresh(d);db.expire(d,["versions"])
         next_number = max((v.number for v in d.versions), default=0) + 1
         version = DocumentVersion(document_id=d.id, number=next_number, original_name=original, disk_name=disk_name, size=size, sha256=sha, content_type=mime, uploaded_by=user.id)
         d.versions.append(version)
@@ -815,3 +822,13 @@ app.include_router(orli_resolution_router)
 
 from .business_directory_routes import router as business_directory_router
 app.include_router(business_directory_router)
+
+
+from sqlalchemy.exc import OperationalError
+@app.exception_handler(OperationalError)
+async def safe_database_errors(request,exception):
+    return JSONResponse(status_code=503,content={'detail':'Stockage temporairement indisponible ou occupé. Actualisez avant de réessayer.'})
+
+@app.exception_handler(IntegrityError)
+async def safe_integrity_errors(request,exception):
+    return JSONResponse(status_code=409,content={'detail':'Une opération concurrente ou une relation incompatible empêche cette modification. Actualisez les données.'})

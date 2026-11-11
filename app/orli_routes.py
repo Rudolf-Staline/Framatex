@@ -5,6 +5,7 @@ N'écrit jamais dans ORLI ; ne crée pas de lancement automatiquement.
 from __future__ import annotations
 import json
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -57,9 +58,9 @@ async def import_export(file: UploadFile=File(...), mapping: str | None=Form(Non
     from .partner_uploads import scan
     if original.rsplit('.',1)[-1].lower() not in ('csv','xlsx'):raise HTTPException(422,'Export CSV ou XLSX attendu')
     with tempfile.NamedTemporaryFile(dir=DATA_DIR,prefix='.orli-') as temporary:
-        temporary.write(data);temporary.flush();scan(Path(temporary.name))
+        temporary.write(data);temporary.flush();await run_in_threadpool(scan,Path(temporary.name))
         try:
-            result=subprocess.run([sys.executable,'-m','app.orli_worker'],input=json.dumps({'path':temporary.name,'filename':original,'mapping':normalized_map}),capture_output=True,text=True,timeout=12,check=False)
+            result=await run_in_threadpool(subprocess.run,[sys.executable,'-m','app.orli_worker'],input=json.dumps({'path':temporary.name,'filename':original,'mapping':normalized_map}),capture_output=True,text=True,timeout=12,check=False)
             decoded=json.loads(result.stdout) if result.returncode==0 else {}
         except (OSError,ValueError,subprocess.TimeoutExpired):
             raise HTTPException(422,'Lecture ORLI interrompue dans les limites autorisées')
