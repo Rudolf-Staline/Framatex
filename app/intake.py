@@ -10,6 +10,7 @@ from pathlib import Path
 MAX_TEXT = 16000
 MAX_PAGES = 3
 MAX_IMAGE_PIXELS = 12_000_000
+MAX_INPUT_BYTES = 20 * 1024 * 1024
 
 KINDS = (
     ("Facture", "vert", ("facture", "invoice", "montant ht", "montant ttc", "total ttc")),
@@ -53,9 +54,11 @@ def _read_pdf(path: Path) -> tuple[str, str, list[str]]:
         from PIL import Image
         doc = fitz.open(str(path))
         chunks = []
-        for page in list(doc)[:MAX_PAGES]:
+        for page in doc.pages(0,min(len(doc),MAX_PAGES)):
             # Rendu limité (~1,3 Mpx pour un A4) pour contenir la consommation mémoire.
-            pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5), alpha=False)
+            area=max(1,page.rect.width*page.rect.height)
+            scale=min(1.5,(2_000_000/area)**0.5)
+            pix = page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
             im = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
             chunks.append(pytesseract.image_to_string(im, lang="fra+eng", config="--psm 3", timeout=12))
         doc.close()
@@ -65,7 +68,7 @@ def _read_pdf(path: Path) -> tuple[str, str, list[str]]:
         return "", "ocr_unavailable", ["OCR PDF indisponible : installer Tesseract et ses langues fra/eng, ainsi que PyMuPDF"]
 
 
-def read_document(path: Path, filename: str) -> dict:
+def _read_document(path: Path, filename: str) -> dict:
     suffix = Path(filename).suffix.lower()
     warnings = []
     text, method = "", "unsupported"
@@ -107,17 +110,44 @@ def read_document(path: Path, filename: str) -> dict:
     elif suffix == ".xlsx":
         try:
             from openpyxl import load_workbook
-            wb=load_workbook(path,read_only=True,data_only=True)
+            stream=path.open('rb')
+            wb=load_workbook(stream,read_only=True,data_only=True)
             lines=[]
             for sheet in wb.worksheets[:3]:
                 for row in sheet.iter_rows(max_row=min(sheet.max_row,120),max_col=min(sheet.max_column,16),values_only=True):
                     lines.append(" ".join(str(x) for x in row if x is not None))
             wb.close()
+            stream.close()
             text="\n".join(lines)[:MAX_TEXT]
             method="xlsx_values"
+            warnings.append('Lecture limitée aux 3 premières feuilles, 120 lignes et 16 colonnes ; valeurs mises en cache, formules non calculées')
         except Exception:
             warnings.append("Lecture XLSX impossible")
+    if len(text)>=MAX_TEXT:warnings.append(f'Lecture partielle : texte limité à {MAX_TEXT} caractères')
     return {"text":text, "method":method, "warnings":warnings}
+
+
+from threading import BoundedSemaphore
+_READERS=BoundedSemaphore(2)
+
+def read_document(path: Path, filename: str) -> dict:
+    """Isolate untrusted parsers with memory, CPU, input and wall-clock limits."""
+    import json,os,signal,subprocess,sys
+    def limited(message):return {'text':'','method':'limited','warnings':[message]}
+    if not path.is_file() or path.stat().st_size>MAX_INPUT_BYTES:return limited('Fichier absent ou limite de 20 Mo dépassée')
+    if not _READERS.acquire(blocking=False):return limited('Lectures simultanées en cours ; réessayez plus tard')
+    try:
+        proc=subprocess.Popen([sys.executable,'-m','app.intake_worker'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,
+            text=True,start_new_session=True,cwd=Path(__file__).resolve().parents[1],env={**os.environ,'OPENBLAS_NUM_THREADS':'1','OMP_NUM_THREADS':'1'})
+        try:output,_=proc.communicate(json.dumps({'path':str(path.resolve()),'filename':filename}),timeout=35)
+        except subprocess.TimeoutExpired:
+            os.killpg(proc.pid,signal.SIGKILL);proc.communicate();return limited('Temps maximal de lecture atteint ; vérification manuelle nécessaire')
+        if proc.returncode!=0:return limited('Lecture interrompue par une limite de ressources ou un format illisible')
+        result=json.loads(output)
+        if not isinstance(result,dict) or len(result.get('text',''))>MAX_TEXT:return limited('Résultat de lecture invalide')
+        return result
+    except (OSError,ValueError):return limited('Service local de lecture indisponible')
+    finally:_READERS.release()
 
 
 def classify_document(filename: str, content: str) -> dict:

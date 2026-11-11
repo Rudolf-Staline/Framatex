@@ -11,8 +11,7 @@ from sqlalchemy.orm import Session
 from .core import get_current_user, get_db, utcnow
 from .models import Document, DocumentVersion, Folder, User
 from .quality_models import DocumentDatum, CrossDocumentRule, QualityDecision, ExcelInspection
-from .quality import comparison, analyze_workbook
-from .workflow import VALUE_FIELDS
+from .quality import comparison, analyze_workbook, QUALITY_FIELDS, TEXT_FIELDS
 from .main import must, permitted, admin_only, get_doc, get_launch, audit, STORAGE, SLUGS
 
 router=APIRouter()
@@ -31,7 +30,7 @@ class RuleIn(BaseModel):
     right_doc_type: str = Field(min_length=2,max_length=100)
     left_folder: str
     right_folder: str
-    tolerance: str = '0'
+    tolerance: str = Field(default='0',max_length=50)
 
 
 class QualityDecisionIn(BaseModel):
@@ -45,9 +44,17 @@ def normalized_decimal(raw:str, *, tolerance=False):
         v=Decimal(raw.strip().replace(',','.'))
     except (InvalidOperation,ValueError):
         raise HTTPException(422,'Nombre décimal incorrect')
-    if not v.is_finite() or abs(v)>Decimal('1e15') or (tolerance and v<0):
+    if not v.is_finite() or v.as_tuple().exponent < -12 or v.as_tuple().exponent > 15 or v.copy_abs()>Decimal('1e15') or (tolerance and v<0):
         raise HTTPException(422,'Valeur numérique non autorisée')
     return format(v,'f')
+
+
+def normalized_datum(field,value,unit):
+    if not value.strip() or len(value)>50 or not unit.strip():raise HTTPException(422,'Valeur (50 caractères maximum) et unité requises')
+    if field in TEXT_FIELDS:
+        if unit!='référence':raise HTTPException(422,'Une référence doit utiliser l’unité « référence »')
+        return value.strip()
+    return normalized_decimal(value)
 
 
 def version_doc(db,version_id):
@@ -66,7 +73,7 @@ def rule_out(r):
 @router.get('/api/quality/fields')
 def fields(user:User=Depends(get_current_user)):
     must(user,'launch.read')
-    return [{'key':k,'label':label,'suggested_unit':unit} for k,(label,unit) in VALUE_FIELDS.items()]
+    return [{'key':k,'label':label,'suggested_unit':unit,'type':'text' if k in TEXT_FIELDS else 'decimal'} for k,(label,unit) in QUALITY_FIELDS.items()]
 
 
 @router.post('/api/document-versions/{version_id}/data',status_code=201)
@@ -75,13 +82,13 @@ def save_datum(version_id:str,payload:DatumIn,user:User=Depends(get_current_user
     must(user,'launch.read')
     must(user,'document.read',doc.folder.slug)
     must(user,'document.write',doc.folder.slug)
-    if payload.field_key not in VALUE_FIELDS: raise HTTPException(422,'Champ métier inconnu')
+    if payload.field_key not in QUALITY_FIELDS: raise HTTPException(422,'Champ métier inconnu')
     if version.number != max(v.number for v in doc.versions):
         raise HTTPException(409,'La valeur doit être saisie sur la version courante')
     if db.scalar(select(DocumentDatum).where(DocumentDatum.document_version_id==version.id,
                                            DocumentDatum.field_key==payload.field_key)):
         raise HTTPException(409,'Valeur déjà consignée : utiliser une nouvelle version documentaire')
-    num=normalized_decimal(payload.value)
+    num=normalized_datum(payload.field_key,payload.value,payload.unit)
     item=DocumentDatum(document_version_id=version.id, field_key=payload.field_key,
                        value_text=num,unit=payload.unit.strip(),recorded_by=user.id)
     db.add(item);db.flush()
@@ -141,10 +148,12 @@ def get_rules(user:User=Depends(get_current_user),db:Session=Depends(get_db)):
 @router.post('/api/admin/quality-rules',status_code=201)
 def add_rule(payload:RuleIn,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
     admin_only(user)
-    if payload.field_key not in VALUE_FIELDS or payload.left_folder not in SLUGS or payload.right_folder not in SLUGS:
+    if payload.field_key not in QUALITY_FIELDS or payload.left_folder not in SLUGS or payload.right_folder not in SLUGS:
         raise HTTPException(422,'Configuration de règle incorrecte')
     if payload.left_doc_type.strip()==payload.right_doc_type.strip() and payload.left_folder==payload.right_folder:
         raise HTTPException(422,'Deux sources documentaires distinctes sont nécessaires')
+    if payload.field_key in TEXT_FIELDS and Decimal(normalized_decimal(payload.tolerance,tolerance=True))!=0:
+        raise HTTPException(422,'Les références utilisent une comparaison exacte, sans tolérance numérique')
     item=CrossDocumentRule(name=payload.name.strip(),field_key=payload.field_key,
         left_doc_type=payload.left_doc_type.strip(),right_doc_type=payload.right_doc_type.strip(),
         left_folder=payload.left_folder,right_folder=payload.right_folder,

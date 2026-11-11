@@ -12,6 +12,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from .models import Document, DocumentVersion, Folder
 from .quality_models import DocumentDatum, CrossDocumentRule, QualityDecision
+from .workflow import VALUE_FIELDS
+
+TEXT_FIELDS={'reference_matiere','reference_lancement','reference_commande'}
+QUALITY_FIELDS={**VALUE_FIELDS,
+    'reference_matiere':('Référence matière','référence'),
+    'reference_lancement':('Référence lancement','référence'),
+    'reference_commande':('Référence commande','référence'),
+    'quantite_livree':('Quantité indiquée livrée','m'),
+    'quantite_recue':('Quantité indiquée réceptionnée','m'),
+    'montant_total':('Montant total du document','MAD')}
 
 MAX_XLSX_BYTES = 5 * 1024 * 1024
 MAX_CELLS = 40000
@@ -49,6 +59,9 @@ def comparison(db: Session, launch_id: str, rule: CrossDocumentRule):
             status = 'unavailable'; reason = 'Valeur non relevée sur une ou plusieurs versions courantes'
         elif pair[0]['unit'] != pair[1]['unit']:
             status = 'unit_mismatch'; reason = 'Unités incompatibles : conversion manuelle requise'
+        elif rule.field_key in TEXT_FIELDS:
+            status = 'consistent' if pair[0]['value']==pair[1]['value'] else 'difference'
+            reason = 'Références identiques' if status=='consistent' else 'Références différentes : contrôle requis'
         else:
             delta = abs(Decimal(pair[0]['value'])-Decimal(pair[1]['value']))
             status = 'consistent' if delta <= Decimal(rule.tolerance_text) else 'difference'

@@ -109,13 +109,13 @@ def reopen(rid:str,payload:ReasonInput,user=Depends(staff),db:Session=Depends(ge
 
 class ConfirmedDatumInput(BaseModel):
     confirmed_id: str
-    field_key: Literal['quantite_lancement','besoin_matiere_total']
+    field_key: Literal['quantite_lancement','besoin_matiere_total','quantite_livree','quantite_recue','reference_matiere','reference_lancement','montant_total']
 
 @router.post('/api/document-versions/{version_id}/data-from-confirmed',status_code=201)
 def use_confirmed(version_id:str,payload:ConfirmedDatumInput,user=Depends(get_current_user),db:Session=Depends(get_db)):
     from .intake_models import ConfirmedField
     from .quality_models import DocumentDatum
-    from .quality_routes import normalized_decimal
+    from .quality_routes import normalized_datum
     from .partner_phase2_models import ConfirmedDatumSource
     version=db.get(DocumentVersion,version_id)
     if not version:raise HTTPException(404,'Version introuvable')
@@ -123,12 +123,17 @@ def use_confirmed(version_id:str,payload:ConfirmedDatumInput,user=Depends(get_cu
     must(user,'document.read',version.document.folder.slug);must(user,'document.write',version.document.folder.slug)
     if not business_available(db,version_id) or version.number!=max(v.number for v in version.document.versions):raise HTTPException(409,'Version retirée ou obsolète')
     source=db.get(ConfirmedField,payload.confirmed_id)
-    expected={'quantite_lancement':'pièce','besoin_matiere_total':'m'}[payload.field_key]
-    if not source or source.document_version_id!=version_id or source.field_key!='quantite' or source.unit!=expected:
-        raise HTTPException(422,'Quantité confirmée de cette version avec unité compatible requise')
+    mapping={'quantite_lancement':('quantite',{'pièce'}),'besoin_matiere_total':('quantite',{'m'}),
+        'quantite_livree':('quantite',{'m','pièce','kg'}),'quantite_recue':('quantite',{'m','pièce','kg'}),
+        'reference_matiere':('reference_matiere',{'','référence'}),'reference_lancement':('numero_lancement',{'','référence'}),
+        'montant_total':('montant',{'MAD','EUR'})}
+    source_key,units=mapping[payload.field_key]
+    if not source or source.document_version_id!=version_id or source.field_key!=source_key or source.unit not in units:
+        raise HTTPException(422,'Champ confirmé de cette version avec unité compatible requis')
+    unit='référence' if payload.field_key.startswith('reference_') else source.unit
     if db.scalar(select(DocumentDatum).where(DocumentDatum.document_version_id==version_id,DocumentDatum.field_key==payload.field_key)):
         raise HTTPException(409,'Donnée déjà renseignée ; aucune valeur écrasée')
-    row=DocumentDatum(document_version_id=version_id,field_key=payload.field_key,value_text=normalized_decimal(source.value),unit=source.unit,recorded_by=source.confirmed_by,recorded_at=source.confirmed_at)
+    row=DocumentDatum(document_version_id=version_id,field_key=payload.field_key,value_text=normalized_datum(payload.field_key,source.value,unit),unit=unit,recorded_by=source.confirmed_by,recorded_at=source.confirmed_at)
     db.add(row);db.flush();db.add(ConfirmedDatumSource(datum_id=row.id,confirmed_id=source.id))
     audit(db,user,'quality.confirmed.use','document_version',version_id,{'datum_id':row.id,'confirmed_id':source.id})
     db.commit();return {'id':row.id,'confirmed_id':source.id,'value':row.value_text,'unit':row.unit}

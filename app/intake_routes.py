@@ -43,6 +43,8 @@ async def intake_preview(launch_id:str,file:UploadFile=File(...),user:User=Depen
                 dest.write(chunk)
         if not total:raise HTTPException(422,'Fichier vide')
         verify_file(path,suffix)
+        from .partner_uploads import scan
+        scan(path)
         result=preview(path,name)
         # Ne jamais révéler une rubrique suggérée que le collaborateur n'a pas le droit d'utiliser.
         result['classification']['suggestions']=[x for x in result['classification']['suggestions'] if permitted(user,'document.write',x['folder'])]
