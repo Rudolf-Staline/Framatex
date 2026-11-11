@@ -35,7 +35,8 @@ def main():
                     post('/api/auth/login',{'email':'admin@example.local','password':PWD})
                     lid=post('/api/launches',{'name':'Commande navigateur','client_name':'Client fictif'})['id']
                     org=post('/api/partners/organizations',{'name':'Fournisseur navigateur','kind':'supplier'})['id']
-                    invitation=post(f'/api/partners/organizations/{org}/invitations',{'email':'supplier@example.local'})
+                    supplier_role=post(f'/api/partners/organizations/{org}/roles',{'name':'Fournisseur actif','permissions':['read','document.write','message.write','delivery.write']})
+                    invitation=post(f'/api/partners/organizations/{org}/invitations',{'email':'supplier@example.local','role_id':supplier_role['id']})
                     post('/api/partners/requests',{'partner_id':org,'launch_id':lid,'order_ref':'CMD-BROWSER','title':'Certificat navigateur','doc_type':'Certificat'})
                     with sync_playwright() as p:
                         browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
@@ -62,6 +63,25 @@ def main():
                         review.get_by_role('button',name='Clôturer',exact=True).click();review.locator('#detail > p').filter(has_text='Clôturé').wait_for()
                         page.get_by_role('button',name='Actualiser',exact=True).click();page.get_by_role('button',name='Ouvrir',exact=True).click()
                         page.locator('#detail > p').filter(has_text='Clôturé').wait_for()
+                        page.get_by_label('Intitulé administratif').fill('Attestation navigateur')
+                        page.get_by_label('Fichier administratif').set_input_files({'name':'attestation.txt','mimeType':'text/plain','buffer':b'Attestation fictive'})
+                        page.get_by_role('button',name='Déposer la pièce administrative').click()
+                        page.get_by_role('link',name='Télécharger attestation.txt').wait_for()
+                        review.get_by_role('button',name='Actualiser',exact=True).click()
+                        review.get_by_text('Fiche administrative, historique et rôles',exact=True).click()
+                        review.get_by_label('Motif de vérification administrative').fill('Attestation contrôlée')
+                        review.get_by_role('button',name='Valider la pièce administrative').click()
+                        expect(review.get_by_text('Attestation navigateur · v1 · Approuvé',exact=False)).to_have_count(1)
+                        search=admin.new_page();search.goto(base+'/search')
+                        search.get_by_label('Fournisseur d’origine').fill('Fournisseur navigateur')
+                        search.get_by_role('button',name='Rechercher',exact=True).click()
+                        expect(search.locator('#search-status')).to_have_text('1 version(s) autorisée(s) · Page 1')
+                        with search.expect_download() as searched:search.get_by_role('link',name='Télécharger',exact=True).click()
+                        assert Path(searched.value.path()).read_bytes()==b'Certificat fictif signe version 2'
+                        search.get_by_label('Fournisseur d’origine').fill('Organisation inconnue')
+                        search.get_by_role('button',name='Rechercher',exact=True).click()
+                        expect(search.locator('#search-status')).to_have_text('0 version(s) autorisée(s) · Page 1')
+                        search.close()
                         page.set_viewport_size({'width':390,'height':844})
                         assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
                         assert not errors,errors
@@ -69,7 +89,8 @@ def main():
                         page.screenshot(path=str(screenshot),full_page=True)
                         # Client journey: explicit order grant, publication, clarification and withdrawal.
                         client_org=post('/api/partners/organizations',{'name':'Client fictif','kind':'client'})['id']
-                        client_invite=post(f'/api/partners/organizations/{client_org}/invitations',{'email':'client@example.local'})
+                        client_role=post(f'/api/partners/organizations/{client_org}/roles',{'name':'Contact client','permissions':['read','message.write']})
+                        client_invite=post(f'/api/partners/organizations/{client_org}/invitations',{'email':'client@example.local','role_id':client_role['id']})
                         order=post('/api/partners/client-orders',{'partner_id':client_org,'launch_id':lid,'reference':'Commande client navigateur','status':'Confirmée'})
                         doc_response=api.post(f'/api/launches/{lid}/documents',data={'folder':'jaune','title':'Fiche client','doc_type':'Fiche technique'},files={'file':('client.txt',b'Publication client fictive','text/plain')})
                         doc_response.raise_for_status();doc=doc_response.json()
@@ -102,6 +123,25 @@ def main():
                         cp.get_by_role('button',name='Actualiser',exact=True).click()
                         cp.get_by_role('heading',name='Clarification navigateur · closed',exact=True).wait_for()
                         expect(cp.get_by_role('link',name='Télécharger la version publiée')).to_have_count(0)
+                        review.get_by_role('button',name='Actualiser',exact=True).click()
+                        review.get_by_text('Référentiel commandes et lancements',exact=True).click()
+                        review.locator('#business-order select').select_option(client_org)
+                        review.locator('#business-order input[name=reference]').fill('CMD-BROWSER')
+                        review.get_by_role('button',name='Créer la commande',exact=True).click()
+                        review.get_by_role('button',name='Rattacher à cette commande').click()
+                        review.get_by_role('button',name='Consulter la synthèse commande').click()
+                        review.get_by_text('2 document(s), 1 demande(s) fournisseur',exact=False).wait_for()
+                        profile=post('/api/admin/completeness/profiles',{'name':'Navigateur','description':'Profil contrôlé'})
+                        rule=post(f'/api/admin/completeness/profiles/{profile["id"]}/rules',{'title':'Fiche publiée','folder':'jaune','document_type':'Fiche technique','due_phase':'preparation','requires_validation':True})
+                        review.get_by_role('button',name='Actualiser',exact=True).click()
+                        review.get_by_text('Conditions de complétude documentaire',exact=True).click()
+                        review.locator('#policy-rule').select_option(rule['id'])
+                        review.get_by_label('Type de commande requis').fill('Export')
+                        review.get_by_label('Pièce facultative').check()
+                        review.get_by_role('button',name='Enregistrer les conditions').click()
+                        expect(review.locator('#notice')).to_have_text('Opération confirmée.')
+                        policy=api.get('/api/admin/completeness/policies').json()[0]
+                        assert policy['order_type']=='Export' and policy['optional']
                         assert not errors,errors
                         browser.close()
                         print('PASS: supplier integration and client order/publication/download/conversation/attachment/closure/withdrawal, mobile layouts')

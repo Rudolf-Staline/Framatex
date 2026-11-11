@@ -3,11 +3,11 @@ from fastapi import HTTPException
 from .partner_phase2_models import PartnerProfile, PartnerRole, PartnerRoleAssignment
 
 PERMISSIONS={'read','document.write','message.write','delivery.write'}
-# Existing accounts retain their original contributor rights until explicitly assigned.
+# Unassigned accounts are readers. Migration 0015 preserves historical contributor rights.
 # Only Framatex administrators can create roles and assign them.
 def permissions(db,account):
     assignment=db.get(PartnerRoleAssignment,account.id)
-    if not assignment:return set(PERMISSIONS)
+    if not assignment:return {'read'}
     role=db.get(PartnerRole,assignment.role_id)
     if not role or role.partner_id!=account.partner_id:return set()
     return set(json.loads(role.permissions_json)) & PERMISSIONS

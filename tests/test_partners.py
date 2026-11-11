@@ -33,7 +33,8 @@ def organization(c, name, kind='supplier'):
     return post(c,'/api/partners/organizations',{'kind':kind,'name':name})['id']
 
 def activate(c, external, org, email):
-    invite=post(c,f'/api/partners/organizations/{org}/invitations',{'email':email})
+    role=post(c,f'/api/partners/organizations/{org}/roles',{'name':'Contributeur de recette','permissions':['read','document.write','message.write','delivery.write']})
+    invite=post(c,f'/api/partners/organizations/{org}/invitations',{'email':email,'role_id':role['id']})
     assert invite['email_status']=='not_sent'
     post(external,'/api/partner-auth/activate',{'token':invite['activation_token'],'password':PWD},200)
     post(external,'/api/partner-auth/activate',{'token':invite['activation_token'],'password':PWD},400)

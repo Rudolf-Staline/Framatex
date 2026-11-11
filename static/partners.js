@@ -29,22 +29,24 @@ async function refresh(){
  rights=who.permissions||[];
  $('identity').textContent=who.organization;$('auth').hidden=true;$('workspace').hidden=false;$('admin').hidden=!internal;$('detail').replaceChildren();
  if(internal){
-  const orgs=await api('/api/partners/organizations');$('organizations').replaceChildren();$('supplier-options').replaceChildren();$('order-supplier-options').replaceChildren();$('client-options').replaceChildren();$('order-client-options').replaceChildren();
+  const orgs=await api('/api/partners/organizations');$('organizations').replaceChildren();$('supplier-options').replaceChildren();$('order-supplier-options').replaceChildren();$('client-options').replaceChildren();$('order-client-options').replaceChildren();$('registry-client-options').replaceChildren();
   for(const o of orgs){const a=node('article');a.append(node('h4',`${o.name} · ${o.kind} · ${o.active?'Actif':'Suspendu'}`));
-   const email=node('input');email.type='email';email.placeholder='Email du contact';email.setAttribute('aria-label',`Email du contact ${o.name}`);a.append(email);
-   a.append(button('Créer / renouveler invitation',async()=>{const r=await api(`/api/partners/organizations/${o.id}/invitations`,'POST',{email:email.value});$('notice').textContent=`${r.instruction}\nCode (valable 24 h) : ${r.activation_token}`;}));
+   const email=node('input');email.type='email';email.placeholder='Email du contact';email.setAttribute('aria-label',`Email du contact ${o.name}`);a.append(email);const invitationRole=node('select');invitationRole.setAttribute('aria-label',`Rôle initial ${o.name}`);const defaultRole=node('option','Lecture seule / conserver le rôle existant');defaultRole.value='';invitationRole.append(defaultRole);for(const role of await api(`/api/partners/organizations/${o.id}/roles`)){const option=node('option',role.name);option.value=role.id;invitationRole.append(option);}a.append(invitationRole);
+   a.append(button('Créer / renouveler invitation',async()=>{const r=await api(`/api/partners/organizations/${o.id}/invitations`,'POST',{email:email.value,role_id:invitationRole.value||null});$('notice').textContent=`${r.instruction}\nCode (valable 24 h) : ${r.activation_token}`;}));
    a.append(button(o.active?'Suspendre':'Réactiver',async()=>{if(!confirm('Confirmer le changement d’accès ?'))return;await api(`/api/partners/organizations/${o.id}`,'PATCH',{active:!o.active});await refresh();}));
    const accounts=await api(`/api/partners/organizations/${o.id}/accounts`);
    for(const acc of accounts){const line=node('p',`${acc.email} · ${acc.active?'Actif':'Révoqué'} `);line.append(button(acc.active?'Révoquer':'Réactiver',async()=>{if(!confirm('Confirmer la révocation des sessions et le changement de statut ?'))return;await api(`/api/partners/accounts/${acc.id}`,'PATCH',{active:!acc.active});await refresh();}));a.append(line);}
    await renderProfile(o,a);
-   $('organizations').append(a);if(o.active){const opt=node('option',o.name);opt.value=o.id;$(o.kind==='supplier'?'supplier-options':'client-options').append(opt);if(o.kind==='supplier')$('order-supplier-options').append(opt.cloneNode(true));else $('order-client-options').append(opt.cloneNode(true));}
+   $('organizations').append(a);if(o.active){const opt=node('option',o.name);opt.value=o.id;$(o.kind==='supplier'?'supplier-options':'client-options').append(opt);if(o.kind==='supplier')$('order-supplier-options').append(opt.cloneNode(true));else {$('order-client-options').append(opt.cloneNode(true));$('registry-client-options').append(opt.cloneNode(true));}}
   }
  }
  $('mail-state').replaceChildren();
  if(internal){const queue=await api('/api/partners/mail');$('mail-state').append(node('h4','File email (accepté ≠ livré ou lu)'));for(const m of queue)$('mail-state').append(node('p',`${m.status} · Tentatives : ${m.attempts} · ${m.last_error}`));}
  else {const pref=await api('/api/partner/mail-preference');$('mail-state').append(node('p',`Emails : ${pref.enabled?'préférence activée':'préférence désactivée'} · Transport ${pref.transport_configured?'activé par administrateur':'désactivé'}`),button(pref.enabled?'Désactiver les emails':'Activer la préférence email',async()=>{await api('/api/partner/mail-preference','PUT',{active:!pref.enabled});await refresh();}));}
- if(internal){const options=await api('/api/partners/launch-options');for(const select of document.querySelectorAll('.launch-options')){select.replaceChildren();for(const row of options){const option=node('option',row.label);option.value=row.id;select.append(option);}}const pubs=await api('/api/partners/publication-options');$('publication-options').replaceChildren();for(const row of pubs){const option=node('option',row.label);option.value=row.id;$('publication-options').append(option);}}
+ if(internal){await renderPolicies();const options=await api('/api/partners/launch-options');for(const select of document.querySelectorAll('.launch-options')){select.replaceChildren();for(const row of options){const option=node('option',row.label);option.value=row.id;select.append(option);}}const pubs=await api('/api/partners/publication-options');$('publication-options').replaceChildren();for(const row of pubs){const option=node('option',row.label);option.value=row.id;$('publication-options').append(option);}}
+ if(internal)await renderOrderRegistry();
  await renderClientOrders();
+ $('administrative-files').replaceChildren();if(!internal)await renderAdministrative($('administrative-files'));
  await renderDeliveries();
  const params=new URLSearchParams({...requestFilters,offset:String(requestOffset),limit:'20'});
  const rows=await api(`${internal?'/api/partners/requests':'/api/partner/requests'}?${params}`);$('request-prev').disabled=requestOffset===0;$('request-next').disabled=rows.length<20;
@@ -99,7 +101,7 @@ async function renderProfile(org,container){
  for(const [permission,label] of [['document.write','Déposer des documents'],['message.write','Écrire des messages'],['delivery.write','Déclarer des livraisons']]){const l=node('label',label),input=node('input');input.type='checkbox';input.name=permission;l.append(input);roleForm.append(l);}
  roleForm.append(node('button','Créer ce rôle (lecture incluse)'));roleForm.onsubmit=e=>{e.preventDefault();run(async()=>{const values=Object.fromEntries(new FormData(roleForm));await api(`/api/partners/organizations/${org.id}/roles`,'POST',{name:values.name,permissions:['read',...Object.keys(values).filter(k=>k!=='name')]});await refresh();});};details.append(roleForm);
  for(const account of await api(`/api/partners/organizations/${org.id}/accounts`)){const label=node('label',`Rôle de ${account.email}`),select=node('select');const current=node('option','Choisir un rôle configuré');current.value='';select.append(current);for(const role of roles){const option=node('option',`${role.name} (${role.permissions.join(', ')})`);option.value=role.id;select.append(option);}label.append(select);details.append(label,button('Attribuer le rôle',async()=>{if(!select.value)throw new Error('Choisir un rôle');await api(`/api/partners/accounts/${account.id}/role`,'PUT',{role_id:select.value});$('notice').textContent='Rôle attribué. Les droits sont immédiatement appliqués.';}));}
- for(const event of data.history)details.append(node('p',`${event.date} · ${event.action} · ${JSON.stringify(event.detail)}`));container.append(details);
+ for(const event of data.history)details.append(node('p',`${event.date} · ${event.action} · ${JSON.stringify(event.detail)}`));await renderAdministrative(details,org.id);container.append(details);
 }
 
 form('client-order',async data=>{if(!data.confirmed_due)data.confirmed_due=null;await api('/api/partners/client-orders','POST',data);$('client-order').reset();await renderClientOrders();});
@@ -114,6 +116,7 @@ async function renderClientOrders(){
  const base=internal?'/api/partners':'/api/partner';const rows=await api(`${base}/client-orders`);$('client-orders').replaceChildren();if(!rows.length)return;$('client-orders').append(node('h3','Commandes client autorisées'));
  for(const order of rows){const card=node('article');card.append(node('h4',order.reference),node('p',`${order.status} · Échéance confirmée : ${order.confirmed_due||'non renseignée'} · Avancement chiffré non renseigné`));
  if(internal){const label=node('label','Mettre à jour le statut'),status=node('select');for(const value of ['Non renseigné','Confirmée','En préparation','En fabrication','Expédiée','Terminée']){const option=node('option',value);option.value=value;option.selected=value===order.status;status.append(option);}label.append(status);card.append(label,button('Confirmer ce statut',async()=>{await api(`${base}/client-orders/${order.id}`,'PUT',{partner_id:order.partner_id,launch_id:order.launch_id,reference:order.reference,status:status.value,confirmed_due:order.confirmed_due,active:order.active});await renderClientOrders();}),button(order.active?'Retirer l’accès commande':'Rétablir l’accès commande',async()=>{if(!confirm('Confirmer le changement d’accès ?'))return;await api(`${base}/client-orders/${order.id}`,'PUT',{partner_id:order.partner_id,launch_id:order.launch_id,reference:order.reference,status:order.status,confirmed_due:order.confirmed_due,active:!order.active});await renderClientOrders();}));}
+ for(const event of await api(`${base}/client-orders/${order.id}/events`))card.append(node('p',`${event.created_at} · ${event.message}`));
  const threads=await api(`${base}/client-orders/${order.id}/threads`);
  for(const thread of threads){const panel=node('section');panel.append(node('h4',`${thread.title} · ${thread.status}`));for(const message of thread.messages)panel.append(node('p',`${message.created_at} · ${message.author} : ${message.message}`));
  if(thread.status!=='closed'){
@@ -129,3 +132,31 @@ async function renderClientOrders(){
 form('request-search',async data=>{requestFilters=data;requestOffset=0;await refresh();});
 $('request-prev').onclick=()=>run(async()=>{requestOffset=Math.max(0,requestOffset-20);await refresh();});
 $('request-next').onclick=()=>run(async()=>{requestOffset+=20;await refresh();});
+
+async function renderAdministrative(container,orgId){
+ const base=internal?'/api/partners':'/api/partner',listPath=orgId?`${base}/organizations/${orgId}/administrative-documents`:`${base}/administrative-documents`;
+ const rows=await api(listPath);const panel=node('section');panel.append(node('h3','Pièces administratives privées'));
+ for(const row of rows){const item=node('article');item.append(node('p',`${row.title} · v${row.number} · ${labels[row.status]||row.status} · ${row.reason}`));const link=node('a',`Télécharger ${row.original_name}`);link.href=`${base}/administrative-documents/${row.id}/download`;item.append(link);
+ if(internal&&row.status==='pending'&&!rows.some(other=>other.title===row.title&&other.number>row.number)){const reason=node('input');reason.setAttribute('aria-label','Motif de vérification administrative');item.append(reason);for(const status of ['approved','rejected'])item.append(button(status==='approved'?'Valider la pièce administrative':'Refuser la pièce administrative',async()=>{await api(`/api/partners/administrative-documents/${row.id}/review`,'POST',{status,reason:reason.value});await refresh();}));}panel.append(item);}
+ if(internal||rights.includes('document.write')){const form=node('form');for(const [name,label,type] of [['title','Intitulé administratif (même intitulé pour une nouvelle version)','text'],['file','Fichier administratif','file']]){const l=node('label',label),input=node('input');input.name=name;input.type=type;input.required=true;l.append(input);form.append(l);}form.append(node('button','Déposer la pièce administrative'));form.onsubmit=e=>{e.preventDefault();run(async()=>{await api(listPath,'POST',new FormData(form));await refresh();});};panel.append(form);}
+ container.append(panel);
+}
+
+async function renderPolicies(){
+ const policies=await api('/api/admin/completeness/policies');const select=$('policy-rule');select.replaceChildren();for(const row of policies){const option=node('option',row.label);option.value=row.rule_id;select.append(option);}
+ $('rule-policy').querySelector('button').disabled=!policies.length;
+ function load(){const row=policies.find(r=>r.rule_id===select.value);if(!row)return;for(const key of ['order_type','optional','days_after_launch','requires_client_publication']){const input=$('rule-policy').elements[key];if(input.type==='checkbox')input.checked=row[key];else input.value=row[key]??'';}}
+ select.onchange=load;load();
+}
+form('rule-policy',async data=>{await api(`/api/admin/completeness/rules/${data.rule_id}/policy`,'PUT',{order_type:data.order_type,optional:!!data.optional,days_after_launch:data.days_after_launch===''?null:Number(data.days_after_launch),requires_client_publication:!!data.requires_client_publication});});
+form('order-context',async data=>{await api(`/api/launches/${data.launch_id}/order-context`,'PUT',{order_type:data.order_type});});
+
+form('business-order',async data=>{await api('/api/orders','POST',data);$('business-order').reset();await renderOrderRegistry();});
+async function renderOrderRegistry(){
+ const rows=await api('/api/orders'),launches=await api('/api/partners/launch-options');$('business-orders').replaceChildren();
+ for(const order of rows){const card=node('article');card.append(node('h4',`${order.reference} · ${order.client_name}`));
+ for(const launch of order.launches){const line=node('p',`${launch.name} · ${launch.status} · ORLI ${launch.orli_ref||'non renseigné'}`),reason=node('input');reason.setAttribute('aria-label','Motif de retrait du rattachement');line.append(reason,button('Détacher ce lancement',async()=>{await api(`/api/orders/${order.id}/launches/${launch.id}`,'DELETE',{reason:reason.value});await renderOrderRegistry();}));card.append(line);}
+ const label=node('label','Lancement à rattacher'),select=node('select');for(const launch of launches){const option=node('option',launch.label);option.value=launch.id;select.append(option);}label.append(select);card.append(label,button('Rattacher à cette commande',async()=>{await api(`/api/orders/${order.id}/launches`,'POST',{launch_id:select.value});await renderOrderRegistry();}));
+ card.append(button('Consulter la synthèse commande',async()=>{const data=await api(`/api/orders/${order.id}`);const summary=node('section');summary.append(node('p',`${data.documents.length} document(s), ${data.supplier_requests.length} demande(s) fournisseur, ${data.internal_materials.length+data.supplier_materials.length} matière(s), ${data.publications.length} publication(s) enregistrée(s)`));for(const doc of data.documents){const latest=doc.versions.at(-1);if(latest){const line=node('p',''),link=node('a',`${doc.title} · ${doc.folder} · v${latest.number}`);link.href=`/api/documents/${doc.id}/versions/${latest.number}/download`;line.append(link);summary.append(line);}}for(const line of data.supplier_materials)summary.append(node('p',`${line.material_ref} · commandé ${line.ordered} ${line.unit} · réceptionné ${line.received} · restant ${line.remaining}`));for(const link of data.orli_links)summary.append(node('p',`Référence ORLI rapprochée : ${link.reference}`));card.append(summary);}));$('business-orders').append(card);
+ }
+}

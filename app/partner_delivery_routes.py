@@ -60,6 +60,8 @@ def output(db,row):
 def create_line(payload:LineInput,user=Depends(staff),db:Session=Depends(get_db)):
     org=org_get(db,payload.partner_id,'supplier')
     if not org.active or not db.get(Launch,payload.launch_id):raise HTTPException(422,'Fournisseur inactif ou lancement absent')
+    from .order_registry_routes import check_order_scope
+    check_order_scope(db,payload.launch_id,reference=payload.order_ref)
     row=PartnerOrderLine(**payload.model_dump(),created_by=user.id);db.add(row)
     try:db.flush()
     except IntegrityError:

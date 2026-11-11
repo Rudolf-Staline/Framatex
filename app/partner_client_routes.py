@@ -11,7 +11,7 @@ from .models import Launch
 from .main import audit
 from .partner_routes import staff, partner, org_get, MessageInput
 from .partner_permissions import require
-from .partner_phase2_models import PartnerClientOrder, PartnerThread, PartnerMessage
+from .partner_phase2_models import PartnerClientOrder, PartnerThread, PartnerMessage, PartnerClientOrderEvent
 from .sharing_routes import norm
 
 router=APIRouter(tags=['Commandes et clarifications client'])
@@ -57,10 +57,13 @@ def thread_out(db,row):
 def create_order(payload:OrderInput,user=Depends(staff),db:Session=Depends(get_db)):
     org=org_get(db,payload.partner_id,'client');launch=db.get(Launch,payload.launch_id)
     if not launch or not org.active or norm(launch.client_name)!=norm(org.name):raise HTTPException(409,'Client du lancement incompatible')
+    from .order_registry_routes import check_order_scope
+    check_order_scope(db,payload.launch_id,client_id=payload.partner_id,reference=payload.reference)
     row=PartnerClientOrder(**payload.model_dump());db.add(row)
     try:db.flush()
     except IntegrityError:
         db.rollback();raise HTTPException(409,'Commande déjà autorisée')
+    db.add(PartnerClientOrderEvent(order_id=row.id,actor_id=user.id,message=f'Commande autorisée : {row.reference} · {row.status}'))
     audit(db,user,'client.order.grant','partner_client_order',row.id,payload.model_dump(mode='json'));db.commit();return order_out(row)
 
 @router.put('/api/partners/client-orders/{oid}')
@@ -68,6 +71,7 @@ def update_order(oid:str,payload:OrderInput,user=Depends(staff),db:Session=Depen
     row=order_get(db,oid)
     if (row.partner_id,row.launch_id)!=(payload.partner_id,payload.launch_id):raise HTTPException(409,'Destinataire et lancement immuables')
     for k,v in payload.model_dump().items():setattr(row,k,v)
+    db.add(PartnerClientOrderEvent(order_id=row.id,actor_id=user.id,message=f'Statut confirmé : {row.status} · Échéance : {row.confirmed_due or "non renseignée"} · Accès : {row.active}'))
     audit(db,user,'client.order.update','partner_client_order',row.id,payload.model_dump(mode='json'));db.commit();return order_out(row)
 
 @router.get('/api/partners/client-orders')
@@ -133,3 +137,14 @@ def publication_options(user=Depends(staff),db:Session=Depends(get_db)):
         data=pub_out(db,p,db.get(Launch,p.launch_id))
         if data['effective']:result.append({'id':p.id,'label':f'{data["client_name"]} · {data["document_title"]} · v{data["version"]}'})
     return result
+
+
+@router.get('/api/partner/client-orders/{oid}/events')
+def client_events(oid:str,account=Depends(partner),db:Session=Depends(get_db)):
+    order_get(db,oid,account)
+    return [{'message':e.message,'created_at':e.created_at} for e in db.scalars(select(PartnerClientOrderEvent).where(PartnerClientOrderEvent.order_id==oid).order_by(PartnerClientOrderEvent.created_at.desc()).limit(100))]
+
+@router.get('/api/partners/client-orders/{oid}/events')
+def staff_events(oid:str,user=Depends(staff),db:Session=Depends(get_db)):
+    order_get(db,oid)
+    return [{'message':e.message,'created_at':e.created_at} for e in db.scalars(select(PartnerClientOrderEvent).where(PartnerClientOrderEvent.order_id==oid).order_by(PartnerClientOrderEvent.created_at.desc()).limit(100))]

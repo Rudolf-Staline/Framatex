@@ -126,3 +126,57 @@ class DocumentExcelPolicy(Base):
     document_id: Mapped[str]=mapped_column(ForeignKey('documents.id'),primary_key=True)
     cells_json: Mapped[str]=mapped_column(Text,default='[]')
     configured_by: Mapped[str]=mapped_column(ForeignKey('users.id'))
+
+class PartnerAdministrativeDocument(Base):
+    __tablename__='partner_administrative_documents'
+    __table_args__=(UniqueConstraint('partner_id','title','number'),)
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=uid)
+    partner_id: Mapped[str]=mapped_column(ForeignKey('partners.id'),index=True)
+    title: Mapped[str]=mapped_column(String(150))
+    number: Mapped[int]=mapped_column(Integer)
+    owner: Mapped[str]=mapped_column(String(80))
+    original_name: Mapped[str]=mapped_column(String(240))
+    disk_name: Mapped[str]=mapped_column(String(64),unique=True)
+    size: Mapped[int]=mapped_column(Integer)
+    sha256: Mapped[str]=mapped_column(String(64))
+    status: Mapped[str]=mapped_column(String(20),default='pending')
+    reason: Mapped[str]=mapped_column(Text,default='')
+    reviewed_by: Mapped[str | None]=mapped_column(ForeignKey('users.id'),nullable=True)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow)
+
+class PartnerClientOrderEvent(Base):
+    __tablename__='partner_client_order_events'
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=uid)
+    order_id: Mapped[str]=mapped_column(ForeignKey('partner_client_orders.id'),index=True)
+    message: Mapped[str]=mapped_column(Text)
+    actor_id: Mapped[str]=mapped_column(ForeignKey('users.id'))
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow)
+
+class RequirementPolicy(Base):
+    __tablename__='requirement_policies'
+    rule_id: Mapped[str]=mapped_column(ForeignKey('completeness_rules.id'),primary_key=True)
+    order_type: Mapped[str]=mapped_column(String(100),default='')
+    optional: Mapped[bool]=mapped_column(Boolean,default=False)
+    days_after_launch: Mapped[int | None]=mapped_column(Integer,nullable=True)
+    requires_client_publication: Mapped[bool]=mapped_column(Boolean,default=False)
+
+class LaunchOrderContext(Base):
+    __tablename__='launch_order_contexts'
+    launch_id: Mapped[str]=mapped_column(ForeignKey('launches.id'),primary_key=True)
+    order_type: Mapped[str]=mapped_column(String(100))
+
+class BusinessOrder(Base):
+    __tablename__='business_orders'
+    __table_args__=(UniqueConstraint('client_id','reference'),)
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=uid)
+    client_id: Mapped[str]=mapped_column(ForeignKey('partners.id'),index=True)
+    reference: Mapped[str]=mapped_column(String(100))
+    created_by: Mapped[str]=mapped_column(ForeignKey('users.id'))
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow)
+
+class BusinessOrderLaunch(Base):
+    __tablename__='business_order_launches'
+    launch_id: Mapped[str]=mapped_column(ForeignKey('launches.id'),primary_key=True)
+    order_id: Mapped[str]=mapped_column(ForeignKey('business_orders.id'),index=True)
+    linked_by: Mapped[str]=mapped_column(ForeignKey('users.id'))
+    linked_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow)

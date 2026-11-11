@@ -169,3 +169,55 @@ def test_planned_announced_delivered_and_cancellations():
         cancelled=post(staff,f'/api/partners/order-lines/{line["id"]}/movements/{movement["id"]}/cancel',{'reason':'Saisie erronée'},200)
         assert cancelled['received']=='0.000' and cancelled['remaining']=='100.000'
         assert next(m for m in cancelled['movements'] if m['id']==movement['id'])['cancelled'] is True
+
+
+def test_administrative_documents_multiple_contacts_and_cross_org_denial():
+    with TestClient(app) as staff, TestClient(app) as first, TestClient(app) as colleague, TestClient(app) as other:
+        setup(staff);a=organization(staff,'Administrative A');b=organization(staff,'Administrative B')
+        activate(staff,first,a,'administrative@sample.local');activate(staff,colleague,a,'colleague@sample.local');activate(staff,other,b,'admin-other@sample.local')
+        assert len(staff.get(f'/api/partners/organizations/{a}/accounts').json())==2
+        def send(content):
+            r=first.post('/api/partner/administrative-documents',data={'title':'Attestation administrative'},files={'file':('attestation.txt',content,'text/plain')},headers=H)
+            assert r.status_code==201,r.text
+            return r.json()
+        v1=send(b'Attestation initiale')
+        post(staff,f'/api/partners/administrative-documents/{v1["id"]}/review',{'status':'rejected','reason':'Signature absente'},200)
+        v2=send(b'Attestation signee')
+        assert v2['number']==2 and v2['status']=='pending'
+        post(staff,f'/api/partners/administrative-documents/{v1["id"]}/review',{'status':'approved','reason':'Obsolete'},409)
+        post(staff,f'/api/partners/administrative-documents/{v2["id"]}/review',{'status':'approved','reason':'Conforme'},200)
+        url=f'/api/partner/administrative-documents/{v2["id"]}/download'
+        assert colleague.get(url).content==b'Attestation signee'
+        assert other.get(url).status_code==404 and other.get('/api/partner/administrative-documents').json()==[]
+        staff.patch(f'/api/partners/organizations/{a}',json={'active':False},headers=H)
+        assert first.get(url).status_code==401
+
+
+def test_revoked_client_order_also_hides_related_publications():
+    with TestClient(app) as staff, TestClient(app) as client:
+        lid=setup(staff);org=organization(staff,'Client A','client');activate(staff,client,org,'grant@sample.local')
+        payload={'partner_id':org,'launch_id':lid,'reference':'COMMANDE','status':'Confirmée'}
+        order=post(staff,'/api/partners/client-orders',payload)
+        response=staff.post(f'/api/launches/{lid}/documents',data={'folder':'jaune','title':'Fiche technique','doc_type':'Fiche technique'},files={'file':('fiche.txt',b'Client source','text/plain')},headers=H)
+        assert response.status_code==201
+        doc=response.json();post(staff,f'/api/documents/{doc["id"]}/reviews',{'decision':'approved'})
+        publication=post(staff,f'/api/launches/{lid}/client-publications',{'document_version_id':doc['latest']['id'],'reason':'Document publiable validé'})
+        binding=post(staff,'/api/partners/publications',{'partner_id':org,'publication_id':publication['id']})
+        assert len(client.get('/api/partner/publications').json())==1
+        assert staff.put(f'/api/partners/client-orders/{order["id"]}',json={**payload,'active':False},headers=H).status_code==200
+        assert client.get(f'/api/partner/publications/{binding["id"]}/download').status_code==404
+        assert client.get('/api/partner/publications').json()==[]
+        assert len(staff.get(f'/api/partners/client-orders/{order["id"]}/events').json())==2
+
+
+def test_new_invitation_has_no_write_rights_without_explicit_role():
+    from test_partners import PWD
+    with TestClient(app) as staff, TestClient(app) as invited:
+        setup(staff);a=organization(staff,'Default-deny A');b=organization(staff,'Default-deny B')
+        foreign=post(staff,f'/api/partners/organizations/{b}/roles',{'name':'Étranger','permissions':['read','document.write']})
+        post(staff,f'/api/partners/organizations/{a}/invitations',{'email':'reader-default@sample.local','role_id':foreign['id']},422)
+        token=post(staff,f'/api/partners/organizations/{a}/invitations',{'email':'reader-default@sample.local'})
+        post(invited,'/api/partner-auth/activate',{'token':token['activation_token'],'password':PWD},200)
+        post(invited,'/api/partner-auth/login',{'email':'reader-default@sample.local','password':PWD},200)
+        assert invited.get('/api/partner/home').json()['permissions']==['read']
+        assert invited.post('/api/partner/administrative-documents',data={'title':'Non autorisé'},files={'file':('x.txt',b'Test','text/plain')},headers=H).status_code==403

@@ -265,6 +265,15 @@ def update_launch(launch_id: str, payload: LaunchPatch, user: User = Depends(get
     changes = payload.model_dump(exclude_unset=True)
     if "status" in changes and changes["status"] not in STATUSES:
         raise HTTPException(422, "Statut inconnu")
+    from .partner_phase2_models import BusinessOrderLaunch, BusinessOrder
+    from .partner_models import Partner
+    from .sharing_routes import norm
+    relation = db.get(BusinessOrderLaunch, l.id)
+    if relation:
+        order = db.get(BusinessOrder, relation.order_id)
+        if ('order_ref' in changes and (changes['order_ref'] or '').strip() != order.reference
+            or 'client_name' in changes and norm(changes['client_name']) != norm(db.get(Partner, order.client_id).name)):
+            raise HTTPException(409, "Commande rattachée : détacher le lancement avec justification avant de modifier son client ou sa référence")
     if "orli_ref" in changes and db.scalar(select(OrliLink).where(OrliLink.launch_id == l.id)):
         current_ref = l.orli_ref or ''
         requested_ref = changes['orli_ref'] or ''
@@ -755,3 +764,15 @@ app.include_router(partner_attachment_router)
 
 from .orli_phase2_routes import router as orli_phase2_router
 app.include_router(orli_phase2_router)
+
+from .document_search_routes import router as document_search_router
+app.include_router(document_search_router)
+
+from .partner_administrative_routes import router as partner_administrative_router
+app.include_router(partner_administrative_router)
+
+from .completeness_policy_routes import router as completeness_policy_router
+app.include_router(completeness_policy_router)
+
+from .order_registry_routes import router as order_registry_router
+app.include_router(order_registry_router)

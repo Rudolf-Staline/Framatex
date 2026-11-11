@@ -105,6 +105,9 @@ class InviteInput(BaseModel):
             raise ValueError('Adresse email invalide')
         return value
 
+class InvitationInput(InviteInput):
+    role_id: str | None = None
+
 class ActivationInput(BaseModel):
     token: str = Field(min_length=30, max_length=200)
     password: str = Field(min_length=12, max_length=256)
@@ -164,8 +167,12 @@ def accounts(org_id: str, user=Depends(staff), db: Session = Depends(get_db)):
             for a in db.scalars(select(PartnerAccount).where(PartnerAccount.partner_id == org_id))]
 
 @router.post('/api/partners/organizations/{org_id}/invitations', status_code=201)
-def invite(org_id: str, payload: InviteInput, user=Depends(staff), db: Session = Depends(get_db)):
+def invite(org_id: str, payload: InvitationInput, user=Depends(staff), db: Session = Depends(get_db)):
     org = org_get(db, org_id)
+    from .partner_phase2_models import PartnerRole,PartnerRoleAssignment
+    role = db.get(PartnerRole,payload.role_id) if payload.role_id else None
+    if payload.role_id and (not role or role.partner_id != org_id):
+        raise HTTPException(422,'Rôle étranger à cette organisation')
     if not org.active:
         raise HTTPException(409, 'Organisation suspendue')
     from .partner_permissions import email_allowed
@@ -183,6 +190,10 @@ def invite(org_id: str, payload: InviteInput, user=Depends(staff), db: Session =
             db.flush()
         except IntegrityError:
             db.rollback(); raise HTTPException(409, 'Adresse déjà enregistrée')
+    if role:
+        assignment=db.get(PartnerRoleAssignment,account.id)
+        if assignment:assignment.role_id=role.id
+        else:db.add(PartnerRoleAssignment(account_id=account.id,role_id=role.id))
     db.execute(update(PartnerToken).where(PartnerToken.account_id == account.id,
         PartnerToken.kind == 'invite').values(consumed=True))
     token = secrets.token_urlsafe(48)
@@ -255,6 +266,8 @@ def create_request(payload: RequestInput, user=Depends(staff), db: Session = Dep
     org = org_get(db, payload.partner_id, 'supplier')
     if not org.active or not db.get(Launch, payload.launch_id):
         raise HTTPException(422, 'Organisation inactive ou lancement inexistant')
+    from .order_registry_routes import check_order_scope
+    check_order_scope(db,payload.launch_id,reference=payload.order_ref)
     row = PartnerRequest(**payload.model_dump(), created_by=user.id)
     db.add(row); db.flush()
     event(db, row, 'staff:'+user.id, 'requested', payload.title)
@@ -372,6 +385,11 @@ def publish(payload: PublicationInput, user=Depends(staff), db: Session = Depend
     launch = db.get(Launch, publication.launch_id) if publication else None
     if not org.active or not publication or not pub_out(db, publication, launch)['effective'] or norm(org.name) != norm(publication.client_name):
         raise HTTPException(409, 'Publication approuvée effective et destinataire correspondant requis')
+    from .partner_phase2_models import PartnerClientOrder
+    grant=db.scalar(select(PartnerClientOrder).where(PartnerClientOrder.partner_id==org.id,PartnerClientOrder.launch_id==publication.launch_id))
+    if grant and not grant.active:raise HTTPException(409,'Accès à la commande retiré')
+    from .order_registry_routes import check_order_scope
+    check_order_scope(db,publication.launch_id,client_id=org.id)
     row = PartnerPublication(**payload.model_dump())
     db.add(row)
     try:
@@ -387,6 +405,10 @@ def visible_publication(db, row, account):
     if not row or row.partner_id != account.partner_id or org_get(db, account.partner_id).kind != 'client':
         return None
     publication = db.get(ClientPublication, row.publication_id)
+    from .partner_phase2_models import PartnerClientOrder
+    grant = db.scalar(select(PartnerClientOrder).where(PartnerClientOrder.partner_id==account.partner_id,PartnerClientOrder.launch_id==publication.launch_id))
+    if grant and not grant.active:
+        return None
     launch = db.get(Launch, publication.launch_id)
     if not pub_out(db, publication, launch)['effective']:
         return None
