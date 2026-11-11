@@ -4,6 +4,7 @@ Ce module n'ouvre ni API publique, ni compte client/fournisseur, ni transfert ex
 Toutes les actions sont authentifiées et soumises à habilitation serveur.
 """
 from __future__ import annotations
+from .order_documents import document_in_launch
 import re
 import unicodedata
 from datetime import date
@@ -38,7 +39,7 @@ def norm(value: str) -> str:
 def source(db: Session, version_id: str, launch_id: str):
     v = db.get(DocumentVersion, version_id)
     doc = db.get(Document, v.document_id) if v else None
-    if not doc or doc.folder.launch_id != launch_id:
+    if not doc or not document_in_launch(db, doc, launch_id):
         raise HTTPException(422, 'Version absente ou étrangère à ce lancement')
     return v, doc
 

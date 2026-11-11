@@ -1,5 +1,6 @@
 """Évalue les exigences selon leur exigibilité, la version courante et les droits."""
 from __future__ import annotations
+from .order_documents import folder_ids
 
 from datetime import timedelta
 from .core import utcnow
@@ -39,7 +40,7 @@ def evaluate(db: Session, launch: Launch, user, permitted):
         optional=bool(policy and policy.optional)
         deadline=(launch.created_at.date()+timedelta(days=policy.days_after_launch)) if policy and policy.days_after_launch is not None else None
         matching = db.scalars(select(Document).join(Folder).where(
-            Folder.launch_id == launch.id, Folder.slug == rule.folder_slug,
+            Folder.id.in_(folder_ids(db, launch.id)), Folder.slug == rule.folder_slug,
             Document.doc_type == rule.document_type
         )).all()
         candidates = []

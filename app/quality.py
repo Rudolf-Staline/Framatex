@@ -3,6 +3,7 @@
 Les constats sont des pistes de vérification, jamais des non-conformités automatiques.
 """
 from __future__ import annotations
+from .order_documents import folder_ids
 import hashlib
 import json
 from decimal import Decimal
@@ -30,7 +31,7 @@ MAX_FINDINGS = 200
 
 def latest_document_versions(db: Session, launch_id: str, doc_type: str, folder: str):
     docs = db.scalars(select(Document).join(Folder).where(
-        Folder.launch_id == launch_id, Folder.slug == folder, Document.doc_type == doc_type
+        Folder.id.in_(folder_ids(db, launch_id)), Folder.slug == folder, Document.doc_type == doc_type
     )).all()
     from .partner_integration_routes import business_available
     return [(d, max(d.versions, key=lambda x:x.number)) for d in docs if d.versions and business_available(db, max(d.versions,key=lambda x:x.number).id)]

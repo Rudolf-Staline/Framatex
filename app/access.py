@@ -16,7 +16,7 @@ from .core import SessionLocal, COOKIE, SECRET_KEY
 from .models import User, Launch, LaunchMember, Document, DocumentVersion
 
 
-def accessible(db: Session, user: User, launch: Launch | None) -> bool:
+def accessible_launch(db: Session, user: User, launch: Launch | None) -> bool:
     if launch is None or not user.active:
         return False
     if any(r.name == "Administrateur" for r in user.roles):
@@ -25,6 +25,13 @@ def accessible(db: Session, user: User, launch: Launch | None) -> bool:
         return True
     return db.scalar(select(LaunchMember.id).where(
         LaunchMember.launch_id == launch.id, LaunchMember.user_id == user.id)) is not None
+
+
+def accessible(db, user, launch):
+    if not accessible_launch(db,user,launch): return False
+    from .order_documents import launch_order, order_accessible
+    link=launch_order(db,launch.id)
+    return not link or order_accessible(db,user,link.order_id)
 
 
 def visible(db: Session, user: User, launches: list[Launch]) -> list[Launch]:
@@ -41,12 +48,12 @@ def must_access(db: Session, user: User, launch_id: str) -> Launch:
 
 def version_launch(db: Session, version_id: str) -> str | None:
     version = db.get(DocumentVersion, version_id)
-    return version.document.folder.launch_id if version else None
+    return version.document.context_launch_id if version else None
 
 
 def document_launch(db: Session, document_id: str) -> str | None:
     document = db.get(Document, document_id)
-    return document.folder.launch_id if document else None
+    return document.context_launch_id if document else None
 
 
 def indirect_launch(db: Session, params: dict) -> str | None:
@@ -119,6 +126,18 @@ def guard_http_request(request: Request):
         user = db.get(User, subject)
         if not user or not user.active:
             return JSONResponse({'detail':'Connexion nécessaire'},status_code=401)
+        from .order_documents import document_accessible, order_accessible
+        doc=None
+        if params.get('doc_id'): doc=db.get(Document,params['doc_id'])
+        elif params.get('version_id'):
+            v=db.get(DocumentVersion,params['version_id']);doc=v.document if v else None
+        elif params.get('run_id'):
+            from .approval_models import ApprovalRun
+            run=db.get(ApprovalRun,params['run_id'])
+            v=db.get(DocumentVersion,run.document_version_id) if run else None
+            doc=v.document if v else None
+        if doc and not document_accessible(db,user,doc):
+            return JSONResponse({'detail':'Document introuvable'},status_code=404)
         target_launch = indirect_launch(db,params)
         if target_launch and not accessible(db,user,db.get(Launch,target_launch)):
             return JSONResponse({'detail':'Lancement introuvable'},status_code=404)

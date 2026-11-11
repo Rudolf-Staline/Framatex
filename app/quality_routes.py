@@ -1,5 +1,6 @@
 """API 0.4 : cohérence inter-documents et inspection de l'intégrité des formules Excel."""
 from __future__ import annotations
+from .order_documents import folder_ids
 import json
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -198,7 +199,7 @@ def auto_inspect_excel(db:Session,version:DocumentVersion, user_id:str):
 @router.get('/api/launches/{launch_id}/excel-inspections')
 def list_excel_inspections(launch_id:str,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
     must(user,'launch.read');get_launch(db,launch_id)
-    docs=db.scalars(select(Document).join(Folder).where(Folder.launch_id==launch_id)).all()
+    docs=db.scalars(select(Document).join(Folder).where(Folder.id.in_(folder_ids(db, launch_id)))).all()
     rows=[]
     for doc in docs:
         if not permitted(user,'document.read',doc.folder.slug):continue

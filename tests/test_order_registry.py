@@ -22,6 +22,6 @@ def test_additive_order_links_multiple_launches_and_preserves_documents():
         wrong=post(staff,'/api/launches',{'name':'Autre','client_name':'Client B','order_ref':'CMD-ROOT'})['id']
         post(staff,f'/api/orders/{root["id"]}/launches',{'launch_id':wrong},409)
         post(staff,f'/api/orders/{root["id"]}/launches',{'launch_id':first},409)
-        assert staff.request('DELETE',f'/api/orders/{root["id"]}/launches/{second}',json={'reason':'Rattachement corrigé'},headers=H).status_code==200
+        assert staff.request('DELETE',f'/api/orders/{root["id"]}/launches/{second}',json={'reason':'Rattachement corrigé'},headers=H).status_code==409
         assert staff.get(f'/api/documents/{doc["id"]}/versions/1/download').content==b'Reception'
         with TestClient(app) as anonymous:assert anonymous.get(f'/api/orders/{root["id"]}').status_code==401

@@ -14,6 +14,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from .order_documents import document_accessible
 from .core import get_db, get_current_user, utcnow
 from .models import Document, DocumentVersion, Role, User, Launch
 from .workflow_models import DocumentReview
@@ -232,7 +233,7 @@ def start_run(doc_id: str, user: User = Depends(get_current_user), db: Session =
     run = ApprovalRun(template_id=template.id, document_version_id=version.id, started_by=user.id)
     db.add(run);db.flush()
     activate_stage(db,run,order[0])
-    emit_to_role(db, role_id=order[0].reviewer_role_id, launch_id=doc.folder.launch_id,
+    emit_to_role(db, role_id=order[0].reviewer_role_id, launch_id=doc.context_launch_id,
         folder=doc.folder.slug, event_key=f'approval:{run.id}:stage:1', kind='approval',
         title='Validation documentaire demandée',
         message=f'{doc.title} · version {version.number} · {order[0].name}',
@@ -281,13 +282,13 @@ def decide_stage(run_id: str, payload: StageDecisionInput,
         run.current_position += 1
         following = next(s for s in order if s.position == run.current_position)
         activate_stage(db,run,following)
-        emit_to_role(db, role_id=following.reviewer_role_id, launch_id=doc.folder.launch_id,
+        emit_to_role(db, role_id=following.reviewer_role_id, launch_id=doc.context_launch_id,
             folder=doc.folder.slug, event_key=f'approval:{run.id}:stage:{following.position}',
             kind='approval', title='Votre validation est demandée',
             message=f'{doc.title} · version {version.number} · {following.name}',
             exclude_user_id=version.uploaded_by)
     if run.status != 'pending':
-        emit_to_user(db,user_id=run.started_by,launch_id=doc.folder.launch_id,
+        emit_to_user(db,user_id=run.started_by,launch_id=doc.context_launch_id,
             folder=doc.folder.slug,event_key=f'approval:{run.id}:final',kind='approval_result',
             title='Décision sur un document',
             message=f'{doc.title} · version {version.number} · {run.status}')
@@ -319,7 +320,7 @@ def delegate_stage(run_id:str,payload:DelegationInput,user:User=Depends(get_curr
         previous={d.actor_id for d in db.scalars(select(ApprovalDecision).where(ApprovalDecision.run_id==run.id))}
         if not target or not target.active or target.id in previous|{user.id,version.uploaded_by}:
             raise HTTPException(422,'Délégataire distinct de l’auteur, du délégant et des valideurs précédents requis')
-        if not accessible(db,target,doc.folder.launch) or not all(permitted(target,a,doc.folder.slug if a!='launch.read' else None) for a in ('launch.read','document.read','document.review')):
+        if not document_accessible(db,target,doc) or not all(permitted(target,a,doc.folder.slug if a!='launch.read' else None) for a in ('launch.read','document.read','document.review')):
             raise HTTPException(422,'Le délégataire doit déjà être habilité au dossier et à la validation')
         if payload.expires_at and payload.expires_at.tzinfo:
             payload.expires_at=payload.expires_at.astimezone(timezone.utc)
@@ -332,7 +333,7 @@ def delegate_stage(run_id:str,payload:DelegationInput,user:User=Depends(get_curr
     assignment.assigned_by=user.id;assignment.reason=payload.reason
     audit(db,user,'approval.delegation','approval_run',run.id,{'stage':stage.position,'previous_delegate':before,**payload.model_dump(mode='json')})
     if payload.delegate_id:
-        emit_to_user(db,user_id=payload.delegate_id,launch_id=doc.folder.launch_id,folder=doc.folder.slug,
+        emit_to_user(db,user_id=payload.delegate_id,launch_id=doc.context_launch_id,folder=doc.folder.slug,
             event_key=f'approval:{run.id}:delegation:{stage.id}:{uuid4()}',kind='approval_delegation',
             title='Validation temporairement déléguée',message=f'{doc.title} · {stage.name} · Jusqu’au {payload.expires_at.isoformat()}')
     db.commit();return run_out(db,run,user,doc)

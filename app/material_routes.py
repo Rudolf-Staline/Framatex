@@ -81,7 +81,8 @@ def evidence(db:Session, launch_id:str, version_id:str, required_folder:str, use
     if version is None: raise HTTPException(422,'Version documentaire introuvable')
     doc=db.get(Document,version.document_id)
     folder=db.get(Folder,doc.folder_id)
-    if folder.launch_id!=launch_id or folder.slug!=required_folder:
+    from .order_documents import document_in_launch
+    if not document_in_launch(db,doc,launch_id) or folder.slug!=required_folder:
         raise HTTPException(422,'Justificatif hors du lancement ou du sous-dossier requis')
     must(user,'document.read',required_folder)
     must(user,'document.write',required_folder)

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from .order_documents import document_in_launch
 
 import hashlib
 import json
@@ -18,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from .core import Base, COOKIE, DATA_DIR, ROOT, engine, get_current_user, get_db, hash_password, check_password, make_token, login_limit_key, login_attempt_allowed, record_login_failure, clear_login_failures
 from .models import AuditEvent, Document, DocumentVersion, Folder, Launch, LaunchMember, Role, RolePermission, User
@@ -126,8 +127,9 @@ def version_out(v: DocumentVersion):
 
 
 def doc_out(d: Document):
+    from .order_documents import document_order_id
     versions = sorted(d.versions, key=lambda v: v.number)
-    return {"id": d.id, "title": d.title, "doc_type": d.doc_type, "folder": d.folder.slug, "created_at": d.created_at.isoformat(), "versions": [version_out(v) for v in versions], "latest": version_out(versions[-1]) if versions else None}
+    return {"order_id": document_order_id(object_session(d), d), "launch_id": d.launch_id, "id": d.id, "title": d.title, "doc_type": d.doc_type, "folder": d.folder.slug, "created_at": d.created_at.isoformat(), "versions": [version_out(v) for v in versions], "latest": version_out(versions[-1]) if versions else None}
 
 
 class LoginPayload(BaseModel):
@@ -139,6 +141,7 @@ class LaunchPayload(BaseModel):
     client_name: str | None = Field(default=None, max_length=150)
     order_ref: str | None = Field(default=None, max_length=100)
     orli_ref: str | None = Field(default=None, max_length=100)
+    order_id: str | None = Field(default=None,min_length=36,max_length=36)
 
 class LaunchPatch(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=180)
@@ -210,8 +213,9 @@ def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_
     must(user, "launch.read")
     from .access import visible
     launches = visible(db, user, db.scalars(select(Launch)).all())
+    from .order_documents import document_accessible
     documents = db.scalars(select(Document).join(Folder)).all()
-    visible_documents = [d for d in documents if d.folder.launch_id in {l.id for l in launches} and permitted(user, "document.read", d.folder.slug)]
+    visible_documents = [d for d in documents if document_accessible(db,user,d) and permitted(user, "document.read", d.folder.slug)]
     completion = [evaluate(db, l, user, permitted) for l in launches]
     return {"launches": len(launches), "incomplete": sum(l.status == "À compléter" for l in launches),
             "documents": len(visible_documents), "versions": sum(len(d.versions) for d in visible_documents),
@@ -232,11 +236,24 @@ def launches(q: str = "", user: User = Depends(get_current_user), db: Session = 
 @app.post("/api/launches", status_code=201)
 def create_launch(payload: LaunchPayload, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.create")
+    order=None
+    if payload.order_id:
+        from .order_documents import must_order
+        from .partner_models import Partner
+        order=must_order(db,user,payload.order_id)
+        if (payload.order_ref and payload.order_ref!=order.reference) or (payload.client_name and payload.client_name!=db.get(Partner,order.client_id).name):
+            raise HTTPException(422,'Client ou référence incompatible avec la commande')
+        payload.order_ref=order.reference;payload.client_name=db.get(Partner,order.client_id).name
     l = Launch(name=payload.name.strip(), client_name=payload.client_name or None, order_ref=payload.order_ref or None, orli_ref=payload.orli_ref or None, restricted=os.getenv("FRAMATEX_RESTRICT_NEW_LAUNCHES", "0") == "1", created_by=user.id)
     db.add(l)
     db.flush()
-    for slug, label in FOLDERS:
-        db.add(Folder(launch_id=l.id, slug=slug, label=label))
+    if order:
+        from .partner_phase2_models import BusinessOrderLaunch
+        from .order_documents import dossier
+        db.add(BusinessOrderLaunch(launch_id=l.id,order_id=order.id,linked_by=user.id));dossier(db,order.id)
+    else:
+        for slug, label in FOLDERS:
+            db.add(Folder(launch_id=l.id, slug=slug, label=label))
     audit(db, user, "launch.create", "launch", l.id, {"name": l.name, "orli": l.orli_ref})
     db.commit()
     return launch_out(l)
@@ -360,7 +377,7 @@ async def upload_document(launch_id: str, folder: str = Form(...), title: str = 
         raise HTTPException(422, "Métadonnées invalides")
     original, disk_name, size, sha, mime = await store_upload(file)
     try:
-        doc = Document(folder_id=entity.id, title=title.strip(), doc_type=doc_type.strip() or "Autre", created_by=user.id)
+        doc = Document(launch_id=launch_id, folder_id=entity.id, title=title.strip(), doc_type=doc_type.strip() or "Autre", created_by=user.id)
         db.add(doc)
         db.flush()
         version = DocumentVersion(document_id=doc.id, number=1, original_name=original, disk_name=disk_name, size=size, sha256=sha, content_type=mime, uploaded_by=user.id)
@@ -635,7 +652,7 @@ def validate_requirement(launch_id: str, rule_id: str, payload: ValidationPayloa
     if not rule.requires_validation:
         raise HTTPException(422, "Cette exigence ne nécessite pas de validation distincte")
     doc = get_doc(db, payload.document_id)
-    if doc.folder.launch_id != launch.id or doc.folder.slug != rule.folder_slug or doc.doc_type != rule.document_type:
+    if not document_in_launch(db, doc, launch.id) or doc.folder.slug != rule.folder_slug or doc.doc_type != rule.document_type:
         raise HTTPException(422, "Document non conforme au type et au lancement de la règle")
     if not doc.versions:
         raise HTTPException(422, "Document sans version")
@@ -793,3 +810,6 @@ async def safe_validation_errors(request,exception):
     return JSONResponse(status_code=422,content={'detail':[
         {'loc':list(error['loc']),'msg':error['msg'],'type':error['type']} for error in exception.errors()
     ]})
+
+from .order_document_routes import router as order_document_router
+app.include_router(order_document_router)

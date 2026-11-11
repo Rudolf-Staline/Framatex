@@ -135,7 +135,7 @@ def document_passport(version_id: str, user: User = Depends(get_current_user), d
         "title": document.title,
         "document_type": document.doc_type,
         "folder": document.folder.slug,
-        "launch_id": document.folder.launch_id,
+        "launch_id": document.context_launch_id,
         "version": version.number,
         "is_current": version.number == history[-1].number,
         "original_filename": version.original_name,
