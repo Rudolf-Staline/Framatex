@@ -1,5 +1,7 @@
 # Framatex — Dossier jaune numérique (MVP 0.19)
 
+> **Phase 3 — Dossier Jaune unique par commande.** 264/273 exigences terminées en environnement contrôlé (96,7 %), 6 partielles et 3 bloquées. Modèle canonique multi-lancements, migrations 0021–0023, réouverture de validation, résolution ORLI, sécurité des dépôts et CI navigateur. [Rapport et commandes exécutées](docs/RAPPORT_PHASE3.md), [architecture](docs/ARCHITECTURE_COMMANDE.md), [migration et restauration](docs/MIGRATION_PHASE3.md), [sécurité](docs/SECURITE_PHASE3.md). Aucune donnée de production modifiée, aucun déploiement ni fusion dans main. Les annonces suivantes sont historiques.
+
 > **Phase 2 d’industrialisation — 11 novembre 2026.** 248/273 exigences vérifiées en environnement contrôlé (90,8 %), 105 tests Python, parcours navigateur fournisseur et client. [État et limites](IMPLEMENTATION_STATUS.md), [installation locale](GUIDE_DEPLOIEMENT.md), [sécurité](SECURITE.md). Recette Framatex et revue indépendante requises avant ouverture externe. Les versions ci-dessous restent un historique.
 
 > **Version 0.19 — interface blanche, accents bleus et nouvel espace Framatex Assist.** Tableau de bord, navigation, bibliothèque documentaire et assistant harmonisés. [Détails](VERSION_0.19.md). Aucune migration supplémentaire.

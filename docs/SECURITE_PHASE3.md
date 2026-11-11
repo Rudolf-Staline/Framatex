@@ -30,3 +30,5 @@ Chaque analyse relance un processus : un redémarrage ne réutilise pas un ancie
 ## Limites de la vérification
 
 Corpus synthétique et contrôles ciblés : pas d'audit de pénétration exhaustif, pas de conformité WCAG complète revendiquée, pas de validation de données de production. Les bibliothèques de parsing doivent être maintenues à jour. Les règles réglementaires et métiers de chaque rubrique doivent être confirmées par Framatex. Les dépendances ORLI direct, email réel et autres exigences externes ne sont pas simulées comme terminées.
+
+Blocage réseau observé : `curl -I --max-time 20 https://database.clamav.net/daily.cvd` a échoué avec CONNECT 403. Le téléchargement Playwright depuis `cdn.playwright.dev` a également été refusé (403) ; Chromium local a permis les parcours réels, tandis que la CI installe explicitement le navigateur Playwright. Aucune politique réseau ni protection antivirus n’a été désactivée pour contourner ces refus.

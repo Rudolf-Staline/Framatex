@@ -1,3 +1,13 @@
+# État courant — phase 3
+
+**264 / 273 exigences terminées (96,7 %), 6 partielles et 3 bloquées.** Les identifiants et les anciens états sont conservés dans `docs/requirements.json`. Le modèle documentaire de référence est désormais le Dossier Jaune unique par commande.
+
+Le [rapport phase 3](docs/RAPPORT_PHASE3.md) contient les commandes exécutées, leurs résultats, les limites et l'état de la PR. Les [procédures de migration/restauration](docs/MIGRATION_PHASE3.md) et le [rapport de sécurité](docs/SECURITE_PHASE3.md) s'appliquent à cette branche. Aucune validation de production ou conformité WCAG complète n'est revendiquée.
+
+---
+
+## Historique conservé : phase 2
+
 # Livraison phase 2 — 11 novembre 2026
 
 **248 / 273 exigences terminées et vérifiées en environnement contrôlé : 90,8 %. Le seuil demandé de 246 est atteint. Aucun accord de mise en production ou de pilote externe n'est revendiqué.**

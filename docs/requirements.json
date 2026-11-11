@@ -970,13 +970,28 @@
   {
     "id": "R6-02",
     "section": "6",
-    "requirement": "Dossier Jaune global",
-    "status": "partiel",
-    "files": "app/models.py; app/migrate.py",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "requirement": "Dossier Jaune unique par commande",
+    "status": "terminé",
+    "files": "app/order_documents.py; app/order_migration.py; app/models.py; app/order_document_routes.py; docs/ARCHITECTURE_COMMANDE.md",
+    "test": "tests/test_order_documents_phase3.py",
+    "observed": "Dossier canonique UNIQUE par commande ; quatre rubriques stables ; migration répétée, restauration, homonymes, lancement facultatif et concurrence vérifiés.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Dossier Jaune global",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Une commande = un Dossier Jaune unique"
+    }
   },
   {
     "id": "R6-03",
@@ -1005,44 +1020,104 @@
     "section": "6",
     "requirement": "Jaune : technique et commercial selon les règles validées",
     "status": "partiel",
-    "files": "app/models.py; app/migrate.py",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "files": "app/order_document_routes.py; app/order_documents.py; app/order_completeness.py; app/completeness.py; static/orders.js",
+    "test": "tests/test_order_documents_phase3.py::test_four_sections_canonical_search_versions_approval_and_completeness; tools/check_partner_browser.py",
+    "observed": "Rubrique canonique de commande : dépôt, versions, consultation, recherche, droits, décision, historique et complétude configurée testés. Les pièces sans lancement et les homonymes sont pris en charge.",
+    "dependency": "Validation Framatex des catégories obligatoires, échéances et règles métier de cette rubrique non fournie ; moteur configurable opérationnel.",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Jaune : technique et commercial selon les règles validées",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "partiel",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Une commande = un Dossier Jaune unique"
+    }
   },
   {
     "id": "R6-06",
     "section": "6",
     "requirement": "Rose : réception",
     "status": "partiel",
-    "files": "app/models.py; app/migrate.py",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "files": "app/order_document_routes.py; app/order_documents.py; app/order_completeness.py; app/completeness.py; static/orders.js",
+    "test": "tests/test_order_documents_phase3.py::test_four_sections_canonical_search_versions_approval_and_completeness; tools/check_partner_browser.py",
+    "observed": "Rubrique canonique de commande : dépôt, versions, consultation, recherche, droits, décision, historique et complétude configurée testés. Les pièces sans lancement et les homonymes sont pris en charge.",
+    "dependency": "Validation Framatex des catégories obligatoires, échéances et règles métier de cette rubrique non fournie ; moteur configurable opérationnel.",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Rose : réception",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "partiel",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Une commande = un Dossier Jaune unique"
+    }
   },
   {
     "id": "R6-07",
     "section": "6",
     "requirement": "Bleu : douane",
     "status": "partiel",
-    "files": "app/models.py; app/migrate.py",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "files": "app/order_document_routes.py; app/order_documents.py; app/order_completeness.py; app/completeness.py; static/orders.js",
+    "test": "tests/test_order_documents_phase3.py::test_four_sections_canonical_search_versions_approval_and_completeness; tools/check_partner_browser.py",
+    "observed": "Rubrique canonique de commande : dépôt, versions, consultation, recherche, droits, décision, historique et complétude configurée testés. Les pièces sans lancement et les homonymes sont pris en charge.",
+    "dependency": "Validation Framatex des catégories obligatoires, échéances et règles métier de cette rubrique non fournie ; moteur configurable opérationnel.",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Bleu : douane",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "partiel",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Une commande = un Dossier Jaune unique"
+    }
   },
   {
     "id": "R6-08",
     "section": "6",
     "requirement": "Vert : facturation Framatex",
     "status": "partiel",
-    "files": "app/models.py; app/migrate.py",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "files": "app/order_document_routes.py; app/order_documents.py; app/order_completeness.py; app/completeness.py; static/orders.js",
+    "test": "tests/test_order_documents_phase3.py::test_four_sections_canonical_search_versions_approval_and_completeness; tools/check_partner_browser.py",
+    "observed": "Rubrique canonique de commande : dépôt, versions, consultation, recherche, droits, décision, historique et complétude configurée testés. Les pièces sans lancement et les homonymes sont pris en charge.",
+    "dependency": "Validation Framatex des catégories obligatoires, échéances et règles métier de cette rubrique non fournie ; moteur configurable opérationnel.",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Vert : facturation Framatex",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "partiel",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Une commande = un Dossier Jaune unique"
+    }
   },
   {
     "id": "R7.1-01",
@@ -1654,11 +1729,26 @@
     "section": "8.3",
     "requirement": "Une extraction robuste",
     "status": "partiel",
-    "files": "app/quality.py; app/intake.py",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "files": "app/file_validation.py; app/intake.py; app/intake_worker.py",
+    "test": "tests/test_file_security_phase3.py; tests/test_extraction_limits.py; tests/test_intake.py",
+    "observed": "Vérification et extraction isolées, formats PDF/DOCX/XLSX/images, limites CPU/mémoire/pages/texte, fichiers protégés/corrompus, OCR indisponible et provenance. Corpus synthétique uniquement.",
+    "dependency": "Corpus documentaire réel et validation humaine Framatex non fournis ; robustesse mesurée uniquement sur les documents synthétiques décrits.",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Une extraction robuste",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "partiel",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R8.3-02",
@@ -1829,12 +1919,27 @@
     "id": "R9-11",
     "section": "9",
     "requirement": "Confirmation des associations ambiguës",
-    "status": "partiel",
-    "files": "app/orli_import.py; app/orli_routes.py",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement",
-    "priority": "P1"
+    "status": "terminé",
+    "files": "app/orli_resolution_routes.py; app/orli_routes.py; app/orli_worker.py; static/orli.js",
+    "test": "tests/test_orli_resolution_phase3.py; tests/test_orli.py; tests/test_orli_phase2.py",
+    "observed": "Donnée importée, candidats, critères et divergences affichés ; choix/rejet motivé avec empreinte de snapshot et historique. Nouvelle source réimportée réévaluée sans remplacement silencieux.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Confirmation des associations ambiguës",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "Format réel ORLI et validation Framatex indisponibles ; imports synthétiques du socle seulement"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R9-12",
@@ -2346,12 +2451,27 @@
     "id": "R12-10",
     "section": "12",
     "requirement": "Réouverture contrôlée",
-    "status": "partiel",
-    "files": "app/approval_routes.py",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "status": "terminé",
+    "files": "app/approval_models.py; app/approval_routes.py; app/approval_migration.py; app/sharing_routes.py; static/approvals.js; static/orders.js",
+    "test": "tests/test_reopen_phase3.py; tests/test_approvals.py",
+    "observed": "Nouvelle séquence par version, motifs/auteur/date, décisions conservées, publications révoquées et notifications ; même version, nouvelle version et deux réouvertures simultanées testées.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Réouverture contrôlée",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R12-11",
@@ -2456,23 +2576,53 @@
     "id": "R13-09",
     "section": "13",
     "requirement": "Validation des entrées",
-    "status": "partiel",
-    "files": "app/core.py; app/access.py; SECURITE.md",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P0"
+    "status": "terminé",
+    "files": "app/main.py; app/order_document_routes.py; app/order_registry_routes.py; app/orli_import.py; app/orli_resolution_routes.py; app/document_search_routes.py",
+    "test": "tests/test_order_documents_phase3.py; tests/test_file_security_phase3.py; tests/test_security_phase2.py; tests/test_orli_resolution_phase3.py",
+    "observed": "Validation serveur des métadonnées, relations, champs inconnus sur nouvelles entrées, bornes de recherche/chemin/version, types de rubriques, quantités ORLI et empreintes de résolution ; erreurs de stockage non sensibles.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P0",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Validation des entrées",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R13-10",
     "section": "13",
     "requirement": "Téléversements dangereux",
-    "status": "partiel",
-    "files": "app/core.py; app/access.py; SECURITE.md",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P0"
+    "status": "terminé",
+    "files": "app/main.py; app/file_validation.py; app/storage_budget.py; app/intake_routes.py; app/orli_worker.py",
+    "test": "tests/test_file_security_phase3.py; tests/test_security_phase2.py; tests/test_clamav_phase3.py",
+    "observed": "Structures réelles vérifiées en worker ; archives disproportionnées/actives, chemins et fichiers corrompus refusés ; quota global, verrou interworkers, fichiers 0600, nettoyage et collision sans suppression du blob historique.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P0",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Téléversements dangereux",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R13-11",
@@ -2643,122 +2793,287 @@
     "id": "R15-01",
     "section": "15",
     "requirement": "Navigation compréhensible",
-    "status": "partiel",
-    "files": "static/partners.js; static/app.js",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "status": "terminé",
+    "files": "static/orders.js; static/app.js; static/ux-phase3.js; static/phase3.css; static/partners.js; static/approvals.js; tools/check_phase3_browser.py; tools/check_partner_browser.py",
+    "test": "tools/check_phase3_browser.py; tools/check_partner_browser.py; tests/*.cjs",
+    "observed": "Navigation Commandes, Dossiers Jaunes, Documents, Fournisseurs, Clients, Réceptions, Validations et Administration reliée aux API métier et aux objets autorisés.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Navigation compréhensible",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R15-02",
     "section": "15",
     "requirement": "Organisation cohérente des dossiers",
-    "status": "partiel",
-    "files": "static/partners.js; static/app.js",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "status": "terminé",
+    "files": "static/orders.js; static/app.js; static/ux-phase3.js; static/phase3.css; static/partners.js; static/approvals.js; tools/check_phase3_browser.py; tools/check_partner_browser.py",
+    "test": "tools/check_phase3_browser.py; tools/check_partner_browser.py; tests/*.cjs",
+    "observed": "Commande → Dossier Jaune unique → rubrique → documents ; filtrage par lancement, pièces sans lancement et lien canonique depuis les lancements et notifications.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Organisation cohérente des dossiers",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R15-03",
     "section": "15",
     "requirement": "Tableaux lisibles",
-    "status": "partiel",
-    "files": "static/partners.js; static/app.js",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "status": "terminé",
+    "files": "static/orders.js; static/app.js; static/ux-phase3.js; static/phase3.css; static/partners.js; static/approvals.js; tools/check_phase3_browser.py; tools/check_partner_browser.py",
+    "test": "tools/check_phase3_browser.py; tools/check_partner_browser.py; tests/*.cjs",
+    "observed": "Tableaux à colonnes utiles, dates UTC et décalages interprétés, nombres alignés, pagination native des commandes et pagination clavier des grands tableaux historiques.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Tableaux lisibles",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R15-04",
     "section": "15",
     "requirement": "Recherche et filtres",
-    "status": "partiel",
-    "files": "static/partners.js; static/app.js",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "status": "terminé",
+    "files": "static/orders.js; static/app.js; static/ux-phase3.js; static/phase3.css; static/partners.js; static/approvals.js; tools/check_phase3_browser.py; tools/check_partner_browser.py",
+    "test": "tools/check_phase3_browser.py; tools/check_partner_browser.py; tests/*.cjs",
+    "observed": "Recherche, tri et pagination des commandes et des documents ; filtre par lancement, rubrique, type et fournisseur ; permissions appliquées avant comptage.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Recherche et filtres",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R15-05",
     "section": "15",
     "requirement": "États explicites",
-    "status": "partiel",
-    "files": "static/partners.js; static/app.js",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "status": "terminé",
+    "files": "static/orders.js; static/app.js; static/ux-phase3.js; static/phase3.css; static/partners.js; static/approvals.js; tools/check_phase3_browser.py; tools/check_partner_browser.py",
+    "test": "tools/check_phase3_browser.py; tools/check_partner_browser.py; tests/*.cjs",
+    "observed": "États de validation, correction, rejet, clôture et disponibilité explicités ; échanges client traduits et acceptation du transport email distinguée de livraison/lecture.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "États explicites",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R15-06",
     "section": "15",
     "requirement": "Confirmation des actions sensibles",
-    "status": "partiel",
-    "files": "static/partners.js; static/app.js",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "status": "terminé",
+    "files": "static/orders.js; static/app.js; static/ux-phase3.js; static/phase3.css; static/partners.js; static/approvals.js; tools/check_phase3_browser.py; tools/check_partner_browser.py",
+    "test": "tools/check_phase3_browser.py; tools/check_partner_browser.py; tests/*.cjs",
+    "observed": "Confirmations nommant objet et effet pour rattachement, réouverture, publication, clôture, retrait de justificatif, modification de circuit et changements d’accès.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Confirmation des actions sensibles",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R15-07",
     "section": "15",
     "requirement": "Messages d'erreur utiles",
-    "status": "partiel",
-    "files": "static/partners.js; static/app.js",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "status": "terminé",
+    "files": "static/orders.js; static/app.js; static/ux-phase3.js; static/phase3.css; static/partners.js; static/approvals.js; tools/check_phase3_browser.py; tools/check_partner_browser.py",
+    "test": "tools/check_phase3_browser.py; tools/check_partner_browser.py; tests/*.cjs",
+    "observed": "Erreurs de saisie et de fichiers lisibles, messages réseau contrôlés et erreurs de stockage sans détails sensibles ; reprise manuelle testée.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Messages d'erreur utiles",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R15-08",
     "section": "15",
     "requirement": "Affichage mobile",
-    "status": "partiel",
-    "files": "static/partners.js; static/app.js",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "status": "terminé",
+    "files": "static/orders.js; static/app.js; static/ux-phase3.js; static/phase3.css; static/partners.js; static/approvals.js; tools/check_phase3_browser.py; tools/check_partner_browser.py",
+    "test": "tools/check_phase3_browser.py; tools/check_partner_browser.py; tests/*.cjs",
+    "observed": "Parcours internes, détail lancement, dossier, recherche et portails authentifiés vérifiés à 360, 390, 768 et 1440 px sans débordement de page.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Affichage mobile",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R15-09",
     "section": "15",
     "requirement": "Chargement, écrans vides et erreurs réseau",
-    "status": "partiel",
-    "files": "static/partners.js; static/app.js",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "status": "terminé",
+    "files": "static/orders.js; static/app.js; static/ux-phase3.js; static/phase3.css; static/partners.js; static/approvals.js; tools/check_phase3_browser.py; tools/check_partner_browser.py",
+    "test": "tools/check_phase3_browser.py; tools/check_partner_browser.py; tests/*.cjs",
+    "observed": "Chargement et fin annoncés, états vides, erreurs réseau explicites, reprise manuelle et doubles mutations bloquées ; boutons/formulaires verrouillés pendant l’action.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Chargement, écrans vides et erreurs réseau",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R15-10",
     "section": "15",
     "requirement": "Accessibilité",
-    "status": "partiel",
-    "files": "static/partners.js; static/app.js",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "status": "terminé",
+    "files": "static/orders.js; static/app.js; static/ux-phase3.js; static/phase3.css; static/partners.js; static/approvals.js; tools/check_phase3_browser.py; tools/check_partner_browser.py",
+    "test": "tools/check_phase3_browser.py; tools/check_partner_browser.py; tests/*.cjs",
+    "observed": "Labels, focus visible, confinement/restauration du focus des dialogues, Tab/Maj+Tab/Echap et tableaux défilables au clavier ; contrôles axe ciblés, sans revendication de conformité WCAG complète.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Accessibilité",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R15-11",
     "section": "15",
     "requirement": "Cohérence visuelle entre espaces internes et externes",
-    "status": "partiel",
-    "files": "static/partners.js; static/app.js",
-    "test": "—",
-    "observed": "Socle existant conservé ; extensions complètes non validées",
-    "dependency": "—",
-    "priority": "P1"
+    "status": "terminé",
+    "files": "static/orders.js; static/app.js; static/ux-phase3.js; static/phase3.css; static/partners.js; static/approvals.js; tools/check_phase3_browser.py; tools/check_partner_browser.py",
+    "test": "tools/check_phase3_browser.py; tools/check_partner_browser.py; tests/*.cjs",
+    "observed": "Identité blanche/bleue conservée, contrastes et contrôles communs harmonisés entre espace interne, recherche, administration et portails partenaires, sans refonte esthétique.",
+    "dependency": "— (validation en environnement contrôlé ; pas de déploiement ni de certification de production)",
+    "priority": "P1",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Cohérence visuelle entre espaces internes et externes",
+        "status": "partiel",
+        "observed": "Socle existant conservé ; extensions complètes non validées",
+        "dependency": "—"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "terminé",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "R16-01",
@@ -2985,11 +3300,26 @@
     "section": "narratif",
     "requirement": "Scan malware et politique en cas de scanner indisponible",
     "status": "partiel",
-    "files": "app/partner_uploads.py",
-    "test": "tests/test_partner_phase2.py::test_client_orders_conversations_attachments_and_revocation",
-    "observed": "Adaptateur à commande bornée ; mode requis refuse un scanner absent ; scanner réel non configuré",
-    "dependency": "Scanner réel et validation de sa politique",
-    "priority": "P0"
+    "files": "app/partner_uploads.py; app/main.py; tests/test_clamav_phase3.py; docs/SECURITE_PHASE3.md",
+    "test": "tests/test_clamav_phase3.py; tests/test_security_phase2.py",
+    "observed": "ClamAV 1.4.3 réel exécuté : EICAR refusé, fichier sain accepté, relance indépendante, base absente refusée et fichiers rejetés nettoyés. Base de test limitée à EICAR ; pas de couverture antivirus complète revendiquée.",
+    "dependency": "Base complète de signatures et mise à jour non vérifiées ; accès au service officiel de signatures à configurer. Moteur réel et mode requis validés avec base EICAR synthétique.",
+    "priority": "P0",
+    "history": [
+      {
+        "phase": "avant phase 3",
+        "requirement": "Scan malware et politique en cas de scanner indisponible",
+        "status": "partiel",
+        "observed": "Adaptateur à commande bornée ; mode requis refuse un scanner absent ; scanner réel non configuré",
+        "dependency": "Scanner réel et validation de sa politique"
+      }
+    ],
+    "phase3": {
+      "previous_status": "partiel",
+      "new_status": "partiel",
+      "evidence": "docs/RAPPORT_PHASE3.md; artifacts/phase3-controls.txt; artifacts/phase3-browser.json; artifacts/phase3-partner-axe.json",
+      "decision": "Tests synthétiques et contrôles locaux ; limites explicites"
+    }
   },
   {
     "id": "N-10",

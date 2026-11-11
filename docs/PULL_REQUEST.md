@@ -1,25 +1,32 @@
-## Problème et résultat
+# Dossier Jaune unique par commande et consolidation phase 3
 
-Après la phase 1, les transmissions fournisseurs restaient séparées du dossier interne et le portail client ne couvrait pas les échanges complets. Cette phase intègre explicitement les versions fournisseur approuvées, sans recopier les fichiers ni perdre leur provenance, et ajoute les commandes client autorisées, conversations, pièces jointes, notifications et révocations associées.
+La documentation et les documents étaient encore organisés par lancement, malgré le référentiel de commandes. Cette branche introduit un dossier canonique unique avec quatre rubriques par commande : plusieurs lancements partagent les mêmes rubriques, les documents gardent leur origine facultative et plusieurs pièces homonymes restent indépendantes.
 
-Le référentiel commande relie plusieurs lancements sans migration destructive. Les profils ORLI et décisions de réimport, la complétude conditionnelle, les rapprochements sourcés, Excel statique, les délais et délégations de validation, les réceptions et leur historique sont persistants. Recherche par ACL, dépôt multiple, démonstration reproductible et contrôles de sessions/quotas/reprise complètent les parcours.
+## Modifications
 
-La matrice fixe conserve 273 exigences : **76 → 248 terminées (27,8 % → 90,8 %)**, 22 partielles, 3 bloquées. Six P0 restent non terminées. Les fonctions existantes ont aussi été vérifiées ; ce décompte ne prétend pas représenter 172 modules nouveaux.
+- Modèle `OrderDossier`, rubriques canoniques, provenance documentaire, alias d'archives et droits de commande conservateurs ; routes historiques compatibles sans élargissement des ACL.
+- Dépôt, versions, intégration fournisseur, recherche, contrôles, complétude, notifications, partage client et QR adaptés au propriétaire commande.
+- Réouverture motivée en nouvelle séquence par version, décisions historiques conservées, invalidation contrôlée des approbations et publications, concurrence testée.
+- Résolution ORLI avec candidats, critères, divergences, décision motivée, empreinte de snapshot et audit ; aucune écriture vers ORLI.
+- Vérification/extraction en processus bornés, quota privé et verrou interworkers, collisions sans perte de fichier, nettoyage en erreur ; adaptateur ClamAV réel testé sur EICAR.
+- Navigation métier, recherche/tri/pagination, états et confirmations, erreurs réseau et doubles soumissions, focus clavier et contrastes. Parcours navigateur et axe intégrés à GitHub Actions sur PR et `main`, avec dépendances verrouillées.
 
-## Validation
+## Migrations et restauration
 
-- 105 tests Python réussis, un avertissement de dépréciation Starlette/httpx.
-- 13 scripts frontend et vérification de syntaxe de tous les JavaScript réussis.
-- Chromium réel : parcours fournisseur/client, fichiers, intégration, recherche, commandes, règles, délégation, dépôt multiple avec échec partiel et reprise, classement et confirmation humaine, révocation employé et mobile 390 px.
-- Tests d'isolation interorganisations et de portée, concurrence des connexions/migrations/secrets, clés étrangères et rollback, sauvegarde/restauration des fichiers et sessions.
-- Scripts DEMO exécutés et relancés sans doublons. Aucun SMTP réel ou antivirus externe utilisé.
+0021 reconstruit les rubriques SQLite pour leur propriétaire commande, conserve les anciens identifiants en alias et change uniquement les références documentaires nécessaires. Aucune association de commande n'est inférée d'un texte similaire. Les rattachements incompatibles bloquent la conversion et les lancements non liés restent isolés.
 
-Preuves : `artifacts/phase2-validation.txt`, `IMPLEMENTATION_STATUS.md`, `docs/requirements.json` et tests cités par exigence.
+0022 préserve les circuits/décisions existants en séquence 1 et permet de nouvelles séquences. 0023 ajoute le contexte de complétude par commande. Une archive complète vérifiée précède la conversion documentaire historique. Répétition sur le schéma exact de phase 2 et restauration vérifiées. Procédure détaillée : [MIGRATION_PHASE3.md](MIGRATION_PHASE3.md).
 
-## Migration et limites
+## Validation et limites
 
-Migrations additives SQLite 0007–0020. Sauvegarder DB et fichiers en maintenance avant mise à niveau ; la restauration invalide les sessions. Les comptes partenaires historiques conservent leurs droits via la migration 0015 ; les nouvelles invitations sans rôle explicite sont en lecture seule.
+Les commandes et résultats définitifs sont dans [RAPPORT_PHASE3.md](RAPPORT_PHASE3.md), avec les preuves JSON navigateur et les rapports de tests. Corpus synthétique et bases temporaires uniquement ; pas de modification de base de production, de déploiement ni de fusion automatique.
 
-Cette PR reste en brouillon pour revue. Aucun déploiement, aucune fusion automatique, aucune donnée réelle. Scanner réel, SMTP autorisé, spécification ORLI directe et recette Framatex manquent. Le Dossier Jaune global, la résolution complète des associations ambiguës, la réouverture d'un circuit sur la même version, la validation exhaustive des entrées et les finitions transversales restent partiels. Les tests ne certifient pas la charge, l'accessibilité générale, PostgreSQL ou la sécurité de production.
+Couverture honnête : **264/273 (96,7 %)**. Les quatre rubriques restent partielles pour leur validation métier Framatex ; l'extraction attend un corpus réel ; N-09 reste partiel, car le moteur ClamAV a été testé avec une base EICAR synthétique et non une base complète maintenue. N-05, N-06 et N-07 restent bloquées. Voir [SECURITE_PHASE3.md](SECURITE_PHASE3.md).
 
-Voir `GUIDE_DEPLOIEMENT.md`, `SECURITE.md` et `docs/MIGRATIONS_PARTENAIRES.md` pour la recette et la reprise.
+## Risques à examiner
+
+- Migration SQLite en maintenance, sauvegarde indépendante et répétition sur une copie des données de déploiement avant toute autorisation.
+- Une commande comportant un lancement restreint exige l'accès à tous ses lancements : certains accès précédemment publics peuvent devenir plus stricts.
+- Le détachement d'un lancement portant des documents est refusé pour éviter un déplacement documentaire implicite.
+- Budget privé par défaut de 1 Gio ; antivirus désactivé explicitement dans la configuration de démonstration, à configurer `required` avec signatures à jour en exploitation.
+- La CI est configurée pour PR/main ; son exécution distante n'est pas présentée comme observée sans retour de GitHub.
