@@ -1,25 +1,35 @@
-# Architecture et décisions
+# Architecture — phase 2
 
-Le socle FastAPI/SQLAlchemy/SQLite reste en place. Les versions, dossiers, ACL, lancements, contrôles, notifications internes et Framatex Assist sont conservés. Aucun service distant n'est initialisé.
+Le socle FastAPI, SQLAlchemy et SQLite est conservé. Les migrations 0007–0020 sont additives ; aucun lancement, fichier ou historique n'est déplacé. PostgreSQL, stockage objet et déploiement distant ne sont pas validés.
 
-## Partenaires
+## Commandes et partenaires
 
-`partner_models.py` ajoute organisations typées fournisseur/client, comptes, jetons opaques hachés, demandes, versions, événements, affectations de publications, lignes de commande, mouvements et file email. Les comptes partenaires ne figurent pas dans `users` : leur cookie séparé ne peut authentifier aucune route interne. Le seul accès externe à une pièce interne passe par une publication explicitement attribuée et revalidée au téléchargement.
+`BusinessOrder` identifie une commande par client et référence. `BusinessOrderLaunch` rattache explicitement plusieurs lancements compatibles. Le rattachement conserve les ACL, identifiants, références ORLI et documents de chaque lancement. La synthèse agrège les pièces, demandes, matières, réceptions et publications. Le client ou la référence d'un lancement rattaché ne peuvent changer sans détachement justifié. Cette extension ne tranche pas le modèle métier du « Dossier Jaune global ».
 
-`partner_routes.py` porte le parcours documentaire et les identités ; `partner_delivery_routes.py` porte les déclarations et confirmations ; `partner_mail.py` est un worker explicite. Les opérations internes nouvelles sont réservées aux administrateurs, choix conservateur en attendant des délégations métier validées. L'interface `/partners` fournit les formulaires correspondants. L'OpenAPI est disponible à `/docs` et `/openapi.json`.
+Les partenaires restent dans `partners` / `partner_accounts`, distincts des employés. Profils administratifs, domaines autorisés, contacts multiples et rôles configurables complètent ce référentiel. Une invitation nouvelle sans rôle explicite donne seulement la lecture ; la migration 0015 conserve les droits historiques des comptes antérieurs. L'administration partenaires et commandes demeure réservée aux administrateurs employés. Un partenaire ne peut pas s'attribuer un rôle.
 
-Une demande appartient à un fournisseur et référence un lancement et une commande. Les tables historiques de demandes simulées sont conservées, sans conversion implicite des noms en organisations. Les pièces externes réutilisent le stockage privé et sa validation structurelle ; elles ne deviennent pas automatiquement des documents internes ni des données de complétude. Cette intégration reste à faire.
+## Documents et contrôles
 
-Les demandes passent par requested → pending → rejected → pending → approved → closed. Chaque version possède une empreinte, un auteur et un horodatage. Une décision exige la dernière version en attente. Un compare-and-swap sur la révision protège contre les modifications simultanées ; les contraintes d'unicité empêchent les numéros de version dupliqués. Une demande approuvée ne peut recevoir une nouvelle version sans un futur mécanisme de réouverture explicite.
+Une transmission fournisseur approuvée peut être intégrée explicitement dans une `DocumentVersion`. `PartnerIntegration` conserve le lien vers la soumission, son auteur externe, son horodatage, son empreinte et sa décision. Le fichier est partagé sans copie du contenu. L'intégration est transactionnelle ; une version retirée reste dans l'historique mais cesse de justifier complétude, cohérence et publication.
 
-## Commandes et quantités
+Les règles de complétude combinent profil, type de commande, phase, type documentaire, rubrique, facultativité, délai et exception justifiée. Une publication requise doit être effectivement accessible à un client actif : le seul aperçu interne ne suffit pas. Une nouvelle version nécessite les validations correspondantes.
 
-Hypothèse de travail : échanges par référence commande, plusieurs matières et lancements possibles. Pas encore de référentiel commande unifié. Les lignes partenaires sont séparées du journal historique matières : aucun rapprochement automatique ORLI ni modification de ses instantanés. Les déclarations fournisseurs ne changent jamais les réceptions. Les réceptions/retours exigent une pièce approuvée de la même commande, organisation et lancement. Les quantités sont décimales, strictement positives ; les retours diminuent le reçu net. Une clé d'opération empêche une seconde écriture lors d'une reprise réseau. Une livraison partielle est un état normal ; un excédent est affiché.
+Les rapprochements comparent des valeurs relevées sur des versions exactes. Quantités, consommations, prix, montants, livraisons, réceptions et références disposent de contrôles explicites ; les unités incompatibles et sources multiples restent des états à résoudre. Le transfert d'un champ extrait exige une confirmation humaine et une correspondance autorisée ; l'identité du confirmateur reste liée à la donnée.
 
-## Communications
+L'extraction utilise un processus Linux séparé : entrée 20 Mio, mémoire virtuelle 768 Mio, CPU 25 s, attente maximale 35 s, deux lectures simultanées par processus serveur. Les limites de pages, cellules et caractères restent visibles. L'OCR dépend des composants locaux disponibles. Excel fait l'objet d'une inspection statique bornée : structure, feuilles, formules et cellules critiques configurées. Aucun moteur de calcul Excel n'est revendiqué.
 
-Le fil d'événements est persistant. Les dépôts créent une notification interne pour le créateur habilité. Les événements employés créent des emails uniquement pour les contacts ayant activé cette préférence. Aucun envoi depuis une requête HTTP. Le worker SMTP exige configuration et activation explicites, TLS et vérification du certificat. SMTP accepté ne prouve ni livraison ni lecture. Un crash entre l'acceptation SMTP et le commit laisse `processing` : vérifier le fournisseur de messagerie avant toute reprise manuelle (pas de promesse d'exactement une livraison).
+## Client, communications et quantités
 
-## Limites
+Les commandes client sont des autorisations explicites, avec statut et échéance confirmés ; aucun pourcentage n'est inventé. Conversations, pièces jointes, historique et publications vérifient le destinataire à chaque accès. La révocation d'une commande masque aussi les publications liées, conversations et notifications correspondantes.
 
-SQLite seulement pour les migrations. Pas d'unification documentaire globale, de multi-worker certifié, de moteur Excel de calcul, de scan antivirus, ni de pilote externe validé. Les choix de rubriques et types publiables restent ceux du socle, à faire confirmer par Framatex.
+Les mouvements distinguent prévu, commandé, annoncé, déclaré, réceptionné, retourné et restant. Ils gardent leurs sources et annulations justifiées. Une livraison partielle ne constitue pas automatiquement une anomalie. Les lignes internes historiques et les lignes partenaires restent distinctes ; leur agrégation ne modifie pas les instantanés ORLI.
+
+Les notifications sont internes, persistées et filtrées selon les droits actuels. Les rappels d'échéance sont générés par une commande planifiable et utilisent une clé stable. La file SMTP reste distincte et désactivée par défaut ; aucun email réel n'a été envoyé pendant la validation.
+
+## ORLI, approbations et concurrence
+
+Les imports ORLI gardent des instantanés immuables. Les profils de mapping sont persistants ; les lots sont comparés et une différence liée peut être conservée ou acceptée avec justification et contrôle de la version attendue. Les associations ambiguës restent à traiter explicitement ; aucune API ORLI n'est simulée.
+
+Les circuits d'approbation imposent l'ordre des rôles, la version exacte et des personnes distinctes. Une délégation temporaire concerne seulement l'étape courante et un employé déjà habilité ; elle est révocable et limitée à 30 jours. Le délai de chaque étape commence à son activation. Les décisions anciennes restent visibles ; une reprise après refus nécessite actuellement une nouvelle version.
+
+SQLite impose les clés étrangères et sérialise ses écritures. Les migrations utilisent `BEGIN IMMEDIATE`, les demandes un contrôle de révision, les mouvements des clés d'opération et les connexions un budget partagé en base. Ces contrôles ont des tests de concurrence ; ils ne constituent pas une qualification de charge de production.
