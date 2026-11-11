@@ -41,6 +41,28 @@ def get_line(db, lid, account=None):
         raise HTTPException(404,'Ligne introuvable')
     return row
 
+
+def discrepancy_history(row,movements,cancellations):
+    """Reconstruct each historical balance from immutable movements and cancellations."""
+    events=[(m.created_at.replace(tzinfo=None),0,m.id,m,None) for m in movements]
+    events += [(c.created_at.replace(tzinfo=None),1,m.id,m,c) for m in movements if (c:=cancellations[m.id])]
+    active={};result=[]
+    for timestamp,kind,mid,movement,cancellation in sorted(events,key=lambda event:event[:3]):
+        if kind:active.pop(mid,None)
+        else:active[mid]=movement
+        total=lambda name:sum((m.quantity for m in active.values() if m.kind==name),Decimal('0'))
+        plans=[m for m in active.values() if m.kind=='planned']
+        planned=plans[-1].quantity if plans else None
+        received=total('received')-total('returned');declared=total('declared')
+        fmt=lambda value:format(value,'.3f') if value is not None else None
+        result.append({'date':timestamp,'movement_id':mid,'operation':'cancelled' if kind else movement.kind,
+            'source_id':movement.source_id,'reason':cancellation.reason if cancellation else movement.note,
+            'ordered':fmt(row.ordered),'planned':fmt(planned),'declared':fmt(declared),'received':fmt(received),
+            'ordered_minus_planned':fmt(row.ordered-planned) if planned is not None else None,
+            'declared_minus_received':fmt(declared-received),'received_minus_ordered':fmt(received-row.ordered),
+            'remaining':fmt(max(Decimal('0'),row.ordered-received))})
+    return result
+
 def output(db,row):
     movements=db.scalars(select(PartnerDelivery).where(PartnerDelivery.line_id==row.id).order_by(PartnerDelivery.created_at,PartnerDelivery.id)).all()
     from .partner_phase2_models import PartnerMovementCancellation
@@ -53,6 +75,7 @@ def output(db,row):
             'planned':format(plans[-1].quantity,'.3f') if plans else None,'announced':format(total('announced'),'.3f'),'returned':format(total('returned'),'.3f'),
             'remaining':format(max(Decimal('0'),row.ordered-received),'.3f'), 'expected_date':row.expected_date,
             'status':'excess' if received>row.ordered else 'complete' if received==row.ordered else 'partial' if received else 'awaiting',
+            'discrepancy_history':discrepancy_history(row,movements,cancellations),
             'movements':[{'id':m.id,'kind':m.kind,'quantity':str(m.quantity),'source_id':m.source_id,
                           'cancelled':bool(cancellations[m.id]),'cancellation_reason':cancellations[m.id].reason if cancellations[m.id] else None,'note':m.note,'occurred_on':m.occurred_on,'created_at':m.created_at} for m in movements]}
 
