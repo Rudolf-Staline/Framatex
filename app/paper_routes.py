@@ -129,13 +129,15 @@ def document_passport(version_id: str, user: User = Depends(get_current_user), d
     history = sorted(document.versions, key=lambda v: v.number)
     previous = next((v for v in history if v.number == version.number - 1), None)
     uploader = db.get(User, version.uploaded_by)
+    from .order_documents import document_order_id
     return {
+        "order_id":document_order_id(db,document),
         "version_id": version.id,
         "document_id": document.id,
         "title": document.title,
         "document_type": document.doc_type,
         "folder": document.folder.slug,
-        "launch_id": document.context_launch_id,
+        "launch_id": document.launch_id,
         "version": version.number,
         "is_current": version.number == history[-1].number,
         "original_filename": version.original_name,

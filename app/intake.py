@@ -44,6 +44,7 @@ def _read_pdf(path: Path) -> tuple[str, str, list[str]]:
         chunks = [(p.extract_text() or "") for p in pages[:MAX_PAGES]]
         text = "\n".join(chunks).strip()
         if text:
+            warnings.append("Texte natif uniquement : les images et annotations peuvent contenir des données non analysées")
             if len(pages) > MAX_PAGES: warnings.append(f"Analyse limitée aux {MAX_PAGES} premières pages")
             return text[:MAX_TEXT], "pdf_text", warnings
     except Exception:
@@ -182,4 +183,4 @@ def preview(path: Path,filename: str) -> dict:
     read=read_document(path,filename)
     return {"filename":filename,"method":read["method"],"warnings":read["warnings"],
             "text_excerpt":read["text"][:650],"classification":classify_document(filename,read["text"]),
-            "fields":extract_fields(read["text"]),"human_validation_required":True}
+            "fields":extract_fields(read["text"]),"provenance":read.get("provenance",{}),"human_validation_required":True}

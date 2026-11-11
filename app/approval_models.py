@@ -33,10 +33,13 @@ class ApprovalStage(Base):
 
 class ApprovalRun(Base):
     __tablename__ = "approval_runs"
-    __table_args__ = (UniqueConstraint("document_version_id", "template_id", name="uq_approval_run_version_template"),)
+    __table_args__ = (UniqueConstraint("document_version_id", "template_id", "cycle", name="uq_approval_run_version_template_cycle"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     template_id: Mapped[str] = mapped_column(ForeignKey("approval_templates.id"))
     document_version_id: Mapped[str] = mapped_column(ForeignKey("document_versions.id"), index=True)
+    cycle: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    previous_run_id: Mapped[str | None] = mapped_column(ForeignKey("approval_runs.id"), nullable=True, unique=True)
+    reopen_reason: Mapped[str] = mapped_column(Text, default="", server_default="")
     current_position: Mapped[int] = mapped_column(Integer, default=1)
     status: Mapped[str] = mapped_column(String(30), default="pending")
     started_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
@@ -65,7 +68,8 @@ class InternalNotification(Base):
     kind: Mapped[str] = mapped_column(String(40))
     title: Mapped[str] = mapped_column(String(180))
     message: Mapped[str] = mapped_column(Text, default="")
-    launch_id: Mapped[str] = mapped_column(ForeignKey("launches.id"))
+    launch_id: Mapped[str | None] = mapped_column(ForeignKey("launches.id"), nullable=True)
+    order_id: Mapped[str | None] = mapped_column(ForeignKey("business_orders.id"), nullable=True)
     folder_slug: Mapped[str] = mapped_column(String(10))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

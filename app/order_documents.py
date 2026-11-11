@@ -104,3 +104,11 @@ def folder_ids(db, launch_id):
     from .models import Launch
     launch=db.get(Launch,launch_id)
     return [f.id for f in launch.folders] if launch else []
+
+
+class OrderCompleteness(Base):
+    __tablename__='order_completeness'
+    order_id: Mapped[str]=mapped_column(ForeignKey('business_orders.id'),primary_key=True)
+    profile_id: Mapped[str | None]=mapped_column(ForeignKey('completeness_profiles.id'),nullable=True)
+    phase: Mapped[str]=mapped_column(String(30),default='preparation')
+    order_type: Mapped[str]=mapped_column(String(100),default='')

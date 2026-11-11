@@ -1,6 +1,6 @@
 """Additive order registry. Explicit links preserve all original launch data and ACLs."""
 from fastapi import APIRouter,Depends,HTTPException
-from pydantic import BaseModel,Field
+from pydantic import BaseModel,Field,ConfigDict
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -20,9 +20,11 @@ from .material_models import MaterialLine
 router=APIRouter(tags=['Référentiel commandes'])
 
 class OrderInput(BaseModel):
+    model_config=ConfigDict(extra="forbid")
     client_id:str=Field(min_length=36,max_length=36)
     reference:str=Field(min_length=1,max_length=100)
 class LinkInput(BaseModel):
+    model_config=ConfigDict(extra="forbid")
     launch_id:str=Field(min_length=36,max_length=36)
 
 def check_order_scope(db,lid,reference=None,client_id=None):

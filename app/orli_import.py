@@ -54,7 +54,10 @@ def read_export(data: bytes, filename: str, mapping: dict[str, str]):
         iterator = csv.reader(io.StringIO(content), dialect=dialect)
         try: headers = [trim(x) for x in next(iterator)]
         except StopIteration: raise HTTPException(422, 'Fichier sans en-tête')
-        rows = list(iterator)
+        rows=[]
+        for row in iterator:
+            if len(rows)>=MAX_ROWS:raise HTTPException(413,'Export limité à 1000 lignes')
+            rows.append(row)
     else:
         try:
             with zipfile.ZipFile(io.BytesIO(data)) as archive:
@@ -89,6 +92,13 @@ def read_export(data: bytes, filename: str, mapping: dict[str, str]):
         for k, v in values.items():
             if len(v)>LIMITS[k]: errors.append(f'{k} dépasse {LIMITS[k]} caractères')
             if ext=='xlsx' and v.startswith('='): errors.append(f'{k} : formule Excel non autorisée')
+        if values.get('quantity'):
+            from decimal import Decimal,InvalidOperation
+            try:
+                quantity=Decimal(values['quantity'])
+                if not quantity.is_finite() or not 0<quantity<=Decimal('1000000000000') or quantity!=quantity.quantize(Decimal('.001')):
+                    raise InvalidOperation
+            except (InvalidOperation,ValueError):errors.append('Quantité invalide : nombre positif borné, trois décimales maximum')
         # Ne conserver aucune valeur trop longue en base.
         normalized={k:(v[:LIMITS[k]] or None) for k,v in values.items()}
         prepared.append({'row_number':line,'fields':normalized,'errors':errors})

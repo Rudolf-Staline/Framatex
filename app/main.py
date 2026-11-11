@@ -17,7 +17,7 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Respon
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, object_session
 
@@ -119,7 +119,9 @@ def user_out(u: User):
 
 
 def launch_out(l: Launch):
-    return {"restricted": bool(l.restricted), "id": l.id, "name": l.name, "order_ref": l.order_ref, "client_name": l.client_name, "orli_ref": l.orli_ref, "status": l.status, "created_at": l.created_at.isoformat(), "updated_at": l.updated_at.isoformat()}
+    from .order_documents import launch_order
+    db=object_session(l);link=launch_order(db,l.id) if db else None
+    return {"order_id":link.order_id if link else None, "restricted": bool(l.restricted), "id": l.id, "name": l.name, "order_ref": l.order_ref, "client_name": l.client_name, "orli_ref": l.orli_ref, "status": l.status, "created_at": l.created_at.isoformat(), "updated_at": l.updated_at.isoformat()}
 
 
 def version_out(v: DocumentVersion):
@@ -313,30 +315,22 @@ def get_doc(db: Session, doc_id: str) -> Document:
 
 
 def verify_file(file_path: Path, extension: str):
-    with file_path.open("rb") as f:
-        start = f.read(12)
-    if extension == ".pdf" and not start.startswith(b"%PDF-"):
-        raise HTTPException(422, "Ce fichier ne semble pas être un PDF")
-    if extension == ".png" and not start.startswith(b"\x89PNG\r\n\x1a\n"):
-        raise HTTPException(422, "Format PNG non reconnu")
-    if extension in (".jpg", ".jpeg") and not start.startswith(b"\xff\xd8\xff"):
-        raise HTTPException(422, "Format JPEG non reconnu")
-    if extension in (".docx", ".xlsx"):
-        try:
-            with zipfile.ZipFile(file_path) as z:
-                infos = z.infolist()
-                if len(infos) > 5000 or sum(info.file_size for info in infos) > 100 * 1024 * 1024 or any(info.file_size > 60 * 1024 * 1024 for info in infos):
-                    raise ValueError("archive trop volumineuse après décompression")
-                names = set(z.namelist())
-                expected = "word/document.xml" if extension == ".docx" else "xl/workbook.xml"
-                if "[Content_Types].xml" not in names or expected not in names or z.testzip() is not None:
-                    raise ValueError("structure invalide")
-        except (zipfile.BadZipFile, ValueError, RuntimeError, OSError):
-            raise HTTPException(422, f"Structure {extension} invalide")
+    import subprocess, sys
+    try:
+        result=subprocess.run([sys.executable,'-m','app.file_validation'],
+            input=json.dumps({'path':str(file_path.resolve()),'extension':extension}),
+            capture_output=True,text=True,timeout=12,check=False)
+        data=json.loads(result.stdout) if result.returncode==0 else {}
+        if not data.get('valid'):raise HTTPException(422,data.get('message','Vérification interrompue : fichier illisible ou disproportionné'))
+    except (OSError,ValueError,subprocess.TimeoutExpired):
+        raise HTTPException(422,'Vérification du fichier impossible dans les limites autorisées')
 
 
 async def store_upload(file: UploadFile):
-    original_name = Path((file.filename or "").replace("\\", "/")).name[:240]
+    supplied=file.filename or ''
+    if len(supplied)>240 or any(c in supplied for c in ('/','\\','\0','\r','\n')) or supplied in ('.','..'):
+        raise HTTPException(422,'Nom de fichier invalide')
+    original_name = supplied
     suffix = Path(original_name).suffix.lower()
     if not original_name or suffix not in EXTS:
         raise HTTPException(422, "Format non autorisé (PDF, DOCX, XLSX, PNG, JPEG, TXT ou EML)")
@@ -345,7 +339,7 @@ async def store_upload(file: UploadFile):
     sha = hashlib.sha256()
     total = 0
     try:
-        with target.open("xb") as out:
+        with os.fdopen(os.open(target,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),"wb") as out:
             while chunk := await file.read(1024 * 1024):
                 total += len(chunk)
                 if total > MAX_UPLOAD:
@@ -397,6 +391,8 @@ async def upload_document(launch_id: str, folder: str = Form(...), title: str = 
 async def new_version(doc_id: str, file: UploadFile = File(...), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     d = get_doc(db, doc_id)
     must(user, "document.write", d.folder.slug)
+    db.execute(update(Document).where(Document.id==d.id).values(title=Document.title))
+    db.refresh(d)
     original, disk_name, size, sha, mime = await store_upload(file)
     try:
         next_number = max((v.number for v in d.versions), default=0) + 1
@@ -813,3 +809,9 @@ async def safe_validation_errors(request,exception):
 
 from .order_document_routes import router as order_document_router
 app.include_router(order_document_router)
+
+from .orli_resolution_routes import router as orli_resolution_router
+app.include_router(orli_resolution_router)
+
+from .business_directory_routes import router as business_directory_router
+app.include_router(business_directory_router)

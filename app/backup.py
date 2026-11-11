@@ -33,14 +33,15 @@ def validate(database, files):
                     raise ValueError('Pièce manquante ou empreinte incorrecte')
 
 
-def backup(source: Path, destination: Path):
+def backup(source: Path, destination: Path, *, database_name="framat.db"):
     source=source.resolve();destination=destination.resolve()
-    if not (source/'framat.db').is_file():raise ValueError('Base SQLite locale absente')
+    if Path(database_name).name!=database_name:raise ValueError('Nom de base local invalide')
+    if not (source/database_name).is_file():raise ValueError('Base SQLite locale absente')
     if destination.exists():raise ValueError('La destination existe déjà')
     destination.parent.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(dir=destination.parent) as tmp:
         stage=Path(tmp);database=stage/'framat.db'
-        with sqlite3.connect(f'file:{source / "framat.db"}?mode=ro',uri=True) as origin, sqlite3.connect(database) as target:
+        with sqlite3.connect(f'file:{source / database_name}?mode=ro',uri=True) as origin, sqlite3.connect(database) as target:
             origin.backup(target)
         shutil.copytree(source/'files',stage/'files') if (source/'files').exists() else (stage/'files').mkdir()
         validate(database,stage/'files')
