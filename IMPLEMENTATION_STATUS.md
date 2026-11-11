@@ -83,4 +83,8 @@ c1ac997 feat: expose historical delivery discrepancies with source and cancellat
 06b3215 feat: add batch drag-and-drop uploads and verify complete partner browser journeys
 ```
 
-Description prête dans `docs/PULL_REQUEST.md`. Publication de la branche et création de PR en cours ; résultat consigné après tentative.
+Documentation et matrice : commit `832a635`. La branche `origin/feat/framat-industrialization-phase2` a été poussée avec succès.
+
+Création de PR en brouillon tentée avec `gh pr create --draft --base main --head feat/framat-industrialization-phase2 --body-file docs/PULL_REQUEST.md`. Refus de l'API GraphQL : `Post "https://api.github.com/graphql": Forbidden`. La vérification alternative par REST a également reçu `Forbidden`. **Aucune PR créée.** Ce refus provient de l'accès à l'API GitHub, pas d'un rejet de l'auto-approbation.
+
+Lien de création : https://github.com/Rudolf-Staline/Framatex/pull/new/feat/framat-industrialization-phase2 . Description prête dans `docs/PULL_REQUEST.md`. Aucun déploiement ni merge effectué.
