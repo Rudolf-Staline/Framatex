@@ -109,3 +109,24 @@ L'exécution distante de GitHub Actions n'est pas revendiquée sans observation 
 - [Architecture](ARCHITECTURE_COMMANDE.md), [migration/restauration](MIGRATION_PHASE3.md), [sécurité](SECURITE_PHASE3.md), [description de PR](PULL_REQUEST.md).
 - `artifacts/phase3-controls.txt`, `artifacts/phase3-validation.txt`, `artifacts/phase3-browser.json`, `artifacts/phase3-partner-axe.json`, captures synthétiques.
 - Source de vérité : `docs/requirements.json` ; synthèse générée : `COUVERTURE_FONCTIONNELLE.md`.
+
+## État Git distant final
+
+La branche `feat/framat-industrialization-phase3` a été poussée avec succès par :
+
+```sh
+git push -u origin feat/framat-industrialization-phase3
+```
+
+La tentative de création de PR a réellement été exécutée :
+
+```sh
+gh pr create --repo Rudolf-Staline/Framatex --base main \
+  --head feat/framat-industrialization-phase3 \
+  --title 'Dossier Jaune unique par commande et consolidation phase 3' \
+  --body-file docs/PULL_REQUEST.md
+```
+
+**Échec, code 1 : `Post "https://api.github.com/graphql": Forbidden`.** `gh auth status` signalait également que l'identité GitHub API n'était pas utilisable dans cet environnement. Aucun numéro de PR n'est donc revendiqué et aucune exécution distante de CI n'a été observée. L'accès Git autorisait le push mais ne prouve pas l'accès à l'API de création de PR.
+
+La description prête à utiliser est dans `docs/PULL_REQUEST.md`. [Ouvrir la PR depuis la branche poussée](https://github.com/Rudolf-Staline/Framatex/pull/new/feat/framat-industrialization-phase3). Aucun contournement de politique, aucune fusion et aucun déploiement n'ont été réalisés.

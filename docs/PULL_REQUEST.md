@@ -15,13 +15,13 @@ La documentation et les documents étaient encore organisés par lancement, malg
 
 0021 reconstruit les rubriques SQLite pour leur propriétaire commande, conserve les anciens identifiants en alias et change uniquement les références documentaires nécessaires. Aucune association de commande n'est inférée d'un texte similaire. Les rattachements incompatibles bloquent la conversion et les lancements non liés restent isolés.
 
-0022 préserve les circuits/décisions existants en séquence 1 et permet de nouvelles séquences. 0023 ajoute le contexte de complétude par commande. Une archive complète vérifiée précède la conversion documentaire historique. Répétition sur le schéma exact de phase 2 et restauration vérifiées. Procédure détaillée : [MIGRATION_PHASE3.md](MIGRATION_PHASE3.md).
+0022 préserve les circuits/décisions existants en séquence 1 et permet de nouvelles séquences. 0023 ajoute le contexte de complétude par commande. Une archive complète vérifiée précède la conversion documentaire historique. Répétition sur le schéma exact de phase 2 et restauration vérifiées. Procédure détaillée : [MIGRATION_PHASE3.md](https://github.com/Rudolf-Staline/Framatex/blob/feat/framat-industrialization-phase3/docs/MIGRATION_PHASE3.md).
 
 ## Validation et limites
 
-Les commandes et résultats définitifs sont dans [RAPPORT_PHASE3.md](RAPPORT_PHASE3.md), avec les preuves JSON navigateur et les rapports de tests. Corpus synthétique et bases temporaires uniquement ; pas de modification de base de production, de déploiement ni de fusion automatique.
+Les commandes et résultats définitifs sont dans [RAPPORT_PHASE3.md](https://github.com/Rudolf-Staline/Framatex/blob/feat/framat-industrialization-phase3/docs/RAPPORT_PHASE3.md), avec les preuves JSON navigateur et les rapports de tests. Corpus synthétique et bases temporaires uniquement ; pas de modification de base de production, de déploiement ni de fusion automatique.
 
-Couverture honnête : **264/273 (96,7 %)**. Les quatre rubriques restent partielles pour leur validation métier Framatex ; l'extraction attend un corpus réel ; N-09 reste partiel, car le moteur ClamAV a été testé avec une base EICAR synthétique et non une base complète maintenue. N-05, N-06 et N-07 restent bloquées. Voir [SECURITE_PHASE3.md](SECURITE_PHASE3.md).
+Couverture honnête : **264/273 (96,7 %)**. Les quatre rubriques restent partielles pour leur validation métier Framatex ; l'extraction attend un corpus réel ; N-09 reste partiel, car le moteur ClamAV a été testé avec une base EICAR synthétique et non une base complète maintenue. N-05, N-06 et N-07 restent bloquées. Voir [SECURITE_PHASE3.md](https://github.com/Rudolf-Staline/Framatex/blob/feat/framat-industrialization-phase3/docs/SECURITE_PHASE3.md).
 
 ## Risques à examiner
 

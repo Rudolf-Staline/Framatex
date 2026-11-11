@@ -28,3 +28,8 @@ ClamAV 1.4.3 réel, signatures synthétiques EICAR uniquement ; N-09 partiel.
 
 Installation Playwright : téléchargement cdn.playwright.dev refusé 403. Tests locaux Chromium exécutés.
 Signatures complètes : CONNECT database.clamav.net refusé 403.
+
+Publication Git : git push -u origin feat/framat-industrialization-phase3 — réussi.
+Création PR : gh pr create --repo Rudolf-Staline/Framatex --base main --head feat/framat-industrialization-phase3 --title 'Dossier Jaune unique par commande et consolidation phase 3' --body-file docs/PULL_REQUEST.md
+Résultat : code 1, Post "https://api.github.com/graphql": Forbidden.
+PR non créée ; exécution distante GitHub Actions non observée. Aucun déploiement ou merge.
