@@ -15,20 +15,20 @@ def permitted_now(user: User, action: str, folder: str | None = None):
     return permitted(user, action, folder)
 
 
-def emit_to_role(db: Session, *, role_id: str, launch_id: str, folder: str,
+def emit_to_role(db: Session, *, role_id: str, launch_id: str | None, folder: str,
                  event_key: str, kind: str, title: str, message: str,
-                 action: str = 'document.review', exclude_user_id: str | None = None):
+                 action: str = 'document.review', exclude_user_id: str | None = None, order_id: str | None = None):
     from .access import accessible
     from .models import Launch
     launch = db.get(Launch, launch_id)
     for user in db.scalars(select(User).where(User.active.is_(True))).all():
-        if not accessible(db,user,launch) or user.id == exclude_user_id or not any(role.id == role_id for role in user.roles):
+        if not notification_scope(db,user,launch_id,order_id) or user.id == exclude_user_id or not any(role.id == role_id for role in user.roles):
             continue
         if not (permitted_now(user, 'launch.read') and permitted_now(user, 'document.read', folder)
                 and permitted_now(user, action, folder)):
             continue
         db.add(InternalNotification(recipient_id=user.id, event_key=event_key, kind=kind,
-                                    launch_id=launch_id, folder_slug=folder,
+                                    launch_id=launch_id, order_id=order_id, folder_slug=folder,
                                     title=title, message=message))
 
 
@@ -48,13 +48,20 @@ def emit_to_folder(db: Session, *, launch_id: str, source_folder: str, target_fo
                                     title=title, message=message))
 
 
-def emit_to_user(db: Session, *, user_id: str, launch_id: str, folder: str,
-                 event_key: str, kind: str, title: str, message: str):
+def emit_to_user(db: Session, *, user_id: str, launch_id: str | None, folder: str,
+                 event_key: str, kind: str, title: str, message: str, order_id: str | None = None):
     user = db.get(User, user_id)
     from .access import accessible
     from .models import Launch
-    if not user or not accessible(db,user,db.get(Launch,launch_id)) or not (permitted_now(user, 'launch.read') and permitted_now(user, 'document.read', folder)):
+    if not user or not notification_scope(db,user,launch_id,order_id) or not (permitted_now(user, 'launch.read') and permitted_now(user, 'document.read', folder)):
         return
     db.add(InternalNotification(recipient_id=user.id, event_key=event_key, kind=kind,
-                                launch_id=launch_id, folder_slug=folder,
+                                launch_id=launch_id, order_id=order_id, folder_slug=folder,
                                 title=title, message=message))
+
+
+def notification_scope(db,user,launch_id,order_id=None):
+    from .order_documents import order_accessible
+    from .access import accessible
+    from .models import Launch
+    return order_accessible(db,user,order_id) if order_id else bool(launch_id and accessible(db,user,db.get(Launch,launch_id)))

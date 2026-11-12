@@ -9,16 +9,17 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from .order_documents import document_accessible, document_order_id
 from .core import get_db, get_current_user, utcnow
 from .models import Document, DocumentVersion, Role, User, Launch
 from .workflow_models import DocumentReview
 from .approval_models import ApprovalTemplate, ApprovalStage, ApprovalRun, ApprovalDecision, InternalNotification
-from .internal_notifications import emit_to_role, emit_to_user, permitted_now
+from .internal_notifications import notification_scope, emit_to_role, emit_to_user, permitted_now
 from .main import admin_only, audit, get_doc, get_launch, must, permitted
 from .partner_phase2_models import ApprovalStagePolicy, ApprovalStageAssignment
 
@@ -115,7 +116,9 @@ def run_out(db: Session, run: ApprovalRun, user: User, doc: Document):
             'version_id': version.id, 'version': version.number, 'template_name': template.name,
             'status': 'stale' if stale else run.status, 'can_decide':
                 not stale and run.status == 'pending' and can_decide(db, user, run, doc),
+            'cycle':run.cycle,'previous_run_id':run.previous_run_id,'reopen_reason':run.reopen_reason,
             'current_position': run.current_position, 'started_at': run.started_at.isoformat(),
+            'can_reopen': run.status in ('approved','rejected','changes_requested') and any(r.name=='Administrateur' for r in user.roles),
             'can_delegate': not stale and run.status=='pending' and any(r.name=='Administrateur' for r in user.roles),
             'stages': [{'name': s.name, 'position': s.position, 'role_id': s.reviewer_role_id,
                         'due_at': assignments[s.id].due_at if s.id in assignments else None,
@@ -203,20 +206,21 @@ def get_approval_overview(launch_id: str, user: User = Depends(get_current_user)
             template = applicable_template(db, doc)
             runs = db.scalars(select(ApprovalRun).join(DocumentVersion,
                 ApprovalRun.document_version_id == DocumentVersion.id)
-                .where(DocumentVersion.document_id == doc.id).order_by(ApprovalRun.started_at.desc())).all()
+                .where(DocumentVersion.document_id == doc.id).order_by(ApprovalRun.started_at.desc(),ApprovalRun.cycle.desc())).all()
             active = next((r for r in runs if r.document_version_id == version.id), None)
             visible.append({'document_id': doc.id, 'document_title': doc.title, 'folder':folder.slug,
                 'version': version.number, 'template': {'id': template.id, 'name': template.name} if template else None,
                 'can_start': bool(template and not active and (permitted(user,'document.write',folder.slug)
                                                   or permitted(user,'document.review',folder.slug))),
                 'run': run_out(db,active,user,doc) if active else None,
-                'previous': [run_out(db,r,user,doc) for r in runs if r.document_version_id != version.id]})
+                'previous': [run_out(db,r,user,doc) for r in runs if not active or r.id != active.id]})
     return {'launch_id': launch_id, 'items':visible}
 
 
 @router.post('/api/documents/{doc_id}/approval-runs', status_code=201)
 def start_run(doc_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     doc = get_doc(db, doc_id)
+    db.execute(update(Document).where(Document.id==doc.id).values(title=Document.title));db.refresh(doc)
     must(user,'launch.read');must(user,'document.read',doc.folder.slug)
     if not (permitted(user,'document.write',doc.folder.slug) or permitted(user,'document.review',doc.folder.slug)):
         raise HTTPException(403, 'Autorisation insuffisante pour soumettre une pièce')
@@ -232,7 +236,7 @@ def start_run(doc_id: str, user: User = Depends(get_current_user), db: Session =
     run = ApprovalRun(template_id=template.id, document_version_id=version.id, started_by=user.id)
     db.add(run);db.flush()
     activate_stage(db,run,order[0])
-    emit_to_role(db, role_id=order[0].reviewer_role_id, launch_id=doc.folder.launch_id,
+    emit_to_role(db, role_id=order[0].reviewer_role_id, launch_id=doc.context_launch_id, order_id=document_order_id(db,doc),
         folder=doc.folder.slug, event_key=f'approval:{run.id}:stage:1', kind='approval',
         title='Validation documentaire demandée',
         message=f'{doc.title} · version {version.number} · {order[0].name}',
@@ -281,13 +285,13 @@ def decide_stage(run_id: str, payload: StageDecisionInput,
         run.current_position += 1
         following = next(s for s in order if s.position == run.current_position)
         activate_stage(db,run,following)
-        emit_to_role(db, role_id=following.reviewer_role_id, launch_id=doc.folder.launch_id,
+        emit_to_role(db, role_id=following.reviewer_role_id, launch_id=doc.context_launch_id, order_id=document_order_id(db,doc),
             folder=doc.folder.slug, event_key=f'approval:{run.id}:stage:{following.position}',
             kind='approval', title='Votre validation est demandée',
             message=f'{doc.title} · version {version.number} · {following.name}',
             exclude_user_id=version.uploaded_by)
     if run.status != 'pending':
-        emit_to_user(db,user_id=run.started_by,launch_id=doc.folder.launch_id,
+        emit_to_user(db,user_id=run.started_by,launch_id=doc.context_launch_id, order_id=document_order_id(db,doc),
             folder=doc.folder.slug,event_key=f'approval:{run.id}:final',kind='approval_result',
             title='Décision sur un document',
             message=f'{doc.title} · version {version.number} · {run.status}')
@@ -319,7 +323,7 @@ def delegate_stage(run_id:str,payload:DelegationInput,user:User=Depends(get_curr
         previous={d.actor_id for d in db.scalars(select(ApprovalDecision).where(ApprovalDecision.run_id==run.id))}
         if not target or not target.active or target.id in previous|{user.id,version.uploaded_by}:
             raise HTTPException(422,'Délégataire distinct de l’auteur, du délégant et des valideurs précédents requis')
-        if not accessible(db,target,doc.folder.launch) or not all(permitted(target,a,doc.folder.slug if a!='launch.read' else None) for a in ('launch.read','document.read','document.review')):
+        if not document_accessible(db,target,doc) or not all(permitted(target,a,doc.folder.slug if a!='launch.read' else None) for a in ('launch.read','document.read','document.review')):
             raise HTTPException(422,'Le délégataire doit déjà être habilité au dossier et à la validation')
         if payload.expires_at and payload.expires_at.tzinfo:
             payload.expires_at=payload.expires_at.astimezone(timezone.utc)
@@ -332,7 +336,7 @@ def delegate_stage(run_id:str,payload:DelegationInput,user:User=Depends(get_curr
     assignment.assigned_by=user.id;assignment.reason=payload.reason
     audit(db,user,'approval.delegation','approval_run',run.id,{'stage':stage.position,'previous_delegate':before,**payload.model_dump(mode='json')})
     if payload.delegate_id:
-        emit_to_user(db,user_id=payload.delegate_id,launch_id=doc.folder.launch_id,folder=doc.folder.slug,
+        emit_to_user(db,user_id=payload.delegate_id,launch_id=doc.context_launch_id, order_id=document_order_id(db,doc),folder=doc.folder.slug,
             event_key=f'approval:{run.id}:delegation:{stage.id}:{uuid4()}',kind='approval_delegation',
             title='Validation temporairement déléguée',message=f'{doc.title} · {stage.name} · Jusqu’au {payload.expires_at.isoformat()}')
     db.commit();return run_out(db,run,user,doc)
@@ -340,7 +344,7 @@ def delegate_stage(run_id:str,payload:DelegationInput,user:User=Depends(get_curr
 
 def notification_out(n: InternalNotification):
     return {'id':n.id,'kind':n.kind,'title':n.title,'message':n.message,
-            'launch_id':n.launch_id,'folder':n.folder_slug,
+            'order_id':n.order_id,'launch_id':n.launch_id,'folder':n.folder_slug,
             'created_at':n.created_at.isoformat(),'read_at':n.read_at.isoformat() if n.read_at else None}
 
 
@@ -354,16 +358,60 @@ def notifications(user: User = Depends(get_current_user), db: Session = Depends(
     records = db.scalars(select(InternalNotification).where(
         InternalNotification.recipient_id == user.id).order_by(InternalNotification.created_at.desc()).limit(250)).all()
     from .access import accessible
-    visible = [notification_out(n) for n in records if notification_visible(user,n) and accessible(db,user,db.get(Launch,n.launch_id))]
+    visible = [notification_out(n) for n in records if notification_visible(user,n) and notification_scope(db,user,n.launch_id,n.order_id)]
     return {'items':visible,'unread':sum(n['read_at'] is None for n in visible), 'total':len(visible)}
 
 
 @router.post('/api/notifications/{notification_id}/read')
 def mark_notification(notification_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     n = db.get(InternalNotification,notification_id)
-    if not n or n.recipient_id != user.id or not notification_visible(user,n):
+    from .internal_notifications import notification_scope
+    if not n or n.recipient_id != user.id or not notification_visible(user,n) or not notification_scope(db,user,n.launch_id,n.order_id):
         raise HTTPException(404,'Notification introuvable')
     if n.read_at is None:
         n.read_at = utcnow()
         db.commit()
     return notification_out(n)
+
+
+class ReopenInput(BaseModel):
+    model_config=ConfigDict(extra="forbid")
+    reason:str=Field(min_length=12,max_length=1800)
+    expected_version_id:str=Field(min_length=36,max_length=36)
+
+
+@router.post('/api/approval-runs/{run_id}/reopen',status_code=201)
+def reopen_run(run_id:str,payload:ReopenInput,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
+    admin_only(user)
+    previous=locked_run(db,run_id)
+    version=db.get(DocumentVersion,previous.document_version_id);doc=version.document
+    if not document_accessible(db,user,doc):raise HTTPException(404,'Document introuvable')
+    if previous.status not in ('approved','rejected','changes_requested'):
+        raise HTTPException(409,'Seul un circuit terminé peut être réouvert')
+    if len(payload.reason.strip())<12:raise HTTPException(422,'Une motivation explicite est nécessaire')
+    current=latest_version(doc)
+    if current.id!=payload.expected_version_id:raise HTTPException(409,'La version a changé : actualiser avant réouverture')
+    template=applicable_template(db,doc)
+    if not template:raise HTTPException(409,'Aucun circuit actif pour ce document')
+    runs=list(db.scalars(select(ApprovalRun).where(ApprovalRun.document_version_id==current.id).order_by(ApprovalRun.cycle.desc())))
+    if db.scalar(select(ApprovalRun.id).where(ApprovalRun.previous_run_id==previous.id)) or (runs and runs[0].id!=previous.id):
+        raise HTTPException(409,'Une séquence plus récente existe déjà')
+    if runs and runs[0].status=='pending':raise HTTPException(409,'Un circuit est déjà en attente')
+    run=ApprovalRun(document_version_id=current.id,template_id=template.id,
+        cycle=max((r.cycle for r in runs),default=0)+1,previous_run_id=previous.id,reopen_reason=payload.reason.strip(),started_by=user.id)
+    db.add(run);db.flush()
+    first=steps(db,template.id)[0];activate_stage(db,run,first)
+    # Latest-review consumers must not revive an approval from an older sequence.
+    db.add(DocumentReview(document_version_id=current.id,decision='changes_requested',comment='Réouverture : '+payload.reason.strip(),reviewed_by=user.id))
+    from .completeness_models import RequirementValidation
+    from .sharing_models import ClientPublication
+    # Preserve publication rows/history, revoke availability until explicit republication.
+    for publication in db.scalars(select(ClientPublication).where(ClientPublication.document_version_id==current.id,ClientPublication.status=='published')):
+        publication.status='revoked';publication.revoked_by=user.id;publication.revoked_at=utcnow();publication.revoked_reason='Réouverture : '+payload.reason.strip()
+    emit_to_role(db,role_id=first.reviewer_role_id,launch_id=doc.context_launch_id,order_id=document_order_id(db,doc),folder=doc.folder.slug,
+        event_key=f'approval:{run.id}:reopen',kind='approval',title='Validation réouverte',message=f'{doc.title} · version {current.number} · nouvelle séquence {run.cycle}',exclude_user_id=current.uploaded_by)
+    audit(db,user,'approval.run.reopen','approval_run',run.id,{'previous_run_id':previous.id,'version_id':current.id,'reason':payload.reason})
+    try:db.commit()
+    except IntegrityError:
+        db.rollback();raise HTTPException(409,'Réouverture concurrente : actualiser')
+    return run_out(db,run,user,doc)

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from .order_documents import document_in_launch
 
 import hashlib
 import json
@@ -12,13 +13,14 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from .core import Base, COOKIE, DATA_DIR, ROOT, engine, get_current_user, get_db, hash_password, check_password, make_token, login_limit_key, login_attempt_allowed, record_login_failure, clear_login_failures
 from .models import AuditEvent, Document, DocumentVersion, Folder, Launch, LaunchMember, Role, RolePermission, User
@@ -57,6 +59,8 @@ app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
 @app.middleware("http")
 async def request_header_guard(request: Request, call_next):
+    if request.url.path.startswith("/api/") and len(request.url.path)>512:
+        return JSONResponse({"detail":"Identifiant ou chemin trop long"},status_code=422)
     if request.url.path.startswith("/api/") and request.method in {"POST", "PUT", "PATCH", "DELETE"}:
         if request.headers.get("X-Framatex-Request") != "1":
             return Response("En-tête de protection manquant", status_code=403)
@@ -118,7 +122,9 @@ def user_out(u: User):
 
 
 def launch_out(l: Launch):
-    return {"restricted": bool(l.restricted), "id": l.id, "name": l.name, "order_ref": l.order_ref, "client_name": l.client_name, "orli_ref": l.orli_ref, "status": l.status, "created_at": l.created_at.isoformat(), "updated_at": l.updated_at.isoformat()}
+    from .order_documents import launch_order
+    db=object_session(l);link=launch_order(db,l.id) if db else None
+    return {"order_id":link.order_id if link else None, "restricted": bool(l.restricted), "id": l.id, "name": l.name, "order_ref": l.order_ref, "client_name": l.client_name, "orli_ref": l.orli_ref, "status": l.status, "created_at": l.created_at.isoformat(), "updated_at": l.updated_at.isoformat()}
 
 
 def version_out(v: DocumentVersion):
@@ -126,8 +132,9 @@ def version_out(v: DocumentVersion):
 
 
 def doc_out(d: Document):
+    from .order_documents import document_order_id
     versions = sorted(d.versions, key=lambda v: v.number)
-    return {"id": d.id, "title": d.title, "doc_type": d.doc_type, "folder": d.folder.slug, "created_at": d.created_at.isoformat(), "versions": [version_out(v) for v in versions], "latest": version_out(versions[-1]) if versions else None}
+    return {"order_id": document_order_id(object_session(d), d), "launch_id": d.launch_id, "id": d.id, "title": d.title, "doc_type": d.doc_type, "folder": d.folder.slug, "created_at": d.created_at.isoformat(), "versions": [version_out(v) for v in versions], "latest": version_out(versions[-1]) if versions else None}
 
 
 class LoginPayload(BaseModel):
@@ -139,6 +146,7 @@ class LaunchPayload(BaseModel):
     client_name: str | None = Field(default=None, max_length=150)
     order_ref: str | None = Field(default=None, max_length=100)
     orli_ref: str | None = Field(default=None, max_length=100)
+    order_id: str | None = Field(default=None,min_length=36,max_length=36)
 
 class LaunchPatch(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=180)
@@ -210,8 +218,9 @@ def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_
     must(user, "launch.read")
     from .access import visible
     launches = visible(db, user, db.scalars(select(Launch)).all())
+    from .order_documents import document_accessible
     documents = db.scalars(select(Document).join(Folder)).all()
-    visible_documents = [d for d in documents if d.folder.launch_id in {l.id for l in launches} and permitted(user, "document.read", d.folder.slug)]
+    visible_documents = [d for d in documents if document_accessible(db,user,d) and permitted(user, "document.read", d.folder.slug)]
     completion = [evaluate(db, l, user, permitted) for l in launches]
     return {"launches": len(launches), "incomplete": sum(l.status == "À compléter" for l in launches),
             "documents": len(visible_documents), "versions": sum(len(d.versions) for d in visible_documents),
@@ -220,7 +229,7 @@ def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_
             "recent": [launch_out(l) for l in sorted(launches, key=lambda l: l.created_at, reverse=True)[:5]]}
 
 @app.get("/api/launches")
-def launches(q: str = "", user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def launches(q: str = Query("",max_length=200), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.read")
     from .access import visible
     rows = visible(db, user, db.scalars(select(Launch).order_by(Launch.created_at.desc())).all())
@@ -232,11 +241,24 @@ def launches(q: str = "", user: User = Depends(get_current_user), db: Session = 
 @app.post("/api/launches", status_code=201)
 def create_launch(payload: LaunchPayload, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.create")
+    order=None
+    if payload.order_id:
+        from .order_documents import must_order
+        from .partner_models import Partner
+        order=must_order(db,user,payload.order_id)
+        if (payload.order_ref and payload.order_ref!=order.reference) or (payload.client_name and payload.client_name!=db.get(Partner,order.client_id).name):
+            raise HTTPException(422,'Client ou référence incompatible avec la commande')
+        payload.order_ref=order.reference;payload.client_name=db.get(Partner,order.client_id).name
     l = Launch(name=payload.name.strip(), client_name=payload.client_name or None, order_ref=payload.order_ref or None, orli_ref=payload.orli_ref or None, restricted=os.getenv("FRAMATEX_RESTRICT_NEW_LAUNCHES", "0") == "1", created_by=user.id)
     db.add(l)
     db.flush()
-    for slug, label in FOLDERS:
-        db.add(Folder(launch_id=l.id, slug=slug, label=label))
+    if order:
+        from .partner_phase2_models import BusinessOrderLaunch
+        from .order_documents import dossier
+        db.add(BusinessOrderLaunch(launch_id=l.id,order_id=order.id,linked_by=user.id));dossier(db,order.id)
+    else:
+        for slug, label in FOLDERS:
+            db.add(Folder(launch_id=l.id, slug=slug, label=label))
     audit(db, user, "launch.create", "launch", l.id, {"name": l.name, "orli": l.orli_ref})
     db.commit()
     return launch_out(l)
@@ -296,30 +318,22 @@ def get_doc(db: Session, doc_id: str) -> Document:
 
 
 def verify_file(file_path: Path, extension: str):
-    with file_path.open("rb") as f:
-        start = f.read(12)
-    if extension == ".pdf" and not start.startswith(b"%PDF-"):
-        raise HTTPException(422, "Ce fichier ne semble pas être un PDF")
-    if extension == ".png" and not start.startswith(b"\x89PNG\r\n\x1a\n"):
-        raise HTTPException(422, "Format PNG non reconnu")
-    if extension in (".jpg", ".jpeg") and not start.startswith(b"\xff\xd8\xff"):
-        raise HTTPException(422, "Format JPEG non reconnu")
-    if extension in (".docx", ".xlsx"):
-        try:
-            with zipfile.ZipFile(file_path) as z:
-                infos = z.infolist()
-                if len(infos) > 5000 or sum(info.file_size for info in infos) > 100 * 1024 * 1024 or any(info.file_size > 60 * 1024 * 1024 for info in infos):
-                    raise ValueError("archive trop volumineuse après décompression")
-                names = set(z.namelist())
-                expected = "word/document.xml" if extension == ".docx" else "xl/workbook.xml"
-                if "[Content_Types].xml" not in names or expected not in names or z.testzip() is not None:
-                    raise ValueError("structure invalide")
-        except (zipfile.BadZipFile, ValueError, RuntimeError, OSError):
-            raise HTTPException(422, f"Structure {extension} invalide")
+    import subprocess, sys
+    try:
+        result=subprocess.run([sys.executable,'-m','app.file_validation'],
+            input=json.dumps({'path':str(file_path.resolve()),'extension':extension}),
+            capture_output=True,text=True,timeout=12,check=False)
+        data=json.loads(result.stdout) if result.returncode==0 else {}
+        if not data.get('valid'):raise HTTPException(422,data.get('message','Vérification interrompue : fichier illisible ou disproportionné'))
+    except (OSError,ValueError,subprocess.TimeoutExpired):
+        raise HTTPException(422,'Vérification du fichier impossible dans les limites autorisées')
 
 
 async def store_upload(file: UploadFile):
-    original_name = Path((file.filename or "").replace("\\", "/")).name[:240]
+    supplied=file.filename or ''
+    if len(supplied)>240 or any(c in supplied for c in ('/','\\','\0','\r','\n')) or supplied in ('.','..'):
+        raise HTTPException(422,'Nom de fichier invalide')
+    original_name = supplied
     suffix = Path(original_name).suffix.lower()
     if not original_name or suffix not in EXTS:
         raise HTTPException(422, "Format non autorisé (PDF, DOCX, XLSX, PNG, JPEG, TXT ou EML)")
@@ -327,22 +341,31 @@ async def store_upload(file: UploadFile):
     target = STORAGE / disk_name
     sha = hashlib.sha256()
     total = 0
+    created = False
     try:
-        with target.open("xb") as out:
-            while chunk := await file.read(1024 * 1024):
-                total += len(chunk)
-                if total > MAX_UPLOAD:
-                    raise HTTPException(413, "Fichier trop volumineux (20 Mo maximum)")
-                sha.update(chunk)
-                out.write(chunk)
-        if total == 0:
-            raise HTTPException(422, "Fichier vide")
-        verify_file(target, suffix)
-        from .partner_uploads import scan
-        scan(target)
-        return original_name, disk_name, total, sha.hexdigest(), MIMES[suffix]
+        from .storage_budget import upload_budget
+        with upload_budget(STORAGE) as remaining:
+            descriptor=os.open(target,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+            created=True
+            with os.fdopen(descriptor,"wb") as out:
+                while chunk := await file.read(1024 * 1024):
+                    total += len(chunk)
+                    if total > remaining:
+                        raise HTTPException(413,'Quota du stockage privé dépassé')
+                    if total > MAX_UPLOAD:
+                        raise HTTPException(413, "Fichier trop volumineux (20 Mo maximum)")
+                    sha.update(chunk)
+                    out.write(chunk)
+            if total == 0:
+                raise HTTPException(422, "Fichier vide")
+            await run_in_threadpool(verify_file,target,suffix)
+            from .partner_uploads import scan
+            await run_in_threadpool(scan,target)
+            return original_name, disk_name, total, sha.hexdigest(), MIMES[suffix]
+    except FileExistsError:
+        raise HTTPException(409,"Conflit de stockage : aucun fichier existant n’a été modifié")
     except Exception:
-        target.unlink(missing_ok=True)
+        if created:target.unlink(missing_ok=True)
         raise
     finally:
         await file.close()
@@ -360,7 +383,7 @@ async def upload_document(launch_id: str, folder: str = Form(...), title: str = 
         raise HTTPException(422, "Métadonnées invalides")
     original, disk_name, size, sha, mime = await store_upload(file)
     try:
-        doc = Document(folder_id=entity.id, title=title.strip(), doc_type=doc_type.strip() or "Autre", created_by=user.id)
+        doc = Document(launch_id=launch_id, folder_id=entity.id, title=title.strip(), doc_type=doc_type.strip() or "Autre", created_by=user.id)
         db.add(doc)
         db.flush()
         version = DocumentVersion(document_id=doc.id, number=1, original_name=original, disk_name=disk_name, size=size, sha256=sha, content_type=mime, uploaded_by=user.id)
@@ -382,6 +405,8 @@ async def new_version(doc_id: str, file: UploadFile = File(...), user: User = De
     must(user, "document.write", d.folder.slug)
     original, disk_name, size, sha, mime = await store_upload(file)
     try:
+        db.execute(update(Document).where(Document.id==d.id).values(title=Document.title))
+        db.refresh(d);db.expire(d,["versions"])
         next_number = max((v.number for v in d.versions), default=0) + 1
         version = DocumentVersion(document_id=d.id, number=next_number, original_name=original, disk_name=disk_name, size=size, sha256=sha, content_type=mime, uploaded_by=user.id)
         d.versions.append(version)
@@ -635,7 +660,7 @@ def validate_requirement(launch_id: str, rule_id: str, payload: ValidationPayloa
     if not rule.requires_validation:
         raise HTTPException(422, "Cette exigence ne nécessite pas de validation distincte")
     doc = get_doc(db, payload.document_id)
-    if doc.folder.launch_id != launch.id or doc.folder.slug != rule.folder_slug or doc.doc_type != rule.document_type:
+    if not document_in_launch(db, doc, launch.id) or doc.folder.slug != rule.folder_slug or doc.doc_type != rule.document_type:
         raise HTTPException(422, "Document non conforme au type et au lancement de la règle")
     if not doc.versions:
         raise HTTPException(422, "Document sans version")
@@ -793,3 +818,22 @@ async def safe_validation_errors(request,exception):
     return JSONResponse(status_code=422,content={'detail':[
         {'loc':list(error['loc']),'msg':error['msg'],'type':error['type']} for error in exception.errors()
     ]})
+
+from .order_document_routes import router as order_document_router
+app.include_router(order_document_router)
+
+from .orli_resolution_routes import router as orli_resolution_router
+app.include_router(orli_resolution_router)
+
+from .business_directory_routes import router as business_directory_router
+app.include_router(business_directory_router)
+
+
+from sqlalchemy.exc import OperationalError
+@app.exception_handler(OperationalError)
+async def safe_database_errors(request,exception):
+    return JSONResponse(status_code=503,content={'detail':'Stockage temporairement indisponible ou occupé. Actualisez avant de réessayer.'})
+
+@app.exception_handler(IntegrityError)
+async def safe_integrity_errors(request,exception):
+    return JSONResponse(status_code=409,content={'detail':'Une opération concurrente ou une relation incompatible empêche cette modification. Actualisez les données.'})

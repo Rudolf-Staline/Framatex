@@ -48,6 +48,8 @@ def main():
                     role=PartnerRole(partner_id=org.id,name='Contributeur DÉMO',permissions_json=json.dumps(['read','message.write']+(['document.write','delivery.write'] if kind=='supplier' else [])));db.add(role);db.flush()
                     db.add(PartnerRoleAssignment(account_id=account.id,role_id=role.id));accounts[kind]=account
                 root=BusinessOrder(client_id=client.id,reference=launch.order_ref,created_by=admin.id);db.add(root);db.flush();db.add(BusinessOrderLaunch(order_id=root.id,launch_id=launch.id,linked_by=admin.id))
+                from .order_documents import adopt_launch
+                db.flush();adopt_launch(db,launch.id,root.id)
                 request=PartnerRequest(partner_id=supplier.id,launch_id=launch.id,order_ref=launch.order_ref,title='Bon matière DÉMO',doc_type='Bon de livraison',status='approved',created_by=admin.id);db.add(request);db.flush()
                 doc,version=add_doc(db,launch,admin,'Bon matière DÉMO','Bon de livraison',b'DEMONSTRATION : quantite 40 m, document fournisseur fictif','bon-demo.txt')
                 submission=PartnerSubmission(request_id=request.id,number=1,account_id=accounts['supplier'].id,original_name=version.original_name,disk_name=version.disk_name,sha256=version.sha256,size=version.size,content_type='text/plain',status='approved',reason='Vérification fictive pour démonstration',reviewed_by=admin.id);db.add(submission);db.flush()

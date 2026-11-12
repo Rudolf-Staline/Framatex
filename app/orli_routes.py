@@ -5,6 +5,7 @@ N'écrit jamais dans ORLI ; ne crée pas de lancement automatiquement.
 from __future__ import annotations
 import json
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -50,7 +51,21 @@ async def import_export(file: UploadFile=File(...), mapping: str | None=Form(Non
         if mapping is not None:raise HTTPException(422,'Choisir un profil ou un mapping explicite')
         mapping=profile.mapping_json
     normalized_map=parse_mapping(mapping)
-    parsed=read_export(data,original,normalized_map)
+    if not data or len(data)>MAX_BYTES:raise HTTPException(413,'Export vide ou supérieur à 3 Mo')
+    import tempfile,subprocess,sys
+    from pathlib import Path
+    from .core import DATA_DIR
+    from .partner_uploads import scan
+    if original.rsplit('.',1)[-1].lower() not in ('csv','xlsx'):raise HTTPException(422,'Export CSV ou XLSX attendu')
+    with tempfile.NamedTemporaryFile(dir=DATA_DIR,prefix='.orli-') as temporary:
+        temporary.write(data);temporary.flush();await run_in_threadpool(scan,Path(temporary.name))
+        try:
+            result=await run_in_threadpool(subprocess.run,[sys.executable,'-m','app.orli_worker'],input=json.dumps({'path':temporary.name,'filename':original,'mapping':normalized_map}),capture_output=True,text=True,timeout=12,check=False)
+            decoded=json.loads(result.stdout) if result.returncode==0 else {}
+        except (OSError,ValueError,subprocess.TimeoutExpired):
+            raise HTTPException(422,'Lecture ORLI interrompue dans les limites autorisées')
+        if 'result' not in decoded:raise HTTPException(decoded.get('status',422),decoded.get('detail','Export illisible ou disproportionné'))
+        parsed=decoded['result']
     if not parsed['rows']:
         raise HTTPException(422, 'Aucune ligne métier à importer')
     prior=db.scalar(select(OrliImportBatch).where(OrliImportBatch.file_sha256==parsed['sha256']))
@@ -135,6 +150,7 @@ class LinkPayload(BaseModel):
     confirmation: bool
     reason: str = Field(min_length=12,max_length=1500)
     override_conflicts: bool = False
+    selected_ambiguous: bool = False
 
 
 @router.post('/api/launches/{launch_id}/orli-reconciliation/link',status_code=201)
@@ -158,7 +174,7 @@ def confirm_link(launch_id:str,payload:LinkPayload,user:User=Depends(get_current
         raise HTTPException(409,'Référence ORLI actuelle différente : corriger manuellement le dossier au préalable')
     # La même référence ORLI ne doit pas représenter deux lancements numériques.
     all_launches=db.scalars(select(Launch).where(Launch.id!=launch_id)).all()
-    if any(l.orli_ref and normalize_reference(l.orli_ref)==norm for l in all_launches):
+    if any(l.orli_ref and normalize_reference(l.orli_ref)==norm for l in all_launches) and not (payload.selected_ambiguous and len(payload.reason.strip())>=25):
         raise HTTPException(409,'Cette référence ORLI est déjà utilisée sur un autre lancement')
     evidence=((launch.orli_ref and normalize_reference(launch.orli_ref)==norm) or
               (launch.order_ref and row.order_ref and normalize_reference(launch.order_ref)==normalize_reference(row.order_ref)))

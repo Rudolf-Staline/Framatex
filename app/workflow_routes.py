@@ -3,6 +3,8 @@
 Aucun calcul n'altère les documents, ORLI ou les montants validés.
 """
 from __future__ import annotations
+from .order_documents import document_in_launch
+from .order_documents import folder_ids
 from decimal import Decimal, InvalidOperation
 from typing import Literal
 
@@ -58,7 +60,7 @@ def get_source(db: Session, launch_id: str, version_id: str):
     if not version:
         raise HTTPException(404, 'Version source introuvable')
     doc = db.get(Document, version.document_id)
-    if not doc or doc.folder.launch_id != launch_id:
+    if not doc or not document_in_launch(db, doc, launch_id):
         raise HTTPException(422, 'La version ne relève pas de ce lancement')
     if max(v.number for v in doc.versions) != version.number:
         raise HTTPException(409, 'Choisissez la version courante du document source')
@@ -79,7 +81,7 @@ def review_out(db: Session, review: DocumentReview, *, document: Document | None
 def list_reviews(launch_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, 'launch.read')
     get_launch(db, launch_id)
-    documents = db.scalars(select(Document).join(Folder).where(Folder.launch_id == launch_id)).all()
+    documents = db.scalars(select(Document).join(Folder).where(Folder.id.in_(folder_ids(db, launch_id)))).all()
     results = []
     for doc in documents:
         if not permitted(user, 'document.read', doc.folder.slug) or not doc.versions:

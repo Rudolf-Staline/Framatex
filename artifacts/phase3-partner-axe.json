@@ -1,0 +1,62 @@
+[
+  {
+    "screen": "supplier",
+    "width": 360,
+    "violations": []
+  },
+  {
+    "screen": "supplier",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "screen": "supplier",
+    "width": 768,
+    "violations": []
+  },
+  {
+    "screen": "supplier",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "screen": "client",
+    "width": 360,
+    "violations": []
+  },
+  {
+    "screen": "client",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "screen": "client",
+    "width": 768,
+    "violations": []
+  },
+  {
+    "screen": "client",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "screen": "partner-administration",
+    "width": 360,
+    "violations": []
+  },
+  {
+    "screen": "partner-administration",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "screen": "partner-administration",
+    "width": 768,
+    "violations": []
+  },
+  {
+    "screen": "partner-administration",
+    "width": 1440,
+    "violations": []
+  }
+]

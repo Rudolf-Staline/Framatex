@@ -4,6 +4,7 @@ Les résultats sont des estimations arithmétiques *illustratives*, non une simu
 financière complète. Entrées sourcées, Decimal exact et aucune écriture dans ORLI.
 """
 from __future__ import annotations
+from .order_documents import document_in_launch
 from decimal import Decimal, InvalidOperation
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -56,7 +57,7 @@ def current_inputs(db: Session, launch_id: str):
             continue
         version = db.get(DocumentVersion, row.source_version_id)
         document = db.get(Document, version.document_id) if version else None
-        if not document or document.folder.launch_id != launch_id or document.folder.slug != 'jaune':
+        if not document or not document_in_launch(db, document, launch_id) or document.folder.slug != 'jaune':
             # Seules les valeurs métier du sous-dossier technique participent.
             # Cela évite de révéler une donnée issue d'une autre rubrique.
             continue

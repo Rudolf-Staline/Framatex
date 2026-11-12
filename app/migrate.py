@@ -6,6 +6,8 @@ migration requires a maintenance window and independent backup verification.
 """
 from __future__ import annotations
 import argparse
+import os
+from contextlib import contextmanager
 import sqlite3
 import shutil
 from datetime import datetime, timezone
@@ -17,7 +19,7 @@ from .core import Base, engine
 from . import models, completeness_models, workflow_models, quality_models, intake_models  # noqa: F401
 from . import spec_models, mail_models, impact_sim_models, orli_models, material_models # noqa: F401
 from . import partner_phase2_models
-from . import partner_models
+from . import partner_models, order_documents
 from . import approval_models, sharing_models, pilot_models # noqa: F401
 
 # Include the migration ledger in SQLAlchemy metadata so test databases that
@@ -26,12 +28,28 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
                         Column('version', String(80), primary_key=True),
                         Column('applied_at', String(50), nullable=False), extend_existing=True)
 
-REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_partners', '0005_partner_deliveries', '0006_partner_mail', '0007_partner_phase2', '0008_confirmed_sources', '0009_client_conversations', '0010_security_notifications', '0011_delivery_cancellations', '0012_orli_profiles', '0013_excel_policies', '0014_partner_administration', '0015_partner_default_roles', '0016_completeness_policies', '0017_order_registry', '0018_approval_assignments', '0019_partner_notice_center', '0020_audit_session_index')
+REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_partners', '0005_partner_deliveries', '0006_partner_mail', '0007_partner_phase2', '0008_confirmed_sources', '0009_client_conversations', '0010_security_notifications', '0011_delivery_cancellations', '0012_orli_profiles', '0013_excel_policies', '0014_partner_administration', '0015_partner_default_roles', '0016_completeness_policies', '0017_order_registry', '0018_approval_assignments', '0019_partner_notice_center', '0020_audit_session_index', '0021_order_dossiers', '0022_approval_cycles', '0023_order_completeness')
 
 
 def _versions(conn):
     conn.execute(text('CREATE TABLE IF NOT EXISTS schema_migrations (version VARCHAR(80) PRIMARY KEY, applied_at VARCHAR(50) NOT NULL)'))
     return {v for v, in conn.execute(text('SELECT version FROM schema_migrations'))}
+
+
+@contextmanager
+def migration_connection():
+    with engine.connect() as conn:
+        conn.exec_driver_sql('PRAGMA foreign_keys=OFF')
+        conn.commit()
+        try:
+            yield conn
+            conn.commit()
+        except BaseException:
+            conn.rollback()
+            raise
+        finally:
+            conn.exec_driver_sql('PRAGMA foreign_keys=ON')
+            conn.commit()
 
 
 def migrate():
@@ -42,14 +60,21 @@ def migrate():
         tables = set(inspect(probe).get_table_names())
         legacy = ('launches' in tables and
                   'restricted' not in {c['name'] for c in inspect(probe).get_columns('launches')})
+        old_document_layout=('folders' in tables and 'dossier_id' not in {c['name'] for c in inspect(probe).get_columns('folders')})
         has_migrations = 'schema_migrations' in tables
-        pending_pilot = has_migrations and '0020_audit_session_index' not in {
+        pending_pilot = has_migrations and REVISIONS[-1] not in {
             v for v, in probe.execute(text('SELECT version FROM schema_migrations'))}
+    if old_document_layout and engine.url.database not in (None,':memory:'):
+        from .backup import backup as complete_backup
+        source=Path(engine.url.database).resolve()
+        destination=source.with_name(source.name+'.phase3-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'.zip')
+        complete_backup(source.parent,destination,database_name=source.name)
+        print('Archive complète vérifiée avant conversion :',destination)
     if legacy or pending_pilot:
         saved = backup_sqlite()
         if saved:
             print('Sauvegarde automatique avant migration :', saved)
-    with engine.begin() as conn:
+    with migration_connection() as conn:
         conn.exec_driver_sql("BEGIN IMMEDIATE")  # Serialize concurrent SQLite worker startups.
         done = _versions(conn)
         unknown = done.difference(REVISIONS)
@@ -62,7 +87,7 @@ def migrate():
                 if not expected.issubset(existing):
                     raise RuntimeError('Schéma existant partiel : migration interrompue pour éviter une perte de données')
                 # Old 0.14 installations must contain the complete pre-0.15 schema.
-                missing = (set(Base.metadata.tables) - {'schema_migrations', 'launch_members', 'pilot_reports','security_login_buckets','orli_mapping_profiles','orli_refresh_decisions','document_excel_policies','requirement_policies','launch_order_contexts','business_orders','business_order_launches','approval_stage_policies','approval_stage_assignments'} - {t for t in Base.metadata.tables if t.startswith('partner')}) - existing
+                missing = (set(Base.metadata.tables) - {'schema_migrations', 'launch_members', 'pilot_reports','security_login_buckets','orli_mapping_profiles','orli_refresh_decisions','document_excel_policies','requirement_policies','launch_order_contexts','business_orders','business_order_launches','approval_stage_policies','approval_stage_assignments','order_dossiers','order_members','order_completeness'} - {t for t in Base.metadata.tables if t.startswith('partner')}) - existing
                 if missing:
                     raise RuntimeError('Base antérieure incomplète : tables manquantes : ' + ', '.join(sorted(missing)))
             else:
@@ -176,11 +201,25 @@ def migrate():
                 Base.metadata.tables[name].create(bind=conn,checkfirst=True)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0019_partner_notice_center','d':datetime.now(timezone.utc).isoformat()})
-        if '0020_audit_session_index' not in done:
+        if REVISIONS[-1] not in done:
             for index in Base.metadata.tables['audit_events'].indexes:
                 index.create(bind=conn,checkfirst=True)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0020_audit_session_index','d':datetime.now(timezone.utc).isoformat()})
+        if '0021_order_dossiers' not in done:
+            from .order_migration import upgrade
+            upgrade(conn)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0021_order_dossiers','d':datetime.now(timezone.utc).isoformat()})
+        if '0022_approval_cycles' not in done:
+            from .approval_migration import upgrade as approval_upgrade
+            approval_upgrade(conn)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0022_approval_cycles','d':datetime.now(timezone.utc).isoformat()})
+        if '0023_order_completeness' not in done:
+            Base.metadata.tables['order_completeness'].create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0023_order_completeness','d':datetime.now(timezone.utc).isoformat()})
         if conn.exec_driver_sql('PRAGMA foreign_key_check').first():
             raise RuntimeError('Relations historiques invalides : migration annulée, corriger la copie de travail avant reprise')
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
@@ -198,15 +237,29 @@ def backup_sqlite():
     if not src.exists() or src.stat().st_size == 0:
         return None
     dest = src.with_name(f'{src.name}.backup-{datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")}')
+    descriptor=os.open(dest,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600);os.close(descriptor)
     with sqlite3.connect(str(src)) as origin, sqlite3.connect(str(dest)) as backup:
+        if origin.execute('PRAGMA integrity_check').fetchone()[0]!='ok' or origin.execute('PRAGMA foreign_key_check').fetchone():
+            raise RuntimeError('Intégrité de la base source invalide : migration refusée')
         origin.backup(backup)
+        if backup.execute('PRAGMA integrity_check').fetchone()[0]!='ok':
+            raise RuntimeError('Sauvegarde SQLite invalide : migration refusée')
+    dest.chmod(0o600)
     return dest
 
 
 def main():
     p = argparse.ArgumentParser(description='Migrations SQLite Framatex')
-    p.add_argument('command', choices=('status','upgrade'), nargs='?', default='status')
+    p.add_argument('command', choices=('status','preflight','upgrade'), nargs='?', default='status')
     args = p.parse_args()
+    if args.command == 'preflight':
+        import json
+        from .order_migration import preflight
+        with engine.connect() as conn:
+            if 'business_order_launches' not in inspect(conn).get_table_names():
+                print('Référentiel commandes absent : appliquer les migrations antérieures sur une copie')
+            else:print(json.dumps(preflight(conn),ensure_ascii=False,indent=2))
+        return
     if args.command == 'status':
         with engine.connect() as conn:
             if 'schema_migrations' not in inspect(conn).get_table_names():

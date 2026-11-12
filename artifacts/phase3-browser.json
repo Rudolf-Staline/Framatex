@@ -1,0 +1,327 @@
+{
+  "synthetic_data": true,
+  "checks": [
+    {
+      "screen": "dossier",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "dossier",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "dossier",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "dossier",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "screen": "home",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "home",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "home",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "home",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "screen": "orders",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "orders",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "orders",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "orders",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "screen": "suppliers",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "suppliers",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "suppliers",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "suppliers",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "screen": "clients",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "clients",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "clients",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "clients",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "screen": "receipts",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "receipts",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "receipts",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "receipts",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "screen": "validations",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "validations",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "validations",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "validations",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "screen": "launches",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "launches",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "launches",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "launches",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "screen": "actions",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "actions",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "actions",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "actions",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "screen": "notifications",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "notifications",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "notifications",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "notifications",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "screen": "orli",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "orli",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "orli",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "orli",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "screen": "admin",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "admin",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "admin",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "admin",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "screen": "audit",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "audit",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "audit",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "audit",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "screen": "launch-detail",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "launch-detail",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "launch-detail",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "launch-detail",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "screen": "/search",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "/search",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "/search",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "/search",
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "screen": "/partners",
+      "width": 360,
+      "violations": []
+    },
+    {
+      "screen": "/partners",
+      "width": 390,
+      "violations": []
+    },
+    {
+      "screen": "/partners",
+      "width": 768,
+      "violations": []
+    },
+    {
+      "screen": "/partners",
+      "width": 1440,
+      "violations": []
+    }
+  ],
+  "console_errors": [],
+  "full_wcag_audit": false
+}

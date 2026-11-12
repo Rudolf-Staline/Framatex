@@ -70,6 +70,8 @@ def create_order(payload:OrderInput,user=Depends(staff),db:Session=Depends(get_d
 def update_order(oid:str,payload:OrderInput,user=Depends(staff),db:Session=Depends(get_db)):
     row=order_get(db,oid)
     if (row.partner_id,row.launch_id)!=(payload.partner_id,payload.launch_id):raise HTTPException(409,'Destinataire et lancement immuables')
+    from .order_registry_routes import check_order_scope
+    check_order_scope(db,row.launch_id,client_id=row.partner_id,reference=payload.reference)
     for k,v in payload.model_dump().items():setattr(row,k,v)
     db.add(PartnerClientOrderEvent(order_id=row.id,actor_id=user.id,message=f'Statut confirmé : {row.status} · Échéance : {row.confirmed_due or "non renseignée"} · Accès : {row.active}'))
     audit(db,user,'client.order.update','partner_client_order',row.id,payload.model_dump(mode='json'));db.commit();return order_out(row)

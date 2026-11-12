@@ -1,13 +1,13 @@
-name: Test MVP Framatex
+name: Framatex API, migrations et navigateur
 on:
   push:
     branches: [main]
   pull_request:
+permissions:
+  contents: read
 jobs:
   python-and-ui:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -16,13 +16,31 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Installer les dépendances
+          cache: npm
+      - name: Installer les dépendances et ClamAV
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt pytest httpx
-      - name: Tests API et fonctions métier
+          python -m pip install -r requirements-test.txt
+          npm ci
+          sudo apt-get update
+          sudo apt-get install -y clamav
+          python -m playwright install --with-deps chromium
+      - name: Tests API, migrations, restauration et moteur antivirus réel
         run: PYTHONPATH=. python -m pytest -q
       - name: Tests de rendu JavaScript
         run: |
           for file in tests/*.cjs; do node "$file"; done
           for file in static/*.js; do node --check "$file"; done
+      - name: Parcours fournisseur et client sur base temporaire
+        run: python tools/check_partner_browser.py
+      - name: Commandes, dossiers, versions, mobile et axe
+        run: python tools/check_phase3_browser.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-evidence
+          path: |
+            artifacts/phase3-browser.json
+            artifacts/phase3-partner-axe.json
+            artifacts/phase3-order-browser.png
+            artifacts/partner-browser.png
+            artifacts/client-browser.png

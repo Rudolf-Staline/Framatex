@@ -1,8 +1,8 @@
 from __future__ import annotations
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Text, Boolean, ForeignKey, DateTime, Integer, UniqueConstraint, Index
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, Text, Boolean, ForeignKey, DateTime, Integer, UniqueConstraint, Index, CheckConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship, object_session
 from .core import Base, utcnow
 
 
@@ -50,27 +50,46 @@ class Launch(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
     restricted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0", nullable=False)
-    folders: Mapped[list[Folder]] = relationship(back_populates="launch", cascade="all, delete-orphan")
+    legacy_folders: Mapped[list[Folder]] = relationship(back_populates="launch")
+
+    @property
+    def folders(self):
+        from .order_documents import folders_for_launch
+        return folders_for_launch(object_session(self), self)
 
 class Folder(Base):
     __tablename__ = "folders"
-    __table_args__ = (UniqueConstraint("launch_id", "slug"),)
+    __table_args__ = (UniqueConstraint("launch_id", "slug"), UniqueConstraint("dossier_id", "slug"), CheckConstraint("(launch_id IS NOT NULL) != (dossier_id IS NOT NULL)",name="folder_single_owner"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
-    launch_id: Mapped[str] = mapped_column(ForeignKey("launches.id"), index=True)
+    launch_id: Mapped[str | None] = mapped_column(ForeignKey("launches.id"), nullable=True, index=True)
+    dossier_id: Mapped[str | None] = mapped_column(ForeignKey("order_dossiers.id"), nullable=True, index=True)
+    canonical_id: Mapped[str | None] = mapped_column(ForeignKey("folders.id"), nullable=True)
     slug: Mapped[str] = mapped_column(String(10))
     label: Mapped[str] = mapped_column(String(70))
-    launch: Mapped[Launch] = relationship(back_populates="folders")
+    launch: Mapped[Launch | None] = relationship(back_populates="legacy_folders", foreign_keys=[launch_id])
     documents: Mapped[list[Document]] = relationship(back_populates="folder")
 
 class Document(Base):
     __tablename__ = "documents"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     folder_id: Mapped[str] = mapped_column(ForeignKey("folders.id"), index=True)
+    launch_id: Mapped[str | None] = mapped_column(ForeignKey("launches.id"), nullable=True, index=True)
     title: Mapped[str] = mapped_column(String(220))
     doc_type: Mapped[str] = mapped_column(String(100), default="Autre")
     created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     folder: Mapped[Folder] = relationship(back_populates="documents")
+    launch: Mapped[Launch | None] = relationship()
+
+    @property
+    def context_launch_id(self):
+        if self.launch_id: return self.launch_id
+        if self.folder.launch_id: return self.folder.launch_id
+        from .partner_phase2_models import BusinessOrderLaunch
+        from .order_documents import OrderDossier
+        from sqlalchemy import select
+        db=object_session(self)
+        return db.scalar(select(BusinessOrderLaunch.launch_id).join(OrderDossier, OrderDossier.order_id==BusinessOrderLaunch.order_id).where(OrderDossier.id==self.folder.dossier_id).order_by(BusinessOrderLaunch.launch_id).limit(1))
     versions: Mapped[list[DocumentVersion]] = relationship(back_populates="document", cascade="all, delete-orphan", order_by="DocumentVersion.number")
 
 class DocumentVersion(Base):

@@ -90,7 +90,7 @@ async def import_email(launch_id:str,file:UploadFile=File(...),
     if rose is None:raise HTTPException(409,'Sous-dossier Rose absent')
     original,disk_name,size,sha,mime=await store_upload(file)
     try:
-        doc=Document(folder_id=rose.id,title=('Email · '+parsed['subject'])[:220],doc_type='Courriel',created_by=user.id)
+        doc=Document(launch_id=launch_id,folder_id=rose.id,title=('Email · '+parsed['subject'])[:220],doc_type='Courriel',created_by=user.id)
         db.add(doc);db.flush()
         version=DocumentVersion(document_id=doc.id,number=1,original_name=original,disk_name=disk_name,
                                 size=size,sha256=sha,content_type=mime,uploaded_by=user.id)

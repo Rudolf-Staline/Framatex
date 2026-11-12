@@ -19,7 +19,7 @@ def workbook(formula:str|int):
 
 def add_doc(db,launch,user,title,kind,blob,filename):
     folder=next(f for f in launch.folders if f.slug=='jaune')
-    doc=Document(folder_id=folder.id,title=title,doc_type=kind,created_by=user.id)
+    doc=Document(launch_id=launch.id,folder_id=folder.id,title=title,doc_type=kind,created_by=user.id)
     db.add(doc);db.flush()
     data=bytes(blob);disk=secrets.token_hex(24);(STORAGE/disk).write_bytes(data)
     v=DocumentVersion(document_id=doc.id,number=1,original_name=filename,disk_name=disk,

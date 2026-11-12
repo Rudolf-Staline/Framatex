@@ -1,0 +1,12 @@
+Base de référence : 17eefa893e33cb3f52121449b5f0a636872971c1
+Environnement local isolé, données synthétiques uniquement.
+
+Commande : python -m pytest -q tests/test_order_documents_phase3.py tests/test_reopen_phase3.py tests/test_orli_resolution_phase3.py tests/test_file_security_phase3.py tests/test_clamav_phase3.py tests/test_partner_migration_backup.py --tb=short
+Résultat : 12 passed, 2 warnings in 13.19s.
+ClamAV 1.4.3 exécuté depuis un répertoire temporaire, bibliothèques locales.
+EICAR rejeté, fichier sain accepté, processus relancé, base manquante refusée.
+Base de signatures synthétique EICAR uniquement : aucune revendication de couverture antivirus complète.
+
+Commande : python -m pytest -q tests/test_orli.py tests/test_orli_phase2.py tests/test_orli_resolution_phase3.py --tb=short
+Résultat : 5 passed, 1 warning in 13.56s.
+Lecture CSV/XLSX ORLI isolée, bornée et analysée par le scanner configuré avant import.

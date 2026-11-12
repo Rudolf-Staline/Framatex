@@ -34,6 +34,7 @@ def emit_impacts(db: Session, *, launch_id: str, source_kind: str, source_key: s
                  source_folder: str, source_ref_id: str, old_value: str | None = None,
                  new_value: str | None = None):
     """Appliquer les règles actives correspondant à une nouvelle valeur ou version."""
+    if not launch_id: return
     rules = db.scalars(select(ImpactRule).where(
         ImpactRule.active.is_(True), ImpactRule.source_kind == source_kind,
         ImpactRule.source_key == source_key, ImpactRule.source_folder == source_folder
@@ -51,6 +52,6 @@ def emit_impacts(db: Session, *, launch_id: str, source_kind: str, source_key: s
 
 
 def emit_document_impacts(db: Session, document: Document, version: DocumentVersion):
-    emit_impacts(db, launch_id=document.folder.launch_id, source_kind='document',
+    emit_impacts(db, launch_id=document.context_launch_id, source_kind='document',
                  source_key=document.doc_type, source_folder=document.folder.slug,
                  source_ref_id=version.id, old_value=None, new_value=f'v{version.number}')

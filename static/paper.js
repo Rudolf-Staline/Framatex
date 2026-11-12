@@ -57,6 +57,8 @@ function paperTargetFromHash(hash){
  return match ? match[1] : null;
 }
 async function paperOpenDeepLink(){
+ const order=window.location.hash.match(/^#\/order\/([0-9a-f-]{36})$/i);
+ if(order){try{await orderDossierPage(order[1]);return true}catch(err){showErr(err);return false}}
  const id=paperTargetFromHash(window.location.hash);
  if(!id)return false;
  try{await openLaunch(id,'jaune');return true}catch(err){showErr(err);return false}

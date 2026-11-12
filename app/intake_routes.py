@@ -29,29 +29,15 @@ async def intake_preview(launch_id:str,file:UploadFile=File(...),user:User=Depen
     # On n'effectue aucune analyse si le collaborateur n'a le droit de déposer dans aucune rubrique.
     if not any(permitted(user,'document.write',f) for f in SLUGS):
         raise HTTPException(403,'Dépôt interdit')
-    name=Path((file.filename or '').replace('\\','/')).name[:240]
-    suffix=Path(name).suffix.lower()
-    if suffix not in EXTS: raise HTTPException(422,'Format interdit')
-    # Aperçu isolé, jamais conservé comme pièce du dossier. Refuser les uploads trop volumineux.
-    path=STORAGE/("preview-"+secrets.token_hex(18))
+    from .main import store_upload, STORAGE as private_storage
+    from starlette.concurrency import run_in_threadpool
+    name,disk_name,_size,_sha,_mime=await store_upload(file)
+    path=private_storage/disk_name
     try:
-        total=0
-        with path.open('xb') as dest:
-            while chunk:=await file.read(1024*1024):
-                total+=len(chunk)
-                if total>MAX_UPLOAD: raise HTTPException(413,'Fichier supérieur à 20 Mo')
-                dest.write(chunk)
-        if not total:raise HTTPException(422,'Fichier vide')
-        verify_file(path,suffix)
-        from .partner_uploads import scan
-        scan(path)
-        result=preview(path,name)
-        # Ne jamais révéler une rubrique suggérée que le collaborateur n'a pas le droit d'utiliser.
+        result=await run_in_threadpool(preview,path,name)
         result['classification']['suggestions']=[x for x in result['classification']['suggestions'] if permitted(user,'document.write',x['folder'])]
         return result
-    finally:
-        await file.close()
-        path.unlink(missing_ok=True)
+    finally:path.unlink(missing_ok=True)
 
 @router.get('/api/document-versions/{version_id}/intake')
 def version_intake(version_id:str,user:User=Depends(get_current_user),db:Session=Depends(get_db)):

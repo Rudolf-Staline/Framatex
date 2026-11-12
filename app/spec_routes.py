@@ -4,6 +4,7 @@ Une extraction suggère ; seuls les humains créent, vérifient et clôturent.
 Les preuves et leurs versions exactes restent consultables.
 """
 from __future__ import annotations
+from .order_documents import document_in_launch
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -27,7 +28,7 @@ def _base():
 def _version(db:Session, version_id:str, launch_id:str, user:User, write=False):
     _, _, must, _, _ = _base()
     version=db.get(DocumentVersion,version_id)
-    if not version or version.document.folder.launch_id!=launch_id:
+    if not version or not document_in_launch(db, version.document, launch_id):
         raise HTTPException(404,'Document ou version introuvable dans ce lancement')
     folder=version.document.folder.slug
     must(user,'document.read',folder)

@@ -1,3 +1,4 @@
+from .order_documents import document_in_launch
 """Controlled integration without copying blobs or losing supplier provenance."""
 from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from .core import get_db, get_current_user
 from .main import must, audit, STORAGE, doc_out
 from .access import must_access
+from .order_documents import document_accessible
 from .models import Document, DocumentVersion, Folder
 from .workflow_models import DocumentReview
 from .workflow import emit_document_impacts
@@ -46,14 +48,14 @@ def integrate(rid:str,payload:IntegrationInput,user=Depends(get_current_user),db
     if payload.document_id:
         document=db.get(Document,payload.document_id)
         previous=db.scalar(select(PartnerIntegration).join(DocumentVersion,PartnerIntegration.version_id==DocumentVersion.id).join(PartnerSubmission,PartnerIntegration.submission_id==PartnerSubmission.id).where(DocumentVersion.document_id==payload.document_id,PartnerSubmission.request_id==rid))
-        if not document or document.folder.launch_id!=request.launch_id or document.folder.slug!=payload.folder or not previous:
+        if not document or not document_in_launch(db, document, request.launch_id) or document.folder.slug!=payload.folder or not previous:
             raise HTTPException(409,'Document cible étranger à la demande ou au dossier')
     else:
         existing=db.scalar(select(PartnerIntegration).join(PartnerSubmission).where(PartnerSubmission.request_id==rid))
         if existing:raise HTTPException(409,'Choisir le document déjà intégré pour ajouter une version')
-        folder=db.scalar(select(Folder).where(Folder.launch_id==request.launch_id,Folder.slug==payload.folder))
+        folder=next((f for f in launch.folders if f.slug==payload.folder),None)
         if not folder:raise HTTPException(422,'Rubrique absente')
-        document=Document(folder_id=folder.id,title=request.title,doc_type=request.doc_type,created_by=user.id)
+        document=Document(launch_id=request.launch_id,folder_id=folder.id,title=request.title,doc_type=request.doc_type,created_by=user.id)
         db.add(document);db.flush()
     version=DocumentVersion(document_id=document.id,number=max((v.number for v in document.versions),default=0)+1,
         original_name=source.original_name,disk_name=source.disk_name,size=source.size,sha256=source.sha256,
@@ -85,14 +87,14 @@ def provenance(db,version_id):
 def origin(version_id:str,user=Depends(get_current_user),db:Session=Depends(get_db)):
     version=db.get(DocumentVersion,version_id)
     if not version:raise HTTPException(404,'Version introuvable')
-    must_access(db,user,version.document.folder.launch_id);must(user,'document.read',version.document.folder.slug)
+    assert_document_access(db,user,version.document);must(user,'document.read',version.document.folder.slug)
     return provenance(db,version_id)
 
 @router.post('/api/document-versions/{version_id}/supplier-withdrawal')
 def withdraw(version_id:str,payload:ReasonInput,user=Depends(get_current_user),db:Session=Depends(get_db)):
     version=db.get(DocumentVersion,version_id)
     if not version:raise HTTPException(404,'Version introuvable')
-    must_access(db,user,version.document.folder.launch_id);must(user,'document.review',version.document.folder.slug)
+    assert_document_access(db,user,version.document);must(user,'document.review',version.document.folder.slug)
     link=db.scalar(select(PartnerIntegration).where(PartnerIntegration.version_id==version_id))
     if not link or not link.active:raise HTTPException(409,'Intégration absente ou déjà retirée')
     link.active=False;link.withdrawal_reason=payload.reason
@@ -119,7 +121,7 @@ def use_confirmed(version_id:str,payload:ConfirmedDatumInput,user=Depends(get_cu
     from .partner_phase2_models import ConfirmedDatumSource
     version=db.get(DocumentVersion,version_id)
     if not version:raise HTTPException(404,'Version introuvable')
-    must_access(db,user,version.document.folder.launch_id)
+    assert_document_access(db,user,version.document)
     must(user,'document.read',version.document.folder.slug);must(user,'document.write',version.document.folder.slug)
     if not business_available(db,version_id) or version.number!=max(v.number for v in version.document.versions):raise HTTPException(409,'Version retirée ou obsolète')
     source=db.get(ConfirmedField,payload.confirmed_id)
@@ -142,5 +144,9 @@ def use_confirmed(version_id:str,payload:ConfirmedDatumInput,user=Depends(get_cu
 def supplier_document(doc_id:str,user=Depends(get_current_user),db:Session=Depends(get_db)):
     doc=db.get(Document,doc_id)
     if not doc:raise HTTPException(404,'Document introuvable')
-    must_access(db,user,doc.folder.launch_id);must(user,'document.read',doc.folder.slug)
+    assert_document_access(db,user,doc);must(user,'document.read',doc.folder.slug)
     return doc_out(doc)
+
+
+def assert_document_access(db,user,doc):
+    if not document_accessible(db,user,doc):raise HTTPException(404,'Document introuvable')

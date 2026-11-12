@@ -1,3 +1,5 @@
+> **Phase 3 :** avant toute mise à niveau, suivre le [guide de migration et restauration](docs/MIGRATION_PHASE3.md), sur une copie, avec arrêt des écritures. Aucun déploiement n'a été autorisé dans cette mission. Pour reproduire les contrôles : `pip install -r requirements-test.txt`, `npm ci`, `python -m playwright install --with-deps chromium`, puis les deux scripts navigateur référencés dans [le rapport](docs/RAPPORT_PHASE3.md). Installer ClamAV et configurer le mode `required` avec une base de signatures maintenue avant une exploitation protégée.
+
 # Installation et validation locale — phase 2
 
 Utiliser une installation locale dédiée et SQLite. Aucun déploiement externe n'est autorisé par cette mission.
