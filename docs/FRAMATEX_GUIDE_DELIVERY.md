@@ -2,6 +2,12 @@
 
 Branche `feat/framat-user-guide`, issue de `main` au commit `d6cde69` après fusion de la PR #34. Livraison du 12 novembre 2026. Aucun déploiement, aucune fusion automatique et aucune modification des données de production.
 
+## État Git et pull request
+
+La branche est poussée sur `origin/feat/framat-user-guide`. `main` reste inchangée. La création automatique de PR a été tentée avec `gh pr create`, puis avec l’API REST : les deux requêtes POST à `api.github.com` ont reçu **`Forbidden`** dans cet environnement. Aucune PR créée ni exécution de CI distante n’est donc revendiquée.
+
+Le titre proposé est **Framatex Guide : aide partagée, visites interactives et Gemini facultatif**. La description complète est conservée dans [PULL_REQUEST_GUIDE.md](PULL_REQUEST_GUIDE.md). [Créer la PR de la branche vers main](https://github.com/Rudolf-Staline/Framatex/pull/new/feat/framat-user-guide). Les tests et preuves de cette livraison ont été exécutés localement.
+
 ## Résultat
 
 L’ancien assistant est remplacé par un composant partagé dans l’espace interne, la recherche et les portails. Le centre d’aide `/help`, les procédures et les visites fonctionnent sans Gemini. L’endpoint historique `/api/assistant/guide` délègue au même catalogue et conserve sa compatibilité.
