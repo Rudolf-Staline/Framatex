@@ -7,6 +7,9 @@ permissions:
   contents: read
 jobs:
   python-and-ui:
+    env:
+      FRAMATEX_GUIDE_AI_ENABLED: '0'
+      FRAMATEX_GUIDE_REAL_AI_TEST: '0'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,6 +29,11 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Tests API, migrations, restauration et moteur antivirus réel
         run: PYTHONPATH=. python -m pytest -q
+      - name: Catalogue, manuel et évaluation locale du guide
+        run: |
+          python tools/check_guide_catalog.py
+          python tools/build_guide_manual.py --check
+          python tools/evaluate_guide.py
       - name: Tests de rendu JavaScript
         run: |
           for file in tests/*.cjs; do node "$file"; done
@@ -34,11 +42,16 @@ jobs:
         run: python tools/check_partner_browser.py
       - name: Commandes, dossiers, versions, mobile et axe
         run: python tools/check_phase3_browser.py
+      - name: Parcours Framatex Guide et IA simulée
+        run: python tools/check_guide_browser.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: browser-evidence
           path: |
+            artifacts/guide-browser.json
+            artifacts/guide-evaluation.json
+            artifacts/guide-*.png
             artifacts/phase3-browser.json
             artifacts/phase3-partner-axe.json
             artifacts/phase3-order-browser.png

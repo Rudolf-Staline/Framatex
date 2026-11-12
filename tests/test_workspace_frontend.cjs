@@ -15,9 +15,6 @@ assert(!html.includes('<script>'));
 assert(html.includes('&lt;script&gt;'));
 const empty=vm.runInContext('prioritySummary({items:[],counts:{urgent:0,high:0,normal:0},total:0,truncated:false})',ctx);
 assert(empty.includes('Aucune action prioritaire'));
-assert(src.includes("'/api/assistant/guide'"));
-assert(src.includes('assistant-followup'));
-assert(src.includes("addMessage('user'"));
-assert(src.includes('assistant-conversation'));
-assert(src.includes('aria-modal=\"true\"'));
+assert(src.includes('window.FramatexGuide.open()'));
+assert(!src.includes('addMessage')); // one shared help renderer replaces the old drawer engine
 console.log('Frontend 0.9 : priorités, filtres, navigation et échappement HTML OK');

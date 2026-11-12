@@ -19,12 +19,16 @@ assert(app.includes('class="command-hero"'));
 assert(app.includes('class="executive-grid"'));
 assert(app.includes('class="home-rail"'));
 assert(app.includes('data-view="${view}"'));
-assert(app.includes("['assistant','layers','Assistant']"));
+assert(app.includes("['assistant','layers','Framatex Guide']"));
 assert(assistant.includes('function assistantPage()'));
-assert(assistant.includes("'/api/assistant/guide'"));
-assert(assistant.includes('assistantThread'));
-assert(assistant.includes('guideNavigation'));
-assert(assistant.includes('e(response.answer)'));
-assert(assistant.includes('Réponses basées sur les procédures locales'));
+assert(fs.readFileSync('app/workspace_routes.py','utf8').includes('/api/assistant/guide'));
+assert(fs.readFileSync('static/guide.js','utf8').includes('/api/guide/ask'));
+assert(!assistant.includes('assistantThread'));
+assert(assistant.includes('FramatexGuide.register'));
+assert(!assistant.includes('fetch(')); // shared component owns requests
+assert(assistant.includes('FramatexGuide.open()'));
+assert(!assistant.includes('response.answer')); // shared renderer owns escaping
+assert(html.includes('/assets/guide.js'));
+assert(html.includes('/assets/vendor/driver.js'));
 assert(workspace.includes('function openGuideDrawer()'));
 console.log('Framatex 0.19: thème blanc/bleu, accessibilité, navigation et assistant OK');

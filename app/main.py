@@ -837,3 +837,6 @@ async def safe_database_errors(request,exception):
 @app.exception_handler(IntegrityError)
 async def safe_integrity_errors(request,exception):
     return JSONResponse(status_code=409,content={'detail':'Une opération concurrente ou une relation incompatible empêche cette modification. Actualisez les données.'})
+
+from .guide_routes import router as guide_router
+app.include_router(guide_router)

@@ -147,66 +147,20 @@ class GuideRequest(BaseModel):
     launch_id: str | None = Field(default=None, max_length=36)
 
 
-GUIDES = (
-    ("mail", ("email", "courriel", "engagement", "messagerie"), "Emails et engagements",
-     "Ouvrez le dossier de lancement, puis la rubrique Emails et engagements. Importez un .eml dans le dossier Rose ; toute proposition d'engagement doit être confirmée.", "document.read", "rose"),
-    ("spec", ("exigence", "ambiguite", "clarification", "specification", "client technique"), "Exigences et clarifications",
-     "Ouvrez le dossier de lancement, puis Exigences et clarifications. La présence d'une preuve ne vaut pas validation automatique.", "document.read", "jaune"),
-    ("workflow", ("validation", "impact", "modification", "historique", "version"), "Versions et décisions",
-     "Ouvrez le dossier concerné, puis Versions et décisions pour examiner les changements et leur prise en compte.", "document.read", None),
-    ("documents", ("deposer", "depot", "ajouter un document", "facture", "bon de livraison", "qr code", "scanner", "document"), "Dépôt et recherche documentaire",
-     "Dans Dossiers jaunes, ouvrez un lancement et choisissez son sous-dossier : Jaune (technique), Rose (réception), Bleu (douane), Vert (facturation). Le QR code ne donne jamais d'accès sans connexion.", "document.read", None),
-    ("priorities", ("priorite", "urgence", "tache", "action", "tableau de bord", "retard"), "Actions prioritaires",
-     "La vue d'ensemble présente les actions issues des règles documentaires, alertes de modification, exigences, ambiguïtés et échéances d'engagement. Les priorités ne sont pas des décisions automatiques.", "launch.read", None),
-    ("launches", ("creer un dossier", "ouvrir un dossier", "lancement", "orli", "commande"), "Dossiers de lancement",
-     "Dans Dossiers jaunes, créez un lancement même sans numéro ORLI. Son identifiant interne est indépendant de l'ERP.", "launch.read", None),
-    ("admin", ("role", "utilisateur", "permission", "habilitation", "administration"), "Administration",
-     "La rubrique Administration permet de gérer les comptes et les rôles ; seuls les administrateurs peuvent y accéder.", "admin", None),
-)
-
 @router.post("/api/assistant/guide")
 def guide(payload: GuideRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Réponses prévalidées, sans IA et sans lecture du contenu des documents."""
-    must, permitted = deps()
-    must(user, "launch.read")
-    launch = None
+    from .guide_core import Principal,GuideContext,retrieve,answer
+    from .main import is_admin
+    must,_=deps();must(user,'launch.read')
     if payload.launch_id:
         from .access import must_access
-        launch = must_access(db, user, payload.launch_id)
-    phrase = _normalize(payload.question)
-    hits = [g for g in GUIDES if any(term in phrase for term in g[1])]
-    for area, _, title, answer, permission, folder in hits:
-        if permission == "admin":
-            from .main import is_admin
-            if not is_admin(user):
-                continue
-        elif folder:
-            if not permitted(user, permission, folder):
-                continue
-        elif permission == "document.read":
-            if not any(permitted(user, "document.read", slug) for slug in ("jaune", "rose", "bleu", "vert")):
-                continue
-        elif not permitted(user, permission):
-            continue
-        if area == "documents":
-            if "facture" in phrase and not permitted(user,"document.read","vert"):
-                continue
-            if "livraison" in phrase and not permitted(user,"document.read","rose"):
-                continue
-            if "facture" in phrase and permitted(user,"document.read","vert"):
-                answer = "Les factures Framatex sont classées dans le sous-dossier Vert du lancement. Ouvrez ce dossier pour déposer ou retrouver la pièce."
-                folder = "vert"
-            elif "livraison" in phrase and permitted(user,"document.read","rose"):
-                answer = "Un bon de livraison se classe dans le sous-dossier Rose. Vérifiez le lancement avant de confirmer le dépôt."
-                folder = "rose"
-            elif not any(permitted(user,"document.read",slug) for slug in ("jaune","rose","bleu","vert")):
-                continue
-        destination = ("home" if area == "priorities" else area if area in ("launches","admin") else "detail" if launch else "launches")
-        return {"title":title, "answer":answer, "destination":destination,
-                "launch_id":launch.id if launch and destination == "detail" else None,
-                "area":area if destination == "detail" else None,
-                "folder":folder if folder and permitted(user,"document.read",folder) else None,
-                "requires_human_action":True,"source":"Guide de navigation intégré · règles locales"}
-    return {"title":"Question à préciser", "answer":"Je n'ai pas de procédure vérifiée pour cette question ou vous n'avez pas accès à la rubrique. Reformulez votre demande ou contactez l'administrateur.",
-            "destination":None,"launch_id":None,"area":None,"folder":None,
-            "requires_human_action":True,"source":"Guide de navigation intégré · aucune recherche dans vos documents"}
+        must_access(db,user,payload.launch_id)
+    who=Principal('employee',user,set(),is_admin(user))
+    context=GuideContext(page='detail' if payload.launch_id else 'home',launch_id=payload.launch_id)
+    hits,_=retrieve(payload.question,who,context)
+    result=answer(hits,who,context,db)
+    p=hits[0] if hits else None;area=p.get('legacy_area') if p else None
+    destination=('detail' if payload.launch_id and area else 'admin' if p and p['destination']=='admin' else 'orders') if p else None
+    return {**result,'destination':destination,'launch_id':payload.launch_id if destination=='detail' else None,
+            'area':area if destination=='detail' else None,'folder':None,
+            'source':'Framatex Guide · catalogue local vérifié'}

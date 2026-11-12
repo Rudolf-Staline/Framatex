@@ -1,0 +1,174 @@
+{
+  "home-screen": {
+    "file": "static/assistant.js",
+    "marker": "state.view+'-screen'"
+  },
+  "orders-screen": {
+    "file": "static/assistant.js",
+    "marker": "state.view+'-screen'"
+  },
+  "dossiers-screen": {
+    "file": "static/assistant.js",
+    "marker": "state.view+'-screen'"
+  },
+  "launches-screen": {
+    "file": "static/assistant.js",
+    "marker": "state.view+'-screen'"
+  },
+  "validations-screen": {
+    "file": "static/assistant.js",
+    "marker": "state.view+'-screen'"
+  },
+  "notifications-screen": {
+    "file": "static/assistant.js",
+    "marker": "state.view+'-screen'"
+  },
+  "actions-screen": {
+    "file": "static/assistant.js",
+    "marker": "state.view+'-screen'"
+  },
+  "suppliers-screen": {
+    "file": "static/assistant.js",
+    "marker": "state.view+'-screen'"
+  },
+  "clients-screen": {
+    "file": "static/assistant.js",
+    "marker": "state.view+'-screen'"
+  },
+  "receipts-screen": {
+    "file": "static/assistant.js",
+    "marker": "state.view+'-screen'"
+  },
+  "pilot-screen": {
+    "file": "static/assistant.js",
+    "marker": "state.view+'-screen'"
+  },
+  "admin-screen": {
+    "file": "static/assistant.js",
+    "marker": "state.view+'-screen'"
+  },
+  "orli-screen": {
+    "file": "static/assistant.js",
+    "marker": "state.view+'-screen'"
+  },
+  "audit-screen": {
+    "file": "static/assistant.js",
+    "marker": "state.view+'-screen'"
+  },
+  "partner_admin-screen": {
+    "file": "static/guide-partner.js",
+    "marker": "partner_admin-screen"
+  },
+  "document-search": {
+    "file": "static/guide-search.js",
+    "marker": "document-search"
+  },
+  "order-section-jaune": {
+    "file": "static/assistant.js",
+    "marker": "'order-section-'"
+  },
+  "order-section-rose": {
+    "file": "static/assistant.js",
+    "marker": "'order-section-'"
+  },
+  "order-section-bleu": {
+    "file": "static/assistant.js",
+    "marker": "'order-section-'"
+  },
+  "order-section-vert": {
+    "file": "static/assistant.js",
+    "marker": "'order-section-'"
+  },
+  "order-document-form": {
+    "file": "static/assistant.js",
+    "marker": "order-document-form"
+  },
+  "order-dossier": {
+    "file": "static/assistant.js",
+    "marker": "order-dossier"
+  },
+  "section-fiabilite": {
+    "file": "static/app.js",
+    "marker": "['fiabilite'"
+  },
+  "section-exigences": {
+    "file": "static/app.js",
+    "marker": "['exigences'"
+  },
+  "section-courriels": {
+    "file": "static/app.js",
+    "marker": "['courriels'"
+  },
+  "section-matieres": {
+    "file": "static/app.js",
+    "marker": "['matieres'"
+  },
+  "section-lecture": {
+    "file": "static/app.js",
+    "marker": "['lecture'"
+  },
+  "section-passeports": {
+    "file": "static/app.js",
+    "marker": "['passeports'"
+  },
+  "partner-home": {
+    "file": "static/guide-partner.js",
+    "marker": "partner-home"
+  },
+  "supplier-requests": {
+    "file": "static/guide-partner.js",
+    "marker": "supplier-requests"
+  },
+  "supplier-upload": {
+    "file": "static/guide-partner.js",
+    "marker": "supplier-upload"
+  },
+  "supplier-history": {
+    "file": "static/guide-partner.js",
+    "marker": "supplier-history"
+  },
+  "supplier-deliveries": {
+    "file": "static/guide-partner.js",
+    "marker": "supplier-deliveries"
+  },
+  "partner-documents": {
+    "file": "static/guide-partner.js",
+    "marker": "partner-documents"
+  },
+  "partner-notifications": {
+    "file": "static/guide-partner.js",
+    "marker": "partner-notifications"
+  },
+  "partner-messages": {
+    "file": "static/guide-partner.js",
+    "marker": "partner-messages"
+  },
+  "client-orders": {
+    "file": "static/guide-partner.js",
+    "marker": "client-orders"
+  },
+  "client-publications": {
+    "file": "static/guide-partner.js",
+    "marker": "client-publications"
+  },
+  "client-questions": {
+    "file": "static/guide-partner.js",
+    "marker": "client-questions"
+  },
+  "partner-activation": {
+    "file": "static/guide-partner.js",
+    "marker": "partner-activation"
+  },
+  "partner-login": {
+    "file": "static/guide-partner.js",
+    "marker": "partner-login"
+  },
+  "order-create": {
+    "file": "static/orders.js",
+    "marker": "order-create"
+  },
+  "canonical-reference": {
+    "file": "static/orders.js",
+    "marker": "canonical-reference"
+  }
+}
