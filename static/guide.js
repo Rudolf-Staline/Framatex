@@ -9,7 +9,7 @@ window.FramatexGuide=(()=>{
  const $=selector=>root.querySelector(selector);
  const el=(tag,text,attrs={})=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);return n};
  const button=(text,fn,attrs={})=>{const b=el('button',text,{type:'button',...attrs});b.addEventListener('click',()=>Promise.resolve(fn()).catch(showError));return b};
- let tourTransition=null,pausePending=false;
+ let tourTransition=null,pausePending=false,tourCommands=Promise.resolve();
  let resumeSurface=null;try{resumeSurface=JSON.parse(sessionStorage.getItem('framat-guide-pending')||'null')?.surface}catch{}
  const surface=()=>resumeSurface||adapter?.surface?.()||new URLSearchParams(location.search).get('surface')||'internal';
  const context=()=>({page:location.pathname==='/help'?'help':'unknown',...contextOverride,...adapter?.context?.()});
@@ -125,19 +125,23 @@ window.FramatexGuide=(()=>{
   close();await waitTarget(step.target);return true;
  }
  async function pauseTour(){if(pausePending)return;pausePending=true;try{await tourTransition?.catch(()=>{});if(tourState)await save('paused')}finally{driver?.destroy();tourState=null;pausePending=false}}
- async function moveTour(delta){
-  if(tourTransition||!tourState)return;
-  tourTransition=(async()=>{try{
-   if(delta>0&&tourState.index===tourState.tour.steps.length-1){await save('finished');driver.destroy();tourState=null;return}
-   const index=tourState.index+delta;if(index>=0&&await prepareStep(index))driver.drive(tourState.index);
-  }catch(e){await missing(e)}})();
-  try{await tourTransition}finally{tourTransition=null}
+ function moveTour(delta){
+  const activeTour=tourState;
+  tourCommands=tourCommands.then(async()=>{
+   if(!activeTour||tourState!==activeTour||pausePending)return;
+   tourTransition=(async()=>{try{
+    if(delta>0&&tourState.index===tourState.tour.steps.length-1){await save('finished');driver.destroy();tourState=null;return}
+    const index=tourState.index+delta;if(index>=0&&await prepareStep(index))driver.drive(tourState.index);
+   }catch(e){await missing(e)}})();
+   try{await tourTransition}finally{tourTransition=null}
+  }).catch(showError);
+  return tourCommands;
  }
  async function startTour(id,index=0){
   const t=await api('/api/guide/tours/'+encodeURIComponent(id));await load();tourState={tour:t,index:Math.min(index,t.steps.length-1)};
   try{
    if(!await prepareStep(tourState.index))return;
-   driver=window.driver.js.driver({animate:!matchMedia('(prefers-reduced-motion: reduce)').matches,allowClose:true,showProgress:true,allowKeyboardControl:true,disableActiveInteraction:false,
+   driver=window.driver.js.driver({animate:!matchMedia('(prefers-reduced-motion: reduce)').matches,allowClose:true,showProgress:true,allowKeyboardControl:false,disableActiveInteraction:false,
     nextBtnText:'Suivant',prevBtnText:'Retour',doneBtnText:'Terminer',progressText:'{{current}} / {{total}}',popoverClass:'framat-guide-tour',
     steps:t.steps.map(s=>({element:()=>document.querySelector('[data-guide-target="'+CSS.escape(s.target)+'"]'),popover:{title:s.title,description:s.description}})),
     onNextClick:()=>moveTour(1),onPrevClick:()=>moveTour(-1),
@@ -170,6 +174,17 @@ window.FramatexGuide=(()=>{
   resumeSurface=null;
   await welcome();
  }
+ // Driver renders the title before its animation-frame transition settles and
+ // discards arrows during that interval. Route keyboard input through the same
+ // serialized guide commands as the buttons, including an in-flight screen load.
+ window.addEventListener('keydown',event=>{
+  if(!tourState||!driver?.isActive()||event.defaultPrevented||event.isComposing||event.repeat)return;
+  if(event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return;
+  if(event.key==='Escape'){event.preventDefault();void pauseTour().catch(showError);return}
+  if(!['ArrowLeft','ArrowRight'].includes(event.key))return;
+  if(event.target instanceof Element&&event.target.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="textbox"],[role="combobox"],[role="slider"],[role="spinbutton"],[role="listbox"]'))return;
+  event.preventDefault();void moveTour(event.key==='ArrowLeft'?-1:1);
+ });
  document.addEventListener('framat:guide-auth',refresh);
  document.addEventListener('DOMContentLoaded',()=>init().catch(showError));
  return {register,open,close,startTour,execute,refresh,search,procedure,waitTarget,get catalog(){return catalog},get context(){return context()}};

@@ -6,9 +6,46 @@ from playwright.sync_api import sync_playwright,expect
 ROOT=Path(__file__).resolve().parents[1];H={'X-Framatex-Request':'1'};PWD='GuideBrowserPassword2026!'
 
 
+def expect_step(page,number,target):
+ expect(page.locator('.driver-popover-title')).to_contain_text(f'{number}/4')
+ expect(page.locator('.driver-active-element')).to_have_attribute('data-guide-target',target)
+ expect(page.locator('.driver-active-element')).to_be_visible()
+
+
+def exercise_upload_tour(page,order_id):
+ # Enter through the UI, preserving the scenario that failed on main.
+ page.get_by_role('button',name='Ouvrir Framatex Guide',exact=True).click()
+ page.get_by_label('Rechercher dans l’aide',exact=True).fill('Ajouter une fiche technique')
+ page.locator('#guide-panel form button').click();page.locator('[data-guide-procedure=upload_technical_document]').click()
+ expect(page.locator('#guide-status')).to_contain_text('IA indisponible')
+ page.get_by_role('button',name='Me montrer comment faire',exact=True).click()
+ expect_step(page,1,'orders-screen');page.locator('.driver-popover-next-btn').click()
+ page.get_by_label('Objet autorisé',exact=True).select_option(order_id)
+ page.get_by_role('button',name='Utiliser cette sélection',exact=True).click()
+ expect_step(page,2,'order-dossier')
+ page.locator('.driver-popover-next-btn').click();expect_step(page,3,'order-section-jaune')
+ page.keyboard.press('ArrowLeft');expect_step(page,2,'order-dossier')
+ page.locator('.driver-popover-next-btn').click();expect_step(page,3,'order-section-jaune')
+ page.get_by_role('button',name='Retour',exact=True).click();expect_step(page,2,'order-dossier')
+ page.keyboard.press('ArrowRight');expect_step(page,3,'order-section-jaune')
+ page.keyboard.press('ArrowRight');expect_step(page,4,'order-document-form')
+ field=page.locator('#order-document-title');field.fill('Fiche de recette')
+ field.press('Home');field.press('ArrowRight');field.press('ArrowLeft');page.keyboard.type('X')
+ expect(field).to_have_value('XFiche de recette');expect_step(page,4,'order-document-form')
+ page.locator('#order-document-origin').focus();page.keyboard.press('ArrowLeft')
+ expect_step(page,4,'order-document-form')
+ field.focus();page.keyboard.press('Escape');expect(page.locator('.driver-popover')).to_have_count(0)
+ page.get_by_role('button',name='Ouvrir Framatex Guide',exact=True).click();page.get_by_role('button',name='Mes visites',exact=True).click()
+ card=page.locator('#guide-content article').filter(has=page.get_by_role('heading',name='Ajouter une fiche technique',exact=True))
+ expect(card).to_contain_text('En pause');card.get_by_role('button',name='Reprendre',exact=True).click()
+ expect_step(page,4,'order-document-form');expect(field).to_have_value('XFiche de recette')
+ page.screenshot(path=str(ROOT/'artifacts/guide-tour.png'),full_page=True)
+ page.get_by_role('button',name='Terminer',exact=True).click();expect(page.locator('.driver-popover')).to_have_count(0)
+
+
 def main():
  with tempfile.TemporaryDirectory(prefix='framat-guide-browser-') as temp:
-  env={**os.environ,'FRAMATEX_DATA_DIR':temp,'FRAMATEX_SECRET_KEY':'guide-browser-secret-'*4,'FRAMATEX_GUIDE_AI_ENABLED':'1','GEMINI_API_KEY':'synthetic-test-key','FRAMATEX_GUIDE_REQUESTS_PER_MINUTE':'200'};env.pop('DATABASE_URL',None)
+  env={**os.environ,'FRAMATEX_DATA_DIR':temp,'FRAMATEX_SECRET_KEY':'guide-browser-secret-'*4,'FRAMATEX_GUIDE_AI_ENABLED':'1','GEMINI_API_KEY':'synthetic-test-key','FRAMATEX_GUIDE_REQUESTS_PER_MINUTE':'200','FRAMATEX_GUIDE_HTTP_REQUESTS_PER_MINUTE':'2000'};env.pop('DATABASE_URL',None)
   subprocess.run([sys.executable,'-c',"from app.main import app;from app.migrate import migrate;migrate();from app.core import SessionLocal,hash_password;from app.models import User,Role;db=SessionLocal();u=User(name='Admin Guide',email='admin@guide.local',password_hash=hash_password('GuideBrowserPassword2026!'));u.roles.append(Role(name='Administrateur'));db.add(u);db.commit()"],env=env,cwd=ROOT,check=True)
   with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
   base=f'http://127.0.0.1:{port}'
@@ -42,23 +79,16 @@ def main():
       page.goto(base+'/');page.get_by_label('Adresse email').fill('admin@guide.local');page.get_by_label('Mot de passe',exact=True).fill(PWD);page.get_by_role('button',name='Se connecter',exact=False).click()
       page.get_by_text('Bienvenue sur Framatex ! Souhaitez-vous découvrir votre espace de travail ?',exact=True).wait_for()
       page.get_by_role('button',name='Plus tard',exact=True).click()
-      page.get_by_role('button',name='Ouvrir Framatex Guide',exact=True).click()
-      page.get_by_label('Rechercher dans l’aide',exact=True).fill('Ajouter une fiche technique')
-      page.locator('#guide-panel form button').click();page.locator('[data-guide-procedure=upload_technical_document]').click()
-      expect(page.locator('#guide-status')).to_contain_text('IA indisponible')
-      page.get_by_role('button',name='Me montrer comment faire',exact=True).click()
-      expect(page.locator('.driver-popover-title')).to_contain_text('Ajouter une fiche technique')
-      page.locator('.driver-popover-next-btn').click()
-      page.get_by_label('Objet autorisé',exact=True).select_option(order['id'])
-      page.get_by_role('button',name='Utiliser cette sélection',exact=True).click()
-      expect(page.locator('.driver-popover-title')).to_contain_text('2/4')
-      page.locator('.driver-popover-next-btn').click();expect(page.locator('.driver-popover-title')).to_contain_text('3/4')
-      page.keyboard.press('ArrowLeft');expect(page.locator('.driver-popover-title')).to_contain_text('2/4');page.keyboard.press('ArrowRight');expect(page.locator('.driver-popover-title')).to_contain_text('3/4');page.keyboard.press('ArrowRight');expect(page.locator('.driver-popover-title')).to_contain_text('4/4')
-      assert page.locator('#order-document-form').is_visible()
-      page.screenshot(path=str(ROOT/'artifacts/guide-tour.png'),full_page=True)
-      page.locator('.driver-popover-next-btn').click();expect(page.locator('.driver-popover')).to_have_count(0)
+      exercise_upload_tour(page,order['id'])
       assert sum(len(s['documents']) for s in api.get(f'/api/orders/{order["id"]}/dossier').json()['sections'])==0
       progress=api.get('/api/guide/progress').json();assert next(r for r in progress if r['tour_id']=='tour_upload_technical_document')['status']=='finished'
+      # Two fresh sessions exercise the same entry and assertions with slow frames.
+      for iteration in range(2):
+       repeated=browser.new_context(reduced_motion='reduce');trial=repeated.new_page();trial.on('pageerror',lambda e:errors.append(str(e)))
+       trial.add_init_script("const nativeRAF=window.requestAnimationFrame;window.requestAnimationFrame=callback=>nativeRAF.call(window,time=>setTimeout(()=>callback(time),200));")
+       trial.goto(base+'/');trial.get_by_label('Adresse email').fill('admin@guide.local');trial.get_by_label('Mot de passe',exact=True).fill(PWD);trial.get_by_role('button',name='Se connecter',exact=False).click();trial.locator('.sidebar').wait_for()
+       exercise_upload_tour(trial,order['id']);repeated.close()
+      assert sum(len(s['documents']) for s in api.get(f'/api/orders/{order["id"]}/dossier').json()['sections'])==0
       # A conditional target is absent until the user opens a form: explicit suspension.
       page.get_by_role('button',name='Ouvrir Framatex Guide',exact=True).click();page.get_by_label('Rechercher dans l’aide').fill('Créer une commande');page.locator('#guide-panel form button').click();page.locator('[data-guide-procedure=create_order]').click();page.get_by_role('button',name='Me montrer comment faire',exact=True).click();page.locator('.driver-popover-next-btn').click();page.locator('.driver-popover-next-btn').click()
       expect(page.locator('#guide-status')).to_contain_text('La visite est suspendue',timeout=10000)
@@ -98,7 +128,7 @@ def main():
        pp.screenshot(path=str(ROOT/f'artifacts/guide-{kind}.png'),full_page=True)
       # Every declared target is checked by source contracts; real order and portal targets above.
       assert not errors,errors
-      (ROOT/'artifacts/guide-browser.json').write_text(json.dumps({'synthetic':True,'gemini':'simulated timeout','audits':audits,'console_errors':errors,'no_business_write_from_tour':True},indent=2))
+      (ROOT/'artifacts/guide-browser.json').write_text(json.dumps({'synthetic':True,'gemini':'simulated timeout','audits':audits,'console_errors':errors,'no_business_write_from_tour':True,'keyboard':{'runs':3,'delayed_frame_runs':2,'frame_delay_ms':200,'left_3_to_2':True,'highlighted_target_verified':True,'previous_button':True,'text_and_select_arrows_preserved':True,'escape_and_resume':True,'finished':True}},indent=2))
       browser.close();print('PASS Guide: first login, local fallback, order selection, multi-page tours, progress, resume, four profiles, keyboard and mobile/axe')
    finally:
     server.terminate();server.wait(timeout=10)
