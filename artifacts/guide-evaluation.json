@@ -1,1939 +1,4083 @@
 {
-  "dataset": "122 questions synthétiques annotées, dont titres canoniques, paraphrases, fautes, ambiguïtés et refus",
+  "schema_version": 2,
   "questions": 122,
-  "top1_accuracy": 1.0,
-  "top3_accuracy": 1.0,
-  "relevant_shortcuts_rate": 1.0,
-  "safe_actions_rate": 1.0,
-  "correct_refusal_rate": 1.0,
-  "median_ms": 1.4500000000000002,
-  "p95_ms": 2.861,
+  "mode": "local",
+  "client": "none",
   "external_calls_allowed": false,
-  "gemini_improvement_measured": false,
+  "budget": {
+    "scope": "evaluation_process_only",
+    "limit": 30,
+    "used": 0,
+    "production_quotas_used": false
+  },
+  "coverage": {
+    "eligible": 112,
+    "attempts": 0,
+    "validated": 0,
+    "validated_denominator": 112,
+    "validated_rate": 0.0,
+    "partial": false,
+    "status": "not_run",
+    "not_requested": 122,
+    "not_requested_reasons": {
+      "disabled": 112,
+      "restricted": 4,
+      "no_verified_candidates": 6
+    },
+    "fallbacks": 0,
+    "attempted_fallbacks": 0,
+    "fallback_reasons": {}
+  },
+  "local_full": {
+    "denominator": 122,
+    "correct": 122,
+    "top1_accuracy": 1.0,
+    "top3_accuracy": 1.0,
+    "safe_actions_rate": 1.0,
+    "relevant_shortcuts_rate": 1.0,
+    "median_ms": 1.1070000000000002,
+    "p95_ms": 1.784,
+    "refusals": {
+      "correct": 9,
+      "denominator": 9,
+      "accuracy": 1.0
+    }
+  },
+  "enriched_full": {
+    "denominator": 122,
+    "correct": 122,
+    "top1_accuracy": 1.0,
+    "top3_accuracy": 1.0,
+    "safe_actions_rate": 1.0,
+    "relevant_shortcuts_rate": 1.0,
+    "median_ms": 1.1070000000000002,
+    "p95_ms": 1.784,
+    "gemini_validated_results": 0,
+    "local_results": 122,
+    "refusals": {
+      "correct": 9,
+      "denominator": 9,
+      "accuracy": 1.0
+    }
+  },
+  "paired_validated": {
+    "denominator": 0,
+    "local": {
+      "denominator": 0,
+      "correct": 0,
+      "top1_accuracy": null,
+      "top3_accuracy": null,
+      "safe_actions_rate": null,
+      "relevant_shortcuts_rate": null,
+      "median_ms": null,
+      "p95_ms": null
+    },
+    "enriched": {
+      "denominator": 0,
+      "correct": 0,
+      "top1_accuracy": null,
+      "top3_accuracy": null,
+      "safe_actions_rate": null,
+      "relevant_shortcuts_rate": null,
+      "median_ms": null,
+      "p95_ms": null
+    },
+    "improved": 0,
+    "degraded": 0,
+    "unchanged": 0
+  },
+  "comparison_real_pending": true,
   "navigation": "Mesurée séparément dans tools/check_guide_browser.py ; pas déduite de la pertinence textuelle.",
   "results": [
     {
       "id": "canonical_dashboard",
+      "audience": "admin",
       "expected": [
         "dashboard"
       ],
-      "chosen": [
-        "dashboard"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 839.326
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "dashboard"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 756.2
+      },
+      "enriched": {
+        "chosen": [
+          "dashboard"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 756.2
+      }
     },
     {
       "id": "canonical_create_order",
+      "audience": "admin",
       "expected": [
         "create_order"
       ],
-      "chosen": [
-        "create_order"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.577
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "create_order"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.138
+      },
+      "enriched": {
+        "chosen": [
+          "create_order"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.138
+      }
     },
     {
       "id": "canonical_open_dossier",
+      "audience": "admin",
       "expected": [
         "open_dossier"
       ],
-      "chosen": [
-        "open_dossier"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.404
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "open_dossier"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.909
+      },
+      "enriched": {
+        "chosen": [
+          "open_dossier"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.909
+      }
     },
     {
       "id": "canonical_order_launch_difference",
+      "audience": "admin",
       "expected": [
         "order_launch_difference"
       ],
-      "chosen": [
-        "order_launch_difference"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.135
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "order_launch_difference"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.853
+      },
+      "enriched": {
+        "chosen": [
+          "order_launch_difference"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.853
+      }
     },
     {
       "id": "canonical_create_launch",
+      "audience": "admin",
       "expected": [
         "create_launch"
       ],
-      "chosen": [
-        "create_launch"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.499
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "create_launch"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.89
+      },
+      "enriched": {
+        "chosen": [
+          "create_launch"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.89
+      }
     },
     {
       "id": "canonical_link_launch",
+      "audience": "admin",
       "expected": [
         "link_launch"
       ],
-      "chosen": [
-        "link_launch"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.383
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "link_launch"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.854
+      },
+      "enriched": {
+        "chosen": [
+          "link_launch"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.854
+      }
     },
     {
       "id": "canonical_folder_jaune",
+      "audience": "admin",
       "expected": [
         "folder_jaune"
       ],
-      "chosen": [
-        "folder_jaune"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.172
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "folder_jaune"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.238
+      },
+      "enriched": {
+        "chosen": [
+          "folder_jaune"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.238
+      }
     },
     {
       "id": "canonical_folder_rose",
+      "audience": "admin",
       "expected": [
         "folder_rose"
       ],
-      "chosen": [
-        "folder_rose",
-        "receipts"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.467
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "folder_rose",
+          "receipts"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.381
+      },
+      "enriched": {
+        "chosen": [
+          "folder_rose",
+          "receipts"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.381
+      }
     },
     {
       "id": "canonical_folder_bleu",
+      "audience": "admin",
       "expected": [
         "folder_bleu"
       ],
-      "chosen": [
-        "folder_bleu"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.756
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "folder_bleu"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.925
+      },
+      "enriched": {
+        "chosen": [
+          "folder_bleu"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.925
+      }
     },
     {
       "id": "canonical_folder_vert",
+      "audience": "admin",
       "expected": [
         "folder_vert"
       ],
-      "chosen": [
-        "folder_vert"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 0.977
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "folder_vert"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.295
+      },
+      "enriched": {
+        "chosen": [
+          "folder_vert"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.295
+      }
     },
     {
       "id": "canonical_upload_technical_document",
+      "audience": "admin",
       "expected": [
         "upload_technical_document"
       ],
-      "chosen": [
-        "upload_technical_document"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.571
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "upload_technical_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.048
+      },
+      "enriched": {
+        "chosen": [
+          "upload_technical_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.048
+      }
     },
     {
       "id": "canonical_find_invoice",
+      "audience": "admin",
       "expected": [
         "find_invoice"
       ],
-      "chosen": [
-        "find_invoice"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.327
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "find_invoice"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.195
+      },
+      "enriched": {
+        "chosen": [
+          "find_invoice"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.195
+      }
     },
     {
       "id": "canonical_delivery_note",
+      "audience": "admin",
       "expected": [
         "delivery_note"
       ],
-      "chosen": [
-        "delivery_note"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.147
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "delivery_note"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.912
+      },
+      "enriched": {
+        "chosen": [
+          "delivery_note"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.912
+      }
     },
     {
       "id": "canonical_document_versions",
+      "audience": "admin",
       "expected": [
         "document_versions"
       ],
-      "chosen": [
-        "document_versions"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.245
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "document_versions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.842
+      },
+      "enriched": {
+        "chosen": [
+          "document_versions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.842
+      }
     },
     {
       "id": "canonical_search_documents",
+      "audience": "admin",
       "expected": [
         "search_documents"
       ],
-      "chosen": [
-        "search_documents"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.072
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "search_documents"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.266
+      },
+      "enriched": {
+        "chosen": [
+          "search_documents"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.266
+      }
     },
     {
       "id": "canonical_completeness",
+      "audience": "admin",
       "expected": [
         "completeness"
       ],
-      "chosen": [
-        "completeness"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.125
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "completeness"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.387
+      },
+      "enriched": {
+        "chosen": [
+          "completeness"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.387
+      }
     },
     {
       "id": "canonical_configure_completeness",
+      "audience": "admin",
       "expected": [
         "configure_completeness"
       ],
-      "chosen": [
-        "configure_completeness"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.429
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "configure_completeness"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.336
+      },
+      "enriched": {
+        "chosen": [
+          "configure_completeness"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.336
+      }
     },
     {
       "id": "canonical_document_coherence",
+      "audience": "admin",
       "expected": [
         "document_coherence"
       ],
-      "chosen": [
-        "document_coherence"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.931
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "document_coherence"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.081
+      },
+      "enriched": {
+        "chosen": [
+          "document_coherence"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.081
+      }
     },
     {
       "id": "canonical_document_extraction",
+      "audience": "admin",
       "expected": [
         "document_extraction"
       ],
-      "chosen": [
-        "document_extraction"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.441
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "document_extraction"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.022
+      },
+      "enriched": {
+        "chosen": [
+          "document_extraction"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.022
+      }
     },
     {
       "id": "canonical_client_requirements",
+      "audience": "admin",
       "expected": [
         "client_requirements"
       ],
-      "chosen": [
-        "client_requirements"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.337
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_requirements"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.127
+      },
+      "enriched": {
+        "chosen": [
+          "client_requirements"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.127
+      }
     },
     {
       "id": "canonical_email_commitments",
+      "audience": "admin",
       "expected": [
         "email_commitments"
       ],
-      "chosen": [
-        "email_commitments"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.162
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "email_commitments"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.542
+      },
+      "enriched": {
+        "chosen": [
+          "email_commitments"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.542
+      }
     },
     {
       "id": "canonical_receipts",
+      "audience": "admin",
       "expected": [
         "receipts"
       ],
-      "chosen": [
-        "receipts"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.314
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "receipts"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.065
+      },
+      "enriched": {
+        "chosen": [
+          "receipts"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.065
+      }
     },
     {
       "id": "canonical_materials",
+      "audience": "admin",
       "expected": [
         "materials"
       ],
-      "chosen": [
-        "materials"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.415
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "materials"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.204
+      },
+      "enriched": {
+        "chosen": [
+          "materials"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.204
+      }
     },
     {
       "id": "canonical_approve_document",
+      "audience": "admin",
       "expected": [
         "approve_document"
       ],
-      "chosen": [
-        "approve_document"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.291
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "approve_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.249
+      },
+      "enriched": {
+        "chosen": [
+          "approve_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.249
+      }
     },
     {
       "id": "canonical_correct_rejected_document",
+      "audience": "admin",
       "expected": [
         "correct_rejected_document"
       ],
-      "chosen": [
-        "correct_rejected_document"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.668
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "correct_rejected_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.169
+      },
+      "enriched": {
+        "chosen": [
+          "correct_rejected_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.169
+      }
     },
     {
       "id": "canonical_reopen_validation",
+      "audience": "admin",
       "expected": [
         "reopen_validation"
       ],
-      "chosen": [
-        "reopen_validation"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 0.918
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "reopen_validation"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.838
+      },
+      "enriched": {
+        "chosen": [
+          "reopen_validation"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.838
+      }
     },
     {
       "id": "canonical_approval_configuration",
+      "audience": "admin",
       "expected": [
         "approval_configuration"
       ],
-      "chosen": [
-        "approval_configuration"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 0.935
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "approval_configuration"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.844
+      },
+      "enriched": {
+        "chosen": [
+          "approval_configuration"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.844
+      }
     },
     {
       "id": "canonical_notifications",
+      "audience": "admin",
       "expected": [
         "notifications"
       ],
-      "chosen": [
-        "notifications"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 0.953
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "notifications"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.091
+      },
+      "enriched": {
+        "chosen": [
+          "notifications"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.091
+      }
     },
     {
       "id": "canonical_priorities",
+      "audience": "admin",
       "expected": [
         "priorities"
       ],
-      "chosen": [
-        "priorities"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 3.08
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "priorities"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.896
+      },
+      "enriched": {
+        "chosen": [
+          "priorities"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.896
+      }
     },
     {
       "id": "canonical_supplier_directory",
+      "audience": "admin",
       "expected": [
         "supplier_directory"
       ],
-      "chosen": [
-        "supplier_directory"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.009
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_directory"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.929
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_directory"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.929
+      }
     },
     {
       "id": "canonical_client_directory",
+      "audience": "admin",
       "expected": [
         "client_directory"
       ],
-      "chosen": [
-        "client_directory"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.959
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_directory"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.882
+      },
+      "enriched": {
+        "chosen": [
+          "client_directory"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.882
+      }
     },
     {
       "id": "canonical_invite_supplier",
+      "audience": "admin",
       "expected": [
         "invite_supplier"
       ],
-      "chosen": [
-        "invite_supplier"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.896
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "invite_supplier"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.879
+      },
+      "enriched": {
+        "chosen": [
+          "invite_supplier"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.879
+      }
     },
     {
       "id": "canonical_publish_client",
+      "audience": "admin",
       "expected": [
         "publish_client"
       ],
-      "chosen": [
-        "publish_client"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.196
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "publish_client"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.167
+      },
+      "enriched": {
+        "chosen": [
+          "publish_client"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.167
+      }
     },
     {
       "id": "canonical_supplier_integration",
+      "audience": "admin",
       "expected": [
         "supplier_integration"
       ],
-      "chosen": [
-        "supplier_integration",
-        "search_documents"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.039
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_integration",
+          "search_documents"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.065
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_integration",
+          "search_documents"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.065
+      }
     },
     {
       "id": "canonical_orli_import",
+      "audience": "admin",
       "expected": [
         "orli_import"
       ],
-      "chosen": [
-        "orli_import"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 0.995
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "orli_import"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.84
+      },
+      "enriched": {
+        "chosen": [
+          "orli_import"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.84
+      }
     },
     {
       "id": "canonical_orli_resolution",
+      "audience": "admin",
       "expected": [
         "orli_resolution"
       ],
-      "chosen": [
-        "orli_resolution"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.004
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "orli_resolution"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.905
+      },
+      "enriched": {
+        "chosen": [
+          "orli_resolution"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.905
+      }
     },
     {
       "id": "canonical_users_permissions",
+      "audience": "admin",
       "expected": [
         "users_permissions"
       ],
-      "chosen": [
-        "users_permissions"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 0.995
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "users_permissions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.42
+      },
+      "enriched": {
+        "chosen": [
+          "users_permissions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.42
+      }
     },
     {
       "id": "canonical_audit_history",
+      "audience": "admin",
       "expected": [
         "audit_history"
       ],
-      "chosen": [
-        "audit_history"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.131
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "audit_history"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.218
+      },
+      "enriched": {
+        "chosen": [
+          "audit_history"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.218
+      }
     },
     {
       "id": "canonical_paper_passport",
+      "audience": "admin",
       "expected": [
         "paper_passport"
       ],
-      "chosen": [
-        "paper_passport"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.445
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "paper_passport"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.006
+      },
+      "enriched": {
+        "chosen": [
+          "paper_passport"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.006
+      }
     },
     {
       "id": "canonical_pilot_feedback",
+      "audience": "admin",
       "expected": [
         "pilot_feedback"
       ],
-      "chosen": [
-        "pilot_feedback"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.56
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "pilot_feedback"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.028
+      },
+      "enriched": {
+        "chosen": [
+          "pilot_feedback"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.028
+      }
     },
     {
       "id": "canonical_activate_partner",
+      "audience": "public",
       "expected": [
         "activate_partner"
       ],
-      "chosen": [
-        "activate_partner"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.831
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "activate_partner"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.82
+      },
+      "enriched": {
+        "chosen": [
+          "activate_partner"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.82
+      }
     },
     {
       "id": "canonical_partner_login",
+      "audience": "public",
       "expected": [
         "partner_login"
       ],
-      "chosen": [
-        "partner_login"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.951
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "partner_login"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.852
+      },
+      "enriched": {
+        "chosen": [
+          "partner_login"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.852
+      }
     },
     {
       "id": "canonical_supplier_requests",
+      "audience": "supplier",
       "expected": [
         "supplier_requests"
       ],
-      "chosen": [
-        "supplier_requests"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.017
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_requests"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.892
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_requests"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.892
+      }
     },
     {
       "id": "canonical_supplier_upload",
+      "audience": "supplier",
       "expected": [
         "supplier_upload"
       ],
-      "chosen": [
-        "supplier_upload"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.765
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_upload"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.918
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_upload"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.918
+      }
     },
     {
       "id": "canonical_supplier_correction",
+      "audience": "supplier",
       "expected": [
         "supplier_correction"
       ],
-      "chosen": [
-        "supplier_correction"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.03
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_correction"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.845
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_correction"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.845
+      }
     },
     {
       "id": "canonical_supplier_versions",
+      "audience": "supplier",
       "expected": [
         "supplier_versions"
       ],
-      "chosen": [
-        "supplier_versions"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 3.394
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_versions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.848
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_versions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.848
+      }
     },
     {
       "id": "canonical_supplier_messages",
+      "audience": "supplier",
       "expected": [
         "supplier_messages"
       ],
-      "chosen": [
-        "supplier_messages",
-        "supplier_requests"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 3.213
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_messages",
+          "supplier_requests"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.281
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_messages",
+          "supplier_requests"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.281
+      }
     },
     {
       "id": "canonical_supplier_deliveries",
+      "audience": "supplier",
       "expected": [
         "supplier_deliveries"
       ],
-      "chosen": [
-        "supplier_deliveries"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.841
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_deliveries"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.887
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_deliveries"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.887
+      }
     },
     {
       "id": "canonical_supplier_administrative",
+      "audience": "supplier",
       "expected": [
         "supplier_administrative"
       ],
-      "chosen": [
-        "supplier_administrative"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.103
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_administrative"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.912
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_administrative"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.912
+      }
     },
     {
       "id": "canonical_supplier_notifications",
+      "audience": "supplier",
       "expected": [
         "supplier_notifications"
       ],
-      "chosen": [
-        "supplier_notifications"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.291
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_notifications"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.029
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_notifications"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.029
+      }
     },
     {
       "id": "canonical_client_orders",
+      "audience": "client",
       "expected": [
         "client_orders"
       ],
-      "chosen": [
-        "client_orders"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.975
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_orders"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.087
+      },
+      "enriched": {
+        "chosen": [
+          "client_orders"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.087
+      }
     },
     {
       "id": "canonical_client_status",
+      "audience": "client",
       "expected": [
         "client_status"
       ],
-      "chosen": [
-        "client_status",
-        "client_orders"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.719
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_status",
+          "client_orders"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.885
+      },
+      "enriched": {
+        "chosen": [
+          "client_status",
+          "client_orders"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.885
+      }
     },
     {
       "id": "canonical_client_documents",
+      "audience": "client",
       "expected": [
         "client_documents"
       ],
-      "chosen": [
-        "client_documents"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.223
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_documents"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.856
+      },
+      "enriched": {
+        "chosen": [
+          "client_documents"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.856
+      }
     },
     {
       "id": "canonical_client_questions",
+      "audience": "client",
       "expected": [
         "client_questions"
       ],
-      "chosen": [
-        "client_questions"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.685
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_questions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.946
+      },
+      "enriched": {
+        "chosen": [
+          "client_questions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.946
+      }
     },
     {
       "id": "canonical_client_attachments",
+      "audience": "client",
       "expected": [
         "client_attachments"
       ],
-      "chosen": [
-        "client_attachments"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.458
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_attachments"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.862
+      },
+      "enriched": {
+        "chosen": [
+          "client_attachments"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.862
+      }
     },
     {
       "id": "canonical_client_history",
+      "audience": "client",
       "expected": [
         "client_history"
       ],
-      "chosen": [
-        "client_history"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.684
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_history"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.874
+      },
+      "enriched": {
+        "chosen": [
+          "client_history"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.874
+      }
     },
     {
       "id": "variation_001",
+      "audience": "admin",
       "expected": [
         "create_order"
       ],
-      "chosen": [
-        "create_order"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.967
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "create_order"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.253
+      },
+      "enriched": {
+        "chosen": [
+          "create_order"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.253
+      }
     },
     {
       "id": "variation_002",
+      "audience": "admin",
       "expected": [
         "create_order"
       ],
-      "chosen": [
-        "create_order"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.235
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "create_order"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.128
+      },
+      "enriched": {
+        "chosen": [
+          "create_order"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.128
+      }
     },
     {
       "id": "variation_003",
+      "audience": "admin",
       "expected": [
         "create_order"
       ],
-      "chosen": [
-        "create_order"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.733
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "create_order"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.318
+      },
+      "enriched": {
+        "chosen": [
+          "create_order"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.318
+      }
     },
     {
       "id": "variation_004",
+      "audience": "admin",
       "expected": [
         "create_launch"
       ],
-      "chosen": [
-        "create_launch"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.043
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "create_launch"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.282
+      },
+      "enriched": {
+        "chosen": [
+          "create_launch"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.282
+      }
     },
     {
       "id": "variation_005",
+      "audience": "admin",
       "expected": [
         "order_launch_difference"
       ],
-      "chosen": [
-        "order_launch_difference"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.001
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "order_launch_difference"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.224
+      },
+      "enriched": {
+        "chosen": [
+          "order_launch_difference"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.224
+      }
     },
     {
       "id": "variation_006",
+      "audience": "admin",
       "expected": [
         "order_launch_difference"
       ],
-      "chosen": [
-        "order_launch_difference"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.548
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "order_launch_difference"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.343
+      },
+      "enriched": {
+        "chosen": [
+          "order_launch_difference"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.343
+      }
     },
     {
       "id": "variation_007",
+      "audience": "admin",
       "expected": [
         "open_dossier"
       ],
-      "chosen": [
-        "open_dossier"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.449
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "open_dossier"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.07
+      },
+      "enriched": {
+        "chosen": [
+          "open_dossier"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.07
+      }
     },
     {
       "id": "variation_008",
+      "audience": "admin",
       "expected": [
         "open_dossier"
       ],
-      "chosen": [
-        "open_dossier"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.196
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "open_dossier"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.317
+      },
+      "enriched": {
+        "chosen": [
+          "open_dossier"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.317
+      }
     },
     {
       "id": "variation_009",
+      "audience": "admin",
       "expected": [
         "upload_technical_document"
       ],
-      "chosen": [
-        "upload_technical_document"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 0.993
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "upload_technical_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.369
+      },
+      "enriched": {
+        "chosen": [
+          "upload_technical_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.369
+      }
     },
     {
       "id": "variation_010",
+      "audience": "admin",
       "expected": [
         "upload_technical_document"
       ],
-      "chosen": [
-        "upload_technical_document"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.166
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "upload_technical_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.368
+      },
+      "enriched": {
+        "chosen": [
+          "upload_technical_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.368
+      }
     },
     {
       "id": "variation_011",
+      "audience": "admin",
       "expected": [
         "upload_technical_document"
       ],
-      "chosen": [
-        "upload_technical_document"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.491
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "upload_technical_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.17
+      },
+      "enriched": {
+        "chosen": [
+          "upload_technical_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.17
+      }
     },
     {
       "id": "variation_012",
+      "audience": "admin",
       "expected": [
         "upload_technical_document"
       ],
-      "chosen": [
-        "upload_technical_document"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.107
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "upload_technical_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.179
+      },
+      "enriched": {
+        "chosen": [
+          "upload_technical_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.179
+      }
     },
     {
       "id": "variation_013",
+      "audience": "admin",
       "expected": [
         "find_invoice"
       ],
-      "chosen": [
-        "find_invoice"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.674
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "find_invoice"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.549
+      },
+      "enriched": {
+        "chosen": [
+          "find_invoice"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.549
+      }
     },
     {
       "id": "variation_014",
+      "audience": "admin",
       "expected": [
         "find_invoice"
       ],
-      "chosen": [
-        "find_invoice"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.514
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "find_invoice"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.382
+      },
+      "enriched": {
+        "chosen": [
+          "find_invoice"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.382
+      }
     },
     {
       "id": "variation_015",
+      "audience": "admin",
       "expected": [
         "find_invoice"
       ],
-      "chosen": [
-        "find_invoice"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.191
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "find_invoice"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.328
+      },
+      "enriched": {
+        "chosen": [
+          "find_invoice"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.328
+      }
     },
     {
       "id": "variation_016",
+      "audience": "admin",
       "expected": [
         "delivery_note"
       ],
-      "chosen": [
-        "delivery_note"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.861
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "delivery_note"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.609
+      },
+      "enriched": {
+        "chosen": [
+          "delivery_note"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.609
+      }
     },
     {
       "id": "variation_017",
+      "audience": "admin",
       "expected": [
         "delivery_note"
       ],
-      "chosen": [
-        "delivery_note"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.073
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "delivery_note"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.303
+      },
+      "enriched": {
+        "chosen": [
+          "delivery_note"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.303
+      }
     },
     {
       "id": "variation_018",
+      "audience": "admin",
       "expected": [
         "document_versions"
       ],
-      "chosen": [
-        "document_versions"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.011
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "document_versions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.167
+      },
+      "enriched": {
+        "chosen": [
+          "document_versions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.167
+      }
     },
     {
       "id": "variation_019",
+      "audience": "admin",
       "expected": [
         "search_documents"
       ],
-      "chosen": [
-        "search_documents"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.647
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "search_documents"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.733
+      },
+      "enriched": {
+        "chosen": [
+          "search_documents"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.733
+      }
     },
     {
       "id": "variation_020",
+      "audience": "admin",
       "expected": [
         "search_documents"
       ],
-      "chosen": [
-        "search_documents",
-        "supplier_directory"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.764
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "search_documents",
+          "supplier_directory"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 2.484
+      },
+      "enriched": {
+        "chosen": [
+          "search_documents",
+          "supplier_directory"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 2.484
+      }
     },
     {
       "id": "variation_021",
+      "audience": "admin",
       "expected": [
         "completeness"
       ],
-      "chosen": [
-        "completeness"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.575
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "completeness"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.784
+      },
+      "enriched": {
+        "chosen": [
+          "completeness"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.784
+      }
     },
     {
       "id": "variation_022",
+      "audience": "admin",
       "expected": [
         "document_coherence"
       ],
-      "chosen": [
-        "document_coherence"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.513
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "document_coherence"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.936
+      },
+      "enriched": {
+        "chosen": [
+          "document_coherence"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.936
+      }
     },
     {
       "id": "variation_023",
+      "audience": "admin",
       "expected": [
         "document_extraction"
       ],
-      "chosen": [
-        "document_extraction"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.831
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "document_extraction"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.969
+      },
+      "enriched": {
+        "chosen": [
+          "document_extraction"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.969
+      }
     },
     {
       "id": "variation_024",
+      "audience": "admin",
       "expected": [
         "email_commitments"
       ],
-      "chosen": [
-        "email_commitments",
-        "client_directory",
-        "delivery_note"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.043
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "email_commitments",
+          "client_directory",
+          "delivery_note"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.016
+      },
+      "enriched": {
+        "chosen": [
+          "email_commitments",
+          "client_directory",
+          "delivery_note"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.016
+      }
     },
     {
       "id": "variation_025",
+      "audience": "admin",
       "expected": [
         "client_requirements"
       ],
-      "chosen": [
-        "client_requirements"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.051
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_requirements"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.946
+      },
+      "enriched": {
+        "chosen": [
+          "client_requirements"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.946
+      }
     },
     {
       "id": "variation_026",
+      "audience": "admin",
       "expected": [
         "receipts"
       ],
-      "chosen": [
-        "receipts"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.543
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "receipts"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.056
+      },
+      "enriched": {
+        "chosen": [
+          "receipts"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.056
+      }
     },
     {
       "id": "variation_027",
+      "audience": "admin",
       "expected": [
         "approve_document"
       ],
-      "chosen": [
-        "approve_document"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.184
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "approve_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.115
+      },
+      "enriched": {
+        "chosen": [
+          "approve_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.115
+      }
     },
     {
       "id": "variation_028",
+      "audience": "admin",
       "expected": [
         "correct_rejected_document"
       ],
-      "chosen": [
-        "correct_rejected_document"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 0.979
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "correct_rejected_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.903
+      },
+      "enriched": {
+        "chosen": [
+          "correct_rejected_document"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.903
+      }
     },
     {
       "id": "variation_029",
+      "audience": "admin",
       "expected": [
         "reopen_validation"
       ],
-      "chosen": [
-        "reopen_validation"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.387
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "reopen_validation"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.069
+      },
+      "enriched": {
+        "chosen": [
+          "reopen_validation"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.069
+      }
     },
     {
       "id": "variation_030",
+      "audience": "admin",
       "expected": [
         "notifications"
       ],
-      "chosen": [
-        "notifications"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.196
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "notifications"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.969
+      },
+      "enriched": {
+        "chosen": [
+          "notifications"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.969
+      }
     },
     {
       "id": "variation_031",
+      "audience": "admin",
       "expected": [
         "priorities"
       ],
-      "chosen": [
-        "priorities"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.104
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "priorities"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.09
+      },
+      "enriched": {
+        "chosen": [
+          "priorities"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.09
+      }
     },
     {
       "id": "variation_032",
+      "audience": "admin",
       "expected": [
         "priorities"
       ],
-      "chosen": [
-        "priorities"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.919
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "priorities"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.47
+      },
+      "enriched": {
+        "chosen": [
+          "priorities"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.47
+      }
     },
     {
       "id": "variation_033",
+      "audience": "admin",
       "expected": [
         "invite_supplier"
       ],
-      "chosen": [
-        "invite_supplier"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.133
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "invite_supplier"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.48
+      },
+      "enriched": {
+        "chosen": [
+          "invite_supplier"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.48
+      }
     },
     {
       "id": "variation_034",
+      "audience": "admin",
       "expected": [
         "publish_client"
       ],
-      "chosen": [
-        "publish_client",
-        "client_directory"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.234
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "publish_client",
+          "client_directory"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.648
+      },
+      "enriched": {
+        "chosen": [
+          "publish_client",
+          "client_directory"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.648
+      }
     },
     {
       "id": "variation_035",
+      "audience": "admin",
       "expected": [
         "orli_import"
       ],
-      "chosen": [
-        "orli_import"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.157
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "orli_import"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 2.316
+      },
+      "enriched": {
+        "chosen": [
+          "orli_import"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 2.316
+      }
     },
     {
       "id": "variation_036",
+      "audience": "admin",
       "expected": [
         "orli_resolution"
       ],
-      "chosen": [
-        "orli_resolution",
-        "orli_import"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.264
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "orli_resolution",
+          "orli_import"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.719
+      },
+      "enriched": {
+        "chosen": [
+          "orli_resolution",
+          "orli_import"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.719
+      }
     },
     {
       "id": "variation_037",
+      "audience": "admin",
       "expected": [
         "orli_resolution"
       ],
-      "chosen": [
-        "orli_resolution",
-        "orli_import"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.278
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "orli_resolution",
+          "orli_import"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.871
+      },
+      "enriched": {
+        "chosen": [
+          "orli_resolution",
+          "orli_import"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.871
+      }
     },
     {
       "id": "variation_038",
+      "audience": "admin",
       "expected": [
         "users_permissions"
       ],
-      "chosen": [
-        "users_permissions"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.776
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "users_permissions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.381
+      },
+      "enriched": {
+        "chosen": [
+          "users_permissions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.381
+      }
     },
     {
       "id": "variation_039",
+      "audience": "admin",
       "expected": [
         "audit_history"
       ],
-      "chosen": [
-        "audit_history"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.451
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "audit_history"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.104
+      },
+      "enriched": {
+        "chosen": [
+          "audit_history"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.104
+      }
     },
     {
       "id": "variation_040",
+      "audience": "admin",
       "expected": [
         "paper_passport"
       ],
-      "chosen": [
-        "paper_passport"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 3.251
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "paper_passport"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.459
+      },
+      "enriched": {
+        "chosen": [
+          "paper_passport"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.459
+      }
     },
     {
       "id": "variation_041",
+      "audience": "supplier",
       "expected": [
         "supplier_upload"
       ],
-      "chosen": [
-        "supplier_upload"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.058
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_upload"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.074
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_upload"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.074
+      }
     },
     {
       "id": "variation_042",
+      "audience": "supplier",
       "expected": [
         "supplier_correction"
       ],
-      "chosen": [
-        "supplier_correction"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.444
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_correction"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.618
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_correction"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.618
+      }
     },
     {
       "id": "variation_043",
+      "audience": "supplier",
       "expected": [
         "supplier_requests"
       ],
-      "chosen": [
-        "supplier_requests"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.954
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_requests"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.165
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_requests"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.165
+      }
     },
     {
       "id": "variation_044",
+      "audience": "supplier",
       "expected": [
         "supplier_messages"
       ],
-      "chosen": [
-        "supplier_messages"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.711
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_messages"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.154
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_messages"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.154
+      }
     },
     {
       "id": "variation_045",
+      "audience": "supplier",
       "expected": [
         "supplier_deliveries"
       ],
-      "chosen": [
-        "supplier_deliveries"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.541
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_deliveries"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.1
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_deliveries"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.1
+      }
     },
     {
       "id": "variation_046",
+      "audience": "supplier",
       "expected": [
         "supplier_administrative"
       ],
-      "chosen": [
-        "supplier_administrative"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.129
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_administrative"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.189
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_administrative"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.189
+      }
     },
     {
       "id": "variation_047",
+      "audience": "supplier",
       "expected": [
         "supplier_versions"
       ],
-      "chosen": [
-        "supplier_versions"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.506
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "supplier_versions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.666
+      },
+      "enriched": {
+        "chosen": [
+          "supplier_versions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.666
+      }
     },
     {
       "id": "variation_048",
+      "audience": "client",
       "expected": [
         "client_orders"
       ],
-      "chosen": [
-        "client_orders"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.368
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_orders"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.4
+      },
+      "enriched": {
+        "chosen": [
+          "client_orders"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.4
+      }
     },
     {
       "id": "variation_049",
+      "audience": "client",
       "expected": [
         "client_status"
       ],
-      "chosen": [
-        "client_status",
-        "client_orders"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.182
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_status",
+          "client_orders"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.843
+      },
+      "enriched": {
+        "chosen": [
+          "client_status",
+          "client_orders"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.843
+      }
     },
     {
       "id": "variation_050",
+      "audience": "client",
       "expected": [
         "client_documents"
       ],
-      "chosen": [
-        "client_documents"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 0.904
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_documents"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.822
+      },
+      "enriched": {
+        "chosen": [
+          "client_documents"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.822
+      }
     },
     {
       "id": "variation_051",
+      "audience": "client",
       "expected": [
         "client_questions"
       ],
-      "chosen": [
-        "client_questions"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.47
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_questions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.384
+      },
+      "enriched": {
+        "chosen": [
+          "client_questions"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.384
+      }
     },
     {
       "id": "variation_052",
+      "audience": "client",
       "expected": [
         "client_attachments"
       ],
-      "chosen": [
-        "client_attachments"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.388
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_attachments"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.842
+      },
+      "enriched": {
+        "chosen": [
+          "client_attachments"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.842
+      }
     },
     {
       "id": "variation_053",
+      "audience": "client",
       "expected": [
         "client_history"
       ],
-      "chosen": [
-        "client_history"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.146
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_history"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.017
+      },
+      "enriched": {
+        "chosen": [
+          "client_history"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.017
+      }
     },
     {
       "id": "variation_054",
+      "audience": "public",
       "expected": [
         "activate_partner"
       ],
-      "chosen": [
-        "activate_partner"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.217
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "activate_partner"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.153
+      },
+      "enriched": {
+        "chosen": [
+          "activate_partner"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.153
+      }
     },
     {
       "id": "variation_055",
+      "audience": "public",
       "expected": [
         "partner_login"
       ],
-      "chosen": [
-        "partner_login"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.513
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "partner_login"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.024
+      },
+      "enriched": {
+        "chosen": [
+          "partner_login"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": false,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.024
+      }
     },
     {
       "id": "variation_056",
+      "audience": "employee",
       "expected": [],
-      "chosen": [],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.005
+      "eligible": false,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "restricted",
+      "local": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.444
+      },
+      "enriched": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.444
+      }
     },
     {
       "id": "variation_057",
+      "audience": "supplier",
       "expected": [],
-      "chosen": [],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.354
+      "eligible": false,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "no_verified_candidates",
+      "local": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.348
+      },
+      "enriched": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.348
+      }
     },
     {
       "id": "variation_058",
+      "audience": "client",
       "expected": [],
-      "chosen": [],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.068
+      "eligible": false,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "no_verified_candidates",
+      "local": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.976
+      },
+      "enriched": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.976
+      }
     },
     {
       "id": "variation_059",
+      "audience": "public",
       "expected": [],
-      "chosen": [],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 0.91
+      "eligible": false,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "no_verified_candidates",
+      "local": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.834
+      },
+      "enriched": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.834
+      }
     },
     {
       "id": "variation_060",
+      "audience": "admin",
       "expected": [],
-      "chosen": [],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 0.013
+      "eligible": false,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "restricted",
+      "local": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.033
+      },
+      "enriched": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.033
+      }
     },
     {
       "id": "variation_061",
+      "audience": "admin",
       "expected": [],
-      "chosen": [],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 0.01
+      "eligible": false,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "restricted",
+      "local": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.009
+      },
+      "enriched": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.009
+      }
     },
     {
       "id": "variation_062",
+      "audience": "admin",
       "expected": [],
-      "chosen": [],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 0.007
+      "eligible": false,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "restricted",
+      "local": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.004
+      },
+      "enriched": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.004
+      }
     },
     {
       "id": "variation_063",
+      "audience": "admin",
       "expected": [],
-      "chosen": [],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 2.562
+      "eligible": false,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "no_verified_candidates",
+      "local": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.405
+      },
+      "enriched": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.405
+      }
     },
     {
       "id": "variation_064",
+      "audience": "admin",
       "expected": [],
-      "chosen": [],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.305
+      "eligible": false,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "no_verified_candidates",
+      "local": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.079
+      },
+      "enriched": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.079
+      }
     },
     {
       "id": "variation_065",
+      "audience": "admin",
       "expected": [],
-      "chosen": [
-        "client_directory",
-        "completeness",
-        "create_launch"
-      ],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 1.887
+      "eligible": true,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "disabled",
+      "local": {
+        "chosen": [
+          "client_directory",
+          "completeness",
+          "create_launch"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.11
+      },
+      "enriched": {
+        "chosen": [
+          "client_directory",
+          "completeness",
+          "create_launch"
+        ],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 1.11
+      }
     },
     {
       "id": "variation_066",
+      "audience": "supplier",
       "expected": [],
-      "chosen": [],
-      "correct": true,
-      "top3": true,
-      "safe_actions": true,
-      "relevant_shortcuts": true,
-      "mode": "local",
-      "fallback": null,
-      "ms": 0.919
+      "eligible": false,
+      "attempted": false,
+      "outcome": "not_requested",
+      "reason": "no_verified_candidates",
+      "local": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.831
+      },
+      "enriched": {
+        "chosen": [],
+        "correct": true,
+        "top3": true,
+        "requires_clarification": true,
+        "safe_actions": true,
+        "relevant_shortcuts": true,
+        "ms": 0.831
+      }
     }
   ]
 }

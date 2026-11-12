@@ -20,5 +20,16 @@
     }
   ],
   "console_errors": [],
-  "no_business_write_from_tour": true
+  "no_business_write_from_tour": true,
+  "keyboard": {
+    "runs": 3,
+    "delayed_frame_runs": 2,
+    "frame_delay_ms": 200,
+    "left_3_to_2": true,
+    "highlighted_target_verified": true,
+    "previous_button": true,
+    "text_and_select_arrows_preserved": true,
+    "escape_and_resume": true,
+    "finished": true
+  }
 }

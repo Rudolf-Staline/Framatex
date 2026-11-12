@@ -1,0 +1,18 @@
+Base main: 07e246d (PR #35 merged)
+Command under test: python tools/check_guide_browser.py
+Local executable override: FRAMATEX_BROWSER_EXECUTABLE=/usr/bin/chromium (156.0.8078.79)
+Diagnostic Playwright initialization: requestAnimationFrame callbacks delayed by 200 ms.
+The original scenario was unchanged; diagnosis happened before modifying the test.
+
+BEFORE_ARROW {'title': 'Ajouter une fiche technique · 3/4', 'focus': '<button type="button" class="driver-popover-close-btn" aria-label="Close">×</button>', 'target': 'order-section-jaune'}
+
+AssertionError: Locator expected to contain text '2/4'
+Actual value: Ajouter une fiche technique · 3/4
+Call log:
+  - Expect "to_contain_text" locator(".driver-popover-title") with timeout 5000ms
+  - waiting for locator(".driver-popover-title")
+    14 × locator resolved to <div id="driver-popover-title" class="driver-popover-title">Ajouter une fiche technique · 3/4</div>
+       - unexpected value "Ajouter une fiche technique · 3/4"
+
+Aria snapshot:
+- text: Ajouter une fiche technique · 3/4
