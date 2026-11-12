@@ -1,5 +1,7 @@
 # Architecture — phase 3
 
+Framatex Guide ajoute un catalogue et un composant d’aide partagés, un registre fermé de navigation et la migration additive 0024 pour l’apprentissage personnel. Le moteur historique délègue à ce catalogue. Voir [architecture du guide](docs/FRAMATEX_GUIDE_ARCHITECTURE.md) et [rapport de livraison](docs/FRAMATEX_GUIDE_DELIVERY.md).
+
 Le socle FastAPI, SQLAlchemy et SQLite est conservé. Les migrations 0021–0023 organisent les documents par commande, ajoutent les séquences de réouverture et la complétude de commande. Les blobs et identifiants documentaires sont conservés ; seuls les rattachements de rubrique évoluent après sauvegarde et contrôles. PostgreSQL, stockage objet et déploiement distant ne sont pas validés.
 
 ## Commandes et partenaires

@@ -1,5 +1,7 @@
 # État courant — phase 3
 
+Framatex Guide est développé sur `feat/framat-user-guide` : centre d’aide, manuel synchronisé, visites, progression et sélection Gemini facultative. Son [rapport de couverture et ses limites](docs/FRAMATEX_GUIDE_DELIVERY.md) sont séparés de la matrice historique ci-dessous. Aucun appel réel à Gemini ni gain mesuré n’est revendiqué.
+
 **264 / 273 exigences terminées (96,7 %), 6 partielles et 3 bloquées.** Les identifiants et les anciens états sont conservés dans `docs/requirements.json`. Le modèle documentaire de référence est désormais le Dossier Jaune unique par commande.
 
 Le [rapport phase 3](docs/RAPPORT_PHASE3.md) contient les commandes exécutées, leurs résultats, les limites et l'état de la PR. Les [procédures de migration/restauration](docs/MIGRATION_PHASE3.md) et le [rapport de sécurité](docs/SECURITE_PHASE3.md) s'appliquent à cette branche. Aucune validation de production ou conformité WCAG complète n'est revendiquée.
