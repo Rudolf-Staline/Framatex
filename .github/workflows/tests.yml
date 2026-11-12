@@ -34,6 +34,7 @@ jobs:
           python tools/check_guide_catalog.py
           python tools/build_guide_manual.py --check
           python tools/evaluate_guide.py
+          python tools/evaluate_guide.py --simulate --ai-budget 112 --output artifacts/guide-evaluation-simulated.json
       - name: Tests de rendu JavaScript
         run: |
           for file in tests/*.cjs; do node "$file"; done
@@ -50,7 +51,7 @@ jobs:
           name: browser-evidence
           path: |
             artifacts/guide-browser.json
-            artifacts/guide-evaluation.json
+            artifacts/guide-evaluation*.json
             artifacts/guide-*.png
             artifacts/phase3-browser.json
             artifacts/phase3-partner-axe.json
