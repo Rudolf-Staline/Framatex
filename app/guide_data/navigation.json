@@ -1,0 +1,759 @@
+{
+  "home": {
+    "id": "home",
+    "label": "Tableau de bord",
+    "surface": "internal",
+    "handler": "view",
+    "view": "home",
+    "target": "home-screen",
+    "context": null,
+    "requires": [
+      {
+        "action": "launch.read"
+      }
+    ],
+    "source": "static/app.js",
+    "route": null
+  },
+  "orders": {
+    "id": "orders",
+    "label": "Commandes",
+    "surface": "internal",
+    "handler": "view",
+    "view": "orders",
+    "target": "orders-screen",
+    "context": null,
+    "requires": [
+      {
+        "action": "launch.read"
+      }
+    ],
+    "source": "static/orders.js",
+    "route": null
+  },
+  "dossiers": {
+    "id": "dossiers",
+    "label": "Dossiers Jaunes",
+    "surface": "internal",
+    "handler": "view",
+    "view": "dossiers",
+    "target": "dossiers-screen",
+    "context": null,
+    "requires": [
+      {
+        "action": "launch.read"
+      }
+    ],
+    "source": "static/orders.js",
+    "route": null
+  },
+  "launches": {
+    "id": "launches",
+    "label": "Lancements",
+    "surface": "internal",
+    "handler": "view",
+    "view": "launches",
+    "target": "launches-screen",
+    "context": null,
+    "requires": [
+      {
+        "action": "launch.read"
+      }
+    ],
+    "source": "static/app.js",
+    "route": null
+  },
+  "validations": {
+    "id": "validations",
+    "label": "Validations",
+    "surface": "internal",
+    "handler": "view",
+    "view": "validations",
+    "target": "validations-screen",
+    "context": null,
+    "requires": [
+      {
+        "action": "launch.read"
+      }
+    ],
+    "source": "static/orders.js",
+    "route": null
+  },
+  "notifications": {
+    "id": "notifications",
+    "label": "Notifications",
+    "surface": "internal",
+    "handler": "view",
+    "view": "notifications",
+    "target": "notifications-screen",
+    "context": null,
+    "requires": [
+      {
+        "action": "launch.read"
+      }
+    ],
+    "source": "static/app.js",
+    "route": null
+  },
+  "actions": {
+    "id": "actions",
+    "label": "Actions prioritaires",
+    "surface": "internal",
+    "handler": "view",
+    "view": "actions",
+    "target": "actions-screen",
+    "context": null,
+    "requires": [
+      {
+        "action": "launch.read"
+      }
+    ],
+    "source": "static/app.js",
+    "route": null
+  },
+  "suppliers": {
+    "id": "suppliers",
+    "label": "Fournisseurs",
+    "surface": "internal",
+    "handler": "view",
+    "view": "suppliers",
+    "target": "suppliers-screen",
+    "context": null,
+    "requires": [
+      {
+        "action": "launch.read"
+      }
+    ],
+    "source": "static/orders.js",
+    "route": null
+  },
+  "clients": {
+    "id": "clients",
+    "label": "Clients",
+    "surface": "internal",
+    "handler": "view",
+    "view": "clients",
+    "target": "clients-screen",
+    "context": null,
+    "requires": [
+      {
+        "action": "launch.read"
+      }
+    ],
+    "source": "static/orders.js",
+    "route": null
+  },
+  "receipts": {
+    "id": "receipts",
+    "label": "Réceptions",
+    "surface": "internal",
+    "handler": "view",
+    "view": "receipts",
+    "target": "receipts-screen",
+    "context": null,
+    "requires": [
+      {
+        "action": "launch.read"
+      },
+      {
+        "action": "document.read",
+        "folder": "jaune"
+      },
+      {
+        "action": "document.read",
+        "folder": "rose"
+      }
+    ],
+    "source": "static/orders.js",
+    "route": null
+  },
+  "pilot": {
+    "id": "pilot",
+    "label": "Recette et retours",
+    "surface": "internal",
+    "handler": "view",
+    "view": "pilot",
+    "target": "pilot-screen",
+    "context": null,
+    "requires": [
+      {
+        "action": "launch.read"
+      }
+    ],
+    "source": "static/app.js",
+    "route": null
+  },
+  "admin": {
+    "id": "admin",
+    "label": "Administration",
+    "surface": "internal",
+    "handler": "view",
+    "view": "admin",
+    "target": "admin-screen",
+    "context": null,
+    "requires": [
+      {
+        "admin": true
+      }
+    ],
+    "source": "static/app.js",
+    "route": null
+  },
+  "orli": {
+    "id": "orli",
+    "label": "Imports et rapprochements ORLI",
+    "surface": "internal",
+    "handler": "view",
+    "view": "orli",
+    "target": "orli-screen",
+    "context": null,
+    "requires": [
+      {
+        "admin": true
+      }
+    ],
+    "source": "static/app.js",
+    "route": null
+  },
+  "audit": {
+    "id": "audit",
+    "label": "Journal d’activité",
+    "surface": "internal",
+    "handler": "view",
+    "view": "audit",
+    "target": "audit-screen",
+    "context": null,
+    "requires": [
+      {
+        "admin": true
+      }
+    ],
+    "source": "static/app.js",
+    "route": null
+  },
+  "partner_admin": {
+    "id": "partner_admin",
+    "label": "Administration des partenaires",
+    "surface": "internal",
+    "handler": "partner_admin",
+    "view": "partner_admin",
+    "target": "partner_admin-screen",
+    "context": null,
+    "requires": [
+      {
+        "admin": true
+      }
+    ],
+    "source": "static/partners.js",
+    "route": "/partners"
+  },
+  "search": {
+    "id": "search",
+    "label": "Recherche documentaire",
+    "surface": "internal",
+    "handler": "page",
+    "view": "documents",
+    "target": "document-search",
+    "context": null,
+    "requires": [
+      {
+        "action": "launch.read"
+      },
+      {
+        "action": "document.read",
+        "folder": "any"
+      }
+    ],
+    "source": "static/document-search.html",
+    "route": "/search"
+  },
+  "order_jaune": {
+    "id": "order_jaune",
+    "label": "Jaune — Technique et commercial",
+    "surface": "internal",
+    "handler": "order",
+    "view": "order_jaune",
+    "target": "order-section-jaune",
+    "context": "order",
+    "requires": [
+      {
+        "action": "launch.read"
+      },
+      {
+        "action": "document.read",
+        "folder": "jaune"
+      }
+    ],
+    "source": "static/orders.js",
+    "route": null
+  },
+  "order_rose": {
+    "id": "order_rose",
+    "label": "Rose — Réception",
+    "surface": "internal",
+    "handler": "order",
+    "view": "order_rose",
+    "target": "order-section-rose",
+    "context": "order",
+    "requires": [
+      {
+        "action": "launch.read"
+      },
+      {
+        "action": "document.read",
+        "folder": "rose"
+      }
+    ],
+    "source": "static/orders.js",
+    "route": null
+  },
+  "order_bleu": {
+    "id": "order_bleu",
+    "label": "Bleu — Douane",
+    "surface": "internal",
+    "handler": "order",
+    "view": "order_bleu",
+    "target": "order-section-bleu",
+    "context": "order",
+    "requires": [
+      {
+        "action": "launch.read"
+      },
+      {
+        "action": "document.read",
+        "folder": "bleu"
+      }
+    ],
+    "source": "static/orders.js",
+    "route": null
+  },
+  "order_vert": {
+    "id": "order_vert",
+    "label": "Vert — Facturation Framatex",
+    "surface": "internal",
+    "handler": "order",
+    "view": "order_vert",
+    "target": "order-section-vert",
+    "context": "order",
+    "requires": [
+      {
+        "action": "launch.read"
+      },
+      {
+        "action": "document.read",
+        "folder": "vert"
+      }
+    ],
+    "source": "static/orders.js",
+    "route": null
+  },
+  "order_upload": {
+    "id": "order_upload",
+    "label": "Dépôt documentaire",
+    "surface": "internal",
+    "handler": "order_upload",
+    "view": "order_upload",
+    "target": "order-document-form",
+    "context": "order",
+    "requires": [
+      {
+        "action": "launch.read"
+      },
+      {
+        "action": "document.write",
+        "folder": "any"
+      }
+    ],
+    "source": "static/orders.js",
+    "route": null
+  },
+  "order_context": {
+    "id": "order_context",
+    "label": "Dossier de la commande",
+    "surface": "internal",
+    "handler": "order",
+    "view": "order_context",
+    "target": "order-dossier",
+    "context": "order",
+    "requires": [
+      {
+        "action": "launch.read"
+      }
+    ],
+    "source": "static/orders.js",
+    "route": null
+  },
+  "launch_quality": {
+    "id": "launch_quality",
+    "label": "Cohérence documentaire",
+    "surface": "internal",
+    "handler": "launch",
+    "view": "launch_quality",
+    "target": "section-fiabilite",
+    "context": "launch",
+    "requires": [
+      {
+        "action": "launch.read"
+      },
+      {
+        "action": "document.read",
+        "folder": "jaune"
+      }
+    ],
+    "source": "static/app.js",
+    "route": null
+  },
+  "launch_spec": {
+    "id": "launch_spec",
+    "label": "Exigences et clarifications",
+    "surface": "internal",
+    "handler": "launch",
+    "view": "launch_spec",
+    "target": "section-exigences",
+    "context": "launch",
+    "requires": [
+      {
+        "action": "launch.read"
+      },
+      {
+        "action": "document.read",
+        "folder": "jaune"
+      }
+    ],
+    "source": "static/app.js",
+    "route": null
+  },
+  "launch_mail": {
+    "id": "launch_mail",
+    "label": "Emails et engagements",
+    "surface": "internal",
+    "handler": "launch",
+    "view": "launch_mail",
+    "target": "section-courriels",
+    "context": "launch",
+    "requires": [
+      {
+        "action": "launch.read"
+      },
+      {
+        "action": "document.read",
+        "folder": "rose"
+      }
+    ],
+    "source": "static/app.js",
+    "route": null
+  },
+  "launch_material": {
+    "id": "launch_material",
+    "label": "Matières et réceptions",
+    "surface": "internal",
+    "handler": "launch",
+    "view": "launch_material",
+    "target": "section-matieres",
+    "context": "launch",
+    "requires": [
+      {
+        "action": "launch.read"
+      },
+      {
+        "action": "document.read",
+        "folder": "jaune"
+      }
+    ],
+    "source": "static/app.js",
+    "route": null
+  },
+  "launch_intake": {
+    "id": "launch_intake",
+    "label": "Extraction et confirmation",
+    "surface": "internal",
+    "handler": "launch",
+    "view": "launch_intake",
+    "target": "section-lecture",
+    "context": "launch",
+    "requires": [
+      {
+        "action": "launch.read"
+      },
+      {
+        "action": "document.read",
+        "folder": "any"
+      }
+    ],
+    "source": "static/app.js",
+    "route": null
+  },
+  "launch_paper": {
+    "id": "launch_paper",
+    "label": "QR et passeports",
+    "surface": "internal",
+    "handler": "launch",
+    "view": "launch_paper",
+    "target": "section-passeports",
+    "context": "launch",
+    "requires": [
+      {
+        "action": "launch.read"
+      },
+      {
+        "action": "document.read",
+        "folder": "any"
+      }
+    ],
+    "source": "static/app.js",
+    "route": null
+  },
+  "partner_home": {
+    "id": "partner_home",
+    "label": "Votre espace partenaire",
+    "surface": "partner",
+    "handler": "partner",
+    "view": "partner_home",
+    "target": "partner-home",
+    "context": null,
+    "requires": [
+      {
+        "audience": [
+          "supplier",
+          "client"
+        ]
+      }
+    ],
+    "source": "static/partners.js",
+    "route": "/partners"
+  },
+  "supplier_requests": {
+    "id": "supplier_requests",
+    "label": "Demandes fournisseur",
+    "surface": "partner",
+    "handler": "partner",
+    "view": "supplier_requests",
+    "target": "supplier-requests",
+    "context": null,
+    "requires": [
+      {
+        "audience": [
+          "supplier"
+        ]
+      }
+    ],
+    "source": "static/partners.js",
+    "route": "/partners"
+  },
+  "supplier_upload": {
+    "id": "supplier_upload",
+    "label": "Transmission fournisseur",
+    "surface": "partner",
+    "handler": "partner_request",
+    "view": "supplier_upload",
+    "target": "supplier-upload",
+    "context": "supplier_request",
+    "requires": [
+      {
+        "partner_permission": "document.write"
+      },
+      {
+        "audience": [
+          "supplier"
+        ]
+      }
+    ],
+    "source": "static/partners.js",
+    "route": "/partners"
+  },
+  "supplier_history": {
+    "id": "supplier_history",
+    "label": "Historique de transmission",
+    "surface": "partner",
+    "handler": "partner_request",
+    "view": "supplier_history",
+    "target": "supplier-history",
+    "context": "supplier_request",
+    "requires": [
+      {
+        "audience": [
+          "supplier"
+        ]
+      }
+    ],
+    "source": "static/partners.js",
+    "route": "/partners"
+  },
+  "supplier_deliveries": {
+    "id": "supplier_deliveries",
+    "label": "Livraisons fournisseur",
+    "surface": "partner",
+    "handler": "partner",
+    "view": "supplier_deliveries",
+    "target": "supplier-deliveries",
+    "context": null,
+    "requires": [
+      {
+        "partner_permission": "delivery.write"
+      },
+      {
+        "audience": [
+          "supplier"
+        ]
+      }
+    ],
+    "source": "static/partners.js",
+    "route": "/partners"
+  },
+  "partner_documents": {
+    "id": "partner_documents",
+    "label": "Pièces administratives",
+    "surface": "partner",
+    "handler": "partner",
+    "view": "partner_documents",
+    "target": "partner-documents",
+    "context": null,
+    "requires": [
+      {
+        "audience": [
+          "supplier",
+          "client"
+        ]
+      }
+    ],
+    "source": "static/partners.js",
+    "route": "/partners"
+  },
+  "partner_notifications": {
+    "id": "partner_notifications",
+    "label": "Notifications partenaire",
+    "surface": "partner",
+    "handler": "partner",
+    "view": "partner_notifications",
+    "target": "partner-notifications",
+    "context": null,
+    "requires": [
+      {
+        "audience": [
+          "supplier",
+          "client"
+        ]
+      }
+    ],
+    "source": "static/partners.js",
+    "route": "/partners"
+  },
+  "partner_messages": {
+    "id": "partner_messages",
+    "label": "Messages fournisseur",
+    "surface": "partner",
+    "handler": "partner_request",
+    "view": "partner_messages",
+    "target": "partner-messages",
+    "context": "supplier_request",
+    "requires": [
+      {
+        "partner_permission": "message.write"
+      },
+      {
+        "audience": [
+          "supplier"
+        ]
+      }
+    ],
+    "source": "static/partners.js",
+    "route": "/partners"
+  },
+  "client_orders": {
+    "id": "client_orders",
+    "label": "Commandes autorisées",
+    "surface": "partner",
+    "handler": "partner",
+    "view": "client_orders",
+    "target": "client-orders",
+    "context": null,
+    "requires": [
+      {
+        "audience": [
+          "client"
+        ]
+      }
+    ],
+    "source": "static/partners.js",
+    "route": "/partners"
+  },
+  "client_publications": {
+    "id": "client_publications",
+    "label": "Documents publiés",
+    "surface": "partner",
+    "handler": "partner",
+    "view": "client_publications",
+    "target": "client-publications",
+    "context": null,
+    "requires": [
+      {
+        "audience": [
+          "client"
+        ]
+      }
+    ],
+    "source": "static/partners.js",
+    "route": "/partners"
+  },
+  "client_questions": {
+    "id": "client_questions",
+    "label": "Questions et clarifications",
+    "surface": "partner",
+    "handler": "partner_order",
+    "view": "client_questions",
+    "target": "client-questions",
+    "context": "client_order",
+    "requires": [
+      {
+        "partner_permission": "message.write"
+      },
+      {
+        "audience": [
+          "client"
+        ]
+      }
+    ],
+    "source": "static/partners.js",
+    "route": "/partners"
+  },
+  "activate_account": {
+    "id": "activate_account",
+    "label": "Activer mon compte",
+    "surface": "partner",
+    "handler": "partner",
+    "view": "activate_account",
+    "target": "partner-activation",
+    "context": null,
+    "requires": [
+      {
+        "audience": [
+          "public",
+          "supplier",
+          "client"
+        ]
+      }
+    ],
+    "source": "static/partners.html",
+    "route": "/partners"
+  },
+  "login_partner": {
+    "id": "login_partner",
+    "label": "Connexion partenaire",
+    "surface": "partner",
+    "handler": "partner",
+    "view": "login_partner",
+    "target": "partner-login",
+    "context": null,
+    "requires": [
+      {
+        "audience": [
+          "public",
+          "supplier",
+          "client"
+        ]
+      }
+    ],
+    "source": "static/partners.html",
+    "route": "/partners"
+  }
+}

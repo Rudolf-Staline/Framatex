@@ -19,7 +19,7 @@ from .core import Base, engine
 from . import models, completeness_models, workflow_models, quality_models, intake_models  # noqa: F401
 from . import spec_models, mail_models, impact_sim_models, orli_models, material_models # noqa: F401
 from . import partner_phase2_models
-from . import partner_models, order_documents
+from . import partner_models, order_documents, guide_models
 from . import approval_models, sharing_models, pilot_models # noqa: F401
 
 # Include the migration ledger in SQLAlchemy metadata so test databases that
@@ -28,7 +28,7 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
                         Column('version', String(80), primary_key=True),
                         Column('applied_at', String(50), nullable=False), extend_existing=True)
 
-REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_partners', '0005_partner_deliveries', '0006_partner_mail', '0007_partner_phase2', '0008_confirmed_sources', '0009_client_conversations', '0010_security_notifications', '0011_delivery_cancellations', '0012_orli_profiles', '0013_excel_policies', '0014_partner_administration', '0015_partner_default_roles', '0016_completeness_policies', '0017_order_registry', '0018_approval_assignments', '0019_partner_notice_center', '0020_audit_session_index', '0021_order_dossiers', '0022_approval_cycles', '0023_order_completeness')
+REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_partners', '0005_partner_deliveries', '0006_partner_mail', '0007_partner_phase2', '0008_confirmed_sources', '0009_client_conversations', '0010_security_notifications', '0011_delivery_cancellations', '0012_orli_profiles', '0013_excel_policies', '0014_partner_administration', '0015_partner_default_roles', '0016_completeness_policies', '0017_order_registry', '0018_approval_assignments', '0019_partner_notice_center', '0020_audit_session_index', '0021_order_dossiers', '0022_approval_cycles', '0023_order_completeness', '0024_user_guide')
 
 
 def _versions(conn):
@@ -87,7 +87,7 @@ def migrate():
                 if not expected.issubset(existing):
                     raise RuntimeError('Schéma existant partiel : migration interrompue pour éviter une perte de données')
                 # Old 0.14 installations must contain the complete pre-0.15 schema.
-                missing = (set(Base.metadata.tables) - {'schema_migrations', 'launch_members', 'pilot_reports','security_login_buckets','orli_mapping_profiles','orli_refresh_decisions','document_excel_policies','requirement_policies','launch_order_contexts','business_orders','business_order_launches','approval_stage_policies','approval_stage_assignments','order_dossiers','order_members','order_completeness'} - {t for t in Base.metadata.tables if t.startswith('partner')}) - existing
+                missing = (set(Base.metadata.tables) - {'schema_migrations', 'launch_members', 'pilot_reports','security_login_buckets','orli_mapping_profiles','orli_refresh_decisions','document_excel_policies','requirement_policies','launch_order_contexts','business_orders','business_order_launches','approval_stage_policies','approval_stage_assignments','order_dossiers','order_members','order_completeness'} - {t for t in Base.metadata.tables if t.startswith(('partner','guide_'))}) - existing
                 if missing:
                     raise RuntimeError('Base antérieure incomplète : tables manquantes : ' + ', '.join(sorted(missing)))
             else:
@@ -220,6 +220,11 @@ def migrate():
             Base.metadata.tables['order_completeness'].create(bind=conn,checkfirst=True)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0023_order_completeness','d':datetime.now(timezone.utc).isoformat()})
+        if '0024_user_guide' not in done:
+            for table in Base.metadata.sorted_tables:
+                if table.name.startswith('guide_'):table.create(bind=conn,checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0024_user_guide','d':datetime.now(timezone.utc).isoformat()})
         if conn.exec_driver_sql('PRAGMA foreign_key_check').first():
             raise RuntimeError('Relations historiques invalides : migration annulée, corriger la copie de travail avant reprise')
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
