@@ -13,9 +13,12 @@ from .guide_models import GuideProgress,GuidePreference,GuideFeedback,GuideVisit
 
 router=APIRouter(tags=['Framatex Guide'])
 
-def identity(request:Request,db:Session=Depends(get_db)):return principal(request,db)
+def identity(request:Request,db:Session=Depends(get_db)):
+    who=principal(request,db)
+    if not reserve('http:'+who.owner,setting('FRAMATEX_GUIDE_HTTP_REQUESTS_PER_MINUTE',300),60):raise HTTPException(429,'Guide temporairement limité : réessayez dans une minute')
+    return who
 
-def decorate(p):return {**p,'help_url':'/help#procedure/'+p['id']}
+def decorate(p):return {**p,'help_url':'/help?surface='+('internal' if any(a in p['audience'] for a in ('employee','admin')) else 'partner')+'#procedure/'+p['id']}
 
 def event(db,who,kind,target=''):
     db.add(GuideEvent(owner=who.owner,kind=kind,target=target))
@@ -30,15 +33,16 @@ def public_help():
     return {'version':CATALOG['version'],'audience':'public','procedures':[decorate(p) for p in PROCEDURES.values() if visible(p,who)],'navigation':{k:v for k,v in NAV.items() if k in ('activate_account','login_partner')},'actions':[],'tours':[],'recent':[],'popular':[],'automatic':'never'}
 
 @router.get('/api/guide/catalog')
-def catalog(who=Depends(identity),db:Session=Depends(get_db)):
+def catalog(request:Request,who=Depends(identity),db:Session=Depends(get_db)):
     allowed=[p for p in PROCEDURES.values() if visible(p,who)];ids={p['id'] for p in allowed}
     recent=list(db.scalars(select(GuideVisit).where(GuideVisit.owner==who.owner).order_by(GuideVisit.updated_at.desc()).limit(20)))
     popular=[pid for pid,_count in db.execute(select(GuideVisit.procedure_id,func.sum(GuideVisit.views)).group_by(GuideVisit.procedure_id).order_by(func.sum(GuideVisit.views).desc())) if pid in ids][:6]
     preference=db.get(GuidePreference,who.owner)
     import hashlib
-    return {'profile_key':hashlib.sha256(who.owner.encode()).hexdigest()[:20],'version':CATALOG['version'],'locale':'fr','available_locales':['fr'],'audience':who.audience,
+    return {'session_key':hashlib.sha256(request.cookies.get('framat_partner' if who.kind in ('supplier','client') else 'framat_session','').encode()).hexdigest()[:20],'profile_key':hashlib.sha256(who.owner.encode()).hexdigest()[:20],'version':CATALOG['version'],'locale':'fr','available_locales':['fr'],'audience':who.audience,
         'procedures':[decorate(p) for p in allowed],'navigation':{k:v for k,v in NAV.items() if permitted(who,v['requires']) and (v['surface']=='internal')==(who.kind=='employee')},
         'recent':[r.procedure_id for r in recent if r.procedure_id in ids],'popular':popular or [p['id'] for p in allowed[:6]],'automatic':preference.automatic if preference else 'new',
+        'welcome_available':any(permitted(who,NAV[s['destination']]['requires']) for s in TOURS['welcome_'+who.audience]['steps']),
         'ai_configured':__import__('os').getenv('FRAMATEX_GUIDE_AI_ENABLED','0')=='1' and bool(__import__('os').getenv('GEMINI_API_KEY'))}
 
 @router.get('/api/guide/categories')
@@ -96,7 +100,10 @@ def action(action_id:str,context:GuideContext,who=Depends(identity),db:Session=D
 def tours(who=Depends(identity)):
     result=[]
     for t in TOURS.values():
-        if visible(t,who):result.append(tour(t['id'],who))
+        if visible(t,who):
+            try:result.append(tour(t['id'],who))
+            except HTTPException as exc:
+                if exc.status_code!=404:raise
     return result
 
 @router.get('/api/guide/tours/{tid}')
@@ -156,7 +163,8 @@ def stats(who=Depends(identity),db:Session=Depends(get_db)):
         'question_text_stored':False}
 
 @router.get('/api/guide/contexts/{kind}')
-def contexts(kind:Literal['order','launch','supplier_request','client_order'],who=Depends(identity),db:Session=Depends(get_db)):
+def contexts(kind:Literal['order','launch','supplier_request','client_order'],order_id:str|None=Query(None,min_length=36,max_length=36),who=Depends(identity),db:Session=Depends(get_db)):
+    if who.kind=='employee' and not permitted(who,[{'action':'launch.read'}]):raise HTTPException(404,'Contexte inaccessible')
     if kind=='order' and who.kind=='employee':
         from .partner_phase2_models import BusinessOrder
         from .order_documents import order_accessible
@@ -164,7 +172,13 @@ def contexts(kind:Literal['order','launch','supplier_request','client_order'],wh
     if kind=='launch' and who.kind=='employee':
         from .models import Launch
         from .access import accessible
-        return [{'id':r.id,'label':r.name} for r in db.scalars(select(Launch).order_by(Launch.created_at.desc())) if accessible(db,who.subject,r)]
+        query=select(Launch).order_by(Launch.created_at.desc())
+        if order_id:
+            from .order_documents import must_order
+            from .partner_phase2_models import BusinessOrderLaunch
+            must_order(db,who.subject,order_id)
+            query=query.join(BusinessOrderLaunch).where(BusinessOrderLaunch.order_id==order_id)
+        return [{'id':r.id,'label':r.name} for r in db.scalars(query) if accessible(db,who.subject,r)]
     if kind=='supplier_request' and who.kind=='supplier':
         from .partner_models import PartnerRequest
         return [{'id':r.id,'label':r.title} for r in db.scalars(select(PartnerRequest).where(PartnerRequest.partner_id==who.subject.partner_id).order_by(PartnerRequest.created_at.desc()))]

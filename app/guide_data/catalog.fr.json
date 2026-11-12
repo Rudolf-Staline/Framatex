@@ -25,8 +25,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné"
       ],
       "steps": [
         {
@@ -45,7 +45,7 @@
           "description": "Ouvrez Actions prioritaires pour examiner les points à traiter."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous identifiez les compteurs visibles et savez ouvrir la source d’une action prioritaire.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -91,8 +91,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Être administrateur employé de Framatex"
       ],
       "steps": [
         {
@@ -111,8 +111,12 @@
           "description": "Vérifiez les informations avant de confirmer : un Dossier Jaune unique sera créé."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Après votre confirmation, la commande apparaît avec un Dossier Jaune unique et ses quatre rubriques.",
       "problems": [
+        {
+          "problem": "La référence de commande est déjà utilisée pour ce client",
+          "solution": "Ouvrez la commande existante ou vérifiez la référence ; ne créez pas un doublon pour contourner ce contrôle."
+        },
         {
           "problem": "La fonction est absente ou inaccessible",
           "solution": "Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits."
@@ -158,8 +162,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné"
       ],
       "steps": [
         {
@@ -178,7 +182,7 @@
           "description": "Choisissez Jaune, Rose, Bleu ou Vert ; les lancements de cette commande partagent ces rubriques."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Le dossier de la commande choisie est ouvert ; tous ses lancements utilisent les mêmes rubriques.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -225,8 +229,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné"
       ],
       "steps": [
         {
@@ -245,7 +249,7 @@
           "description": "Les documents peuvent indiquer leur lancement d’origine, sans créer un deuxième dossier."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous savez distinguer la commande et son dossier documentaire des lancements de fabrication qui lui sont rattachés.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -294,8 +298,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Disposer du droit de créer un lancement"
       ],
       "steps": [
         {
@@ -314,7 +319,7 @@
           "description": "Saisissez son nom et confirmez personnellement ; le dossier de la commande est partagé."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Après votre confirmation, le lancement est rattaché à la commande et partage son Dossier Jaune.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -360,8 +365,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Être administrateur employé de Framatex"
       ],
       "steps": [
         {
@@ -385,7 +390,7 @@
           "description": "Un lancement portant des documents ne peut pas être détaché implicitement."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Après validation du rattachement, le lancement apparaît dans la commande compatible sans créer un dossier concurrent.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -434,8 +439,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir consulter les documents dans la rubrique Jaune"
       ],
       "steps": [
         {
@@ -454,7 +460,7 @@
           "description": "Utilisez les filtres pour retrouver le lancement d’origine ou les pièces sans lancement."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "La rubrique Jaune affiche les pièces techniques et commerciales auxquelles vous avez accès.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -505,8 +511,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir consulter les documents dans la rubrique Rose"
       ],
       "steps": [
         {
@@ -525,7 +532,7 @@
           "description": "Utilisez les filtres pour retrouver le lancement d’origine ou les pièces sans lancement."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "La rubrique Rose affiche les documents de réception auxquels vous avez accès.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -576,8 +583,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir consulter les documents dans la rubrique Bleu"
       ],
       "steps": [
         {
@@ -596,7 +604,7 @@
           "description": "Utilisez les filtres pour retrouver le lancement d’origine ou les pièces sans lancement."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "La rubrique Bleu affiche les documents douaniers auxquels vous avez accès.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -647,8 +655,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir consulter les documents dans la rubrique Vert"
       ],
       "steps": [
         {
@@ -667,7 +676,7 @@
           "description": "Utilisez les filtres pour retrouver le lancement d’origine ou les pièces sans lancement."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "La rubrique Vert affiche les documents de facturation Framatex auxquels vous avez accès.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -722,8 +731,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir déposer des documents dans la rubrique Jaune"
       ],
       "steps": [
         {
@@ -747,8 +757,12 @@
           "description": "Sélectionnez le fichier, vérifiez son classement puis confirmez vous-même le dépôt."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Après votre dépôt, la pièce et sa version figurent dans la rubrique Jaune de la commande ; son lancement d’origine peut être renseigné.",
       "problems": [
+        {
+          "problem": "Le dépôt est refusé ou reste en quarantaine",
+          "solution": "Lisez le motif de format, de taille ou de contrôle antivirus. Préparez une pièce conforme et sollicitez Framatex si le contrôle n’est pas disponible."
+        },
         {
           "problem": "La fonction est absente ou inaccessible",
           "solution": "Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits."
@@ -798,8 +812,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir consulter les documents dans la rubrique Vert"
       ],
       "steps": [
         {
@@ -818,8 +833,12 @@
           "description": "Filtrez les documents ou utilisez la recherche documentaire par commande et type."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous savez retrouver une facture autorisée dans Vert ou vérifier son absence avec les filtres.",
       "problems": [
+        {
+          "problem": "Aucune facture ne correspond au filtre",
+          "solution": "Vérifiez la commande, la rubrique Vert et les filtres. Une absence de résultat ne signifie pas que vous êtes autorisé à consulter une autre commande."
+        },
         {
           "problem": "La fonction est absente ou inaccessible",
           "solution": "Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits."
@@ -869,8 +888,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir consulter les documents dans la rubrique Rose"
       ],
       "steps": [
         {
@@ -889,7 +909,7 @@
           "description": "Recherchez la pièce par titre, type ou lancement d’origine."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous savez retrouver le bon de livraison autorisé dans Rose, avec sa provenance éventuelle.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -933,11 +953,16 @@
       "requires": [
         {
           "action": "launch.read"
+        },
+        {
+          "action": "document.read",
+          "folder": "any"
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir consulter les documents dans au moins une rubrique autorisée"
       ],
       "steps": [
         {
@@ -961,8 +986,12 @@
           "description": "Les versions précédentes restent conservées ; leur approbation ne valide pas la nouvelle version."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous identifiez la version exacte et son historique ; une nouvelle version reste distincte des validations antérieures.",
       "problems": [
+        {
+          "problem": "La nouvelle version apparaît sans l’approbation précédente",
+          "solution": "Les validations portent sur une version exacte. Faites examiner la nouvelle version selon le circuit configuré."
+        },
         {
           "problem": "La fonction est absente ou inaccessible",
           "solution": "Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits."
@@ -1002,7 +1031,8 @@
         "chercher fichier",
         "filtres",
         "tri",
-        "recherche"
+        "recherche",
+        "pièce fournisseur"
       ],
       "requires": [
         {
@@ -1014,8 +1044,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir consulter les documents dans au moins une rubrique autorisée"
       ],
       "steps": [
         {
@@ -1039,7 +1070,7 @@
           "description": "Seuls les documents autorisés sont comptés et affichés."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "La liste présente les documents autorisés correspondant à vos filtres, avec tri et pagination.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -1086,8 +1117,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné"
       ],
       "steps": [
         {
@@ -1111,8 +1142,12 @@
           "description": "Déposez les pièces ou faites vérifier la version exacte selon la procédure."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous distinguez les exigences satisfaites, pièces absentes et validations attendues pour la commande.",
       "problems": [
+        {
+          "problem": "La commande n’a pas de profil de complétude",
+          "solution": "Demandez à un administrateur de sélectionner le profil et les règles métier confirmées ; aucun état complet ne doit être déduit sans ces règles."
+        },
         {
           "problem": "La fonction est absente ou inaccessible",
           "solution": "Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits."
@@ -1157,8 +1192,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Être administrateur employé de Framatex"
       ],
       "steps": [
         {
@@ -1182,7 +1217,7 @@
           "description": "Faites valider les obligations métier par Framatex."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Après votre confirmation, le profil, la phase et le type sélectionnés déterminent les exigences documentaires de la commande.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -1234,8 +1269,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir consulter les documents dans la rubrique Jaune"
       ],
       "steps": [
         {
@@ -1259,7 +1295,7 @@
           "description": "Une alerte demande un examen humain ; elle ne corrige pas automatiquement une donnée."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous savez lire les écarts et leurs sources sans confondre alerte et correction validée.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -1311,8 +1347,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir consulter les documents dans au moins une rubrique autorisée"
       ],
       "steps": [
         {
@@ -1336,7 +1373,7 @@
           "description": "Confirmez vous-même chaque champ exact ; aucune donnée brute n’est injectée automatiquement."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous savez vérifier les propositions et confirmer les champs autorisés en gardant leur source et leurs limites.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -1389,8 +1426,10 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir consulter les documents dans la rubrique Jaune",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -1414,7 +1453,7 @@
           "description": "En cas d’ambiguïté, demandez une clarification puis consignez la réponse."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Les exigences et leurs justificatifs exacts sont identifiés ; les points ambigus restent à clarifier.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -1465,8 +1504,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir consulter les documents dans la rubrique Rose"
       ],
       "steps": [
         {
@@ -1490,7 +1530,7 @@
           "description": "Les échéances confirmées alimentent les actions prioritaires."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous identifiez la source et l’échéance des engagements confirmés ; aucune messagerie externe n’est consultée.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -1545,8 +1585,10 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir consulter les documents dans la rubrique Jaune",
+        "Pouvoir consulter les documents dans la rubrique Rose"
       ],
       "steps": [
         {
@@ -1565,7 +1607,7 @@
           "description": "Ouvrez le lancement et ses pièces Rose pour examiner les sources."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous distinguez les quantités déclarées des réceptions confirmées et pouvez retrouver leurs pièces sources.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -1616,8 +1658,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir consulter les documents dans la rubrique Jaune"
       ],
       "steps": [
         {
@@ -1636,7 +1679,7 @@
           "description": "Consultez les sources et annulations justifiées avant une action."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous savez comparer les mouvements et les restants en tenant compte des unités, sources et annulations.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -1688,8 +1731,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir examiner les documents dans un circuit dans au moins une rubrique autorisée"
       ],
       "steps": [
         {
@@ -1713,8 +1757,12 @@
           "description": "Confirmez personnellement. L’auteur d’un dépôt ne valide pas sa propre version dans un circuit."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Après une décision confirmée par une personne habilitée, le circuit et son historique reflètent l’état de la version exacte.",
       "problems": [
+        {
+          "problem": "Vous ne pouvez pas décider à cette étape",
+          "solution": "Vérifiez le rôle attendu, l’ordre des étapes et la séparation entre auteur du dépôt et valideur. Demandez une délégation autorisée si nécessaire."
+        },
         {
           "problem": "La fonction est absente ou inaccessible",
           "solution": "Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits."
@@ -1757,11 +1805,16 @@
       "requires": [
         {
           "action": "launch.read"
+        },
+        {
+          "action": "document.write",
+          "folder": "any"
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir déposer des documents dans au moins une rubrique autorisée"
       ],
       "steps": [
         {
@@ -1780,7 +1833,7 @@
           "description": "Soumettez cette version au circuit configuré et attendez sa décision."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "La version corrigée conserve l’historique précédent et attend sa propre vérification.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -1826,8 +1879,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Être administrateur employé de Framatex"
       ],
       "steps": [
         {
@@ -1851,7 +1904,7 @@
           "description": "Les publications dépendantes sont révoquées jusqu’à une nouvelle validation et une republication explicite."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Une nouvelle séquence porte sur la version choisie ; les anciennes décisions sont conservées et les publications dépendantes sont révoquées.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -1898,8 +1951,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Être administrateur employé de Framatex"
       ],
       "steps": [
         {
@@ -1923,7 +1976,7 @@
           "description": "La délégation ne permet pas à l’auteur de valider son propre dépôt."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Le circuit suit les rôles et leur ordre ; une délégation explicite respecte les habilitations existantes.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -1969,8 +2022,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné"
       ],
       "steps": [
         {
@@ -1989,7 +2042,7 @@
           "description": "Ouvrez le véritable dossier lié et marquez les notifications comme lues."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous retrouvez la source des notifications visibles et leur état de lecture.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -2038,8 +2091,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné"
       ],
       "steps": [
         {
@@ -2058,7 +2111,7 @@
           "description": "Ouvrez la source concernée et décidez vous-même de la suite."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous savez retrouver les sources à examiner et distinguer retard confirmé, priorité et point à suivre.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -2104,8 +2157,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -2124,7 +2178,7 @@
           "description": "Ouvrez le lancement lié ou, si habilité, l’administration des partenaires."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous retrouvez les demandes d’un fournisseur et leurs états sans accéder à une organisation interdite.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -2170,8 +2224,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -2190,7 +2245,7 @@
           "description": "Ouvrez le Dossier Jaune de cette commande."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous retrouvez les commandes du client et pouvez ouvrir le Dossier Jaune autorisé.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -2236,8 +2291,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Être administrateur employé de Framatex"
       ],
       "steps": [
         {
@@ -2261,7 +2316,7 @@
           "description": "Remettez le code personnel selon le canal autorisé ; le transport email réel reste désactivé sans configuration."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "L’invitation personnelle est créée avec le rôle choisi ; son code reste à transmettre par un canal autorisé.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -2306,8 +2361,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Être administrateur employé de Framatex"
       ],
       "steps": [
         {
@@ -2331,7 +2386,7 @@
           "description": "Confirmez personnellement ; la révocation retire ensuite la disponibilité au client."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Après vos confirmations, seule la publication autorisée devient disponible aux contacts du client concerné.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -2376,8 +2431,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Être administrateur employé de Framatex",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -2401,7 +2457,7 @@
           "description": "La pièce rejoint le Dossier Jaune canonique de la commande."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "La version interne intégrée conserve sa provenance fournisseur et rejoint le dossier canonique de la commande.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -2449,8 +2505,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Être administrateur employé de Framatex"
       ],
       "steps": [
         {
@@ -2474,8 +2530,12 @@
           "description": "Aucune synchronisation directe avec ORLI n’est activée."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Un instantané d’import est conservé ; les lignes et différences peuvent être examinées avant tout rapprochement confirmé.",
       "problems": [
+        {
+          "problem": "Une colonne ou une ligne n’est pas reconnue",
+          "solution": "Vérifiez le format et le mapping avant un nouvel import. L’import conserve des instantanés et ne remplace pas silencieusement une décision."
+        },
         {
           "problem": "La fonction est absente ou inaccessible",
           "solution": "Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits."
@@ -2523,8 +2583,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Être administrateur employé de Framatex"
       ],
       "steps": [
         {
@@ -2548,8 +2608,12 @@
           "description": "Un nouvel import exige une nouvelle évaluation ; aucun remplacement silencieux."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "La confirmation ou le rejet motivé d’une association est conservé ; un nouvel import impose une nouvelle évaluation.",
       "problems": [
+        {
+          "problem": "Plusieurs associations semblent possibles",
+          "solution": "Comparez les sources et justifiez la décision. Rejetez ou laissez en attente si vous ne disposez pas d’éléments suffisants."
+        },
         {
           "problem": "La fonction est absente ou inaccessible",
           "solution": "Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits."
@@ -2596,8 +2660,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Être administrateur employé de Framatex"
       ],
       "steps": [
         {
@@ -2621,7 +2685,7 @@
           "description": "La restriction de commande s’ajoute aux permissions de rubrique et ne peut pas être contournée par le guide."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Après confirmation, l’état et les permissions du collaborateur reflètent les accès décidés ; le guide ne confère aucun droit.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -2667,8 +2731,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Être administrateur employé de Framatex"
       ],
       "steps": [
         {
@@ -2687,7 +2751,7 @@
           "description": "Utilisez aussi les historiques par document, transmission et circuit pour les décisions détaillées."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous retrouvez l’auteur, la date, l’objet et l’action, ainsi que les historiques détaillés disponibles.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -2738,8 +2802,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné",
+        "Pouvoir consulter les documents dans au moins une rubrique autorisée"
       ],
       "steps": [
         {
@@ -2758,7 +2823,7 @@
           "description": "Le passeport d’une version permet de consulter son origine et son empreinte ; ce n’est pas une signature électronique."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous savez utiliser le lien ou QR vers un objet autorisé et distinguer empreinte documentaire et signature électronique.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -2804,8 +2869,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Avoir accès à la commande ou au lancement concerné"
       ],
       "steps": [
         {
@@ -2824,7 +2889,7 @@
           "description": "La validation métier et l’ouverture externe restent des décisions Framatex."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Votre observation de parcours est enregistrée pour la recette ; elle ne constitue pas une validation de production.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -2875,8 +2940,7 @@
         }
       ],
       "prerequisites": [
-        "Disposer du code personnel remis par votre interlocuteur",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer de l’adresse autorisée et du code personnel remis par Framatex pour une activation"
       ],
       "steps": [
         {
@@ -2895,8 +2959,12 @@
           "description": "Connectez-vous avec votre adresse autorisée ; le code ne doit pas être partagé."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Le code personnel est consommé et votre compte peut se connecter avec le mot de passe choisi.",
       "problems": [
+        {
+          "problem": "Le code d’activation est invalide, expiré ou déjà utilisé",
+          "solution": "Demandez une invitation renouvelée à Framatex. Ne partagez pas votre ancien code et ne tentez pas d’activer le compte d’un autre contact."
+        },
         {
           "problem": "La fonction est absente ou inaccessible",
           "solution": "Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits."
@@ -2946,8 +3014,7 @@
         }
       ],
       "prerequisites": [
-        "Disposer du code personnel remis par votre interlocuteur",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer de l’adresse autorisée et du code personnel remis par Framatex pour une activation"
       ],
       "steps": [
         {
@@ -2966,8 +3033,12 @@
           "description": "Le guide ne peut pas réinitialiser ni connaître votre mot de passe."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Votre espace autorisé s’ouvre après authentification ; un accès révoqué nécessite l’intervention de Framatex.",
       "problems": [
+        {
+          "problem": "La connexion est refusée",
+          "solution": "Vérifiez l’adresse autorisée et demandez un renouvellement d’accès en cas de mot de passe oublié, domaine interdit ou compte désactivé."
+        },
         {
           "problem": "La fonction est absente ou inaccessible",
           "solution": "Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits."
@@ -3013,8 +3084,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -3033,7 +3104,7 @@
           "description": "Choisissez Ouvrir pour examiner la demande."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous identifiez le document attendu, la commande et l’échéance de la demande choisie.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -3083,8 +3154,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Disposer du droit de transmettre des documents",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -3108,8 +3180,12 @@
           "description": "Le dépôt reste en vérification tant que Framatex ne l’a pas approuvé."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "La transmission apparaît dans l’historique et attend la décision de Framatex.",
       "problems": [
+        {
+          "problem": "La demande est terminée et n’accepte plus de transmission",
+          "solution": "Demandez à Framatex de réouvrir la demande ; une visite guidée ne peut pas modifier son état."
+        },
         {
           "problem": "La fonction est absente ou inaccessible",
           "solution": "Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits."
@@ -3158,8 +3234,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Disposer du droit de transmettre des documents",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -3178,8 +3255,12 @@
           "description": "L’historique précédent est conservé ; attendez la nouvelle vérification."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Une nouvelle transmission corrige la pièce sans effacer l’ancien refus ; une nouvelle décision reste nécessaire.",
       "problems": [
+        {
+          "problem": "Le motif du refus ne permet pas de préparer la correction",
+          "solution": "Demandez une précision dans les échanges avant de transmettre une nouvelle version."
+        },
         {
           "problem": "La fonction est absente ou inaccessible",
           "solution": "Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits."
@@ -3225,8 +3306,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -3245,7 +3326,7 @@
           "description": "Les téléchargements restent soumis aux droits de votre organisation."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous retrouvez les versions, dates, motifs et décisions des demandes de votre organisation.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -3295,8 +3376,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Disposer du droit d’envoyer des messages",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -3315,7 +3397,7 @@
           "description": "Enregistrez personnellement le message ou joignez une pièce autorisée."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Après votre confirmation, le message ou la pièce jointe figure dans les échanges de la demande.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -3365,8 +3447,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Disposer du droit de déclarer une livraison",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -3385,7 +3468,7 @@
           "description": "Confirmez votre déclaration : elle reste distincte d’une réception enregistrée par Framatex."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "La livraison déclarée reste identifiable séparément de la réception confirmée par Framatex.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -3435,8 +3518,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Disposer du droit de transmettre des documents",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -3455,7 +3539,7 @@
           "description": "Confirmez ; la vérification Framatex reste séparée du dépôt."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "La nouvelle version administrative est conservée et reste soumise à une vérification distincte.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -3502,8 +3586,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -3522,7 +3606,7 @@
           "description": "Un email accepté par le transport ne prouve pas sa lecture."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous retrouvez les événements visibles et leur source dans votre espace partenaire.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -3569,8 +3653,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -3589,7 +3673,7 @@
           "description": "Les autres commandes et le dossier interne ne sont pas accessibles depuis ce portail."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous retrouvez les commandes expressément autorisées à votre organisation.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -3636,8 +3720,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -3656,7 +3740,7 @@
           "description": "Aucun avancement chiffré n’est inventé ; demandez une clarification si nécessaire."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous consultez le statut et l’échéance confirmés sans pourcentage d’avancement supposé.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -3703,8 +3787,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -3723,8 +3807,12 @@
           "description": "Une publication révoquée ou obsolète cesse d’être disponible."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous identifiez la version publiée accessible ; le téléchargement reste votre action explicite.",
       "problems": [
+        {
+          "problem": "Le téléchargement n’est plus disponible",
+          "solution": "La publication ou l’autorisation de commande peut avoir été révoquée. Demandez à Framatex une publication valide."
+        },
         {
           "problem": "La fonction est absente ou inaccessible",
           "solution": "Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits."
@@ -3773,8 +3861,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Disposer du droit d’envoyer des messages",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -3793,7 +3882,7 @@
           "description": "Consultez la réponse et l’état de traitement de l’échange."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Après votre confirmation, la question et son état de traitement figurent dans les échanges de la commande.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -3843,8 +3932,9 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Disposer du droit d’envoyer des messages",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -3863,8 +3953,12 @@
           "description": "La pièce et l’historique restent accessibles aux contacts autorisés de votre organisation."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "La pièce jointe et sa description restent liées à l’échange autorisé de votre organisation.",
       "problems": [
+        {
+          "problem": "L’échange est terminé ou inaccessible",
+          "solution": "Choisissez un échange actif autorisé ou demandez à Framatex la suite à donner ; ne contournez pas les droits avec un autre identifiant."
+        },
         {
           "problem": "La fonction est absente ou inaccessible",
           "solution": "Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits."
@@ -3910,8 +4004,8 @@
         }
       ],
       "prerequisites": [
-        "Être connecté à l’espace concerné",
-        "Disposer des habilitations indiquées et vérifier l’objet sélectionné"
+        "Disposer d’un compte actif dans l’espace concerné",
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
       ],
       "steps": [
         {
@@ -3930,7 +4024,7 @@
           "description": "Un échange terminé conserve son historique."
         }
       ],
-      "result": "La fonctionnalité est ouverte ; toute opération métier reste à confirmer personnellement.",
+      "result": "Vous retrouvez les auteurs, dates, réponses et états des échanges autorisés, y compris les échanges terminés.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",

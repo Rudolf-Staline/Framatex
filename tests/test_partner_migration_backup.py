@@ -15,7 +15,7 @@ def test_additive_migration_and_complete_restore(tmp_path,monkeypatch):
     data=b'Synthetic historical document';sha=hashlib.sha256(data).hexdigest();(source/'files'/'blob1').write_bytes(data)
     with old.begin() as c:
         for table in reversed(Base.metadata.sorted_tables):
-            if table.name.startswith('partner') or table.name in {'security_login_buckets','orli_mapping_profiles','orli_refresh_decisions','document_excel_policies','requirement_policies','launch_order_contexts','business_orders','business_order_launches','approval_stage_policies','approval_stage_assignments'}:table.drop(c)
+            if table.name.startswith(('partner','guide_')) or table.name in {'security_login_buckets','orli_mapping_profiles','orli_refresh_decisions','document_excel_policies','requirement_policies','launch_order_contexts','business_orders','business_order_launches','approval_stage_policies','approval_stage_assignments'}:table.drop(c)
         c.execute(text("INSERT INTO users(id,email,name,password_hash,active,created_at) VALUES ('u','u@example.local','Ancien','hash',1,'2026-01-01')"))
         c.execute(text("INSERT INTO launches(id,name,status,created_by,created_at,updated_at,restricted) VALUES ('l','Commande existante','En cours','u','2026-01-01','2026-01-01',1)"))
         c.execute(text("INSERT INTO folders(id,launch_id,slug,label) VALUES ('f','l','jaune','Technique')"))
@@ -26,6 +26,7 @@ def test_additive_migration_and_complete_restore(tmp_path,monkeypatch):
     migrate.migrate();migrate.migrate()
     with old.connect() as c:
         assert 'partner_accounts' in inspect(c).get_table_names()
+        assert {'guide_progress','guide_preferences','guide_visits','guide_feedback','guide_events','guide_budgets'}.issubset(inspect(c).get_table_names())
         assert {'business_orders','business_order_launches','requirement_policies','partner_administrative_documents'}.issubset(inspect(c).get_table_names())
         assert c.execute(text('SELECT count(*) FROM schema_migrations')).scalar_one()==len(migrate.REVISIONS)
         assert c.execute(text('SELECT restricted FROM launches')).scalar_one()==1
@@ -36,6 +37,7 @@ def test_additive_migration_and_complete_restore(tmp_path,monkeypatch):
         assert db.execute('SELECT document_id FROM document_versions').fetchone()==('d',)
         assert db.execute('SELECT created_by FROM documents').fetchone()==('u',)
         assert db.execute('PRAGMA foreign_key_check').fetchall()==[]
+        assert db.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name LIKE 'guide_%'").fetchone()==(6,)
     with pytest.raises(ValueError):restore(archive,restored)
     with pytest.raises(ValueError):backup(source,archive)
     bad=tmp_path/'bad.zip'

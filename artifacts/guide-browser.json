@@ -1,0 +1,24 @@
+{
+  "synthetic": true,
+  "gemini": "simulated timeout",
+  "audits": [
+    {
+      "width": 360,
+      "issues": []
+    },
+    {
+      "width": 390,
+      "issues": []
+    },
+    {
+      "width": 768,
+      "issues": []
+    },
+    {
+      "width": 1440,
+      "issues": []
+    }
+  ],
+  "console_errors": [],
+  "no_business_write_from_tour": true
+}

@@ -75,6 +75,7 @@ def tour(tid,principal):
 class GuideContext(BaseModel):
     model_config=ConfigDict(extra='forbid')
     page:str=Field('home',max_length=40)
+    procedure_id:str|None=Field(None,max_length=100,pattern=r'^[a-z][a-z0-9_]+$')
     order_id:str|None=Field(None,pattern=r'^[0-9a-fA-F-]{36}$')
     launch_id:str|None=Field(None,pattern=r'^[0-9a-fA-F-]{36}$')
     client_order_id:str|None=Field(None,pattern=r'^[0-9a-fA-F-]{36}$')
@@ -84,6 +85,8 @@ class GuideContext(BaseModel):
 def check_context(context,who,db):
     if context.page not in set(NAV)|{'detail','assistant','help','supplier','client','partners','documents','unknown'}:
         raise HTTPException(422,'Page de contexte inconnue')
+    if context.procedure_id:procedure(context.procedure_id,who)
+    if (context.order_id or context.launch_id) and (who.kind!='employee' or not permitted(who,[{'action':'launch.read'}])):raise HTTPException(404,'Contexte inaccessible')
     if context.order_id:
         if who.kind!='employee':raise HTTPException(404,'Commande introuvable')
         from .order_documents import must_order
@@ -140,19 +143,24 @@ def rank(question):
             score=max(score,6*len(kw)+len(ws&title) if kw and kw<=ws else len(ws&kw))
         verbs={'creer','ajouter','deposer','inviter','approuver','corriger','reouvrir','rechercher','retrouver','transmettre','consulter','configurer','poser','joindre','declarer','repondre'}
         score+=5*len(ws&title&verbs)
+        if title and title<=ws:score+=10
         if score>=2:result.append((score,p))
     return sorted(result,key=lambda item:(-item[0],item[1]['id']))
 
 
 def retrieve(question,who,context,limit=5):
     normalized=normalize(question)
+    if any(x in normalized for x in ('prix de vente','montant exact','quantite exacte','contenu du document','contenu de la facture')):return [],True
     if any(x in normalized for x in ('ignore les','ignore previous','system prompt','reveal secret','instructions precedentes','tous les mots de passe','donne le mot de passe')):
         return [],True
     if 'cette page' in normalized:
         candidates=[p for p in PROCEDURES.values() if visible(p,who) and p['destination']==context.page]
         return candidates[:limit],False
+    if context.procedure_id and any(phrase in normalized for phrase in ('et ensuite','et apres','la suite','cette procedure','cette etape')):
+        p=PROCEDURES.get(context.procedure_id)
+        if p and visible(p,who):return [p],False
     all_hits=rank(question)
-    if all_hits and not visible(all_hits[0][1],who) and all_hits[0][0]>=6:return [],True
+    if all_hits and who.audience in all_hits[0][1]['audience'] and not visible(all_hits[0][1],who) and all_hits[0][0]>=6:return [],True
     hits=[(score,p) for score,p in all_hits if visible(p,who)]
     if not hits:return [],False
     best=hits[0][0]
