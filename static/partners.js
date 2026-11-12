@@ -1,5 +1,7 @@
 'use strict';
 let internal = false;
+let guidePartnerRequestId=null;
+let guideClientOrderId=null;
 let rights = [];
 let requestOffset=0;
 let requestFilters={q:"",status:"",sort:"newest"};
@@ -31,6 +33,7 @@ form('organization',async data=>{await api('/api/partners/organizations','POST',
 form('request',async data=>{if(!data.due_date)data.due_date=null;await api('/api/partners/requests','POST',data);$('request').reset();await refresh();});
 form('publication',async data=>{if(!confirm(`Publier la pièce sélectionnée pour ${$('client-options').selectedOptions[0]?.textContent||'ce client'} ? Ses contacts habilités pourront télécharger cette version jusqu’à révocation.`))return;await api('/api/partners/publications','POST',data);$('publication').reset();});
 async function refresh(){
+ guidePartnerRequestId=null;
  const who=internal?{organization:'Administration Framatex'}:await api('/api/partner/home');
  rights=who.permissions||[];
  $('identity').textContent=who.organization;$('auth').hidden=true;$('workspace').hidden=false;$('admin').hidden=!internal;$('detail').replaceChildren();
@@ -62,8 +65,10 @@ async function refresh(){
  for(const r of rows){const a=node('article');a.append(node('h4',`${r.order_ref} · ${r.title}`),node('p',`${labels[r.status]} · Échéance : ${r.due_date||'non définie'}`),button('Ouvrir',()=>openRequest(r.id)));$('items').append(a);}
  if(rows.length===100)$('items').append(node('p','Les 100 demandes les plus récentes sont affichées. Les suivantes sont disponibles via la pagination API.'));
  if(!internal){for(const p of await api('/api/partner/publications')){const a=node('article');a.append(node('h4',`${p.title} · version ${p.version}`));const link=node('a','Télécharger la version publiée');link.href=`/api/partner/publications/${p.id}/download`;a.append(link);$('items').append(a);}}
+ document.dispatchEvent(new Event('framat:guide-auth'));
 }
 async function openRequest(id){
+ guidePartnerRequestId=id;
  const base=internal?'/api/partners':'/api/partner'; const r=await api(`${base}/requests/${id}`);const box=$('detail');box.replaceChildren(node('h3',r.title),node('p',labels[r.status]));
  for(const v of r.versions){const a=node('article');a.append(node('p',`Version ${v.number} · ${labels[v.status]} · ${v.reason}`),node('p',`Identifiant de pièce : ${v.id} · Preuve de dépôt : ${v.created_at} · SHA256 ${v.sha256}`));const link=node('a','Télécharger');link.href=`${base}/requests/${id}/versions/${v.id}/download`;a.append(link);box.append(a);}
  if(!internal&&rights.includes('document.write')&&['requested','rejected'].includes(r.status)){const f=node('input');f.type='file';f.setAttribute('aria-label','Document à transmettre');box.append(f,button('Transmettre une version',async()=>{if(!f.files.length)throw new Error('Choisir un fichier');const data=new FormData();data.append('file',f.files[0]);await api(`${base}/requests/${id}/versions`,'POST',data);await openRequest(id);}));}
@@ -123,7 +128,7 @@ function renderAttachments(container,attachments,endpoint,refreshView){
 }
 async function renderClientOrders(){
  const base=internal?'/api/partners':'/api/partner';const rows=await api(`${base}/client-orders`);$('client-orders').replaceChildren();if(!rows.length)return;$('client-orders').append(node('h3','Commandes client autorisées'));
- for(const order of rows){const card=node('article');card.append(node('h4',order.reference),node('p',`${order.status} · Échéance confirmée : ${order.confirmed_due||'non renseignée'} · Avancement chiffré non renseigné`));
+ for(const order of rows){const card=node('article');card.dataset.guideOrder=order.id;card.append(node('h4',order.reference),node('p',`${order.status} · Échéance confirmée : ${order.confirmed_due||'non renseignée'} · Avancement chiffré non renseigné`));
  if(internal){const label=node('label','Mettre à jour le statut'),status=node('select');for(const value of ['Non renseigné','Confirmée','En préparation','En fabrication','Expédiée','Terminée']){const option=node('option',value);option.value=value;option.selected=value===order.status;status.append(option);}label.append(status);card.append(label,button('Confirmer ce statut',async()=>{await api(`${base}/client-orders/${order.id}`,'PUT',{partner_id:order.partner_id,launch_id:order.launch_id,reference:order.reference,status:status.value,confirmed_due:order.confirmed_due,active:order.active});await renderClientOrders();}),button(order.active?'Retirer l’accès commande':'Rétablir l’accès commande',async()=>{if(!confirm('Confirmer le changement d’accès ?'))return;await api(`${base}/client-orders/${order.id}`,'PUT',{partner_id:order.partner_id,launch_id:order.launch_id,reference:order.reference,status:order.status,confirmed_due:order.confirmed_due,active:!order.active});await renderClientOrders();}));}
  for(const event of await api(`${base}/client-orders/${order.id}/events`))card.append(node('p',`${event.created_at} · ${event.message}`));
  const threads=await api(`${base}/client-orders/${order.id}/threads`);

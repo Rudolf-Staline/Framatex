@@ -1,0 +1,20 @@
+#framat-guide-root,.guide-welcome{font:15px/1.5 system-ui,sans-serif;color:#173350}
+#guide-access{position:fixed;right:16px;bottom:18px;z-index:1050;background:#125feb;color:#fff;border:0;border-radius:28px;padding:12px 18px;box-shadow:0 4px 14px #17335033;font:600 14px system-ui;cursor:pointer}
+#guide-panel{background:#fff;box-shadow:0 8px 36px #17335033;border:1px solid #c7d5e8;border-radius:16px;padding:20px;box-sizing:border-box;overflow:auto;color:#173350}
+.guide-panel{position:fixed;right:16px;top:24px;bottom:76px;width:min(480px,calc(100vw - 24px));z-index:1100}
+.guide-full{max-width:1000px;margin:24px auto;min-height:70vh}
+#guide-panel header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:0}
+#guide-panel h2,#guide-panel h3,#guide-panel h4{color:#173350;line-height:1.35}
+#guide-panel nav{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+#guide-panel button,.guide-welcome button{font:inherit;color:#1250a2;background:#f1f6ff;border:1px solid #9cb9e1;border-radius:7px;padding:8px 12px;cursor:pointer;margin:4px}
+#guide-panel button:disabled{opacity:.6;cursor:wait}
+#guide-panel input,#guide-panel select{font:inherit;padding:10px;border:1px solid #748aa5;border-radius:6px;width:100%;box-sizing:border-box}
+#guide-panel label{display:block;margin:10px 0 4px}#guide-panel article{padding:12px;border:1px solid #cfdaeb;border-radius:10px;margin:12px 0}
+#guide-panel form{display:block;margin:16px 0}#guide-panel p,#guide-panel li{overflow-wrap:anywhere}
+#guide-status{color:#43556b;min-height:22px}.guide-answer{white-space:pre-line}
+.guide-welcome{background:#edf4ff;border:1px solid #a7bfdf;border-radius:10px;padding:12px;margin:12px 0}.guide-welcome p{margin:0 0 8px}
+#framat-guide-root :focus-visible,.guide-welcome :focus-visible{outline:3px solid #0a6144;outline-offset:3px}
+.framat-guide-tour{font:15px/1.5 system-ui!important;color:#173350!important;max-width:min(350px,calc(100vw - 32px))!important}.framat-guide-tour button{font-size:14px!important}.driver-popover-progress-text{color:#43556b!important}
+.guide-page-heading{font:16px/1.5 system-ui;color:#173350;max-width:1000px;margin:24px auto;padding:0 16px}.guide-page-heading a{color:#1250a2}
+@media(max-width:600px){.guide-panel{right:6px;left:6px;top:8px;bottom:72px;width:auto;padding:14px!important}.guide-full{margin:12px 6px}#guide-access{right:12px;bottom:12px}.guide-welcome button{margin:4px 2px}}
+@media(prefers-reduced-motion:reduce){.driver-overlay,.driver-popover{transition:none!important}}
