@@ -57,6 +57,18 @@ def permitted(principal,requirements):
 
 def visible(p,principal):return principal.audience in p['audience'] and permitted(principal,p['requires'])
 
+def related(p,page):
+    """Map rendered screens to catalogue destinations, independently of UI labels."""
+    destination=NAV[p['destination']]
+    if p['destination']==page:return True
+    if page=='dossiers':return destination['handler'] in ('order','order_upload')
+    if page=='detail':return destination['handler']=='launch'
+    if page in ('supplier','client'):return page in p['audience'] and destination['surface']=='partner'
+    if page=='partner_admin':return destination['handler']=='partner_admin'
+    if page=='documents':return p['destination']=='search'
+    return False
+
+
 def procedure(pid,principal):
     p=PROCEDURES.get(pid)
     if not p or not visible(p,principal):raise HTTPException(404,'Procédure introuvable pour vos habilitations')
@@ -154,7 +166,7 @@ def retrieve(question,who,context,limit=5):
     if any(x in normalized for x in ('ignore les','ignore previous','system prompt','reveal secret','instructions precedentes','tous les mots de passe','donne le mot de passe')):
         return [],True
     if 'cette page' in normalized:
-        candidates=[p for p in PROCEDURES.values() if visible(p,who) and p['destination']==context.page]
+        candidates=[p for p in PROCEDURES.values() if visible(p,who) and related(p,context.page)]
         return candidates[:limit],False
     if context.procedure_id and any(phrase in normalized for phrase in ('et ensuite','et apres','la suite','cette procedure','cette etape')):
         p=PROCEDURES.get(context.procedure_id)

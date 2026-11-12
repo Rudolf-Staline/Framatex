@@ -3014,7 +3014,7 @@
         }
       ],
       "prerequisites": [
-        "Disposer de l’adresse autorisée et du code personnel remis par Framatex pour une activation"
+        "Disposer d’un compte activé, de l’adresse autorisée et de son mot de passe personnel"
       ],
       "steps": [
         {

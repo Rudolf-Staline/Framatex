@@ -187,3 +187,22 @@ def test_launch_selector_respects_selected_order_relationship():
         rows=c.get('/api/guide/contexts/launch',params={'order_id':first['id']})
         assert rows.status_code==200 and {r['id'] for r in rows.json()}=={a['id']}
         assert c.post('/api/guide/actions/open_document_coherence/resolve',headers=H,json={'order_id':first['id'],'launch_id':b['id']}).status_code==422
+
+
+def test_contextual_help_maps_rendered_screens_to_real_procedures():
+    with TestClient(app) as admin,TestClient(app) as supplier,TestClient(app) as client:
+        setup(admin)
+        supplier_id=organization(admin,'Contexte fournisseur')
+        client_id=organization(admin,'Contexte client','client')
+        activate(admin,supplier,supplier_id,'context-supplier@sample.local')
+        activate(admin,client,client_id,'context-client@sample.local')
+        for screen,expected in [('dossiers','open_dossier'),('detail','document_coherence'),('documents','search_documents')]:
+            items=admin.get('/api/guide/search',params={'page':screen}).json()['items']
+            assert expected in {p['id'] for p in items}
+        ph={**H,'X-Framatex-Guide-Surface':'partner'}
+        for account,screen,expected,forbidden in [(supplier,'supplier','supplier_requests','client_orders'),(client,'client','client_orders','supplier_upload')]:
+            data=account.get('/api/guide/search',params={'page':screen},headers=ph).json()
+            assert expected in {p['id'] for p in data['items']}
+            assert forbidden not in {p['id'] for p in data['items']}
+            answer=account.post('/api/guide/ask',json={'question':'À quoi sert cette page ?','context':{'page':screen},'use_ai':False},headers=ph).json()
+            assert answer['procedure_ids'] and all(screen in p['audience'] for p in answer['procedures'])

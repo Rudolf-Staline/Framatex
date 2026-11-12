@@ -8,7 +8,7 @@ from sqlalchemy import select,func
 from sqlalchemy.orm import Session
 from .core import get_db,ROOT,utcnow
 from .guide_core import (principal,PROCEDURES,NAV,TOURS,CATALOG,GuideContext,procedure,tour,visible,permitted,
-                         resolve,check_context,retrieve,answer,reserve,setting,Principal)
+                         resolve,check_context,retrieve,answer,related,reserve,setting,Principal)
 from .guide_models import GuideProgress,GuidePreference,GuideFeedback,GuideVisit,GuideEvent
 
 router=APIRouter(tags=['Framatex Guide'])
@@ -30,7 +30,7 @@ def help_page():
 @router.get('/api/guide/public')
 def public_help():
     who=Principal('public',None,set())
-    return {'version':CATALOG['version'],'audience':'public','procedures':[decorate(p) for p in PROCEDURES.values() if visible(p,who)],'navigation':{k:v for k,v in NAV.items() if k in ('activate_account','login_partner')},'actions':[],'tours':[],'recent':[],'popular':[],'automatic':'never'}
+    return {'version':CATALOG['version'],'audience':'public','procedures':[decorate(p) for p in PROCEDURES.values() if visible(p,who)],'navigation':{k:v for k,v in NAV.items() if k in ('activate_account','login_partner')},'actions':[],'tours':[],'recent':[],'popular':[p['id'] for p in PROCEDURES.values() if visible(p,who)],'automatic':'never'}
 
 @router.get('/api/guide/catalog')
 def catalog(request:Request,who=Depends(identity),db:Session=Depends(get_db)):
@@ -66,7 +66,7 @@ def visit(pid:str,who=Depends(identity),db:Session=Depends(get_db)):
 def search(q:str=Query('',max_length=500),page:str=Query('home',max_length=40),who=Depends(identity)):
     context=GuideContext(page=page)
     if page not in set(NAV)|{'detail','assistant','help','supplier','client','partners','documents','unknown'}:raise HTTPException(422,'Page inconnue')
-    if not q.strip():hits=[p for p in PROCEDURES.values() if visible(p,who) and (p['destination']==page or page=='help')][:8];denied=False
+    if not q.strip():hits=[p for p in PROCEDURES.values() if visible(p,who) and (related(p,page) or page=='help')][:8];denied=False
     else:hits,denied=retrieve(q,who,context,8)
     return {'items':[decorate(p) for p in hits],'total':len(hits),'restricted':denied}
 

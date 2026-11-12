@@ -9,6 +9,7 @@ window.FramatexGuide=(()=>{
  const $=selector=>root.querySelector(selector);
  const el=(tag,text,attrs={})=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);return n};
  const button=(text,fn,attrs={})=>{const b=el('button',text,{type:'button',...attrs});b.addEventListener('click',()=>Promise.resolve(fn()).catch(showError));return b};
+ let tourTransition=null,pausePending=false;
  let resumeSurface=null;try{resumeSurface=JSON.parse(sessionStorage.getItem('framat-guide-pending')||'null')?.surface}catch{}
  const surface=()=>resumeSurface||adapter?.surface?.()||new URLSearchParams(location.search).get('surface')||'internal';
  const context=()=>({page:location.pathname==='/help'?'help':'unknown',...contextOverride,...adapter?.context?.()});
@@ -56,7 +57,7 @@ window.FramatexGuide=(()=>{
   for(const category of categories)list.append(button(categoryLabels[category]||category,()=>cards(catalog.procedures.filter(p=>p.category===category),categoryLabels[category]||category)));
   content.prepend(list);
   if(catalog.recent?.length){const recent=el('section');recent.append(el('h3','Consultées récemment'));for(const id of catalog.recent){const p=catalog.procedures.find(p=>p.id===id);if(p)recent.append(button(p.title,()=>procedure(id)))}content.append(recent)}
-  const recommendItems=catalog.procedures.filter(p=>p.destination===(context().page||'home')).slice(0,3);
+  const recommendItems=catalog.audience==='public'?[]:(await api('/api/guide/search?'+new URLSearchParams({page:context().page||'home'}))).items.slice(0,3);
   if(recommendItems.length){const rec=el('section');rec.append(el('h3','Pour cette page'));recommendItems.forEach(p=>rec.append(button(p.title,()=>procedure(p.id))));content.append(rec)}
  }
  async function open(){await load();shell(location.pathname==='/help');await home()}
@@ -123,7 +124,15 @@ window.FramatexGuide=(()=>{
   await save('started');if(!await go(d,context(),step.destination==='order_upload'?'jaune':step.destination.replace('order_','')))return false;
   close();await waitTarget(step.target);return true;
  }
- async function pauseTour(){try{await save('paused')}finally{driver?.destroy();tourState=null}}
+ async function pauseTour(){if(pausePending)return;pausePending=true;try{await tourTransition?.catch(()=>{});if(tourState)await save('paused')}finally{driver?.destroy();tourState=null;pausePending=false}}
+ async function moveTour(delta){
+  if(tourTransition||!tourState)return;
+  tourTransition=(async()=>{try{
+   if(delta>0&&tourState.index===tourState.tour.steps.length-1){await save('finished');driver.destroy();tourState=null;return}
+   const index=tourState.index+delta;if(index>=0&&await prepareStep(index))driver.drive(tourState.index);
+  }catch(e){await missing(e)}})();
+  try{await tourTransition}finally{tourTransition=null}
+ }
  async function startTour(id,index=0){
   const t=await api('/api/guide/tours/'+encodeURIComponent(id));await load();tourState={tour:t,index:Math.min(index,t.steps.length-1)};
   try{
@@ -131,8 +140,7 @@ window.FramatexGuide=(()=>{
    driver=window.driver.js.driver({animate:!matchMedia('(prefers-reduced-motion: reduce)').matches,allowClose:true,showProgress:true,allowKeyboardControl:true,disableActiveInteraction:false,
     nextBtnText:'Suivant',prevBtnText:'Retour',doneBtnText:'Terminer',progressText:'{{current}} / {{total}}',popoverClass:'framat-guide-tour',
     steps:t.steps.map(s=>({element:()=>document.querySelector('[data-guide-target="'+CSS.escape(s.target)+'"]'),popover:{title:s.title,description:s.description}})),
-    onNextClick:async()=>{try{if(tourState.index===t.steps.length-1){await save('finished');driver.destroy();tourState=null;return}if(await prepareStep(tourState.index+1))driver.drive(tourState.index)}catch(e){await missing(e)}},
-    onPrevClick:async()=>{try{if(tourState.index>0&&await prepareStep(tourState.index-1))driver.drive(tourState.index)}catch(e){await missing(e)}},
+    onNextClick:()=>moveTour(1),onPrevClick:()=>moveTour(-1),
     onCloseClick:pauseTour,onDestroyStarted:pauseTour,
    });driver.drive(tourState.index);
   }catch(e){await missing(e)}
