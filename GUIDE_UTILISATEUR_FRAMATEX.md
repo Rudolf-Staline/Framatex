@@ -1175,4 +1175,3 @@ Problèmes fréquents :
 - La cible de visite a changé : Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide.
 
 Raccourci : destination enregistrée `client_orders`. Visite : `tour_client_history`.
-

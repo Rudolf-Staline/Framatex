@@ -14,7 +14,7 @@ def render():
         lines += ['',f"Raccourci : destination enregistrée `{p['destination']}`. Visite : `{p['tour_id']}`."]
         if p['limitations']:lines+=['','Limites : '+' ; '.join(p['limitations'])]
         lines+=['']
-    return '\n'.join(lines)+'\n'
+    return '\n'.join(lines).rstrip()+'\n'
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--check',action='store_true');args=parser.parse_args();target=ROOT/'GUIDE_UTILISATEUR_FRAMATEX.md';content=render()
     if args.check:assert target.is_file() and target.read_text()==content,'Manuel désynchronisé : exécuter tools/build_guide_manual.py'
