@@ -33,7 +33,15 @@ Le modèle retourne uniquement des identifiants de procédures/actions, un nivea
 
 ## Évaluation et exploitation
 
-La CI utilise un fournisseur simulé : succès, ambiguïté, refus d’action, JSON invalide, délai, quota et panne. Aucun appel réel à Google n’est effectué par défaut. Un test réel nécessite explicitement `FRAMATEX_GUIDE_REAL_AI_TEST=1` et une clé de test ; une comparaison complète est disponible avec `tools/evaluate_guide.py --gemini --output artifacts/guide-evaluation-gemini.json`. Comparer son exactitude à la mesure locale et examiner le delta ; une amélioration n’est pas présumée.
+La CI utilise un fournisseur simulé : succès, ambiguïté, refus d’action, JSON invalide, délai, quota et panne. Aucun appel réel à Google n’est effectué par défaut. Le banc d’essai exige `FRAMATEX_GUIDE_REAL_AI_TEST=1` et une clé distincte dans `FRAMATEX_GUIDE_EVAL_API_KEY`. Pour le corpus courant :
+
+```bash
+FRAMATEX_GUIDE_REAL_AI_TEST=1 python tools/evaluate_guide.py --gemini --ai-budget 112 --output artifacts/guide-evaluation-gemini.json
+```
+
+Le budget d’évaluation est propre au processus (défaut : 30 tentatives). Il ne remplace pas les limites de production et ne consomme pas leurs compteurs ; celles-ci restent à 30 par propriétaire/jour et 100 globales/jour par défaut. Le banc utilise les mêmes candidats, profils, permissions, payload minimal et validation structurée. Un quota fournisseur est identifié et interrompt les tentatives suivantes ; un timeout ou une réponse invalide donne un repli explicite. Une couverture partielle est affichée sans attribuer les résultats locaux au score des seules réponses Gemini.
+
+Les scores locaux et enrichis sur le corpus complet ont chacun leur dénominateur. La comparaison appariée ne contient que les réponses Gemini validées et compte améliorations, dégradations et résultats inchangés. Chaque ligne conserve les deux résultats et précise si un appel a eu lieu. Un exemple sans réseau est généré avec `python tools/evaluate_guide.py --simulate --ai-budget 112 --output artifacts/guide-evaluation-simulated.json`. Voir [lecture du rapport et limites](FRAMATEX_GUIDE_FIXES.md).
 
 Aucun test réel Gemini n’a été exécuté pendant cette livraison. La disponibilité effective de `gemini-3.5-flash-lite`, la latence distante et une amélioration quantitative par rapport au moteur local ne sont donc pas qualifiées. L’IA reste désactivée par défaut. L’exploitant doit autoriser l’accès à l’API Google dans sa politique réseau et vérifier les conditions de traitement des données applicables à son compte et à son offre.
 

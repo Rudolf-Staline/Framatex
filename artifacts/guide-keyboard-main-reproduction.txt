@@ -7,7 +7,7 @@ The original scenario was unchanged; diagnosis happened before modifying the tes
 BEFORE_ARROW {'title': 'Ajouter une fiche technique · 3/4', 'focus': '<button type="button" class="driver-popover-close-btn" aria-label="Close">×</button>', 'target': 'order-section-jaune'}
 
 AssertionError: Locator expected to contain text '2/4'
-Actual value: Ajouter une fiche technique · 3/4 
+Actual value: Ajouter une fiche technique · 3/4
 Call log:
   - Expect "to_contain_text" locator(".driver-popover-title") with timeout 5000ms
   - waiting for locator(".driver-popover-title")
