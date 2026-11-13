@@ -5,8 +5,8 @@ import io
 import secrets
 from sqlalchemy import select
 from openpyxl import Workbook
-from .core import Base,SessionLocal,engine
-from .main import STORAGE
+from .core import SessionLocal
+from . import document_storage
 from .models import User,Launch,Document,DocumentVersion
 from .quality_models import CrossDocumentRule,DocumentDatum,ExcelInspection
 from .quality_routes import auto_inspect_excel
@@ -21,7 +21,7 @@ def add_doc(db,launch,user,title,kind,blob,filename):
     folder=next(f for f in launch.folders if f.slug=='jaune')
     doc=Document(launch_id=launch.id,folder_id=folder.id,title=title,doc_type=kind,created_by=user.id)
     db.add(doc);db.flush()
-    data=bytes(blob);disk=secrets.token_hex(24);(STORAGE/disk).write_bytes(data)
+    data=bytes(blob);disk=secrets.token_hex(24);(document_storage.STORAGE/disk).write_bytes(data)
     v=DocumentVersion(document_id=doc.id,number=1,original_name=filename,disk_name=disk,
        content_type='application/octet-stream',size=len(data),sha256=hashlib.sha256(data).hexdigest(),uploaded_by=user.id)
     db.add(v);db.flush();auto_inspect_excel(db,v,user.id)
@@ -31,7 +31,8 @@ def add_doc(db,launch,user,title,kind,blob,filename):
 def main():
     from .demo_guard import require_demo
     require_demo()
-    Base.metadata.create_all(engine)
+    from .migrate import migrate
+    migrate()
     with SessionLocal() as db:
         user=db.scalar(select(User).where(User.email.is_not(None)))
         launch=db.scalar(select(Launch).where(Launch.name=='Chemises manches longues · pilote B'))
@@ -51,7 +52,7 @@ def main():
             left_folder='jaune',right_folder='jaune',tolerance_text='0',created_by=user.id))
         doc,v1=add_doc(db,launch,user,'Feuille de besoins · Excel fictif','Feuille de besoins',
                        workbook('=A1*A2'),'besoins-v1.xlsx')
-        blob=workbook(2850);disk=secrets.token_hex(24);(STORAGE/disk).write_bytes(blob)
+        blob=workbook(2850);disk=secrets.token_hex(24);(document_storage.STORAGE/disk).write_bytes(blob)
         v2=DocumentVersion(document_id=doc.id,number=2,original_name='besoins-v2.xlsx',
             disk_name=disk,content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             size=len(blob),sha256=hashlib.sha256(blob).hexdigest(),uploaded_by=user.id)

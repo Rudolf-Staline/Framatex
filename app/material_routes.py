@@ -13,7 +13,9 @@ from sqlalchemy.orm import Session
 from .core import get_current_user, get_db, utcnow
 from .models import User, DocumentVersion, Document, Folder
 from .material_models import MaterialLine, MaterialMovement, MaterialPlanRevision
-from .main import audit, get_launch, must, permitted
+from .audit import audit
+from .launches import get_launch
+from .access import must, permitted
 
 router = APIRouter()
 UNITS = {'m', 'm²', 'kg', 'g', 'pcs', 'L'}

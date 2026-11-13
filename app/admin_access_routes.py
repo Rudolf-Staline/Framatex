@@ -5,7 +5,9 @@ from sqlalchemy import select,update
 from sqlalchemy.orm import Session
 from .core import get_current_user,get_db,hash_password
 from .models import User,Role
-from .main import admin_only,audit,user_out
+from .access import admin_only
+from .audit import audit
+from .employees import user_out
 
 router=APIRouter(tags=['Accès employés'])
 class AccessInput(BaseModel):

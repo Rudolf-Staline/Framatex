@@ -4,6 +4,7 @@ Une extraction suggère ; seuls les humains créent, vérifient et clôturent.
 Les preuves et leurs versions exactes restent consultables.
 """
 from __future__ import annotations
+from . import document_storage
 from .order_documents import document_in_launch
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -17,16 +18,14 @@ from .spec_analysis import analyze_text
 from .spec_models import ClientRequirement, SpecificationAmbiguity
 from .intake import read_document
 
+from .audit import audit
+from .launches import get_launch
+from .access import must, permitted
+
 router = APIRouter(tags=['0.7 — Exigences et ambiguïtés'])
 
 
-def _base():
-    from .main import audit, get_launch, must, permitted, STORAGE
-    return audit, get_launch, must, permitted, STORAGE
-
-
 def _version(db:Session, version_id:str, launch_id:str, user:User, write=False):
-    _, _, must, _, _ = _base()
     version=db.get(DocumentVersion,version_id)
     if not version or not document_in_launch(db, version.document, launch_id):
         raise HTTPException(404,'Document ou version introuvable dans ce lancement')
@@ -53,7 +52,6 @@ def _ambiguity(db:Session, aid:str, lid:str):
 
 
 def _item_permissions(db:Session,user:User,launch_id:str,source_id:str,evidence_id:str|None=None):
-    _, _, must, _, _ = _base()
     must(user,'launch.read')
     source=_version(db,source_id,launch_id,user)
     proof=_version(db,evidence_id,launch_id,user) if evidence_id else None
@@ -94,12 +92,12 @@ def _amb_output(db:Session,x:SpecificationAmbiguity,user:User):
 
 
 def _can_review(user,folder):
-    from .main import permitted
+    from .access import permitted
     return permitted(user,'requirement.review',folder)
 
 
 def _can_ambiguity_review(user,folder):
-    from .main import permitted
+    from .access import permitted
     return permitted(user,'ambiguity.review',folder)
 
 
@@ -130,7 +128,6 @@ class ResolutionIn(BaseModel):
 
 @router.get('/api/document-versions/{version_id}/spec-suggestions')
 def spec_suggestions(version_id:str,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
-    _,_,must,_,storage=_base()
     version=db.get(DocumentVersion,version_id)
     if not version:raise HTTPException(404,'Version introuvable')
     must(user,'launch.read')
@@ -138,7 +135,7 @@ def spec_suggestions(version_id:str,user:User=Depends(get_current_user),db:Sessi
     must(user,'document.read',folder)
     if not _current(version):
         raise HTTPException(409,'Analyser la version courante pour éviter des suggestions obsolètes')
-    path=storage/version.disk_name
+    path=document_storage.STORAGE/version.disk_name
     if not path.is_file():raise HTTPException(503,'Fichier indisponible')
     read=read_document(path,version.original_name)
     detected=analyze_text(read['text'])
@@ -149,7 +146,6 @@ def spec_suggestions(version_id:str,user:User=Depends(get_current_user),db:Sessi
 
 @router.get('/api/launches/{launch_id}/specifications')
 def list_specifications(launch_id:str,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
-    _,get_launch,must,permitted,_=_base()
     must(user,'launch.read')
     get_launch(db,launch_id)
     requirements=[]; ambiguities=[]
@@ -176,7 +172,6 @@ def list_specifications(launch_id:str,user:User=Depends(get_current_user),db:Ses
 
 @router.post('/api/launches/{launch_id}/requirements',status_code=201)
 def create_requirement(launch_id:str,payload:RequirementIn,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
-    audit,get_launch,must,_,_=_base()
     must(user,'launch.read');get_launch(db,launch_id)
     source=_version(db,payload.source_version_id,launch_id,user,write=True)
     if not _current(source):raise HTTPException(409,'La version source a été remplacée')
@@ -190,7 +185,6 @@ def create_requirement(launch_id:str,payload:RequirementIn,user:User=Depends(get
 
 @router.post('/api/launches/{launch_id}/requirements/{requirement_id}/evidence')
 def attach_evidence(launch_id:str,requirement_id:str,payload:EvidenceIn,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
-    audit,_,must,_,_=_base()
     x=_requirement(db,requirement_id,launch_id)
     src,_=_item_permissions(db,user,launch_id,x.source_version_id,x.evidence_version_id)
     must(user,'document.write',src.document.folder.slug)
@@ -205,7 +199,6 @@ def attach_evidence(launch_id:str,requirement_id:str,payload:EvidenceIn,user:Use
 
 @router.post('/api/launches/{launch_id}/requirements/{requirement_id}/verify')
 def verify_requirement(launch_id:str,requirement_id:str,payload:VerificationIn,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
-    audit,_,must,_,_=_base()
     x=_requirement(db,requirement_id,launch_id)
     source,proof=_item_permissions(db,user,launch_id,x.source_version_id,x.evidence_version_id)
     must(user,'requirement.review',source.document.folder.slug)
@@ -219,7 +212,6 @@ def verify_requirement(launch_id:str,requirement_id:str,payload:VerificationIn,u
 
 @router.post('/api/launches/{launch_id}/ambiguities',status_code=201)
 def create_ambiguity(launch_id:str,payload:AmbiguityIn,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
-    audit,get_launch,must,_,_=_base()
     must(user,'launch.read');get_launch(db,launch_id)
     source=_version(db,payload.source_version_id,launch_id,user,write=True)
     if not _current(source):raise HTTPException(409,'La version source a été remplacée')
@@ -232,7 +224,6 @@ def create_ambiguity(launch_id:str,payload:AmbiguityIn,user:User=Depends(get_cur
 
 @router.post('/api/launches/{launch_id}/ambiguities/{ambiguity_id}/resolve')
 def resolve_ambiguity(launch_id:str,ambiguity_id:str,payload:ResolutionIn,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
-    audit,_,must,_,_=_base()
     x=_ambiguity(db,ambiguity_id,launch_id)
     src,_=_item_permissions(db,user,launch_id,x.source_version_id,x.clarification_version_id)
     must(user,'ambiguity.review',src.document.folder.slug)
@@ -262,7 +253,6 @@ class RefreshAmbiguityIn(BaseModel):
 @router.post('/api/launches/{launch_id}/requirements/{requirement_id}/refresh-source')
 def refresh_requirement_source(launch_id:str,requirement_id:str,payload:RefreshRequirementIn,
                                user:User=Depends(get_current_user),db:Session=Depends(get_db)):
-    audit,_,must,_,_=_base()
     item=_requirement(db,requirement_id,launch_id)
     previous,_=_item_permissions(db,user,launch_id,item.source_version_id,item.evidence_version_id)
     must(user,'document.write',previous.document.folder.slug)
@@ -283,7 +273,6 @@ def refresh_requirement_source(launch_id:str,requirement_id:str,payload:RefreshR
 @router.post('/api/launches/{launch_id}/ambiguities/{ambiguity_id}/refresh-source')
 def refresh_ambiguity_source(launch_id:str,ambiguity_id:str,payload:RefreshAmbiguityIn,
                              user:User=Depends(get_current_user),db:Session=Depends(get_db)):
-    audit,_,must,_,_=_base()
     item=_ambiguity(db,ambiguity_id,launch_id)
     old,_=_item_permissions(db,user,launch_id,item.source_version_id,item.clarification_version_id)
     must(user,'document.write',old.document.folder.slug)

@@ -6,7 +6,8 @@ from pydantic import BaseModel,Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from .core import get_db
-from .main import store_upload,STORAGE,audit
+from . import document_storage
+from .audit import audit
 from .partner_routes import partner,staff,org_get
 from .partner_permissions import require
 from .partner_uploads import lock_budget,verify_budget
@@ -32,7 +33,7 @@ async def save(db,oid,actor,title,file):
     title=title.strip()
     if not title:raise HTTPException(422,'Titre requis')
     lock_budget(db,oid)
-    name,disk,size,sha,mime=await store_upload(file)
+    name,disk,size,sha,mime=await document_storage.store_upload(file)
     try:
         verify_budget(db,oid,size)
         previous=db.scalar(select(PartnerAdministrativeDocument).where(PartnerAdministrativeDocument.partner_id==oid,PartnerAdministrativeDocument.title==title).order_by(PartnerAdministrativeDocument.number.desc()).limit(1))
@@ -40,7 +41,7 @@ async def save(db,oid,actor,title,file):
         db.add(row);db.flush();audit(db,None,'partner.admin_document.upload','partner',oid,{'version_id':row.id,'owner':actor,'sha256':sha})
         db.commit();return out(row)
     except Exception:
-        db.rollback();(STORAGE/disk).unlink(missing_ok=True);raise
+        db.rollback();(document_storage.STORAGE/disk).unlink(missing_ok=True);raise
 
 @router.post('/api/partner/administrative-documents',status_code=201)
 async def own_upload(title:str=Form(...,min_length=1,max_length=150),file:UploadFile=File(...),account=Depends(partner),db:Session=Depends(get_db)):
@@ -67,8 +68,8 @@ def review(vid:str,payload:ReviewInput,user=Depends(staff),db:Session=Depends(ge
 def file_response(db,vid,account=None):
     row=db.get(PartnerAdministrativeDocument,vid)
     if not row or (account and row.partner_id!=account.partner_id):raise HTTPException(404,'Pièce absente')
-    if not (STORAGE/row.disk_name).is_file():raise HTTPException(503,'Fichier indisponible')
-    return FileResponse(STORAGE/row.disk_name,filename=row.original_name,media_type='application/octet-stream')
+    if not (document_storage.STORAGE/row.disk_name).is_file():raise HTTPException(503,'Fichier indisponible')
+    return FileResponse(document_storage.STORAGE/row.disk_name,filename=row.original_name,media_type='application/octet-stream')
 
 @router.get('/api/partner/administrative-documents/{vid}/download')
 def own_download(vid:str,account=Depends(partner),db:Session=Depends(get_db)):

@@ -11,7 +11,7 @@ from .approval_models import InternalNotification
 
 def permitted_now(user: User, action: str, folder: str | None = None):
     # Import différé pour éviter une dépendance circulaire pendant l'enregistrement des routes.
-    from .main import permitted
+    from .access import permitted
     return permitted(user, action, folder)
 
 

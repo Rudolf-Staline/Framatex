@@ -7,10 +7,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-import re
-import unicodedata
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -23,17 +21,9 @@ from .spec_models import ClientRequirement, SpecificationAmbiguity
 from .mail_models import EmailCommitment
 from .spec_routes import _req_output, _amb_output
 
+from .access import must, permitted
+
 router = APIRouter(tags=["0.9 — Pilotage et aide"])
-
-
-def deps():
-    from .main import must, permitted
-    return must, permitted
-
-
-def _normalize(value: str) -> str:
-    value = unicodedata.normalize("NFKD", value.casefold())
-    return "".join(c for c in value if not unicodedata.combining(c))
 
 
 def _source_folder(db: Session, version_id: str | None) -> str | None:
@@ -60,7 +50,6 @@ def priorities(user: User = Depends(get_current_user), db: Session = Depends(get
     Priorités déterministes : 0 échéance dépassée, 1 anomalie/action à traiter,
     2 engagement à échéance future proche. Pas de score arbitraire ni d'automatisation.
     """
-    must, permitted = deps()
     must(user, "launch.read")
     today = datetime.now(ZoneInfo("Africa/Casablanca")).date()
     horizon = today + timedelta(days=7)
@@ -150,8 +139,8 @@ class GuideRequest(BaseModel):
 @router.post("/api/assistant/guide")
 def guide(payload: GuideRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     from .guide_core import Principal,GuideContext,retrieve,answer
-    from .main import is_admin
-    must,_=deps();must(user,'launch.read')
+    from .access import is_admin
+    must(user,'launch.read')
     if payload.launch_id:
         from .access import must_access
         must_access(db,user,payload.launch_id)

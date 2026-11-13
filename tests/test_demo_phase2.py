@@ -44,3 +44,21 @@ with TestClient(app) as supplier,TestClient(app) as client,TestClient(app) as ad
   if launch['order_ref']=='CMD-DEMO-002':assert admin.get('/api/launches/'+launch['id']+'/quality').json()['counts']['difference']==1
 ''')
     assert probe.returncode==0,probe.stderr
+
+
+def test_legacy_demo_commands_without_importing_application_helpers(tmp_path):
+    env={**os.environ,'FRAMATEX_DATA_DIR':str(tmp_path),'FRAMATEX_MODE':'DEMO','FRAMATEX_SECRET_KEY':'legacy-demo-test-'*5}
+    env.pop('DATABASE_URL',None)
+    def run(*args):
+        result=subprocess.run([sys.executable,*args],cwd=ROOT,env=env,capture_output=True,text=True,timeout=60)
+        assert result.returncode==0,result.stderr
+    run('-c', "from app.migrate import migrate; migrate(); from app.core import SessionLocal,hash_password; from app.models import User,Role; db=SessionLocal(); db.add(User(name='Demo',email='legacy-demo@example.local',password_hash=hash_password('Legacy-Demo-Password-2026!'),roles=[Role(name='Administrateur')])); db.commit()")
+    def counts():
+        with sqlite3.connect(tmp_path/'framat.db') as db:
+            return {table:db.execute('SELECT count(*) FROM '+table).fetchone()[0] for table in ('launches','documents','document_versions','completeness_profiles','impact_rules','cross_document_rules')}
+    for module in ('seed_demo','seed_completeness_demo','seed_workflow_demo','seed_quality_demo'):
+        run('-m','app.'+module);before=counts();run('-m','app.'+module);assert counts()==before
+    with sqlite3.connect(tmp_path/'framat.db') as db:
+        assert db.execute('PRAGMA foreign_key_check').fetchall()==[]
+        for disk,sha in db.execute('SELECT disk_name,sha256 FROM document_versions'):
+            assert hashlib.sha256((tmp_path/'files'/disk).read_bytes()).hexdigest()==sha

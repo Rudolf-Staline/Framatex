@@ -13,7 +13,11 @@ from .core import get_current_user, get_db, utcnow
 from .models import Document, DocumentVersion, Folder, User
 from .quality_models import DocumentDatum, CrossDocumentRule, QualityDecision, ExcelInspection
 from .quality import comparison, analyze_workbook, QUALITY_FIELDS, TEXT_FIELDS
-from .main import must, permitted, admin_only, get_doc, get_launch, audit, STORAGE, SLUGS
+from .access import must, permitted, admin_only
+from . import document_storage
+from .order_documents import get_doc
+from .launches import get_launch, SLUGS
+from .audit import audit
 
 router=APIRouter()
 
@@ -189,7 +193,7 @@ def auto_inspect_excel(db:Session,version:DocumentVersion, user_id:str):
     baseline=prev if prev and Path(prev.original_name).suffix.lower()=='.xlsx' else None
     from .partner_phase2_models import DocumentExcelPolicy
     policy=db.get(DocumentExcelPolicy,doc.id)
-    result=analyze_workbook(STORAGE/version.disk_name,STORAGE/baseline.disk_name if baseline else None,json.loads(policy.cells_json) if policy else [])
+    result=analyze_workbook(document_storage.STORAGE/version.disk_name,document_storage.STORAGE/baseline.disk_name if baseline else None,json.loads(policy.cells_json) if policy else [])
     item=ExcelInspection(document_version_id=version.id,baseline_version_id=baseline.id if baseline else None,
          status=result['status'],scanned_cells=result['scanned_cells'],formula_count=result['formula_count'],
          findings_json=json.dumps(result['findings'],ensure_ascii=False),inspected_by=user_id)

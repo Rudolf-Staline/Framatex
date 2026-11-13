@@ -1,0 +1,30 @@
+{
+  "base_commit": "dffb33ec452a1ed596c44aaf740a3112c304b822",
+  "openapi": {
+    "equal": true,
+    "paths": 204,
+    "operations": 235,
+    "before_sha256": "ee8b68e95fcca6ebfe75ca3baaa2d20f49317b1ccdffc5ed0c2b2eb88c633288",
+    "after_sha256": "ee8b68e95fcca6ebfe75ca3baaa2d20f49317b1ccdffc5ed0c2b2eb88c633288"
+  },
+  "registered_model_tables": 88,
+  "model_definitions_or_migrations_changed": false,
+  "main_helper_imports": {
+    "before_modules": 35,
+    "before_statements": 47,
+    "before_symbols": 131,
+    "after_modules": 0,
+    "after_statements": 0
+  },
+  "original_script_order_preserved": true,
+  "source_lines": {
+    "app/main.py": {
+      "before": 842,
+      "after": 211
+    },
+    "static/app.js": {
+      "before": 228,
+      "after": 165
+    }
+  }
+}

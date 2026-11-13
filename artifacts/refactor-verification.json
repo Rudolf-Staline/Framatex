@@ -1,0 +1,83 @@
+{
+  "verified_code_commit": "f4e7db9ccc892e8f943a130a13dfdde0ce2fe045",
+  "base_commit": "dffb33ec452a1ed596c44aaf740a3112c304b822",
+  "baseline_python": {
+    "passed": 148,
+    "failed": 1,
+    "skipped": 1,
+    "failure": "test_secret_creation_is_atomic_across_processes_and_private subprocess timeout at 20 seconds",
+    "isolated_recheck_passed": true
+  },
+  "final_python": {
+    "passed": 156,
+    "failed": 0,
+    "skipped": 1,
+    "warnings": 1
+  },
+  "javascript_test_scripts": 14,
+  "chromium": "156.0.8078.79 system executable",
+  "real_gemini_called": false,
+  "known_ci_access_button_timeout_reproduced": false,
+  "checks": [
+    {
+      "name": "python",
+      "exit_code": 0,
+      "seconds": 184.68
+    },
+    {
+      "name": "javascript",
+      "exit_code": 0,
+      "seconds": 1.94
+    },
+    {
+      "name": "openapi",
+      "exit_code": 0,
+      "seconds": 1.97
+    },
+    {
+      "name": "catalog",
+      "exit_code": 0,
+      "seconds": 2.01
+    },
+    {
+      "name": "manual",
+      "exit_code": 0,
+      "seconds": 0.04
+    },
+    {
+      "name": "local-guide",
+      "exit_code": 0,
+      "seconds": 0.87
+    },
+    {
+      "name": "simulated-guide",
+      "exit_code": 0,
+      "seconds": 0.97
+    },
+    {
+      "name": "orders-browser",
+      "exit_code": 0,
+      "seconds": 27.39
+    },
+    {
+      "name": "partners-browser",
+      "exit_code": 0,
+      "seconds": 25.71
+    },
+    {
+      "name": "guide-browser",
+      "exit_code": 0,
+      "seconds": 30.29
+    },
+    {
+      "name": "dependencies",
+      "exit_code": 0,
+      "seconds": 0.37
+    },
+    {
+      "name": "whitespace",
+      "exit_code": 0,
+      "seconds": 0.03
+    }
+  ]
+}

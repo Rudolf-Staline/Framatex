@@ -4,7 +4,7 @@ Utilisation après bootstrap_admin + seed_demo : python -m app.seed_completeness
 Ne modifie pas les lancements de Framatex et n'utilise pas de règles métier non validées.
 """
 from sqlalchemy import select
-from .core import Base, SessionLocal, engine
+from .core import SessionLocal
 from .models import User, Launch
 from .completeness_models import CompletenessProfile, RequirementRule, LaunchCompleteness
 from .seed_demo import ROWS
@@ -26,7 +26,8 @@ RULES = [
 def main():
     from .demo_guard import require_demo
     require_demo()
-    Base.metadata.create_all(engine)
+    from .migrate import migrate
+    migrate()
     with SessionLocal() as db:
         admin = db.scalar(select(User).join(User.roles).where(User.email.is_not(None)))
         if not admin:

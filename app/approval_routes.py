@@ -20,7 +20,10 @@ from .models import Document, DocumentVersion, Role, User, Launch
 from .workflow_models import DocumentReview
 from .approval_models import ApprovalTemplate, ApprovalStage, ApprovalRun, ApprovalDecision, InternalNotification
 from .internal_notifications import notification_scope, emit_to_role, emit_to_user, permitted_now
-from .main import admin_only, audit, get_doc, get_launch, must, permitted
+from .access import admin_only, must, permitted
+from .audit import audit
+from .order_documents import get_doc
+from .launches import get_launch
 from .partner_phase2_models import ApprovalStagePolicy, ApprovalStageAssignment
 
 router = APIRouter(tags=['0.13 — Validations et notifications'])

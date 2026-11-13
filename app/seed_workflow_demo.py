@@ -1,7 +1,7 @@
 """Génère uniquement des exemples fictifs du workflow 0.3 ; peut être relancé."""
 from sqlalchemy import select
-from .core import Base, SessionLocal, engine
-from .main import STORAGE
+from .core import SessionLocal
+from . import document_storage
 from .models import User, Launch, Document
 from .workflow import emit_impacts
 from .workflow_models import BusinessValueRevision, DocumentReview, ImpactRule, ImpactAlert
@@ -10,7 +10,8 @@ from .workflow_models import BusinessValueRevision, DocumentReview, ImpactRule, 
 def main():
     from .demo_guard import require_demo
     require_demo()
-    Base.metadata.create_all(engine)
+    from .migrate import migrate
+    migrate()
     with SessionLocal() as db:
         user=db.scalar(select(User).where(User.email.is_not(None)))
         if not user:

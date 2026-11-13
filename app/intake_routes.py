@@ -12,7 +12,11 @@ from .core import get_db, get_current_user
 from .models import DocumentVersion, Document, User
 from .intake_models import ConfirmedField
 from .intake import PATTERNS, preview
-from .main import STORAGE, MAX_UPLOAD, SLUGS, audit, get_doc, get_launch, must, permitted, verify_file, EXTS
+from . import document_storage
+from .launches import SLUGS, get_launch
+from .order_documents import get_doc
+from .audit import audit
+from .access import must, permitted
 
 router=APIRouter()
 
@@ -29,10 +33,10 @@ async def intake_preview(launch_id:str,file:UploadFile=File(...),user:User=Depen
     # On n'effectue aucune analyse si le collaborateur n'a le droit de déposer dans aucune rubrique.
     if not any(permitted(user,'document.write',f) for f in SLUGS):
         raise HTTPException(403,'Dépôt interdit')
-    from .main import store_upload, STORAGE as private_storage
+    from . import document_storage
     from starlette.concurrency import run_in_threadpool
-    name,disk_name,_size,_sha,_mime=await store_upload(file)
-    path=private_storage/disk_name
+    name,disk_name,_size,_sha,_mime=await document_storage.store_upload(file)
+    path=document_storage.STORAGE/disk_name
     try:
         result=await run_in_threadpool(preview,path,name)
         result['classification']['suggestions']=[x for x in result['classification']['suggestions'] if permitted(user,'document.write',x['folder'])]
@@ -46,7 +50,7 @@ def version_intake(version_id:str,user:User=Depends(get_current_user),db:Session
     doc=get_doc(db,v.document_id)
     must(user,'launch.read')
     must(user,'document.read',doc.folder.slug)
-    path=STORAGE/v.disk_name
+    path=document_storage.STORAGE/v.disk_name
     if not path.exists(): raise HTTPException(503,'Fichier indisponible')
     # Analyse demandée explicitement par l'utilisateur. Aucune extraction poussée vers l'ERP.
     result=preview(path,v.original_name)

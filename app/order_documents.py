@@ -2,9 +2,9 @@
 from datetime import datetime
 from fastapi import HTTPException
 from sqlalchemy import ForeignKey, String, DateTime, select, update
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, Session, object_session
 from .core import Base, utcnow
-from .models import uid
+from .models import uid, Document, DocumentVersion
 
 SECTIONS = [('jaune','Technique et commercial'),('rose','Réception'),('bleu','Douane'),('vert','Facturation Framatex')]
 
@@ -112,3 +112,19 @@ class OrderCompleteness(Base):
     profile_id: Mapped[str | None]=mapped_column(ForeignKey('completeness_profiles.id'),nullable=True)
     phase: Mapped[str]=mapped_column(String(30),default='preparation')
     order_type: Mapped[str]=mapped_column(String(100),default='')
+
+
+def get_doc(db: Session, doc_id: str) -> Document:
+    d = db.get(Document, doc_id)
+    if not d:
+        raise HTTPException(404, "Document introuvable")
+    return d
+
+
+def version_out(v: DocumentVersion):
+    return {"id": v.id, "number": v.number, "original_name": v.original_name, "size": v.size, "sha256": v.sha256, "created_at": v.created_at.isoformat(), "uploaded_by": v.uploaded_by}
+
+
+def doc_out(d: Document):
+    versions = sorted(d.versions, key=lambda v: v.number)
+    return {"order_id": document_order_id(object_session(d), d), "launch_id": d.launch_id, "id": d.id, "title": d.title, "doc_type": d.doc_type, "folder": d.folder.slug, "created_at": d.created_at.isoformat(), "versions": [version_out(v) for v in versions], "latest": version_out(versions[-1]) if versions else None}

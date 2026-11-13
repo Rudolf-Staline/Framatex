@@ -4,6 +4,7 @@ Pas de connexion aux messageries ni d'envoi automatique. Droits de lecture
 fondés sur le sous-dossier Rose, décisions humaines et journal d'audit.
 """
 from __future__ import annotations
+from . import document_storage
 import json
 from datetime import date
 from pathlib import Path
@@ -13,20 +14,19 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .core import get_current_user, get_db, utcnow
-from .models import Document, DocumentVersion, Folder, User
+from .models import Document, DocumentVersion, User
 from .mail_models import ArchivedEmail, EmailCommitment
 from .mail_analysis import parse_email, suggest_commitments
+
+from .audit import audit
+from .launches import get_launch
+from .order_documents import doc_out
+from .access import must
 
 router=APIRouter(tags=['0.8 — Emails et engagements'])
 
 
-def _deps():
-    from .main import audit, get_launch, must, STORAGE, store_upload, doc_out
-    return audit,get_launch,must,STORAGE,store_upload,doc_out
-
-
 def _read_email(db:Session, email_id:str, launch_id:str, user:User):
-    _,_,must,_,_,_= _deps()
     must(user,'launch.read');must(user,'document.read','rose')
     x=db.get(ArchivedEmail,email_id)
     if not x or x.launch_id!=launch_id:raise HTTPException(404,'Email introuvable dans ce lancement')
@@ -75,7 +75,6 @@ class CommitmentPatch(BaseModel):
 @router.post('/api/launches/{launch_id}/emails/import',status_code=201)
 async def import_email(launch_id:str,file:UploadFile=File(...),
                        user:User=Depends(get_current_user),db:Session=Depends(get_db)):
-    audit,get_launch,must,storage,store_upload,doc_out=_deps()
     must(user,'launch.read');must(user,'document.write','rose');must(user,'document.read','rose')
     launch=get_launch(db,launch_id)
     suffix=Path((file.filename or '').replace('\\','/')).suffix.lower()
@@ -88,7 +87,7 @@ async def import_email(launch_id:str,file:UploadFile=File(...),
     await file.seek(0)
     rose=next((folder for folder in launch.folders if folder.slug=='rose'),None)
     if rose is None:raise HTTPException(409,'Sous-dossier Rose absent')
-    original,disk_name,size,sha,mime=await store_upload(file)
+    original,disk_name,size,sha,mime=await document_storage.store_upload(file)
     try:
         doc=Document(launch_id=launch_id,folder_id=rose.id,title=('Email · '+parsed['subject'])[:220],doc_type='Courriel',created_by=user.id)
         db.add(doc);db.flush()
@@ -103,12 +102,11 @@ async def import_email(launch_id:str,file:UploadFile=File(...),
         db.commit()
         return {'email':_email_out(x),'document':doc_out(doc)}
     except Exception:
-        db.rollback();(storage/disk_name).unlink(missing_ok=True)
+        db.rollback();(document_storage.STORAGE/disk_name).unlink(missing_ok=True)
         raise
 
 @router.get('/api/launches/{launch_id}/emails')
 def list_emails(launch_id:str,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
-    _,get_launch,must,_,_,_=_deps()
     must(user,'launch.read');get_launch(db,launch_id)
     # Pas même de métadonnées révélées sans droit de lecture du dossier Rose.
     must(user,'document.read','rose')
@@ -119,12 +117,12 @@ def list_emails(launch_id:str,user:User=Depends(get_current_user),db:Session=Dep
 
 
 def _may_import(user):
-    from .main import permitted
+    from .access import permitted
     return permitted(user,'document.write','rose')
 
 
 def _may_review(user):
-    from .main import permitted
+    from .access import permitted
     return permitted(user,'commitment.review','rose')
 
 @router.get('/api/launches/{launch_id}/emails/{email_id}/suggestions')
@@ -134,7 +132,6 @@ def email_suggestions(launch_id:str,email_id:str,user:User=Depends(get_current_u
 
 @router.post('/api/launches/{launch_id}/commitments',status_code=201)
 def create_commitment(launch_id:str,payload:CommitmentIn,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
-    audit,_,must,_,_,_=_deps()
     x=_read_email(db,payload.email_id,launch_id,user)
     must(user,'commitment.review','rose')
     # L'utilisateur doit confirmer une citation présente dans le courrier.
@@ -152,7 +149,6 @@ def create_commitment(launch_id:str,payload:CommitmentIn,user:User=Depends(get_c
 @router.patch('/api/launches/{launch_id}/commitments/{item_id}')
 def update_commitment(launch_id:str,item_id:str,payload:CommitmentPatch,
                       user:User=Depends(get_current_user),db:Session=Depends(get_db)):
-    audit,_,must,_,_,_=_deps()
     must(user,'launch.read');must(user,'document.read','rose');must(user,'commitment.review','rose')
     item=_commitment(db,item_id,launch_id)
     prev=item.status

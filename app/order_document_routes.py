@@ -5,7 +5,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from .core import get_db, get_current_user
 from .models import Folder, Document, DocumentVersion
-from .main import must, permitted, doc_out, store_upload, STORAGE, audit
+from .access import must, permitted
+from . import document_storage
+from .order_documents import doc_out
+from .audit import audit
 from .order_documents import dossier, must_order, launch_order, OrderDossier
 
 router=APIRouter(tags=['Dossiers Jaunes par commande'])
@@ -39,7 +42,7 @@ async def upload(oid:str,folder:Literal['jaune','rose','bleu','vert']=Form(...),
         if not link or link.order_id!=oid:raise HTTPException(422,'Lancement étranger à la commande')
     root=dossier(db,oid)
     section=db.scalar(select(Folder).where(Folder.dossier_id==root.id,Folder.slug==folder))
-    original,disk_name,size,sha,mime=await store_upload(file)
+    original,disk_name,size,sha,mime=await document_storage.store_upload(file)
     try:
         doc=Document(folder_id=section.id,launch_id=launch_id,title=title.strip(),doc_type=doc_type.strip(),created_by=user.id)
         db.add(doc);db.flush()
@@ -50,7 +53,7 @@ async def upload(oid:str,folder:Literal['jaune','rose','bleu','vert']=Form(...),
         audit(db,user,'document.upload','document',doc.id,{'order_id':oid,'launch_id':launch_id,'sha256':sha})
         db.commit();return doc_out(doc)
     except Exception:
-        db.rollback();(STORAGE/disk_name).unlink(missing_ok=True);raise
+        db.rollback();(document_storage.STORAGE/disk_name).unlink(missing_ok=True);raise
 
 
 @router.get('/api/orders/{oid}/approval-overview')
@@ -79,7 +82,7 @@ class MemberInput(BaseModel):
 
 @router.post('/api/orders/{oid}/members',status_code=201)
 def add_member(oid:str,payload:MemberInput,user=Depends(get_current_user),db:Session=Depends(get_db)):
-    from .main import admin_only
+    from .access import admin_only
     from .models import User
     from .order_documents import OrderMember
     admin_only(user);must_order(db,user,oid)
@@ -92,7 +95,7 @@ def add_member(oid:str,payload:MemberInput,user=Depends(get_current_user),db:Ses
 
 @router.delete('/api/orders/{oid}/members/{user_id}')
 def revoke_member(oid:str,user_id:str,user=Depends(get_current_user),db:Session=Depends(get_db)):
-    from .main import admin_only
+    from .access import admin_only
     from .order_documents import OrderMember
     admin_only(user);must_order(db,user,oid)
     row=db.get(OrderMember,(oid,user_id))
@@ -130,7 +133,7 @@ def completeness(oid:str,user=Depends(get_current_user),db:Session=Depends(get_d
 
 @router.put('/api/orders/{oid}/completeness/context')
 def context(oid:str,payload:CompletenessInput,user=Depends(get_current_user),db:Session=Depends(get_db)):
-    from .main import admin_only
+    from .access import admin_only
     from .order_documents import OrderCompleteness
     from .completeness_models import CompletenessProfile
     admin_only(user);must_order(db,user,oid)

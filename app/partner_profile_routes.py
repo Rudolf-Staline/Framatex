@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from .core import get_db
-from .main import audit
+from .audit import audit
 from .models import AuditEvent
 from .partner_models import PartnerAccount
 from .partner_phase2_models import PartnerProfile, PartnerRole, PartnerRoleAssignment
