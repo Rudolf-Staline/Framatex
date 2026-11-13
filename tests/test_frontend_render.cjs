@@ -7,6 +7,7 @@ source = source.substring(0, source.lastIndexOf('(async function init(){'));
 const ctx = {document:{querySelector:()=>({})},window:{addEventListener:()=>{}},console, setTimeout, clearTimeout};
 vm.createContext(ctx);
 vm.runInContext(source,ctx);
+for (const file of ['static/completeness-view.js','static/completeness.js']) vm.runInContext(fs.readFileSync(file,'utf8'),ctx);
 const output=vm.runInContext(`(()=>{
  state.me={admin:true,name:'Admin',roles:['Administrateur'],permissions:[]};
  state.detail={id:'launch-1',name:'Lancement de test'};
@@ -28,3 +29,9 @@ assert(!output.includes('undefined'), 'Le rendu contient undefined');
 const escaping = vm.runInContext(`(()=>{state.completeness.rows[1].title='<script>alert(1)</script>';return renderCompleteness()})()`,ctx);
 assert(escaping.includes('&lt;script&gt;') && !escaping.includes('<script>'));
 console.log('Frontend fragments OK : états, actions, échappement HTML.');
+
+// The administrative view accepts data without performing an API call.
+const adminHtml=vm.runInContext(`renderCompletenessAdmin([{id:'profile-1',name:'<img src=x>',description:'<script>no</script>',rules:[]}])`,ctx);
+assert(adminHtml.includes('&lt;img src=x&gt;') && !adminHtml.includes('<img src=x>'));
+assert(adminHtml.includes('&lt;script&gt;no&lt;/script&gt;') && !adminHtml.includes('<script>'));
+assert(adminHtml.includes('data-add-complete-rule="profile-1"'));
