@@ -4,6 +4,7 @@ Une extraction suggère ; seuls les humains créent, vérifient et clôturent.
 Les preuves et leurs versions exactes restent consultables.
 """
 from __future__ import annotations
+from . import document_storage
 from .order_documents import document_in_launch
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -22,9 +23,10 @@ router = APIRouter(tags=['0.7 — Exigences et ambiguïtés'])
 
 def _base():
     from .audit import audit
-    from .main import get_launch, STORAGE
+    from . import document_storage
+    from .launches import get_launch
     from .access import must, permitted
-    return audit, get_launch, must, permitted, STORAGE
+    return audit, get_launch, must, permitted, document_storage.STORAGE
 
 
 def _version(db:Session, version_id:str, launch_id:str, user:User, write=False):

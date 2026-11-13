@@ -167,3 +167,5 @@ def guard_http_request(request: Request):
         if target_launch and not accessible(db,user,db.get(Launch,target_launch)):
             return JSONResponse({'detail':'Lancement introuvable'},status_code=404)
     return None
+
+ACTIONS = {"launch.read", "launch.create", "launch.update", "document.read", "document.write", "audit.read", "completeness.review", "document.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"}

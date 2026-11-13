@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from .core import get_db, get_current_user
 from .models import Folder, Document, DocumentVersion
 from .access import must, permitted
-from .main import doc_out, store_upload, STORAGE
+from . import document_storage
+from .order_documents import doc_out
 from .audit import audit
 from .order_documents import dossier, must_order, launch_order, OrderDossier
 
@@ -41,7 +42,7 @@ async def upload(oid:str,folder:Literal['jaune','rose','bleu','vert']=Form(...),
         if not link or link.order_id!=oid:raise HTTPException(422,'Lancement étranger à la commande')
     root=dossier(db,oid)
     section=db.scalar(select(Folder).where(Folder.dossier_id==root.id,Folder.slug==folder))
-    original,disk_name,size,sha,mime=await store_upload(file)
+    original,disk_name,size,sha,mime=await document_storage.store_upload(file)
     try:
         doc=Document(folder_id=section.id,launch_id=launch_id,title=title.strip(),doc_type=doc_type.strip(),created_by=user.id)
         db.add(doc);db.flush()
@@ -52,7 +53,7 @@ async def upload(oid:str,folder:Literal['jaune','rose','bleu','vert']=Form(...),
         audit(db,user,'document.upload','document',doc.id,{'order_id':oid,'launch_id':launch_id,'sha256':sha})
         db.commit();return doc_out(doc)
     except Exception:
-        db.rollback();(STORAGE/disk_name).unlink(missing_ok=True);raise
+        db.rollback();(document_storage.STORAGE/disk_name).unlink(missing_ok=True);raise
 
 
 @router.get('/api/orders/{oid}/approval-overview')

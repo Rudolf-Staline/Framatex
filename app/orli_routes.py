@@ -15,7 +15,7 @@ from .models import Launch, User
 from .orli_models import OrliImportBatch, OrliImportedLaunch, OrliLink
 from .orli_import import MAX_BYTES, parse_mapping, read_export, normalize_reference
 from .audit import audit
-from .main import get_launch
+from .launches import get_launch
 from .access import must, admin_only
 
 router = APIRouter()

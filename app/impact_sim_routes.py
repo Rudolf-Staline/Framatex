@@ -11,7 +11,7 @@ from .models import User
 from .impact_sim_models import ImpactSimulation
 from .impact_simulation import INPUTS, calculate, dependency_graph
 from .audit import audit
-from .main import get_launch
+from .launches import get_launch
 from .access import must, permitted
 
 router = APIRouter()

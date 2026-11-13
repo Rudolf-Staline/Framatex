@@ -22,7 +22,8 @@ from .approval_models import ApprovalTemplate, ApprovalStage, ApprovalRun, Appro
 from .internal_notifications import notification_scope, emit_to_role, emit_to_user, permitted_now
 from .access import admin_only, must, permitted
 from .audit import audit
-from .main import get_doc, get_launch
+from .order_documents import get_doc
+from .launches import get_launch
 from .partner_phase2_models import ApprovalStagePolicy, ApprovalStageAssignment
 
 router = APIRouter(tags=['0.13 — Validations et notifications'])

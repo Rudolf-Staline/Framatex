@@ -22,7 +22,7 @@ from .workflow import latest_review
 from .approval_routes import applicable_template
 from .access import admin_only, must, permitted
 from .audit import audit
-from .main import get_launch
+from .launches import get_launch
 
 router = APIRouter(tags=['0.14 — partage contrôlé simulé'])
 

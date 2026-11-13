@@ -9,7 +9,8 @@ os.environ['FRAMATEX_PUBLIC_BASE_URL'] = 'http://127.0.0.1:8000'
 
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app, STORAGE
+from app.main import app
+from app.document_storage import STORAGE
 from app.core import Base, engine, SessionLocal, hash_password
 from app.models import Role, RolePermission, User
 

@@ -4,7 +4,7 @@ import shutil
 import pytest
 from fastapi.testclient import TestClient
 from test_partners import app,setup,H
-from app.main import STORAGE
+from app.document_storage import STORAGE
 
 @pytest.mark.skipif(not shutil.which('clamscan'),reason='ClamAV executable required; installed explicitly in CI')
 def test_real_clamav_eicar_clean_restart_and_missing_database(tmp_path,monkeypatch):

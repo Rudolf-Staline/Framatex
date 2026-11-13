@@ -3,7 +3,8 @@ from pathlib import Path
 import hashlib
 from sqlalchemy import select
 from .core import Base, SessionLocal, engine
-from .main import FOLDERS, STORAGE
+from . import document_storage
+from .launches import FOLDERS
 from .models import User, Launch, Folder, Document, DocumentVersion
 
 ROWS = [
@@ -15,7 +16,8 @@ ROWS = [
 def main():
     from .demo_guard import require_demo
     require_demo()
-    Base.metadata.create_all(engine)
+    from .migrate import migrate
+    migrate()
     with SessionLocal() as db:
         user = db.scalar(select(User).join(User.roles).where(User.email.is_not(None)))
         if not user:
@@ -36,7 +38,7 @@ def main():
                 for n,consumption in enumerate(['1,8','1,9'],start=1):
                     contents=f"DEMONSTRATION (donnees entierement fictives)\nConsommation tissu : {consumption} m par piece\n".encode()
                     disk_name=f'demo_{doc.id}_{n}'
-                    (STORAGE / disk_name).write_bytes(contents)
+                    (document_storage.STORAGE / disk_name).write_bytes(contents)
                     db.add(DocumentVersion(document_id=doc.id,number=n,original_name=f'fiche-demo-v{n}.txt',disk_name=disk_name,content_type='text/plain',size=len(contents),sha256=hashlib.sha256(contents).hexdigest(),uploaded_by=user.id))
         db.commit()
         print('3 lancements fictifs créés, avec un document comportant deux versions.')

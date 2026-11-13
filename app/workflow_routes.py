@@ -21,7 +21,8 @@ from .workflow import VALUE_FIELDS, REVIEW_STATES, ALERT_STATES, latest_review, 
 # Imported only after main has defined shared guards; avoids two competing auth paths.
 from .audit import audit
 from .access import admin_only, is_admin, must, permitted
-from .main import get_doc, get_launch, SLUGS
+from .order_documents import get_doc
+from .launches import get_launch, SLUGS
 
 router = APIRouter()
 

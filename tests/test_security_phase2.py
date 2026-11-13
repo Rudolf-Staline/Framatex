@@ -59,7 +59,7 @@ def test_cookies_cross_origin_denials_and_required_scanner_cover_all_uploads(mon
         preflight=admin.options('/api/launches',headers={'Origin':'https://evil.example','Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'X-Framatex-Request'})
         assert 'access-control-allow-origin' not in preflight.headers
         monkeypatch.setenv('FRAMATEX_UPLOAD_SCAN_MODE','required');monkeypatch.delenv('FRAMATEX_SCANNER_COMMAND',raising=False)
-        from app.main import STORAGE
+        from app.document_storage import STORAGE
         before=set(STORAGE.iterdir())
         for path in [f'/api/launches/{lid}/documents',f'/api/launches/{lid}/intake/preview']:
             r=admin.post(path,data={'folder':'jaune','title':'Refus'},files={'file':('x.txt',b'Texte','text/plain')},headers=H)
@@ -89,9 +89,9 @@ def test_concurrent_worker_migrations_and_upload_size_cleanup(tmp_path,monkeypat
         assert db.execute('SELECT count(*) FROM schema_migrations').fetchone()==(len(REVISIONS),)
         assert db.execute('PRAGMA foreign_key_check').fetchall()==[]
         assert 'ix_audit_action_target_time' in {r[1] for r in db.execute('PRAGMA index_list(audit_events)')}
-    from app import main
-    monkeypatch.setattr(main,'MAX_UPLOAD',32)
+    from app import document_storage
+    monkeypatch.setattr(document_storage,'MAX_UPLOAD',32)
     with TestClient(app) as admin:
-        lid=setup(admin);before=set(main.STORAGE.iterdir())
+        lid=setup(admin);before=set(document_storage.STORAGE.iterdir())
         r=admin.post(f'/api/launches/{lid}/documents',data={'folder':'jaune','title':'Trop grand'},files={'file':('large.txt',b'x'*33,'text/plain')},headers=H)
-        assert r.status_code==413 and set(main.STORAGE.iterdir())==before
+        assert r.status_code==413 and set(document_storage.STORAGE.iterdir())==before

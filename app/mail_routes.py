@@ -4,6 +4,7 @@ Pas de connexion aux messageries ni d'envoi automatique. Droits de lecture
 fondés sur le sous-dossier Rose, décisions humaines et journal d'audit.
 """
 from __future__ import annotations
+from . import document_storage
 import json
 from datetime import date
 from pathlib import Path
@@ -22,9 +23,11 @@ router=APIRouter(tags=['0.8 — Emails et engagements'])
 
 def _deps():
     from .audit import audit
-    from .main import get_launch, STORAGE, store_upload, doc_out
+    from . import document_storage
+    from .launches import get_launch
+    from .order_documents import doc_out
     from .access import must
-    return audit,get_launch,must,STORAGE,store_upload,doc_out
+    return audit,get_launch,must,document_storage.STORAGE,document_storage.store_upload,doc_out
 
 
 def _read_email(db:Session, email_id:str, launch_id:str, user:User):
@@ -90,7 +93,7 @@ async def import_email(launch_id:str,file:UploadFile=File(...),
     await file.seek(0)
     rose=next((folder for folder in launch.folders if folder.slug=='rose'),None)
     if rose is None:raise HTTPException(409,'Sous-dossier Rose absent')
-    original,disk_name,size,sha,mime=await store_upload(file)
+    original,disk_name,size,sha,mime=await document_storage.store_upload(file)
     try:
         doc=Document(launch_id=launch_id,folder_id=rose.id,title=('Email · '+parsed['subject'])[:220],doc_type='Courriel',created_by=user.id)
         db.add(doc);db.flush()

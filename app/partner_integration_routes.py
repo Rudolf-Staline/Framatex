@@ -9,7 +9,8 @@ from sqlalchemy.exc import IntegrityError
 from .core import get_db, get_current_user
 from .access import must
 from .audit import audit
-from .main import STORAGE, doc_out
+from . import document_storage
+from .order_documents import doc_out
 from .access import must_access
 from .order_documents import document_accessible
 from .models import Document, DocumentVersion, Folder
@@ -45,7 +46,7 @@ def integrate(rid:str,payload:IntegrationInput,user=Depends(get_current_user),db
     if launch.order_ref and launch.order_ref!=request.order_ref:
         raise HTTPException(409,'Référence commande incompatible avec le lancement')
     if db.get(PartnerIntegration,source.id):raise HTTPException(409,'Cette version a déjà été intégrée')
-    if not (STORAGE/source.disk_name).is_file():raise HTTPException(503,'Fichier source absent')
+    if not (document_storage.STORAGE/source.disk_name).is_file():raise HTTPException(503,'Fichier source absent')
     claim(db,request)
     if payload.document_id:
         document=db.get(Document,payload.document_id)

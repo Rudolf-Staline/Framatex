@@ -5,6 +5,7 @@ aucun droit d'accès. Le passeport expose le hash archivé ET une vérification
 indépendante des octets actuellement stockés.
 """
 from __future__ import annotations
+from . import document_storage
 
 import base64
 import hashlib
@@ -29,10 +30,11 @@ router = APIRouter(tags=["0.6 — Papier et passeport"])
 
 def _context():
     # Avoid a circular import when main.py includes this router.
-    from .main import STORAGE, get_launch
+    from . import document_storage
+    from .launches import get_launch
     from .audit import audit
     from .access import is_admin, must, permitted
-    return STORAGE, audit, get_launch, is_admin, must, permitted
+    return document_storage.STORAGE, audit, get_launch, is_admin, must, permitted
 
 
 def _public_base_url() -> str:
@@ -99,8 +101,8 @@ code{{word-break:break-all;font-size:12px}}p.note{{font-size:13px;color:#52625a}
 
 
 def _verify_file(version: DocumentVersion):
-    from .main import STORAGE
-    path = STORAGE / version.disk_name
+    from . import document_storage
+    path = document_storage.STORAGE / version.disk_name
     if not path.is_file():
         return {"status": "missing", "actual_sha256": None, "actual_size": None}
     digest = hashlib.sha256()

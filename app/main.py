@@ -1,8 +1,12 @@
 from __future__ import annotations
+from . import document_storage
 from .order_documents import document_in_launch
 from .access import is_admin, permitted, must, admin_only
 from .audit import audit
 from .employees import user_out
+from .launches import get_launch, launch_out, FOLDERS, SLUGS, STATUSES
+from .order_documents import get_doc, doc_out, version_out
+from .access import ACTIONS
 
 import hashlib
 import json
@@ -41,15 +45,6 @@ from .approval_models import ApprovalTemplate, ApprovalStage, ApprovalRun, Appro
 from .sharing_models import ClientPublication, SupplierDocumentRequest
 from .workflow import emit_document_impacts, latest_review
 
-FOLDERS = [("jaune", "Technique"), ("rose", "Réception"), ("bleu", "Douane"), ("vert", "Facturation")]
-SLUGS = {slug for slug, _ in FOLDERS}
-ACTIONS = {"launch.read", "launch.create", "launch.update", "document.read", "document.write", "audit.read", "completeness.review", "document.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"}
-STATUSES = {"À compléter", "En cours", "En validation", "Clôturé"}
-MAX_UPLOAD = 20 * 1024 * 1024
-STORAGE = DATA_DIR / "files"
-STORAGE.mkdir(parents=True, exist_ok=True)
-EXTS = {".pdf", ".docx", ".xlsx", ".png", ".jpg", ".jpeg", ".txt", ".eml"}
-MIMES = {".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".txt": "text/plain", ".eml": "message/rfc822"}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -93,20 +88,10 @@ async def response_security_headers(request: Request, call_next):
     return response
 
 
-def launch_out(l: Launch):
-    from .order_documents import launch_order
-    db=object_session(l);link=launch_order(db,l.id) if db else None
-    return {"order_id":link.order_id if link else None, "restricted": bool(l.restricted), "id": l.id, "name": l.name, "order_ref": l.order_ref, "client_name": l.client_name, "orli_ref": l.orli_ref, "status": l.status, "created_at": l.created_at.isoformat(), "updated_at": l.updated_at.isoformat()}
 
 
-def version_out(v: DocumentVersion):
-    return {"id": v.id, "number": v.number, "original_name": v.original_name, "size": v.size, "sha256": v.sha256, "created_at": v.created_at.isoformat(), "uploaded_by": v.uploaded_by}
 
 
-def doc_out(d: Document):
-    from .order_documents import document_order_id
-    versions = sorted(d.versions, key=lambda v: v.number)
-    return {"order_id": document_order_id(object_session(d), d), "launch_id": d.launch_id, "id": d.id, "title": d.title, "doc_type": d.doc_type, "folder": d.folder.slug, "created_at": d.created_at.isoformat(), "versions": [version_out(v) for v in versions], "latest": version_out(versions[-1]) if versions else None}
 
 
 class LaunchPayload(BaseModel):
@@ -201,11 +186,6 @@ def create_launch(payload: LaunchPayload, user: User = Depends(get_current_user)
     return launch_out(l)
 
 
-def get_launch(db: Session, launch_id: str) -> Launch:
-    l = db.get(Launch, launch_id)
-    if not l:
-        raise HTTPException(404, "Lancement introuvable")
-    return l
 
 @app.get("/api/launches/{launch_id}")
 def launch_detail(launch_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -247,65 +227,10 @@ def update_launch(launch_id: str, payload: LaunchPatch, user: User = Depends(get
     return launch_out(l)
 
 
-def get_doc(db: Session, doc_id: str) -> Document:
-    d = db.get(Document, doc_id)
-    if not d:
-        raise HTTPException(404, "Document introuvable")
-    return d
 
 
-def verify_file(file_path: Path, extension: str):
-    import subprocess, sys
-    try:
-        result=subprocess.run([sys.executable,'-m','app.file_validation'],
-            input=json.dumps({'path':str(file_path.resolve()),'extension':extension}),
-            capture_output=True,text=True,timeout=12,check=False)
-        data=json.loads(result.stdout) if result.returncode==0 else {}
-        if not data.get('valid'):raise HTTPException(422,data.get('message','Vérification interrompue : fichier illisible ou disproportionné'))
-    except (OSError,ValueError,subprocess.TimeoutExpired):
-        raise HTTPException(422,'Vérification du fichier impossible dans les limites autorisées')
 
 
-async def store_upload(file: UploadFile):
-    supplied=file.filename or ''
-    if len(supplied)>240 or any(c in supplied for c in ('/','\\','\0','\r','\n')) or supplied in ('.','..'):
-        raise HTTPException(422,'Nom de fichier invalide')
-    original_name = supplied
-    suffix = Path(original_name).suffix.lower()
-    if not original_name or suffix not in EXTS:
-        raise HTTPException(422, "Format non autorisé (PDF, DOCX, XLSX, PNG, JPEG, TXT ou EML)")
-    disk_name = secrets.token_hex(24)
-    target = STORAGE / disk_name
-    sha = hashlib.sha256()
-    total = 0
-    created = False
-    try:
-        from .storage_budget import upload_budget
-        with upload_budget(STORAGE) as remaining:
-            descriptor=os.open(target,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
-            created=True
-            with os.fdopen(descriptor,"wb") as out:
-                while chunk := await file.read(1024 * 1024):
-                    total += len(chunk)
-                    if total > remaining:
-                        raise HTTPException(413,'Quota du stockage privé dépassé')
-                    if total > MAX_UPLOAD:
-                        raise HTTPException(413, "Fichier trop volumineux (20 Mo maximum)")
-                    sha.update(chunk)
-                    out.write(chunk)
-            if total == 0:
-                raise HTTPException(422, "Fichier vide")
-            await run_in_threadpool(verify_file,target,suffix)
-            from .partner_uploads import scan
-            await run_in_threadpool(scan,target)
-            return original_name, disk_name, total, sha.hexdigest(), MIMES[suffix]
-    except FileExistsError:
-        raise HTTPException(409,"Conflit de stockage : aucun fichier existant n’a été modifié")
-    except Exception:
-        if created:target.unlink(missing_ok=True)
-        raise
-    finally:
-        await file.close()
 
 
 @app.post("/api/launches/{launch_id}/documents", status_code=201)
@@ -318,7 +243,7 @@ async def upload_document(launch_id: str, folder: str = Form(...), title: str = 
     entity = next((f for f in launch.folders if f.slug == folder), None)
     if entity is None or not title.strip() or len(title) > 220 or len(doc_type) > 100:
         raise HTTPException(422, "Métadonnées invalides")
-    original, disk_name, size, sha, mime = await store_upload(file)
+    original, disk_name, size, sha, mime = await document_storage.store_upload(file)
     try:
         doc = Document(launch_id=launch_id, folder_id=entity.id, title=title.strip(), doc_type=doc_type.strip() or "Autre", created_by=user.id)
         db.add(doc)
@@ -333,14 +258,14 @@ async def upload_document(launch_id: str, folder: str = Form(...), title: str = 
         return doc_out(doc)
     except Exception:
         db.rollback()
-        (STORAGE / disk_name).unlink(missing_ok=True)
+        (document_storage.STORAGE / disk_name).unlink(missing_ok=True)
         raise
 
 @app.post("/api/documents/{doc_id}/versions", status_code=201)
 async def new_version(doc_id: str, file: UploadFile = File(...), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     d = get_doc(db, doc_id)
     must(user, "document.write", d.folder.slug)
-    original, disk_name, size, sha, mime = await store_upload(file)
+    original, disk_name, size, sha, mime = await document_storage.store_upload(file)
     try:
         db.execute(update(Document).where(Document.id==d.id).values(title=Document.title))
         db.refresh(d);db.expire(d,["versions"])
@@ -356,11 +281,11 @@ async def new_version(doc_id: str, file: UploadFile = File(...), user: User = De
         return doc_out(d)
     except IntegrityError:
         db.rollback()
-        (STORAGE / disk_name).unlink(missing_ok=True)
+        (document_storage.STORAGE / disk_name).unlink(missing_ok=True)
         raise HTTPException(409, "Conflit de version, recommencez le dépôt")
     except Exception:
         db.rollback()
-        (STORAGE / disk_name).unlink(missing_ok=True)
+        (document_storage.STORAGE / disk_name).unlink(missing_ok=True)
         raise
 
 @app.get("/api/documents/{doc_id}/versions/{number}/download")
@@ -370,7 +295,7 @@ def download(doc_id: str, number: int, user: User = Depends(get_current_user), d
     version = next((v for v in doc.versions if v.number == number), None)
     if not version:
         raise HTTPException(404, "Version introuvable")
-    path = STORAGE / version.disk_name
+    path = document_storage.STORAGE / version.disk_name
     if not path.is_file():
         raise HTTPException(503, "Fichier indisponible dans le stockage")
     audit(db, user, "document.download", "document", doc.id, {"version": number})

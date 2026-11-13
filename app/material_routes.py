@@ -14,7 +14,7 @@ from .core import get_current_user, get_db, utcnow
 from .models import User, DocumentVersion, Document, Folder
 from .material_models import MaterialLine, MaterialMovement, MaterialPlanRevision
 from .audit import audit
-from .main import get_launch
+from .launches import get_launch
 from .access import must, permitted
 
 router = APIRouter()

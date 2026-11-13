@@ -11,7 +11,8 @@ def main():
     password=os.getenv('FRAMATEX_DEMO_PASSWORD','')
     if not os.getenv('FRAMATEX_DATA_DIR') or not 12<=len(password)<=256:
         raise SystemExit('Dossier FRAMATEX_DATA_DIR dédié et FRAMATEX_DEMO_PASSWORD (12–256 caractères) requis.')
-    from .main import app,STORAGE
+    from . import document_storage
+    from .main import app
     from .core import SessionLocal,hash_password
     from .migrate import migrate
     from .models import User,Role,Launch,AuditEvent
@@ -37,7 +38,7 @@ def main():
             print('Démonstration phase 2 déjà présente ; aucune donnée réécrite.');return
         if db.scalar(select(Partner.id)):
             raise SystemExit('Organisations existantes : démonstration partenaires refusée pour préserver leurs données.')
-        before=set(STORAGE.iterdir())
+        before=set(document_storage.STORAGE.iterdir())
         try:
             for i,letter in enumerate(('A','B')):
                 launch=db.scalar(select(Launch).where(Launch.order_ref==f'CMD-DEMO-00{i+1}'))
@@ -71,7 +72,7 @@ def main():
             db.add(AuditEvent(actor_id=admin.id,action='demo.phase2.complete',target_type='demo',target_id='phase2',detail='{}'));db.commit()
         except Exception:
             db.rollback()
-            for path in set(STORAGE.iterdir())-before:
+            for path in set(document_storage.STORAGE.iterdir())-before:
                 if path.is_file():path.unlink()
             raise
     print('DÉMO : admin demo-admin@example.local ; partenaires demo-client-a, demo-client-b, demo-supplier-a, demo-supplier-b @example.local. Mot de passe fourni par environnement. Aucun email envoyé.')

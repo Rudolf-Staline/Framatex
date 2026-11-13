@@ -3,7 +3,7 @@ import zipfile
 import pytest
 from fastapi.testclient import TestClient
 from test_partners import app,setup,H
-from app.main import STORAGE
+from app.document_storage import STORAGE
 from app.intake import read_document
 
 
@@ -42,9 +42,9 @@ def test_synthetic_docx_pdf_image_protected_and_provenance(tmp_path):
 
 def test_private_storage_quota_and_concurrent_writer_lock(tmp_path,monkeypatch):
     import fcntl,os
-    from app import main
+    from app import document_storage
     private=tmp_path/'files';private.mkdir()
-    monkeypatch.setattr(main,'STORAGE',private);monkeypatch.setenv('FRAMATEX_STORAGE_QUOTA_BYTES','32')
+    monkeypatch.setattr(document_storage,'STORAGE',private);monkeypatch.setenv('FRAMATEX_STORAGE_QUOTA_BYTES','32')
     with TestClient(app) as c:
         lid=setup(c)
         def upload(data):return c.post(f'/api/launches/{lid}/documents',data={'folder':'jaune','title':'Quota'},files={'file':('quota.txt',data,'text/plain')},headers=H)
@@ -61,12 +61,12 @@ def test_private_storage_quota_and_concurrent_writer_lock(tmp_path,monkeypatch):
 
 
 def test_blob_name_collision_never_deletes_an_existing_file(tmp_path,monkeypatch):
-    from app import main
+    from app import document_storage
     private=tmp_path/'files';private.mkdir();historical=private/'collision';historical.write_bytes(b'Historical bytes')
-    monkeypatch.setattr(main,'STORAGE',private)
+    monkeypatch.setattr(document_storage,'STORAGE',private)
     with TestClient(app) as c:
         lid=setup(c)
-        monkeypatch.setattr(main.secrets,'token_hex',lambda _size:'collision')
+        monkeypatch.setattr(document_storage.secrets,'token_hex',lambda _size:'collision')
         response=c.post(f'/api/launches/{lid}/documents',data={'folder':'jaune','title':'Conflit'},files={'file':('x.txt',b'New bytes','text/plain')},headers=H)
         assert response.status_code==409,response.text
         assert historical.read_bytes()==b'Historical bytes'

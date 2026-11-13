@@ -19,7 +19,7 @@ from .partner_models import (Partner, PartnerAccount, PartnerToken, PartnerReque
                              PartnerSubmission, PartnerEvent, PartnerPublication)
 from .access import admin_only
 from .audit import audit
-from .main import store_upload, STORAGE
+from . import document_storage
 
 router = APIRouter(tags=['Partenaires'])
 COOKIE = 'framat_partner'
@@ -309,7 +309,7 @@ async def upload(rid: str, file: UploadFile = File(...), account=Depends(partner
     claim(db, row)
     from .partner_uploads import lock_budget,verify_budget
     lock_budget(db,row.partner_id)
-    original, disk, size, sha, mime = await store_upload(file)
+    original, disk, size, sha, mime = await document_storage.store_upload(file)
     try:
         verify_budget(db,row.partner_id,size)
         latest = db.scalar(select(PartnerSubmission).where(PartnerSubmission.request_id == rid).order_by(PartnerSubmission.number.desc()).limit(1))
@@ -324,7 +324,7 @@ async def upload(rid: str, file: UploadFile = File(...), account=Depends(partner
         db.commit()
         return submission_out(version)
     except Exception:
-        db.rollback(); (STORAGE / disk).unlink(missing_ok=True); raise
+        db.rollback(); (document_storage.STORAGE / disk).unlink(missing_ok=True); raise
 
 @router.post('/api/partners/requests/{rid}/decision')
 def decision(rid: str, payload: DecisionInput, user=Depends(staff), db: Session = Depends(get_db)):
@@ -366,9 +366,9 @@ def staff_message(rid: str, payload: MessageInput, user=Depends(staff), db: Sess
 def download(db, rid, vid, account=None):
     req_get(db, rid, account)
     version = db.get(PartnerSubmission, vid)
-    if not version or version.request_id != rid or not (STORAGE / version.disk_name).is_file():
+    if not version or version.request_id != rid or not (document_storage.STORAGE / version.disk_name).is_file():
         raise HTTPException(404, 'Pièce introuvable')
-    return FileResponse(STORAGE / version.disk_name, filename=version.original_name, media_type=version.content_type)
+    return FileResponse(document_storage.STORAGE / version.disk_name, filename=version.original_name, media_type=version.content_type)
 
 @router.get('/api/partner/requests/{rid}/versions/{vid}/download')
 def supplier_download(rid: str, vid: str, account=Depends(partner), db: Session = Depends(get_db)):
@@ -439,7 +439,7 @@ def client_download(pid: str, account=Depends(partner), db: Session = Depends(ge
     if not publication:
         raise HTTPException(404, 'Publication introuvable')
     version = db.get(DocumentVersion, publication.document_version_id)
-    path = STORAGE / version.disk_name
+    path = document_storage.STORAGE / version.disk_name
     if not path.is_file():
         raise HTTPException(404, 'Fichier indisponible')
     audit(db, None, 'partner.download', 'partner_publication', pid, {'account_id':account.id})
