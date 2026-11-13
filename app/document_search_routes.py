@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy import select,func,or_,exists
 from sqlalchemy.orm import Session,aliased
 from .core import get_db,get_current_user,ROOT
-from .main import must,permitted,is_admin
+from .access import must, permitted, is_admin
 from .models import Document,DocumentVersion,Folder,Launch,LaunchMember,User
 from .workflow_models import DocumentReview
 from .partner_phase2_models import PartnerIntegration, BusinessOrder

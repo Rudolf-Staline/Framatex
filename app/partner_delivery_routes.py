@@ -8,7 +8,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from .core import get_db
-from .main import audit
+from .audit import audit
 from .models import Launch
 from .partner_models import PartnerOrderLine, PartnerDelivery, PartnerSubmission, PartnerRequest
 from .partner_routes import staff, partner, org_get

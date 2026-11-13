@@ -13,7 +13,9 @@ from .core import get_current_user, get_db, utcnow
 from .models import Document, DocumentVersion, Folder, User
 from .quality_models import DocumentDatum, CrossDocumentRule, QualityDecision, ExcelInspection
 from .quality import comparison, analyze_workbook, QUALITY_FIELDS, TEXT_FIELDS
-from .main import must, permitted, admin_only, get_doc, get_launch, audit, STORAGE, SLUGS
+from .access import must, permitted, admin_only
+from .main import get_doc, get_launch, STORAGE, SLUGS
+from .audit import audit
 
 router=APIRouter()
 

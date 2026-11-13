@@ -5,7 +5,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from .core import get_db, get_current_user
 from .models import Folder, Document, DocumentVersion
-from .main import must, permitted, doc_out, store_upload, STORAGE, audit
+from .access import must, permitted
+from .main import doc_out, store_upload, STORAGE
+from .audit import audit
 from .order_documents import dossier, must_order, launch_order, OrderDossier
 
 router=APIRouter(tags=['Dossiers Jaunes par commande'])
@@ -79,7 +81,7 @@ class MemberInput(BaseModel):
 
 @router.post('/api/orders/{oid}/members',status_code=201)
 def add_member(oid:str,payload:MemberInput,user=Depends(get_current_user),db:Session=Depends(get_db)):
-    from .main import admin_only
+    from .access import admin_only
     from .models import User
     from .order_documents import OrderMember
     admin_only(user);must_order(db,user,oid)
@@ -92,7 +94,7 @@ def add_member(oid:str,payload:MemberInput,user=Depends(get_current_user),db:Ses
 
 @router.delete('/api/orders/{oid}/members/{user_id}')
 def revoke_member(oid:str,user_id:str,user=Depends(get_current_user),db:Session=Depends(get_db)):
-    from .main import admin_only
+    from .access import admin_only
     from .order_documents import OrderMember
     admin_only(user);must_order(db,user,oid)
     row=db.get(OrderMember,(oid,user_id))
@@ -130,7 +132,7 @@ def completeness(oid:str,user=Depends(get_current_user),db:Session=Depends(get_d
 
 @router.put('/api/orders/{oid}/completeness/context')
 def context(oid:str,payload:CompletenessInput,user=Depends(get_current_user),db:Session=Depends(get_db)):
-    from .main import admin_only
+    from .access import admin_only
     from .order_documents import OrderCompleteness
     from .completeness_models import CompletenessProfile
     admin_only(user);must_order(db,user,oid)

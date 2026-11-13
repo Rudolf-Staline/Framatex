@@ -1,5 +1,8 @@
 from __future__ import annotations
 from .order_documents import document_in_launch
+from .access import is_admin, permitted, must, admin_only
+from .audit import audit
+from .employees import user_out
 
 import hashlib
 import json
@@ -89,37 +92,6 @@ async def response_security_headers(request: Request, call_next):
             "style-src 'self' 'unsafe-inline'")
     return response
 
-def is_admin(user: User) -> bool:
-    return any(role.name == "Administrateur" for role in user.roles)
-
-
-def permitted(user: User, action: str, folder: str | None = None) -> bool:
-    if is_admin(user):
-        return True
-    for role in user.roles:
-        for grant in role.grants:
-            if grant.action == action and (folder is None and grant.folder_slug is None or folder is not None and grant.folder_slug in (None, folder)):
-                return True
-    return False
-
-
-def must(user: User, action: str, folder: str | None = None):
-    if not permitted(user, action, folder):
-        raise HTTPException(403, "Accès interdit : habilitation insuffisante")
-
-
-def admin_only(user: User):
-    if not is_admin(user):
-        raise HTTPException(403, "Fonction réservée à l'administration")
-
-
-def audit(db: Session, user: User | None, action: str, entity: object, target_id: str, detail: dict | None = None):
-    db.add(AuditEvent(actor_id=user.id if user else None, action=action, target_type=str(entity), target_id=target_id, detail=json.dumps(detail or {}, ensure_ascii=False)))
-
-
-def user_out(u: User):
-    return {"id": u.id, "email": u.email, "name": u.name, "active": u.active, "roles": [r.name for r in u.roles], "admin": is_admin(u)}
-
 
 def launch_out(l: Launch):
     from .order_documents import launch_order
@@ -136,10 +108,6 @@ def doc_out(d: Document):
     versions = sorted(d.versions, key=lambda v: v.number)
     return {"order_id": document_order_id(object_session(d), d), "launch_id": d.launch_id, "id": d.id, "title": d.title, "doc_type": d.doc_type, "folder": d.folder.slug, "created_at": d.created_at.isoformat(), "versions": [version_out(v) for v in versions], "latest": version_out(versions[-1]) if versions else None}
 
-
-class LoginPayload(BaseModel):
-    email: str = Field(min_length=3,max_length=254)
-    password: str = Field(min_length=1,max_length=256)
 
 class LaunchPayload(BaseModel):
     name: str = Field(min_length=2, max_length=180)
@@ -178,40 +146,9 @@ def index():
 def health():
     return {"status": "ok", "version": "0.17.0"}
 
-@app.post("/api/auth/login")
-def login(payload: LoginPayload, response: Response, request: Request, db: Session = Depends(get_db)):
-    ip = request.client.host if request.client else "unknown"
-    key = login_limit_key(ip, payload.email)
-    if not login_attempt_allowed(key):
-        raise HTTPException(429, "Trop de tentatives : réessayez dans quelques minutes")
-    user = db.scalar(select(User).where(User.email == payload.email.strip().lower()))
-    if not user or not user.active or not check_password(user.password_hash, payload.password):
-        record_login_failure(key)
-        raise HTTPException(401, "Identifiants incorrects")
-    clear_login_failures(key)
-    from .core import cookie_secure
-    response.set_cookie(COOKIE, make_token(user.id,db), max_age=8*3600, httponly=True, secure=cookie_secure(), samesite="strict", path="/")
-    audit(db, user, "session.login", "user", user.id)
-    db.commit()
-    return user_out(user)
 
-@app.post("/api/auth/logout")
-def logout(response: Response, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Deleting a cookie alone does not invalidate a copied signed JWT.
-    # Record its unique identifier server-side so reuse is denied immediately.
-    import jwt
-    from .core import SECRET_KEY
-    token = request.cookies.get(COOKIE)
-    payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-    audit(db, user, "session.logout", "session", payload["jti"])
-    db.commit()
-    response.delete_cookie(COOKIE, path="/")
-    return {"ok": True}
-
-@app.get("/api/auth/me")
-def me(user: User = Depends(get_current_user)):
-    perms = [{"action": g.action, "folder": g.folder_slug} for r in user.roles for g in r.grants]
-    return {**user_out(user), "permissions": perms}
+from .auth_routes import router as auth_router
+app.include_router(auth_router)
 
 @app.get("/api/dashboard")
 def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_db)):

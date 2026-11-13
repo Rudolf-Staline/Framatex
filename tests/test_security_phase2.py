@@ -32,7 +32,7 @@ def test_employee_access_changes_revoke_sessions_and_preserve_last_administrator
         assert PWD not in audit and 'password_hash' not in audit and cookie not in audit
         # Restoration invalidates even a correctly signed cookie with a shared deployment secret.
         with SessionLocal() as db:
-            from app.main import audit as record
+            from app.audit import audit as record
             record(db,None,'session.restore','session','all');db.commit()
         assert employee.get('/api/auth/me').status_code==401
 

@@ -27,7 +27,7 @@ router = APIRouter(tags=["0.9 — Pilotage et aide"])
 
 
 def deps():
-    from .main import must, permitted
+    from .access import must, permitted
     return must, permitted
 
 
@@ -150,7 +150,7 @@ class GuideRequest(BaseModel):
 @router.post("/api/assistant/guide")
 def guide(payload: GuideRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     from .guide_core import Principal,GuideContext,retrieve,answer
-    from .main import is_admin
+    from .access import is_admin
     must,_=deps();must(user,'launch.read')
     if payload.launch_id:
         from .access import must_access

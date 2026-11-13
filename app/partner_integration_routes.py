@@ -7,7 +7,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from .core import get_db, get_current_user
-from .main import must, audit, STORAGE, doc_out
+from .access import must
+from .audit import audit
+from .main import STORAGE, doc_out
 from .access import must_access
 from .order_documents import document_accessible
 from .models import Document, DocumentVersion, Folder

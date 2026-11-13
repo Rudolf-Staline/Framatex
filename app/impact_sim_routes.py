@@ -10,7 +10,9 @@ from .core import get_db, get_current_user
 from .models import User
 from .impact_sim_models import ImpactSimulation
 from .impact_simulation import INPUTS, calculate, dependency_graph
-from .main import audit, get_launch, must, permitted
+from .audit import audit
+from .main import get_launch
+from .access import must, permitted
 
 router = APIRouter()
 

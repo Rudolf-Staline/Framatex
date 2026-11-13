@@ -13,7 +13,8 @@ router = APIRouter(tags=['0.15 — Portée des autorisations'])
 
 
 def deps():
-    from .main import admin_only, audit
+    from .access import admin_only
+    from .audit import audit
     return admin_only, audit
 
 

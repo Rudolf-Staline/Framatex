@@ -7,7 +7,7 @@ from sqlalchemy import select,update
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from .core import get_db,utcnow
-from .main import audit
+from .audit import audit
 from .partner_routes import staff
 from .partner_phase2_models import OrliMappingProfile,OrliRefreshDecision
 from .orli_models import OrliImportBatch,OrliImportedLaunch,OrliLink

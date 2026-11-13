@@ -29,7 +29,8 @@ class TriageInput(BaseModel):
 
 
 def functions():
-    from .main import is_admin, must, audit
+    from .access import is_admin, must
+    from .audit import audit
     return is_admin, must, audit
 
 

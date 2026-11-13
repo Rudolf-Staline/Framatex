@@ -17,7 +17,9 @@ from .core import (get_db, get_current_user, utcnow, hash_password, check_passwo
 from .models import User, Launch, DocumentVersion
 from .partner_models import (Partner, PartnerAccount, PartnerToken, PartnerRequest,
                              PartnerSubmission, PartnerEvent, PartnerPublication)
-from .main import admin_only, audit, store_upload, STORAGE
+from .access import admin_only
+from .audit import audit
+from .main import store_upload, STORAGE
 
 router = APIRouter(tags=['Partenaires'])
 COOKIE = 'framat_partner'

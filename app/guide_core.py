@@ -35,13 +35,13 @@ def principal(request,db):
         from .partner_models import Partner
         from .partner_permissions import permissions
         user=partner(request,db);return Principal(db.get(Partner,user.partner_id).kind,user,permissions(db,user))
-    from .main import is_admin
+    from .access import is_admin
     user=get_current_user(request,db)
     return Principal('employee',user,set(),is_admin(user))
 
 
 def permitted(principal,requirements):
-    from .main import permitted as employee_permitted
+    from .access import permitted as employee_permitted
     for req in requirements:
         if req.get('admin') and not principal.admin:return False
         if 'audience' in req and principal.audience not in req['audience']:return False

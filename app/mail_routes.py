@@ -21,7 +21,9 @@ router=APIRouter(tags=['0.8 — Emails et engagements'])
 
 
 def _deps():
-    from .main import audit, get_launch, must, STORAGE, store_upload, doc_out
+    from .audit import audit
+    from .main import get_launch, STORAGE, store_upload, doc_out
+    from .access import must
     return audit,get_launch,must,STORAGE,store_upload,doc_out
 
 
@@ -119,12 +121,12 @@ def list_emails(launch_id:str,user:User=Depends(get_current_user),db:Session=Dep
 
 
 def _may_import(user):
-    from .main import permitted
+    from .access import permitted
     return permitted(user,'document.write','rose')
 
 
 def _may_review(user):
-    from .main import permitted
+    from .access import permitted
     return permitted(user,'commitment.review','rose')
 
 @router.get('/api/launches/{launch_id}/emails/{email_id}/suggestions')

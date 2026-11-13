@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from .core import get_db
 from .models import Launch
-from .main import audit
+from .audit import audit
 from .partner_routes import staff, partner, org_get, MessageInput
 from .partner_permissions import require
 from .partner_phase2_models import PartnerClientOrder, PartnerThread, PartnerMessage, PartnerClientOrderEvent

@@ -21,7 +21,9 @@ router = APIRouter(tags=['0.7 — Exigences et ambiguïtés'])
 
 
 def _base():
-    from .main import audit, get_launch, must, permitted, STORAGE
+    from .audit import audit
+    from .main import get_launch, STORAGE
+    from .access import must, permitted
     return audit, get_launch, must, permitted, STORAGE
 
 
@@ -94,12 +96,12 @@ def _amb_output(db:Session,x:SpecificationAmbiguity,user:User):
 
 
 def _can_review(user,folder):
-    from .main import permitted
+    from .access import permitted
     return permitted(user,'requirement.review',folder)
 
 
 def _can_ambiguity_review(user,folder):
-    from .main import permitted
+    from .access import permitted
     return permitted(user,'ambiguity.review',folder)
 
 

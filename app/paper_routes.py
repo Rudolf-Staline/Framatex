@@ -29,7 +29,9 @@ router = APIRouter(tags=["0.6 — Papier et passeport"])
 
 def _context():
     # Avoid a circular import when main.py includes this router.
-    from .main import STORAGE, audit, get_launch, is_admin, must, permitted
+    from .main import STORAGE, get_launch
+    from .audit import audit
+    from .access import is_admin, must, permitted
     return STORAGE, audit, get_launch, is_admin, must, permitted
 
 

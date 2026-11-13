@@ -12,7 +12,9 @@ from .core import get_db, get_current_user
 from .models import DocumentVersion, Document, User
 from .intake_models import ConfirmedField
 from .intake import PATTERNS, preview
-from .main import STORAGE, MAX_UPLOAD, SLUGS, audit, get_doc, get_launch, must, permitted, verify_file, EXTS
+from .main import STORAGE, MAX_UPLOAD, SLUGS, get_doc, get_launch, verify_file, EXTS
+from .audit import audit
+from .access import must, permitted
 
 router=APIRouter()
 

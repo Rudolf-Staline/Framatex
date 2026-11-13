@@ -16,10 +16,35 @@ from .core import SessionLocal, COOKIE, SECRET_KEY
 from .models import User, Launch, LaunchMember, Document, DocumentVersion
 
 
+
+def is_admin(user: User) -> bool:
+    return any(role.name == "Administrateur" for role in user.roles)
+
+
+def permitted(user: User, action: str, folder: str | None = None) -> bool:
+    if is_admin(user):
+        return True
+    for role in user.roles:
+        for grant in role.grants:
+            if grant.action == action and (folder is None and grant.folder_slug is None or folder is not None and grant.folder_slug in (None, folder)):
+                return True
+    return False
+
+
+def must(user: User, action: str, folder: str | None = None):
+    if not permitted(user, action, folder):
+        raise HTTPException(403, "Accès interdit : habilitation insuffisante")
+
+
+def admin_only(user: User):
+    if not is_admin(user):
+        raise HTTPException(403, "Fonction réservée à l'administration")
+
+
 def accessible_launch(db: Session, user: User, launch: Launch | None) -> bool:
     if launch is None or not user.active:
         return False
-    if any(r.name == "Administrateur" for r in user.roles):
+    if is_admin(user):
         return True
     if not launch.restricted or launch.created_by == user.id:
         return True

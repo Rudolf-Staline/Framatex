@@ -3,7 +3,8 @@ from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from .core import get_db
-from .main import store_upload,STORAGE,audit
+from .main import store_upload, STORAGE
+from .audit import audit
 from .partner_routes import staff,partner,req_get,event
 from .partner_permissions import require
 from .partner_models import PartnerEvent
