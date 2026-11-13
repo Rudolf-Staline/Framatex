@@ -2,7 +2,7 @@
 from pathlib import Path
 import hashlib
 from sqlalchemy import select
-from .core import Base, SessionLocal, engine
+from .core import SessionLocal
 from . import document_storage
 from .launches import FOLDERS
 from .models import User, Launch, Folder, Document, DocumentVersion

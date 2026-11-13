@@ -1,4 +1,4 @@
-"""employee admin routes; application assembly stays in app.main."""
+"""Employee roles, accounts and audit HTTP endpoints."""
 from __future__ import annotations
 from fastapi import APIRouter
 from .access import admin_only

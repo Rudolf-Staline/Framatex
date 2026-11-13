@@ -10,6 +10,9 @@ from .models import User, Launch
 from .access import accessible, must_access
 from .pilot_models import PilotReport
 
+from .access import is_admin, must
+from .audit import audit
+
 router = APIRouter(prefix="/api/pilot", tags=["0.17 — Retours recette"])
 
 
@@ -28,12 +31,6 @@ class TriageInput(BaseModel):
     resolution_note: str = Field(default="", max_length=2000)
 
 
-def functions():
-    from .access import is_admin, must
-    from .audit import audit
-    return is_admin, must, audit
-
-
 def out(r: PilotReport):
     return {"id": r.id, "reporter_id": r.reporter_id,
             "launch_id": r.launch_id, "module": r.module, "title": r.title,
@@ -45,7 +42,6 @@ def out(r: PilotReport):
 
 @router.get("/reports")
 def list_reports(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    is_admin, _, _ = functions()
     rows = db.scalars(select(PilotReport).order_by(PilotReport.created_at.desc()).limit(250)).all()
     if is_admin(user):
         return [out(r) for r in rows]
@@ -57,7 +53,6 @@ def list_reports(user: User = Depends(get_current_user), db: Session = Depends(g
 
 @router.post("/reports", status_code=201)
 def create_report(payload: ReportInput, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    is_admin, must, audit = functions()
     if payload.launch_id:
         must(user, "launch.read")
         must_access(db, user, payload.launch_id)
@@ -74,7 +69,6 @@ def create_report(payload: ReportInput, user: User = Depends(get_current_user), 
 
 @router.patch("/reports/{report_id}")
 def triage(report_id: str, payload: TriageInput, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    is_admin, _, audit = functions()
     if not is_admin(user):
         raise HTTPException(403, "Suivi réservé à l'administration")
     r = db.get(PilotReport, report_id)

@@ -6,16 +6,13 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from .core import get_current_user, get_db
-from .models import Launch, LaunchMember, User
+from .models import LaunchMember, User
 from .access import must_access
 
+from .access import admin_only
+from .audit import audit
+
 router = APIRouter(tags=['0.15 — Portée des autorisations'])
-
-
-def deps():
-    from .access import admin_only
-    from .audit import audit
-    return admin_only, audit
 
 
 class SetRestricted(BaseModel):
@@ -28,7 +25,7 @@ class AssignMember(BaseModel):
 
 @router.get('/api/launches/{launch_id}/access')
 def read_access(launch_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    admin_only, _ = deps(); admin_only(user)
+    admin_only(user)
     launch = must_access(db,user,launch_id)
     members = db.scalars(select(LaunchMember).where(LaunchMember.launch_id == launch.id)).all()
     return {'launch_id':launch.id,'restricted':bool(launch.restricted),'creator_id':launch.created_by,
@@ -38,7 +35,7 @@ def read_access(launch_id: str, user: User = Depends(get_current_user), db: Sess
 
 @router.put('/api/launches/{launch_id}/access')
 def set_restricted(launch_id: str, payload: SetRestricted, user: User = Depends(get_current_user),db: Session = Depends(get_db)):
-    admin_only,audit = deps();admin_only(user)
+    admin_only(user)
     launch=must_access(db,user,launch_id)
     launch.restricted=payload.restricted
     audit(db,user,'launch.access.mode','launch',launch.id,{'restricted':payload.restricted})
@@ -48,7 +45,7 @@ def set_restricted(launch_id: str, payload: SetRestricted, user: User = Depends(
 
 @router.post('/api/launches/{launch_id}/access/members',status_code=201)
 def add_member(launch_id:str,payload:AssignMember,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
-    admin_only,audit = deps();admin_only(user)
+    admin_only(user)
     launch=must_access(db,user,launch_id)
     target=db.get(User,payload.user_id)
     if not target or not target.active:
@@ -68,7 +65,7 @@ def add_member(launch_id:str,payload:AssignMember,user:User=Depends(get_current_
 
 @router.delete('/api/launches/{launch_id}/access/members/{user_id}')
 def remove_member(launch_id:str,user_id:str,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
-    admin_only,audit=deps();admin_only(user)
+    admin_only(user)
     launch=must_access(db,user,launch_id)
     member=db.scalar(select(LaunchMember).where(LaunchMember.launch_id==launch.id,LaunchMember.user_id==user_id))
     if not member:

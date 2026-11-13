@@ -4,6 +4,10 @@ All HTTP upload surfaces and extraction previews use this single owner. Existing
 blob paths and the isolated app.file_validation worker protocol are unchanged.
 """
 import hashlib
+import logging
+import shlex
+import subprocess
+import time
 import json
 import os
 from pathlib import Path
@@ -17,6 +21,29 @@ STORAGE = DATA_DIR / "files"
 STORAGE.mkdir(parents=True, exist_ok=True)
 EXTS = {".pdf", ".docx", ".xlsx", ".png", ".jpg", ".jpeg", ".txt", ".eml"}
 MIMES = {".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".txt": "text/plain", ".eml": "message/rfc822"}
+
+
+def scan(path):
+    mode=os.getenv('FRAMATEX_UPLOAD_SCAN_MODE','disabled')
+    if mode=='disabled':return 'not_scanned'
+    if mode!='required':raise HTTPException(503,'Politique antivirus invalide')
+    backend=os.getenv('FRAMATEX_SCANNER_BACKEND','command')
+    if backend not in {'command','clamav'}:raise HTTPException(503,'Adaptateur antivirus invalide')
+    command=os.getenv('FRAMATEX_SCANNER_COMMAND','clamscan --no-summary --alert-encrypted=yes' if backend=='clamav' else '')
+    if not command:raise HTTPException(503,'Scanner obligatoire indisponible : dépôt refusé')
+    started=time.monotonic()
+    log=logging.getLogger('framat.upload_scan')
+    try:
+        timeout=int(os.getenv('FRAMATEX_SCANNER_TIMEOUT_SECONDS','30'))
+        if not 1<=timeout<=120:raise ValueError('timeout')
+        result=subprocess.run([*shlex.split(command),str(path)],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=timeout,check=False)
+    except (OSError,subprocess.TimeoutExpired,ValueError):
+        log.warning('upload_scan result=unavailable')
+        raise HTTPException(503,'Scanner indisponible : dépôt refusé')
+    log.info('upload_scan result=%s elapsed_ms=%d', 'clean' if result.returncode==0 else 'detected' if result.returncode==1 else 'error',int((time.monotonic()-started)*1000))
+    if result.returncode==1:raise HTTPException(422,'Fichier refusé par le scanner')
+    if result.returncode!=0:raise HTTPException(503,'Échec du scanner : dépôt refusé')
+    return 'clean'
 
 
 def verify_file(file_path: Path, extension: str):
@@ -61,7 +88,6 @@ async def store_upload(file: UploadFile):
             if total == 0:
                 raise HTTPException(422, "Fichier vide")
             await run_in_threadpool(verify_file,target,suffix)
-            from .partner_uploads import scan
             await run_in_threadpool(scan,target)
             return original_name, disk_name, total, sha.hexdigest(), MIMES[suffix]
     except FileExistsError:

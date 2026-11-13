@@ -1,6 +1,5 @@
 """Routers and domain helpers must load independently of the application assembler."""
 import ast
-import json
 import os
 from pathlib import Path
 import subprocess
@@ -17,8 +16,6 @@ def test_main_exports_are_not_dependencies_of_domain_modules():
         if path.name=='main.py':continue
         for node in ast.walk(ast.parse(path.read_text())):
             if isinstance(node,ast.ImportFrom) and (node.module=='app.main' or node.module=='main' and node.level==1):
-                # The demo exercises the HTTP application through TestClient.
-                if path.name=='seed_phase2_demo.py' and all(n.name=='app' for n in node.names):continue
                 dependencies.append(f'{path.name}:{node.lineno}')
             elif isinstance(node,ast.Import) and any(n.name=='app.main' for n in node.names):
                 dependencies.append(f'{path.name}:{node.lineno}')

@@ -12,7 +12,6 @@ def main():
     if not os.getenv('FRAMATEX_DATA_DIR') or not 12<=len(password)<=256:
         raise SystemExit('Dossier FRAMATEX_DATA_DIR dédié et FRAMATEX_DEMO_PASSWORD (12–256 caractères) requis.')
     from . import document_storage
-    from .main import app
     from .core import SessionLocal,hash_password
     from .migrate import migrate
     from .models import User,Role,Launch,AuditEvent

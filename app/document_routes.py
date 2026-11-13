@@ -1,4 +1,4 @@
-"""document routes; application assembly stays in app.main."""
+"""Document upload, version and download HTTP endpoints."""
 from __future__ import annotations
 from fastapi import APIRouter
 from . import document_storage

@@ -57,7 +57,7 @@ async def import_export(file: UploadFile=File(...), mapping: str | None=Form(Non
     import tempfile,subprocess,sys
     from pathlib import Path
     from .core import DATA_DIR
-    from .partner_uploads import scan
+    from .document_storage import scan
     if original.rsplit('.',1)[-1].lower() not in ('csv','xlsx'):raise HTTPException(422,'Export CSV ou XLSX attendu')
     with tempfile.NamedTemporaryFile(dir=DATA_DIR,prefix='.orli-') as temporary:
         temporary.write(data);temporary.flush();await run_in_threadpool(scan,Path(temporary.name))

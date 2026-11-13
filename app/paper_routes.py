@@ -25,16 +25,10 @@ from .core import get_current_user, get_db
 from .models import DocumentVersion, User
 from .workflow_models import DocumentReview
 
+from .launches import get_launch
+from .access import must
+
 router = APIRouter(tags=["0.6 — Papier et passeport"])
-
-
-def _context():
-    # Avoid a circular import when main.py includes this router.
-    from . import document_storage
-    from .launches import get_launch
-    from .audit import audit
-    from .access import is_admin, must, permitted
-    return document_storage.STORAGE, audit, get_launch, is_admin, must, permitted
 
 
 def _public_base_url() -> str:
@@ -60,7 +54,6 @@ def _qr_png(value: str) -> bytes:
 
 @router.get("/api/launches/{launch_id}/paper-link")
 def paper_link(launch_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    _, _, get_launch, _, must, _ = _context()
     must(user, "launch.read")
     launch = get_launch(db, launch_id)
     return {
@@ -121,7 +114,6 @@ def _verify_file(version: DocumentVersion):
 
 @router.get("/api/document-versions/{version_id}/passport")
 def document_passport(version_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    _, _, _, _, must, _ = _context()
     version = db.get(DocumentVersion, version_id)
     if not version:
         raise HTTPException(404, "Version introuvable")

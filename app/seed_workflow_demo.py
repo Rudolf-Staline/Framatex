@@ -1,6 +1,6 @@
 """Génère uniquement des exemples fictifs du workflow 0.3 ; peut être relancé."""
 from sqlalchemy import select
-from .core import Base, SessionLocal, engine
+from .core import SessionLocal
 from . import document_storage
 from .models import User, Launch, Document
 from .workflow import emit_impacts

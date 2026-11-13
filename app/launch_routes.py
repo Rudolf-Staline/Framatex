@@ -1,4 +1,4 @@
-"""launch routes; application assembly stays in app.main."""
+"""Launch and dashboard HTTP endpoints."""
 from __future__ import annotations
 from fastapi import APIRouter
 from .access import is_admin, permitted, must

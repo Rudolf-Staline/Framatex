@@ -5,7 +5,7 @@ import io
 import secrets
 from sqlalchemy import select
 from openpyxl import Workbook
-from .core import Base,SessionLocal,engine
+from .core import SessionLocal
 from . import document_storage
 from .models import User,Launch,Document,DocumentVersion
 from .quality_models import CrossDocumentRule,DocumentDatum,ExcelInspection

@@ -1,4 +1,4 @@
-"""completeness routes; application assembly stays in app.main."""
+"""Completeness profiles, contextual rules and decisions HTTP endpoints."""
 from __future__ import annotations
 from fastapi import APIRouter
 from .order_documents import document_in_launch
