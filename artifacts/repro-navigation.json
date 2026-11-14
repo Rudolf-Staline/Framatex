@@ -1,0 +1,1387 @@
+{
+  "status": "failed",
+  "error": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"[data-user-access=\\\"e604d6ef-b3bc-407e-b23c-518ac5607ea7\\\"]\")\n",
+  "browser": "156.0.8078.79",
+  "checkpoints": [
+    {
+      "name": "before-first-admin",
+      "path": "/",
+      "ready": "complete",
+      "view": "home",
+      "account": {
+        "id": "ee31adbf-b3d4-4b29-88a5-e5ba3f859e05",
+        "email": "admin@example.local",
+        "admin": true
+      },
+      "activeNavigation": null,
+      "heading": null,
+      "loginVisible": false,
+      "users": [],
+      "toast": "",
+      "session_status": 200,
+      "session": {
+        "id": "ee31adbf-b3d4-4b29-88a5-e5ba3f859e05",
+        "email": "admin@example.local",
+        "admin": true,
+        "active": true,
+        "roles": [
+          "Administrateur"
+        ]
+      }
+    },
+    {
+      "name": "before-employee-admin",
+      "path": "/",
+      "ready": "complete",
+      "view": "detail",
+      "account": {
+        "id": "ee31adbf-b3d4-4b29-88a5-e5ba3f859e05",
+        "email": "admin@example.local",
+        "admin": true
+      },
+      "activeNavigation": null,
+      "heading": "Commande navigateur",
+      "loginVisible": false,
+      "users": [],
+      "toast": "Dépôt confirmé · vous pouvez vérifier les champs extraits depuis le document",
+      "session_status": 200,
+      "session": {
+        "id": "ee31adbf-b3d4-4b29-88a5-e5ba3f859e05",
+        "email": "admin@example.local",
+        "admin": true,
+        "active": true,
+        "roles": [
+          "Administrateur"
+        ]
+      }
+    },
+    {
+      "name": "admin-rendered-while-refresh-held",
+      "path": "/",
+      "ready": "complete",
+      "view": "admin",
+      "account": {
+        "id": "ee31adbf-b3d4-4b29-88a5-e5ba3f859e05",
+        "email": "admin@example.local",
+        "admin": true
+      },
+      "activeNavigation": "admin",
+      "heading": "Administration.",
+      "loginVisible": false,
+      "users": [
+        "ee31adbf-b3d4-4b29-88a5-e5ba3f859e05",
+        "e604d6ef-b3bc-407e-b23c-518ac5607ea7"
+      ],
+      "toast": "Dépôt confirmé · vous pouvez vérifier les champs extraits depuis le document",
+      "session_status": 200,
+      "session": {
+        "id": "ee31adbf-b3d4-4b29-88a5-e5ba3f859e05",
+        "email": "admin@example.local",
+        "admin": true,
+        "active": true,
+        "roles": [
+          "Administrateur"
+        ]
+      }
+    },
+    {
+      "name": "stale-refresh-overwrote-admin",
+      "path": "/",
+      "ready": "complete",
+      "view": "detail",
+      "account": {
+        "id": "ee31adbf-b3d4-4b29-88a5-e5ba3f859e05",
+        "email": "admin@example.local",
+        "admin": true
+      },
+      "activeNavigation": null,
+      "heading": "Commande navigateur",
+      "loginVisible": false,
+      "users": [],
+      "toast": "Dépôt confirmé · vous pouvez vérifier les champs extraits depuis le document",
+      "session_status": 200,
+      "session": {
+        "id": "ee31adbf-b3d4-4b29-88a5-e5ba3f859e05",
+        "email": "admin@example.local",
+        "admin": true,
+        "active": true,
+        "roles": [
+          "Administrateur"
+        ]
+      }
+    },
+    {
+      "name": "failure",
+      "path": "/partners",
+      "ready": "complete",
+      "view": null,
+      "account": null,
+      "activeNavigation": null,
+      "heading": null,
+      "loginVisible": false,
+      "users": [],
+      "toast": null,
+      "session_status": 200,
+      "session": {
+        "id": "ee31adbf-b3d4-4b29-88a5-e5ba3f859e05",
+        "email": "admin@example.local",
+        "admin": true,
+        "active": true,
+        "roles": [
+          "Administrateur"
+        ]
+      }
+    },
+    {
+      "name": "failure",
+      "path": "/",
+      "ready": "complete",
+      "view": "detail",
+      "account": {
+        "id": "ee31adbf-b3d4-4b29-88a5-e5ba3f859e05",
+        "email": "admin@example.local",
+        "admin": true
+      },
+      "activeNavigation": null,
+      "heading": "Commande navigateur",
+      "loginVisible": false,
+      "users": [],
+      "toast": "Dépôt confirmé · vous pouvez vérifier les champs extraits depuis le document",
+      "session_status": 200,
+      "session": {
+        "id": "ee31adbf-b3d4-4b29-88a5-e5ba3f859e05",
+        "email": "admin@example.local",
+        "admin": true,
+        "active": true,
+        "roles": [
+          "Administrateur"
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "kind": "response",
+      "path": "/",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/styles.css",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/phase3.css",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/guide.css",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/vendor/driver.css",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/design-019.css",
+      "status": 200
+    },
+    {
+      "kind": "console",
+      "error": "Loading the stylesheet 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+    },
+    {
+      "kind": "requestfailed",
+      "method": "GET",
+      "path": "/css2",
+      "failure": "csp"
+    },
+    {
+      "kind": "response",
+      "path": "/assets/app.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/orders.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/completeness.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/completeness-view.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/ux-phase3.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/uploads.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/workflow.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/paper.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/intake.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/quality.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/guide.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/vendor/driver.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/mail.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/spec.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/assistant.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/impact_sim.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/workspace.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/materials.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/orli.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/pilot.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/sharing.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/access.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/approvals.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/workspace/priorities",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/dashboard",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/users",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/roles",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/completeness/profiles",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/impact-rules",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/approval-templates",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/roles",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/approval-templates",
+      "status": 201
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/roles",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/users",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/completeness/profiles",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/impact-rules",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/roles",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/approval-templates",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/values",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/completeness",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/business-value-fields",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impacts",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/reviews",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/quality",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/excel-inspections",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/emails",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/specifications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impact-simulations",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/dependency-graph",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/orli-reconciliation",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/materials",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/approval-overview",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/supplier-requests",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/client-publications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/documents/702638a0-8ef4-4d21-8b1f-93f29104626e/approval-runs",
+      "status": 201
+    },
+    {
+      "kind": "response",
+      "path": "/api/business-value-fields",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impacts",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/values",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/completeness",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/reviews",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/quality",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/emails",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/specifications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impact-simulations",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/dependency-graph",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/excel-inspections",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/orli-reconciliation",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/materials",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/approval-overview",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/supplier-requests",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/client-publications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/users",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/approval-runs/cd5a072f-b6fe-4efe-ac9d-da8f171b329a/delegation",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/business-value-fields",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/completeness",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impacts",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/reviews",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/values",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/quality",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/excel-inspections",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/emails",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/dependency-graph",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impact-simulations",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/specifications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/orli-reconciliation",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/materials",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/approval-overview",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/supplier-requests",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/client-publications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/business-value-fields",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/completeness",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/values",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/reviews",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impacts",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/quality",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/specifications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/dependency-graph",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/excel-inspections",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impact-simulations",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/emails",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/orli-reconciliation",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/materials",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/approval-overview",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/supplier-requests",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/client-publications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/approval-runs/cd5a072f-b6fe-4efe-ac9d-da8f171b329a/reopen",
+      "status": 201
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/completeness",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/values",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impacts",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/reviews",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/business-value-fields",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/quality",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/specifications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/excel-inspections",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/emails",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impact-simulations",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/dependency-graph",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/materials",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/orli-reconciliation",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/approval-overview",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/supplier-requests",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/client-publications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/quality/fields",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/document-versions/76af3c9b-8ddd-40d2-bac8-0632385f787f/intake",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/document-versions/76af3c9b-8ddd-40d2-bac8-0632385f787f/data-from-confirmed",
+      "status": 201
+    },
+    {
+      "kind": "response",
+      "path": "/api/business-value-fields",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/values",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/reviews",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impacts",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/completeness",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/quality",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/excel-inspections",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/emails",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/specifications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/dependency-graph",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/orli-reconciliation",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/quality/fields",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/materials",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impact-simulations",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/approval-overview",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/supplier-requests",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/client-publications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/quality-rules",
+      "status": 201
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/completeness",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/business-value-fields",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/values",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impacts",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/specifications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/emails",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/reviews",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/dependency-graph",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/excel-inspections",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/orli-reconciliation",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impact-simulations",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/quality",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/materials",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/approval-overview",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/supplier-requests",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/client-publications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/documents",
+      "status": 201
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/documents",
+      "status": 201
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/documents",
+      "status": 422
+    },
+    {
+      "kind": "console",
+      "error": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/documents",
+      "status": 422
+    },
+    {
+      "kind": "console",
+      "error": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/values",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/completeness",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impacts",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/business-value-fields",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/reviews",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/specifications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/quality",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/emails",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/excel-inspections",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impact-simulations",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/orli-reconciliation",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/dependency-graph",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/materials",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/approval-overview",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/supplier-requests",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/client-publications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/document-versions/9cc78ffb-41ce-46cd-951c-9795a2c6a3f9/intake",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/document-versions/9cc78ffb-41ce-46cd-951c-9795a2c6a3f9/intake/confirm",
+      "status": 201
+    },
+    {
+      "kind": "response",
+      "path": "/api/document-versions/9cc78ffb-41ce-46cd-951c-9795a2c6a3f9/intake",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/intake/preview",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/documents",
+      "status": 201
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impacts",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/business-value-fields",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/values",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/completeness",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/reviews",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/emails",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/specifications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/quality",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/dependency-graph",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/impact-simulations",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/excel-inspections",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/materials",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/orli-reconciliation",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/approval-overview",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/client-publications",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/users",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/roles",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/completeness/profiles",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/impact-rules",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/roles",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/admin/approval-templates",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/launches/754f019e-7ed2-4342-be72-78bb2690f9f1/supplier-requests",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    }
+  ]
+}

@@ -117,6 +117,7 @@ def main():
                                 violations=page.evaluate("async()=>{const r=await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}});return r.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>n.target)}))}")
                                 results.append({'screen':view,'width':width,'violations':violations})
                         page.locator('.sidebar [data-view="launches"]').click()
+                        expect(page.locator('.sidebar [data-view="launches"]')).to_have_attribute('aria-current','page')
                         page.get_by_role('button',name='Page suivante',exact=True).click()
                         expect(page.locator('.table-pagination [role=status]')).to_contain_text('Page 2 / 2')
                         page.locator('#launch-search').fill('LF-NAV-001')
