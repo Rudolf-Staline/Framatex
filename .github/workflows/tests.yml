@@ -39,11 +39,30 @@ jobs:
         run: |
           for file in tests/*.cjs; do node "$file"; done
           for file in static/*.js; do node --check "$file"; done
-      - name: Parcours fournisseur et client sur base temporaire
-        run: python tools/check_partner_browser.py
+      - name: Parcours fournisseur et client sur trois bases temporaires
+        id: partner-browser
+        if: ${{ !cancelled() }}
+        run: |
+          status=0
+          for attempt in 1 2 3; do
+            rm -f artifacts/partner-admin.json artifacts/partner-admin.zip
+            if python tools/check_partner_browser.py; then
+              echo "Partenaires ${attempt}/3 : PASS"
+            else
+              status=1
+              echo "Partenaires ${attempt}/3 : FAIL"
+            fi
+            mkdir -p "artifacts/partner-attempt-${attempt}"
+            cp artifacts/partner-admin.* "artifacts/partner-attempt-${attempt}/" 2>/dev/null || true
+          done
+          exit "$status"
       - name: Commandes, dossiers, versions, mobile et axe
+        id: orders-browser
+        if: ${{ !cancelled() }}
         run: python tools/check_phase3_browser.py
       - name: Parcours Framatex Guide et IA simulée
+        id: guide-browser
+        if: ${{ !cancelled() }}
         run: python tools/check_guide_browser.py
       - uses: actions/upload-artifact@v4
         if: always()
@@ -56,5 +75,7 @@ jobs:
             artifacts/phase3-browser.json
             artifacts/phase3-partner-axe.json
             artifacts/phase3-order-browser.png
+            artifacts/partner-admin.*
+            artifacts/partner-attempt-*/*
             artifacts/partner-browser.png
             artifacts/client-browser.png

@@ -1,0 +1,1070 @@
+{
+  "base_commit": "5d237c98413a6961bc221274783ce3a59fd19ceb",
+  "date": "2026-11-14",
+  "playwright": "1.65.0",
+  "requested_browser": "158.0.8127.18 (revision 1254)",
+  "actual_browser": "156.0.8078.79 (system Chromium)",
+  "exact_browser_install": "blocked: cdn.playwright.dev HTTP 403 Domain forbidden",
+  "partner_sessions": [
+    {
+      "session": 1,
+      "status": "passed",
+      "browser": "156.0.8078.79",
+      "checkpoints": [
+        {
+          "name": "startup-with-paper-pending",
+          "path": "/",
+          "ready": "interactive",
+          "view": "home",
+          "account": null,
+          "activeNavigation": null,
+          "heading": null,
+          "loginVisible": false,
+          "users": [],
+          "toast": "",
+          "session_status": 200,
+          "session": {
+            "id": "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "before-first-admin",
+          "path": "/",
+          "ready": "complete",
+          "view": "home",
+          "account": {
+            "id": "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": "home",
+          "heading": "Chaque document.Au bon endroit.",
+          "loginVisible": false,
+          "users": [],
+          "toast": "",
+          "session_status": 200,
+          "session": {
+            "id": "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "first-admin-loaded",
+          "path": "/",
+          "ready": "complete",
+          "view": "admin",
+          "account": {
+            "id": "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": "admin",
+          "heading": "Administration.",
+          "loginVisible": false,
+          "users": [
+            "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "754a7ada-7672-4cd7-b73d-3f3f346ad3c2"
+          ],
+          "toast": "",
+          "session_status": 200,
+          "session": {
+            "id": "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "before-employee-admin",
+          "path": "/",
+          "ready": "complete",
+          "view": "detail",
+          "account": {
+            "id": "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": null,
+          "heading": "Commande navigateur",
+          "loginVisible": false,
+          "users": [],
+          "toast": "Dépôt confirmé · vous pouvez vérifier les champs extraits depuis le document",
+          "session_status": 200,
+          "session": {
+            "id": "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "admin-loaded-with-collaborator",
+          "path": "/",
+          "ready": "complete",
+          "view": "admin",
+          "account": {
+            "id": "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": "admin",
+          "heading": "Administration.",
+          "loginVisible": false,
+          "users": [
+            "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "754a7ada-7672-4cd7-b73d-3f3f346ad3c2"
+          ],
+          "toast": "Dépôt confirmé · vous pouvez vérifier les champs extraits depuis le document",
+          "session_status": 200,
+          "session": {
+            "id": "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "admin-preserved-after-stale-refresh",
+          "path": "/",
+          "ready": "complete",
+          "view": "admin",
+          "account": {
+            "id": "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": "admin",
+          "heading": "Administration.",
+          "loginVisible": false,
+          "users": [
+            "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "754a7ada-7672-4cd7-b73d-3f3f346ad3c2"
+          ],
+          "toast": "Dépôt confirmé · vous pouvez vérifier les champs extraits depuis le document",
+          "session_status": 200,
+          "session": {
+            "id": "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "employee-disabled-persisted",
+          "path": "/",
+          "ready": "complete",
+          "view": "admin",
+          "account": {
+            "id": "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": "admin",
+          "heading": "Administration.",
+          "loginVisible": false,
+          "users": [
+            "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "754a7ada-7672-4cd7-b73d-3f3f346ad3c2"
+          ],
+          "toast": "Accès modifiés, anciennes sessions révoquées",
+          "session_status": 200,
+          "session": {
+            "id": "088b1d84-ef05-475c-ae9d-54bacb8afdff",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        }
+      ],
+      "admin_responses": [
+        {
+          "kind": "response",
+          "path": "/api/admin/users",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/completeness/profiles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/impact-rules",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/approval-templates",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/approval-templates",
+          "status": 201
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/completeness/profiles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/impact-rules",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/approval-templates",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/quality-rules",
+          "status": 201
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/completeness/profiles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/impact-rules",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/approval-templates",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users/754a7ada-7672-4cd7-b73d-3f3f346ad3c2/access",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/completeness/profiles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/impact-rules",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/approval-templates",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "session": 2,
+      "status": "passed",
+      "browser": "156.0.8078.79",
+      "checkpoints": [
+        {
+          "name": "startup-with-paper-pending",
+          "path": "/",
+          "ready": "interactive",
+          "view": "home",
+          "pendingRequests": 0,
+          "account": null,
+          "activeNavigation": null,
+          "heading": null,
+          "loginVisible": false,
+          "users": [],
+          "toast": "",
+          "session_status": 200,
+          "session": {
+            "id": "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "before-first-admin",
+          "path": "/",
+          "ready": "complete",
+          "view": "home",
+          "pendingRequests": 0,
+          "account": {
+            "id": "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": "home",
+          "heading": "Chaque document.Au bon endroit.",
+          "loginVisible": false,
+          "users": [],
+          "toast": "",
+          "session_status": 200,
+          "session": {
+            "id": "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "first-admin-loaded",
+          "path": "/",
+          "ready": "complete",
+          "view": "admin",
+          "pendingRequests": 0,
+          "account": {
+            "id": "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": "admin",
+          "heading": "Administration.",
+          "loginVisible": false,
+          "users": [
+            "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "1c8dbac4-2ff3-4bf6-a735-8fd3aa735178"
+          ],
+          "toast": "",
+          "session_status": 200,
+          "session": {
+            "id": "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "before-employee-admin",
+          "path": "/",
+          "ready": "complete",
+          "view": "detail",
+          "pendingRequests": 2,
+          "account": {
+            "id": "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": null,
+          "heading": "Commande navigateur",
+          "loginVisible": false,
+          "users": [],
+          "toast": "Dépôt confirmé · vous pouvez vérifier les champs extraits depuis le document",
+          "session_status": 200,
+          "session": {
+            "id": "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "admin-loaded-with-collaborator",
+          "path": "/",
+          "ready": "complete",
+          "view": "admin",
+          "pendingRequests": 1,
+          "account": {
+            "id": "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": "admin",
+          "heading": "Administration.",
+          "loginVisible": false,
+          "users": [
+            "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "1c8dbac4-2ff3-4bf6-a735-8fd3aa735178"
+          ],
+          "toast": "Dépôt confirmé · vous pouvez vérifier les champs extraits depuis le document",
+          "session_status": 200,
+          "session": {
+            "id": "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "admin-preserved-after-stale-refresh",
+          "path": "/",
+          "ready": "complete",
+          "view": "admin",
+          "pendingRequests": 0,
+          "account": {
+            "id": "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": "admin",
+          "heading": "Administration.",
+          "loginVisible": false,
+          "users": [
+            "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "1c8dbac4-2ff3-4bf6-a735-8fd3aa735178"
+          ],
+          "toast": "Dépôt confirmé · vous pouvez vérifier les champs extraits depuis le document",
+          "session_status": 200,
+          "session": {
+            "id": "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "employee-disabled-persisted",
+          "path": "/",
+          "ready": "complete",
+          "view": "admin",
+          "pendingRequests": 1,
+          "account": {
+            "id": "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": "admin",
+          "heading": "Administration.",
+          "loginVisible": false,
+          "users": [
+            "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "1c8dbac4-2ff3-4bf6-a735-8fd3aa735178"
+          ],
+          "toast": "Accès modifiés, anciennes sessions révoquées",
+          "session_status": 200,
+          "session": {
+            "id": "67f7f83b-92ad-4637-84f9-e4dbce29e312",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        }
+      ],
+      "admin_responses": [
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/completeness/profiles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/impact-rules",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/approval-templates",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/approval-templates",
+          "status": 201
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/completeness/profiles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/impact-rules",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/approval-templates",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/quality-rules",
+          "status": 201
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/completeness/profiles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/impact-rules",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/approval-templates",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users/1c8dbac4-2ff3-4bf6-a735-8fd3aa735178/access",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/completeness/profiles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/impact-rules",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/approval-templates",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "session": 3,
+      "status": "passed",
+      "browser": "156.0.8078.79",
+      "checkpoints": [
+        {
+          "name": "startup-with-paper-pending",
+          "path": "/",
+          "ready": "interactive",
+          "view": "home",
+          "pendingRequests": 0,
+          "account": null,
+          "activeNavigation": null,
+          "heading": null,
+          "loginVisible": false,
+          "users": [],
+          "toast": "",
+          "session_status": 200,
+          "session": {
+            "id": "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "before-first-admin",
+          "path": "/",
+          "ready": "complete",
+          "view": "home",
+          "pendingRequests": 0,
+          "account": {
+            "id": "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": "home",
+          "heading": "Chaque document.Au bon endroit.",
+          "loginVisible": false,
+          "users": [],
+          "toast": "",
+          "session_status": 200,
+          "session": {
+            "id": "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "first-admin-loaded",
+          "path": "/",
+          "ready": "complete",
+          "view": "admin",
+          "pendingRequests": 0,
+          "account": {
+            "id": "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": "admin",
+          "heading": "Administration.",
+          "loginVisible": false,
+          "users": [
+            "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "84901942-1ec2-4641-961d-2dd67a79cfe1"
+          ],
+          "toast": "",
+          "session_status": 200,
+          "session": {
+            "id": "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "before-employee-admin",
+          "path": "/",
+          "ready": "complete",
+          "view": "detail",
+          "pendingRequests": 1,
+          "account": {
+            "id": "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": null,
+          "heading": "Commande navigateur",
+          "loginVisible": false,
+          "users": [],
+          "toast": "Dépôt confirmé · vous pouvez vérifier les champs extraits depuis le document",
+          "session_status": 200,
+          "session": {
+            "id": "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "admin-loaded-with-collaborator",
+          "path": "/",
+          "ready": "complete",
+          "view": "admin",
+          "pendingRequests": 1,
+          "account": {
+            "id": "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": "admin",
+          "heading": "Administration.",
+          "loginVisible": false,
+          "users": [
+            "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "84901942-1ec2-4641-961d-2dd67a79cfe1"
+          ],
+          "toast": "Dépôt confirmé · vous pouvez vérifier les champs extraits depuis le document",
+          "session_status": 200,
+          "session": {
+            "id": "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "admin-preserved-after-stale-refresh",
+          "path": "/",
+          "ready": "complete",
+          "view": "admin",
+          "pendingRequests": 0,
+          "account": {
+            "id": "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": "admin",
+          "heading": "Administration.",
+          "loginVisible": false,
+          "users": [
+            "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "84901942-1ec2-4641-961d-2dd67a79cfe1"
+          ],
+          "toast": "Dépôt confirmé · vous pouvez vérifier les champs extraits depuis le document",
+          "session_status": 200,
+          "session": {
+            "id": "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        },
+        {
+          "name": "employee-disabled-persisted",
+          "path": "/",
+          "ready": "complete",
+          "view": "admin",
+          "pendingRequests": 1,
+          "account": {
+            "id": "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "email": "admin@example.local",
+            "admin": true
+          },
+          "activeNavigation": "admin",
+          "heading": "Administration.",
+          "loginVisible": false,
+          "users": [
+            "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "84901942-1ec2-4641-961d-2dd67a79cfe1"
+          ],
+          "toast": "Accès modifiés, anciennes sessions révoquées",
+          "session_status": 200,
+          "session": {
+            "id": "7a23a32b-3c1b-4c43-8a63-f94d7c322f2b",
+            "email": "admin@example.local",
+            "admin": true,
+            "active": true,
+            "roles": [
+              "Administrateur"
+            ]
+          }
+        }
+      ],
+      "admin_responses": [
+        {
+          "kind": "response",
+          "path": "/api/admin/users",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/completeness/profiles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/impact-rules",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/approval-templates",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/approval-templates",
+          "status": 201
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/completeness/profiles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/impact-rules",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/approval-templates",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/quality-rules",
+          "status": 201
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/completeness/profiles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/impact-rules",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/approval-templates",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users/84901942-1ec2-4641-961d-2dd67a79cfe1/access",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/users",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/completeness/profiles",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/impact-rules",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/approval-templates",
+          "status": 200
+        },
+        {
+          "kind": "response",
+          "path": "/api/admin/roles",
+          "status": 200
+        }
+      ]
+    }
+  ],
+  "orders": "passed after synchronizing with the launches navigation before pagination",
+  "guide": "passed",
+  "python": {
+    "existing_suite_passed": 156,
+    "new_redaction_test_passed": 1,
+    "skipped": 1,
+    "skip_reason": "optional real Gemini test disabled",
+    "clamav": "real ClamAV 1.4.3 with synthetic EICAR database"
+  },
+  "javascript": {
+    "test_scripts_passed": 15,
+    "static_syntax": "passed"
+  },
+  "guide_controls": {
+    "catalog": "passed",
+    "manual": "passed",
+    "local_corpus": "122/122",
+    "simulated_evaluation": "passed, no real provider calls"
+  },
+  "remote_ci": "pending: GitHub API denied by network policy",
+  "publication": {
+    "branch": "fix/partner-browser-admin-ci",
+    "fix_commit": "079daf656cb359757f4328e56fe0f2c286f89acf",
+    "pushed": true,
+    "draft_pr_created": false,
+    "draft_pr_error": "Post https://api.github.com/graphql: Forbidden",
+    "remote_latest_run": 43402417703,
+    "remote_new_run": null
+  }
+}

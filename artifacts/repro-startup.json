@@ -1,0 +1,274 @@
+{
+  "status": "failed",
+  "error": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"[data-view=admin]\")\n",
+  "browser": "156.0.8078.79",
+  "checkpoints": [
+    {
+      "name": "authenticated-but-login-rendered-before-paper",
+      "path": "/",
+      "ready": "interactive",
+      "view": "home",
+      "account": {
+        "id": "514bb4e0-c953-4dfd-945e-78023263581d",
+        "email": "admin@example.local",
+        "admin": true
+      },
+      "activeNavigation": null,
+      "heading": null,
+      "loginVisible": true,
+      "users": [],
+      "toast": "",
+      "session_status": 200,
+      "session": {
+        "id": "514bb4e0-c953-4dfd-945e-78023263581d",
+        "email": "admin@example.local",
+        "admin": true,
+        "active": true,
+        "roles": [
+          "Administrateur"
+        ]
+      }
+    },
+    {
+      "name": "before-first-admin",
+      "path": "/",
+      "ready": "complete",
+      "view": "home",
+      "account": {
+        "id": "514bb4e0-c953-4dfd-945e-78023263581d",
+        "email": "admin@example.local",
+        "admin": true
+      },
+      "activeNavigation": null,
+      "heading": null,
+      "loginVisible": true,
+      "users": [],
+      "toast": "",
+      "session_status": 200,
+      "session": {
+        "id": "514bb4e0-c953-4dfd-945e-78023263581d",
+        "email": "admin@example.local",
+        "admin": true,
+        "active": true,
+        "roles": [
+          "Administrateur"
+        ]
+      }
+    },
+    {
+      "name": "failure",
+      "path": "/partners",
+      "ready": "complete",
+      "view": null,
+      "account": null,
+      "activeNavigation": null,
+      "heading": null,
+      "loginVisible": false,
+      "users": [],
+      "toast": null,
+      "session_status": 200,
+      "session": {
+        "id": "514bb4e0-c953-4dfd-945e-78023263581d",
+        "email": "admin@example.local",
+        "admin": true,
+        "active": true,
+        "roles": [
+          "Administrateur"
+        ]
+      }
+    },
+    {
+      "name": "failure",
+      "path": "/",
+      "ready": "complete",
+      "view": "home",
+      "account": {
+        "id": "514bb4e0-c953-4dfd-945e-78023263581d",
+        "email": "admin@example.local",
+        "admin": true
+      },
+      "activeNavigation": null,
+      "heading": null,
+      "loginVisible": true,
+      "users": [],
+      "toast": "",
+      "session_status": 200,
+      "session": {
+        "id": "514bb4e0-c953-4dfd-945e-78023263581d",
+        "email": "admin@example.local",
+        "admin": true,
+        "active": true,
+        "roles": [
+          "Administrateur"
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "kind": "response",
+      "path": "/",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/styles.css",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/design-019.css",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/phase3.css",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/guide.css",
+      "status": 200
+    },
+    {
+      "kind": "console",
+      "error": "Loading the stylesheet 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap' violates the following Content Security Policy directive: \"style-src 'self' 'unsafe-inline'\". Note that 'style-src-elem' was not explicitly set, so 'style-src' is used as a fallback. The action has been blocked."
+    },
+    {
+      "kind": "requestfailed",
+      "method": "GET",
+      "path": "/css2",
+      "failure": "csp"
+    },
+    {
+      "kind": "response",
+      "path": "/assets/vendor/driver.css",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/app.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/completeness-view.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/completeness.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/orders.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/workflow.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/uploads.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/ux-phase3.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/quality.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/mail.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/intake.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/workspace.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/spec.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/impact_sim.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/vendor/driver.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/orli.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/approvals.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/guide.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/materials.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/assistant.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/pilot.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/access.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/sharing.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/assets/paper.js",
+      "status": 200
+    },
+    {
+      "kind": "response",
+      "path": "/api/guide/catalog",
+      "status": 200
+    }
+  ]
+}
