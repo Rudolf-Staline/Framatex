@@ -1057,5 +1057,14 @@
     "local_corpus": "122/122",
     "simulated_evaluation": "passed, no real provider calls"
   },
-  "remote_ci": "pending: GitHub API denied by network policy"
+  "remote_ci": "pending: GitHub API denied by network policy",
+  "publication": {
+    "branch": "fix/partner-browser-admin-ci",
+    "fix_commit": "079daf656cb359757f4328e56fe0f2c286f89acf",
+    "pushed": true,
+    "draft_pr_created": false,
+    "draft_pr_error": "Post https://api.github.com/graphql: Forbidden",
+    "remote_latest_run": 43402417703,
+    "remote_new_run": null
+  }
 }
