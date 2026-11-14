@@ -8,3 +8,7 @@ data/
 node_modules/
 test-results/
 playwright-report/
+# Generated, redacted administration traces are uploaded by CI.
+/artifacts/partner-admin.json
+/artifacts/partner-admin.zip
+/artifacts/partner-attempt-*/

@@ -9,6 +9,8 @@ import time
 import socket
 import httpx
 from playwright.sync_api import sync_playwright, expect
+from browser_evidence import BrowserEvidence
+from partner_admin_checks import open_internal_admin, admin_during_refresh
 
 ROOT=Path(__file__).resolve().parents[1]
 PWD='BrowserTestPassword2026!'
@@ -165,82 +167,85 @@ def main():
                         role=post('/api/admin/roles',{'name':'Valideur navigateur','permissions':permissions})
                         deputy_role=post('/api/admin/roles',{'name':'Suppléant navigateur','permissions':permissions})
                         deputy=post('/api/admin/users',{'name':'Suppléant','email':'deputy@example.local','password':PWD,'role_ids':[deputy_role['id']]})
-                        internal_page=admin.new_page();internal_page.on('pageerror',lambda e:errors.append(str(e)))
-                        internal_page.goto(base+'/');internal_page.locator('[data-view=admin]').click()
-                        internal_page.locator('#approval-new-template').click()
-                        internal_page.locator('#at-name').fill('Circuit navigateur');internal_page.locator('#at-type').fill('Certificat')
-                        internal_page.locator('.approval-stage-name').fill('Validation technique');internal_page.locator('.approval-stage-role').select_option(role['id'])
-                        internal_page.locator('.approval-stage-days').fill('2');internal_page.locator('#approval-template-form button[type=submit]').click()
-                        expect(internal_page.locator('#approval-template-form')).to_have_count(0)
-                        internal_page.locator('[data-view=launches]').click();internal_page.locator(f'[data-launch="{lid}"]').click()
-                        internal_page.locator('[data-approval-start]').click();internal_page.get_by_text('Échéance :',exact=False).wait_for()
-                        internal_page.get_by_role('button',name='Déléguer l’étape').click()
-                        internal_page.locator('#delegation-user').select_option(deputy['id'])
-                        from datetime import datetime,timedelta
-                        internal_page.locator('#delegation-expiry').fill((datetime.now()+timedelta(days=1)).strftime('%Y-%m-%dT%H:%M'))
-                        internal_page.locator('#delegation-reason').fill('Remplacement temporaire du valideur')
-                        internal_page.locator('#delegation-form button').click()
-                        internal_page.get_by_text('Délégation : Suppléant',exact=False).wait_for()
-                        approved_run=api.get(f'/api/launches/{lid}/approval-overview').json()['items'][0]['run']['id']
-                        with httpx.Client(base_url=base,headers=H) as deputy_api:
-                            deputy_api.post('/api/auth/login',json={'email':'deputy@example.local','password':PWD}).raise_for_status()
-                            deputy_api.post(f'/api/approval-runs/{approved_run}/decisions',json={'decision':'approved','comment':'Contrôle navigateur par le suppléant habilité'}).raise_for_status()
-                        internal_page.locator('[data-view=launches]').click();internal_page.locator(f'[data-launch="{lid}"]').click()
-                        internal_page.get_by_role('button',name='Réouvrir la validation',exact=True).click()
-                        internal_page.get_by_label('Motif de réouverture',exact=True).fill('Nouvel examen demandé lors de la recette navigateur')
-                        internal_page.get_by_role('button',name='Confirmer la réouverture',exact=True).click()
-                        internal_page.get_by_role('button',name='Déléguer l’étape',exact=True).wait_for()
-                        reopened=api.get(f'/api/launches/{lid}/approval-overview').json()['items'][0]['run']
-                        assert reopened['previous_run_id']==approved_run and reopened['cycle']==2 and reopened['status']=='pending'
-                        source=api.get('/api/document-search?supplier=Fournisseur%20navigateur').json()['items'][0]
-                        post(f'/api/document-versions/{source["version_id"]}/intake/confirm',{'field_key':'reference_matiere','value':'TISSU-NAV','source_excerpt':'Référence vérifiée pour cet essai'})
-                        internal_page.locator('#quality-add-data').click()
-                        internal_page.locator('#qd-version').select_option(source['version_id']);internal_page.locator('#qd-field').select_option('reference_matiere')
-                        internal_page.once('dialog',lambda d:d.accept());internal_page.locator('#qd-confirmed').click()
-                        expect(internal_page.locator('#quality-data-form')).to_have_count(0)
-                        internal_page.locator('#quality-new-rule').click()
-                        internal_page.locator('#qr-name').fill('Références navigateur');internal_page.locator('#qr-field').select_option('reference_matiere')
-                        internal_page.locator('#qr-left-type').fill('Certificat');internal_page.locator('#qr-right-type').fill('Fiche technique')
-                        internal_page.locator('#quality-rule-form button[type=submit]').click()
-                        internal_page.get_by_text('Références navigateur',exact=True).wait_for()
-                        internal_page.locator('#upload-doc').click()
-                        internal_page.locator('#doc-file').set_input_files([{'name':'lot-1.txt','mimeType':'text/plain','buffer':b'Bon de livraison\nReference matiere : TISSU-LOT\nQuantite : 25 m'},{'name':'lot-2.txt','mimeType':'text/plain','buffer':b'Second document de lot'}])
-                        data_transfer=internal_page.evaluate_handle("""() => {const dt=new DataTransfer();dt.items.add(new File(['extension interdite'],'bad.exe',{type:'application/octet-stream'}));return dt;}""")
-                        internal_page.locator('#upload-drop').dispatch_event('drop',{'dataTransfer':data_transfer})
-                        internal_page.locator('[data-upload-row="1"] [data-folder]').select_option('rose')
-                        internal_page.locator('#upload-submit').click()
-                        expect(internal_page.locator('#upload-status')).to_contain_text('2 / 3 fichier(s) déposé(s)')
-                        internal_page.locator('#upload-submit').click()
-                        expect(internal_page.locator('#upload-submit')).to_be_enabled()
-                        expect(internal_page.locator('#upload-status')).to_contain_text('2 / 3 fichier(s) déposé(s)')
-                        detail=api.get(f'/api/launches/{lid}').json()
-                        assert sum(d['title']=='lot-1' for f in detail['folders'] for d in f['documents'])==1
-                        assert next(f for f in detail['folders'] if f['slug']=='rose')['documents'][0]['title']=='lot-2'
-                        internal_page.locator('#upload-finish').click()
-                        lot=next(d for f in detail['folders'] for d in f['documents'] if d['title']=='lot-1')
-                        internal_page.locator(f'[data-intake-version="{lot["latest"]["id"]}"]').click()
-                        internal_page.locator('#if-quantite').fill('25')
-                        internal_page.locator('[data-intake-confirm="quantite"]').click()
-                        internal_page.get_by_text('quantite : 25 m',exact=True).wait_for()
-                        internal_page.keyboard.press('Escape')
-                        internal_page.locator('#intake-open').click()
-                        internal_page.locator('#intake-file').set_input_files({'name':'bon-de-livraison.txt','mimeType':'text/plain','buffer':b'BON DE LIVRAISON\nQuantite : 25 m'})
-                        internal_page.locator('#intake-file-form button[type=submit]').click()
-                        expect(internal_page.locator('#intake-folder')).to_have_value('rose')
-                        internal_page.locator('#intake-title').fill('Classement confirmé navigateur')
-                        internal_page.locator('#intake-confirm-form button[type=submit]').click()
-                        expect(internal_page.locator('#intake-confirm-form')).to_have_count(0)
-                        assert api.get('/api/document-search?q=Classement%20confirm').json()['items'][0]['folder']=='rose'
-                        internal_page.locator('[data-view=admin]').click()
-                        internal_page.locator(f'[data-user-access="{deputy["id"]}"]').click()
-                        internal_page.locator('#employee-active').uncheck();internal_page.locator('#employee-reason').fill('Fin de la délégation de démonstration')
-                        internal_page.locator('#employee-access-form button').click()
-                        expect(internal_page.locator('#employee-access-form')).to_have_count(0)
-                        assert next(u for u in api.get('/api/admin/users').json() if u['id']==deputy['id'])['active'] is False
-                        audit_page(review,'partner-administration')
-                        (ROOT/'artifacts/phase3-partner-axe.json').write_text(json.dumps(audits,indent=2))
-                        assert not [r for r in audits if r['violations']],[r for r in audits if r['violations']]
-                        assert not errors,errors
+                        with BrowserEvidence(admin,base,ROOT/'artifacts/partner-admin') as evidence:
+                            internal_page=admin.new_page();internal_page.on('pageerror',lambda e:errors.append(str(e)))
+                            open_internal_admin(internal_page,base,evidence)
+                            internal_page.locator('#approval-new-template').click()
+                            internal_page.locator('#at-name').fill('Circuit navigateur');internal_page.locator('#at-type').fill('Certificat')
+                            internal_page.locator('.approval-stage-name').fill('Validation technique');internal_page.locator('.approval-stage-role').select_option(role['id'])
+                            internal_page.locator('.approval-stage-days').fill('2');internal_page.locator('#approval-template-form button[type=submit]').click()
+                            expect(internal_page.locator('#approval-template-form')).to_have_count(0)
+                            internal_page.locator('[data-view=launches]').click();internal_page.locator(f'[data-launch="{lid}"]').click()
+                            internal_page.locator('[data-approval-start]').click();internal_page.get_by_text('Échéance :',exact=False).wait_for()
+                            internal_page.get_by_role('button',name='Déléguer l’étape').click()
+                            internal_page.locator('#delegation-user').select_option(deputy['id'])
+                            from datetime import datetime,timedelta
+                            internal_page.locator('#delegation-expiry').fill((datetime.now()+timedelta(days=1)).strftime('%Y-%m-%dT%H:%M'))
+                            internal_page.locator('#delegation-reason').fill('Remplacement temporaire du valideur')
+                            internal_page.locator('#delegation-form button').click()
+                            internal_page.get_by_text('Délégation : Suppléant',exact=False).wait_for()
+                            approved_run=api.get(f'/api/launches/{lid}/approval-overview').json()['items'][0]['run']['id']
+                            with httpx.Client(base_url=base,headers=H) as deputy_api:
+                                deputy_api.post('/api/auth/login',json={'email':'deputy@example.local','password':PWD}).raise_for_status()
+                                deputy_api.post(f'/api/approval-runs/{approved_run}/decisions',json={'decision':'approved','comment':'Contrôle navigateur par le suppléant habilité'}).raise_for_status()
+                            internal_page.locator('[data-view=launches]').click();internal_page.locator(f'[data-launch="{lid}"]').click()
+                            internal_page.get_by_role('button',name='Réouvrir la validation',exact=True).click()
+                            internal_page.get_by_label('Motif de réouverture',exact=True).fill('Nouvel examen demandé lors de la recette navigateur')
+                            internal_page.get_by_role('button',name='Confirmer la réouverture',exact=True).click()
+                            internal_page.get_by_role('button',name='Déléguer l’étape',exact=True).wait_for()
+                            reopened=api.get(f'/api/launches/{lid}/approval-overview').json()['items'][0]['run']
+                            assert reopened['previous_run_id']==approved_run and reopened['cycle']==2 and reopened['status']=='pending'
+                            source=api.get('/api/document-search?supplier=Fournisseur%20navigateur').json()['items'][0]
+                            post(f'/api/document-versions/{source["version_id"]}/intake/confirm',{'field_key':'reference_matiere','value':'TISSU-NAV','source_excerpt':'Référence vérifiée pour cet essai'})
+                            internal_page.locator('#quality-add-data').click()
+                            internal_page.locator('#qd-version').select_option(source['version_id']);internal_page.locator('#qd-field').select_option('reference_matiere')
+                            internal_page.once('dialog',lambda d:d.accept());internal_page.locator('#qd-confirmed').click()
+                            expect(internal_page.locator('#quality-data-form')).to_have_count(0)
+                            internal_page.locator('#quality-new-rule').click()
+                            internal_page.locator('#qr-name').fill('Références navigateur');internal_page.locator('#qr-field').select_option('reference_matiere')
+                            internal_page.locator('#qr-left-type').fill('Certificat');internal_page.locator('#qr-right-type').fill('Fiche technique')
+                            internal_page.locator('#quality-rule-form button[type=submit]').click()
+                            internal_page.get_by_text('Références navigateur',exact=True).wait_for()
+                            internal_page.locator('#upload-doc').click()
+                            internal_page.locator('#doc-file').set_input_files([{'name':'lot-1.txt','mimeType':'text/plain','buffer':b'Bon de livraison\nReference matiere : TISSU-LOT\nQuantite : 25 m'},{'name':'lot-2.txt','mimeType':'text/plain','buffer':b'Second document de lot'}])
+                            data_transfer=internal_page.evaluate_handle("""() => {const dt=new DataTransfer();dt.items.add(new File(['extension interdite'],'bad.exe',{type:'application/octet-stream'}));return dt;}""")
+                            internal_page.locator('#upload-drop').dispatch_event('drop',{'dataTransfer':data_transfer})
+                            internal_page.locator('[data-upload-row="1"] [data-folder]').select_option('rose')
+                            internal_page.locator('#upload-submit').click()
+                            expect(internal_page.locator('#upload-status')).to_contain_text('2 / 3 fichier(s) déposé(s)')
+                            internal_page.locator('#upload-submit').click()
+                            expect(internal_page.locator('#upload-submit')).to_be_enabled()
+                            expect(internal_page.locator('#upload-status')).to_contain_text('2 / 3 fichier(s) déposé(s)')
+                            detail=api.get(f'/api/launches/{lid}').json()
+                            assert sum(d['title']=='lot-1' for f in detail['folders'] for d in f['documents'])==1
+                            assert next(f for f in detail['folders'] if f['slug']=='rose')['documents'][0]['title']=='lot-2'
+                            internal_page.locator('#upload-finish').click()
+                            lot=next(d for f in detail['folders'] for d in f['documents'] if d['title']=='lot-1')
+                            internal_page.locator(f'[data-intake-version="{lot["latest"]["id"]}"]').click()
+                            internal_page.locator('#if-quantite').fill('25')
+                            internal_page.locator('[data-intake-confirm="quantite"]').click()
+                            internal_page.get_by_text('quantite : 25 m',exact=True).wait_for()
+                            internal_page.keyboard.press('Escape')
+                            internal_page.locator('#intake-open').click()
+                            internal_page.locator('#intake-file').set_input_files({'name':'bon-de-livraison.txt','mimeType':'text/plain','buffer':b'BON DE LIVRAISON\nQuantite : 25 m'})
+                            internal_page.locator('#intake-file-form button[type=submit]').click()
+                            expect(internal_page.locator('#intake-folder')).to_have_value('rose')
+                            internal_page.locator('#intake-title').fill('Classement confirmé navigateur')
+                            admin_during_refresh(internal_page,base,lid,deputy['id'],evidence)
+                            assert api.get('/api/document-search?q=Classement%20confirm').json()['items'][0]['folder']=='rose'
+                            internal_page.locator(f'[data-user-access="{deputy["id"]}"]').click()
+                            internal_page.locator('#employee-active').uncheck();internal_page.locator('#employee-reason').fill('Fin de la délégation de démonstration')
+                            internal_page.locator('#employee-access-form button').click()
+                            expect(internal_page.locator('#employee-access-form')).to_have_count(0)
+                            updated=next(u for u in api.get('/api/admin/users').json() if u['id']==deputy['id'])
+                            assert updated['active'] is False and updated['roles']==[deputy_role['name']]
+                            audit=api.get('/api/admin/audit');audit.raise_for_status()
+                            assert any(entry['action']=='user.access' and entry['target_id']==deputy['id'] and entry['detail']['reason']=='Fin de la délégation de démonstration' for entry in audit.json())
+                            evidence.checkpoint(internal_page,'employee-disabled-persisted')
+                            audit_page(review,'partner-administration')
+                            (ROOT/'artifacts/phase3-partner-axe.json').write_text(json.dumps(audits,indent=2))
+                            assert not [r for r in audits if r['violations']],[r for r in audits if r['violations']]
+                            assert not errors,errors
                         browser.close()
                         print('PASS: supplier/client journeys, isolation revocation, administrative files, integration, search, order registry, completeness, approval delegation, batch drag-and-drop with partial failure, classification, human confirmation, employee access, mobile layouts')
             finally:
