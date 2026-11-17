@@ -54,7 +54,7 @@ def test_taxonomy_preserves_unknown_labels_explicit_classification_and_conflict(
         rows=c.get('/api/document-types?folder=bleu').json()['items']
         assert 'invoice' not in {row['id'] for row in rows}
     assert resolve_type(" Fiche d'emploi ")['id']=='employment-sheet'
-    assert resolve_type('BL')['id']=='delivery-note'
+    assert resolve_type('BL') is None  # no unvalidated acronym merge
     assert resolve_type('Dossier technique')['id']!=resolve_type('Dossier technique client')['id']
     assert 'Fiche d’emploi' in equivalent_types("Fiche d'emploi")
 
@@ -86,3 +86,21 @@ def test_internal_comments_exact_version_acl_and_no_external_identity():
         assert outsider.get(f'/api/orders/{order["id"]}/identification').status_code==404
         c.delete(f'/api/orders/{order["id"]}/members/{reader_id}',headers=H)
         assert reader.get(url).status_code==404
+
+
+def test_historical_identification_migration_preserves_retired_keys_idempotently():
+    from sqlalchemy import create_engine, text
+    from app.core import Base, utcnow
+    from app.models import Launch
+    from app.order_fields import LaunchIdentification, migrate_historical_identification
+    isolated=create_engine('sqlite:///:memory:')
+    Base.metadata.create_all(isolated)
+    raw='{"workshop":"Atelier historique","retired_field":"à conserver","quantity":125}'
+    with isolated.begin() as conn:
+        conn.execute(User.__table__.insert().values(id='historic-user',name='Auteur historique',email='historic@example.local',password_hash='not-an-authentic-hash',active=True,created_at=utcnow()))
+        conn.execute(Launch.__table__.insert().values(id='historic-launch',name='Historique',created_by='historic-user',created_at=utcnow(),updated_at=utcnow(),restricted=False,status='En cours'))
+        conn.execute(text('ALTER TABLE launches ADD COLUMN identification_json TEXT'))
+        conn.execute(text('UPDATE launches SET identification_json=:raw WHERE id=:id'),{'raw':raw,'id':'historic-launch'})
+        migrate_historical_identification(conn);migrate_historical_identification(conn)
+        rows=conn.execute(select(LaunchIdentification.__table__)).mappings().all()
+        assert len(rows)==1 and rows[0]['fields_json']==raw and rows[0]['revision']==1

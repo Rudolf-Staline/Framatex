@@ -36,13 +36,14 @@ async function documentTypeOptions(folder){
 async function decorateOrderUpload(form,folder){
  if(!form)return;
  const input=form.querySelector('[name="doc_type"]');if(!input)return;
- input.disabled=true;
+ input.disabled=true;const submit=form.querySelector('button');if(submit)submit.disabled=true;
  try{
   const items=await documentTypeOptions(folder);if(!input.isConnected)return;
   const select=document.createElement('select');select.id=input.id;select.name=input.name;select.required=true;
   select.innerHTML=items.map(row=>`<option value="${e(row.label)}" ${row.id==='unclassified'?'selected':''}>${e(row.label)}</option>`).join('');input.replaceWith(select);
   const note=document.createElement('p');note.textContent='Choisissez un type de cette rubrique. « À classer » conserve le document et signale le classement à reprendre.';select.after(note);
  }catch(err){if(input.isConnected){input.disabled=false;const note=document.createElement('p');note.className='error';note.setAttribute('role','alert');note.textContent='Référentiel indisponible : le type saisi sera conservé et devra être vérifié.';input.after(note)}}
+ finally{if(submit?.isConnected)submit.disabled=false}
 }
 async function documentClassificationDialog(doc,folder){
  const items=await documentTypeOptions(folder);

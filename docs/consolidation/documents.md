@@ -16,7 +16,11 @@ Départ : 33e7836. Ancienne branche `feat/commande-identification` lue au commit
 - `node tests/test_consolidation_documents_frontend.cjs` : réussi (labels, échappement, contrats de montage).
 - `node --check static/order-identification.js` et `node --check static/orders.js` : réussis.
 - Une première commande guide catalog/evaluation/API sans FRAMATEX_DATA_DIR explicite a utilisé le répertoire data/ partagé par plusieurs processus de test : 13 échecs de concurrence (401 compte absent, tables supprimées pendant accès). Relance isolée nécessaire et en cours ; aucun contournement des droits.
-- Browser et suite globale : intégration centrale à suivre.
+- Relance isolée `FRAMATEX_DATA_DIR=$(mktemp -d /tmp/framatex-docs-guide.XXXXXX) python -m pytest -q tests/test_guide_catalog.py tests/test_guide_evaluation.py tests/test_guide_api.py tests/test_consolidation_documents.py tests/test_intake.py` : 38 réussis en 66,63 s. Le défaut initial était un partage de base entre processus de test ; aucun contournement fonctionnel.
+- `node tests/test_guide_frontend.cjs` : réussi après installation npm des dépendances épinglées.
+- Test supplémentaire : reprise idempotente de identification_json (ancienne branche), avec clé retirée conservée.
+- Navigateur : nouveaux parcours identification décimale, atelier par lancement, commentaire v1 conservé et absent v2, reclassement explicite, nouvelle version et téléchargement vérifiés ; 4 contrôles axe/mobile du dossier réussis. Contrôle transverse complet en cours après correction centrale de l'import ApprovalStageAssignment dans la file de validation.
+- Suite globale : intégration centrale à suivre.
 
 ## Limites et décisions restantes
 - Référentiel et clés facultatives sont des propositions techniques réversibles, à compléter/valider par Framatex, sans exigences sensibles automatiques.

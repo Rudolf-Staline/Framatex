@@ -24,7 +24,7 @@ CATALOGUE = [
  {'id':'technical-sheet','label':'Fiche technique','folders':['jaune'],'aliases':[]},
  {'id':'provisional-launch','label':'Lancement provisoire','folders':['jaune'],'aliases':[]},
  {'id':'final-launch','label':'Lancement définitif','folders':['jaune'],'aliases':[]},
- {'id':'delivery-note','label':'Bon de livraison','folders':['rose'],'aliases':['BL']},
+ {'id':'delivery-note','label':'Bon de livraison','folders':['rose'],'aliases':[]},
  {'id':'certificate','label':'Certificat','folders':['jaune','rose'],'aliases':[]},
  {'id':'customs-document','label':'Pièce douanière','folders':['bleu'],'aliases':[]},
  {'id':'invoice','label':'Facture','folders':['vert'],'aliases':[]},
@@ -72,7 +72,11 @@ def type_out(db,doc):
 
 
 def matches_type(db,doc,required):
-    assignment=db.get(DocumentTypeAssignment,doc.id)
+    return matches_classification(doc,db.get(DocumentTypeAssignment,doc.id),required)
+
+
+def matches_classification(doc,assignment,required):
+    """Pure matcher for batch-loaded classification, without per-document SQL."""
     wanted=resolve_type(required)
     if assignment and wanted:return assignment.type_id==wanted['id']
     actual=resolve_type(doc.doc_type)
