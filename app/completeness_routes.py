@@ -8,7 +8,7 @@ from .launches import get_launch, SLUGS
 from .order_documents import get_doc
 from fastapi import Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from .core import get_current_user, get_db
@@ -52,6 +52,7 @@ class ValidationPayload(BaseModel):
 
 
 class ExceptionPayload(BaseModel):
+    launch_id: str | None = Field(default=None, min_length=36, max_length=36)
     reason: str = Field(default="", max_length=2000)
     active: bool = True
 
@@ -183,7 +184,12 @@ def validate_requirement(launch_id: str, rule_id: str, payload: ValidationPayloa
     if not rule.requires_validation:
         raise HTTPException(422, "Cette exigence ne nécessite pas de validation distincte")
     doc = get_doc(db, payload.document_id)
-    if not document_in_launch(db, doc, launch.id) or doc.folder.slug != rule.folder_slug or doc.doc_type != rule.document_type:
+    from .order_documents import document_accessible
+    from .document_types import matches_type
+    if not document_accessible(db, user, doc):
+        raise HTTPException(404, 'Document introuvable')
+    own_origin = doc.launch_id == launch.id or (doc.launch_id is None and doc.folder.launch_id == launch.id)
+    if not own_origin or doc.folder.slug != rule.folder_slug or not matches_type(db, doc, rule.document_type):
         raise HTTPException(422, "Document non conforme au type et au lancement de la règle")
     if not doc.versions:
         raise HTTPException(422, "Document sans version")
@@ -222,6 +228,8 @@ def set_requirement_exception(launch_id: str, rule_id: str, payload: ExceptionPa
     must(user, "document.read", rule.folder_slug)
     if payload.active and len(payload.reason.strip()) < 12:
         raise HTTPException(422, "Précisez une justification d'au moins 12 caractères")
+    from .models import Launch
+    db.execute(update(Launch).where(Launch.id == launch.id).values(id=Launch.id))
     exception = db.scalar(select(RequirementException).where(
         RequirementException.launch_id == launch.id, RequirementException.rule_id == rule.id
     ))
@@ -236,3 +244,42 @@ def set_requirement_exception(launch_id: str, rule_id: str, payload: ExceptionPa
           {"launch": launch.id, "active": payload.active, "reason": payload.reason.strip() if payload.active else ""})
     db.commit()
     return evaluate(db, launch, user, permitted)
+
+
+@router.put('/api/orders/{order_id}/completeness/rules/{rule_id}/exception')
+def set_order_requirement_exception(order_id: str, rule_id: str, payload: ExceptionPayload,
+                                    user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from .order_documents import must_order
+    from .completeness_models import OrderRequirementException
+    from .order_completeness import evaluate as evaluate_order
+    must(user, 'launch.read')
+    order = must_order(db, user, order_id)
+    from .partner_phase2_models import BusinessOrder
+    db.execute(update(BusinessOrder).where(BusinessOrder.id == order.id).values(id=BusinessOrder.id))
+    report = evaluate_order(db, order, user, permitted)
+    obligation = next((r for r in report['rows'] if r['rule_id'] == rule_id and r['launch_id'] == payload.launch_id), None)
+    if not obligation or (obligation['obligation_scope'] == 'launch' and not payload.launch_id):
+        raise HTTPException(404, 'Obligation non applicable à ce contexte')
+    must(user, 'completeness.review', obligation['folder'])
+    must(user, 'document.read', obligation['folder'])
+    if payload.active and len(payload.reason.strip()) < 12:
+        raise HTTPException(422, "Précisez une justification d'au moins 12 caractères")
+    if obligation['obligation_scope'] == 'launch':
+        row = db.scalar(select(RequirementException).where(RequirementException.launch_id == payload.launch_id, RequirementException.rule_id == rule_id))
+        if not row and payload.active:
+            row = RequirementException(launch_id=payload.launch_id, rule_id=rule_id, recorded_by=user.id)
+            db.add(row)
+    else:
+        row = db.get(OrderRequirementException, (order.id, rule_id))
+        if not row and payload.active:
+            row = OrderRequirementException(order_id=order.id, rule_id=rule_id, recorded_by=user.id)
+            db.add(row)
+    if row:
+        row.active = payload.active
+        row.reason = payload.reason.strip() if payload.active else row.reason
+        row.recorded_by = user.id
+    audit(db, user, 'completeness.order.exception.set', 'completeness_rule', rule_id,
+          {'order_id': order.id, 'launch_id': payload.launch_id, 'active': payload.active,
+           'reason': payload.reason.strip() if payload.active else ''})
+    db.commit()
+    return evaluate_order(db, order, user, permitted)

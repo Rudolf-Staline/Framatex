@@ -1,3 +1,4 @@
+from typing import Literal
 from fastapi import APIRouter,Depends,HTTPException
 from pydantic import BaseModel,Field
 from sqlalchemy import select
@@ -15,6 +16,8 @@ class PolicyInput(BaseModel):
     optional:bool=False
     days_after_launch:int|None=Field(default=None,ge=0,le=3650)
     requires_client_publication:bool=False
+    obligation_scope:Literal["context","order","launch"]="context"
+    deadline_reference:Literal["launch_created","order_created"]="launch_created"
 class ContextInput(BaseModel):
     order_type:str=Field(min_length=1,max_length=100)
 

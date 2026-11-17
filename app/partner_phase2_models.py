@@ -159,6 +159,8 @@ class RequirementPolicy(Base):
     optional: Mapped[bool]=mapped_column(Boolean,default=False)
     days_after_launch: Mapped[int | None]=mapped_column(Integer,nullable=True)
     requires_client_publication: Mapped[bool]=mapped_column(Boolean,default=False)
+    obligation_scope: Mapped[str]=mapped_column(String(20),default='context',server_default='context')
+    deadline_reference: Mapped[str]=mapped_column(String(30),default='launch_created',server_default='launch_created')
 
 class LaunchOrderContext(Base):
     __tablename__='launch_order_contexts'
