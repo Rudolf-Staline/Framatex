@@ -202,4 +202,6 @@ async def upload_reservation(storage, name, expected=0):
     try:
         yield reservation
     finally:
-        await run_in_threadpool(reservation.release)
+        from anyio import CancelScope
+        with CancelScope(shield=True):
+            await run_in_threadpool(reservation.release)

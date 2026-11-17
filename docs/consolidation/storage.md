@@ -48,3 +48,5 @@ La commande reconstruit les compteurs, libère les quarantaines expirées, et ra
 - Les créations/suppressions manuelles dans `files/` nécessitent une réconciliation. Le code applicatif utilise le propriétaire de stockage pour libérer son quota.
 - L'espace temporaire des extracteurs et du scanner dépend de leurs outils et du serveur ; la réserve disque configurable n'est pas une qualification du dimensionnement réel.
 - Le scanner réel, sa fraîcheur de signatures et le corpus documentaire Framatex restent à qualifier par l'exploitation. Aucun email ni fichier réel utilisé.
+
+Complément interruption : le nettoyage de réservation est protégé de l'annulation de la requête. `python -m pytest -q tests/test_consolidation_storage.py` → **12 réussis en 8,21 s**, dont annulation réelle d'une tâche HTTP simulée pendant le contrôle et vérification du registre/quarantaine vides. Les octets originaux ne sont pas touchés.

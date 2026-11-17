@@ -194,3 +194,29 @@ def test_unknown_size_is_reserved_before_writing_and_low_disk_refuses(storage, m
         upload(b'a')
     assert error.value.status_code == 507
     assert not list(storage.iterdir())
+
+
+def test_cancelled_request_releases_quarantine_and_reservation(storage, monkeypatch):
+    started, resume = threading.Event(), threading.Event()
+    def paused_check(_path, _suffix):
+        started.set()
+        assert resume.wait(timeout=5)
+    monkeypatch.setattr(document_storage, 'verify_file', paused_check)
+    async def interrupted():
+        task = asyncio.create_task(document_storage.store_upload(UploadFile(io.BytesIO(b'synthetic'), size=9, filename='cancelled.txt')))
+        try:
+            for _ in range(100):
+                if started.is_set():
+                    break
+                await asyncio.sleep(0.01)
+            assert started.is_set()
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await asyncio.wait_for(task, timeout=2)
+        finally:
+            resume.set()
+    asyncio.run(interrupted())
+    assert not list(storage.iterdir())
+    assert not list((storage.parent / '.upload-quarantine').iterdir())
+    with sqlite3.connect(storage.parent / '.storage-budget.sqlite3') as db:
+        assert db.execute('SELECT count(*) FROM reservations').fetchone()[0] == 0

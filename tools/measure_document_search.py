@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import statistics
+import sys
 import tempfile
 import time
 import tracemalloc
@@ -13,6 +14,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 def run(sizes, repeats, actor='reader', concurrency=()):
+    if 'app.core' in sys.modules:
+        raise RuntimeError('Run this synthetic benchmark in a fresh Python process; application database already loaded')
     with tempfile.TemporaryDirectory(prefix='framatex-search-measure-') as directory:
         os.environ['FRAMATEX_DATA_DIR'] = directory
         os.environ['DATABASE_URL'] = 'sqlite:///' + directory + '/measure.db'
