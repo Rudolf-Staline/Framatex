@@ -25,6 +25,8 @@ MIMES = {".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-off
 
 def scan(path):
     mode=os.getenv('FRAMATEX_UPLOAD_SCAN_MODE','disabled')
+    if os.getenv('FRAMATEX_MODE','DEVELOPMENT').upper()=='OPERATIONAL' and mode!='required':
+        raise HTTPException(503,'En exploitation, le scan antivirus obligatoire doit être configuré')
     if mode=='disabled':return 'not_scanned'
     if mode!='required':raise HTTPException(503,'Politique antivirus invalide')
     backend=os.getenv('FRAMATEX_SCANNER_BACKEND','command')

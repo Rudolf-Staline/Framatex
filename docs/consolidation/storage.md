@@ -50,3 +50,8 @@ La commande reconstruit les compteurs, libère les quarantaines expirées, et ra
 - Le scanner réel, sa fraîcheur de signatures et le corpus documentaire Framatex restent à qualifier par l'exploitation. Aucun email ni fichier réel utilisé.
 
 Complément interruption : le nettoyage de réservation est protégé de l'annulation de la requête. `python -m pytest -q tests/test_consolidation_storage.py` → **12 réussis en 8,21 s**, dont annulation réelle d'une tâche HTTP simulée pendant le contrôle et vérification du registre/quarantaine vides. Les octets originaux ne sont pas touchés.
+
+Dernier contrôle de configuration : en mode `OPERATIONAL`, désactiver le scan
+provoque maintenant HTTP 503 avant publication. Le réglage désactivé reste
+réservé au développement. Régression avec quarantaine et quota libérés : suite
+stockage **13 tests réussis en 6,39 s**.

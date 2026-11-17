@@ -98,8 +98,8 @@ expirées sont récupérées ; le nombre de dépôts est borné par
 `FRAMATEX_UPLOAD_CONCURRENCY` (4 par défaut, HTTP 429 et Retry-After à saturation),
 le bail par `FRAMATEX_UPLOAD_LEASE_SECONDS` (900 secondes par défaut), et l'espace
 libre par `FRAMATEX_STORAGE_MIN_FREE_BYTES` (0 par défaut, configurable). Un fichier n'est publié dans le stockage privé qu'après les
-contrôles de format et le scan obligatoire. Ne pas remplacer `required` par
-`disabled` pour contourner une indisponibilité du scanner.
+contrôles de format et le scan obligatoire. En mode `OPERATIONAL`, le dépôt refuse aussi une configuration de scan désactivée ;
+le réglage `disabled` est réservé aux environnements de développement/démonstration.
 
 Installer et maintenir ClamAV/freshclam selon la distribution et la politique
 réseau retenue. `/api/ready` vérifie la présence de l'exécutable et, avec

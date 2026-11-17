@@ -220,3 +220,11 @@ def test_cancelled_request_releases_quarantine_and_reservation(storage, monkeypa
     assert not list((storage.parent / '.upload-quarantine').iterdir())
     with sqlite3.connect(storage.parent / '.storage-budget.sqlite3') as db:
         assert db.execute('SELECT count(*) FROM reservations').fetchone()[0] == 0
+
+
+def test_operational_mode_cannot_publish_with_development_scanner_setting(storage,monkeypatch):
+    monkeypatch.setenv('FRAMATEX_MODE','OPERATIONAL')
+    with pytest.raises(HTTPException) as denied:upload(b'Operational synthetic')
+    assert denied.value.status_code==503
+    assert not list(storage.iterdir())
+    assert reconcile(storage)['bytes']==0
