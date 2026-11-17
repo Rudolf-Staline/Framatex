@@ -231,3 +231,13 @@ async def safe_integrity_errors(request,exception):
 
 from .guide_routes import router as guide_router
 app.include_router(guide_router)
+
+from .order_fields import router as order_fields_router
+from .document_types import router as document_types_router
+from .document_comments import router as document_comments_router
+app.include_router(order_fields_router)
+app.include_router(document_types_router)
+app.include_router(document_comments_router)
+
+from .order_document_queries import router as order_document_queries_router
+app.include_router(order_document_queries_router)

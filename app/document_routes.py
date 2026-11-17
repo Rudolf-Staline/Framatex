@@ -8,7 +8,7 @@ from .launches import get_launch, SLUGS
 from .order_documents import get_doc, doc_out
 from fastapi import Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from sqlalchemy import update
+from sqlalchemy import update,select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from .core import get_current_user, get_db
@@ -108,7 +108,7 @@ async def new_version(doc_id: str, file: UploadFile = File(...), user: User = De
 def download(doc_id: str, number: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     doc = get_doc(db, doc_id)
     must(user, "document.read", doc.folder.slug)
-    version = next((v for v in doc.versions if v.number == number), None)
+    version = db.scalar(select(DocumentVersion).where(DocumentVersion.document_id==doc.id,DocumentVersion.number==number))
     if not version:
         raise HTTPException(404, "Version introuvable")
     path = document_storage.STORAGE / version.disk_name

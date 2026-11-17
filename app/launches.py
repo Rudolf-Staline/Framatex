@@ -15,7 +15,12 @@ def get_launch(db: Session, launch_id: str) -> Launch:
     return l
 
 
-def launch_out(l: Launch):
+_UNSET=object()
+
+def launch_out(l: Launch, order_id=_UNSET):
     from .order_documents import launch_order
-    db=object_session(l);link=launch_order(db,l.id) if db else None
-    return {"order_id":link.order_id if link else None, "restricted": bool(l.restricted), "id": l.id, "name": l.name, "order_ref": l.order_ref, "client_name": l.client_name, "orli_ref": l.orli_ref, "status": l.status, "created_at": l.created_at.isoformat(), "updated_at": l.updated_at.isoformat()}
+    db=object_session(l)
+    if order_id is _UNSET:
+        link=launch_order(db,l.id) if db else None
+        order_id=link.order_id if link else None
+    return {"order_id":order_id, "restricted": bool(l.restricted), "id": l.id, "name": l.name, "order_ref": l.order_ref, "client_name": l.client_name, "orli_ref": l.orli_ref, "status": l.status, "created_at": l.created_at.isoformat(), "updated_at": l.updated_at.isoformat()}

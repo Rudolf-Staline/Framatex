@@ -27,7 +27,10 @@ def detail(oid:str, launch_id:str|None=None, q:str=Query('',max_length=200),summ
     for f in db.scalars(select(Folder).where(Folder.dossier_id==root.id).order_by(Folder.slug)):
         can_read=permitted(user,'document.read',f.slug)
         docs=[doc_out(d) for d in f.documents if document_accessible(db,user,d) and (not launch_id or d.launch_id==launch_id) and (not q or q.casefold() in (d.title+' '+d.doc_type).casefold())] if can_read and not summary else []
-        sections.append({'id':f.id,'slug':f.slug,'label':f.label,'can_read':can_read,'can_write':permitted(user,'document.write',f.slug),'documents':docs,'total':db.scalar(select(func.count()).select_from(Document).where(Document.folder_id==f.id,document_access_clause(user))) if can_read else 0})
+        count_query=select(func.count()).select_from(Document).where(Document.folder_id==f.id,document_access_clause(user))
+        if launch_id:count_query=count_query.where(Document.launch_id==launch_id)
+        if q:count_query=count_query.where((Document.title.ilike('%'+q+'%'))|(Document.doc_type.ilike('%'+q+'%')))
+        sections.append({'id':f.id,'slug':f.slug,'label':f.label,'can_read':can_read,'can_write':permitted(user,'document.write',f.slug),'documents':docs,'total':db.scalar(count_query) if can_read else 0})
     sections.sort(key=lambda item:['jaune','rose','bleu','vert'].index(item['slug']))
     return {'id':root.id,'order_id':oid,'reference':order.reference,'client_id':order.client_id,'sections':sections}
 
