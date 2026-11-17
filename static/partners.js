@@ -12,6 +12,29 @@ const THREAD_STATES={open:'Ouvert',waiting_client:'En attente du client',closed:
 const MAIL_STATES={pending:'En attente d’envoi',sending:'Envoi en cours',sent:'Accepté par le serveur email',failed:'Échec de transport',disabled:'Transport désactivé'};
 const labels = {requested:'Document attendu', pending:'Vérification en attente', rejected:'Correction demandée · version rejetée', approved:'Approuvé', closed:'Clôturé'};
 function node(tag, text) { const n=document.createElement(tag); if(text!==undefined)n.textContent=text; return n; }
+// Search and bounded pages reach authorized launches beyond the first choices.
+function installLaunchSearch(select,initial){
+ if(select._launchSearch){select._launchSearch.reset(initial);return;}
+ const label=node('label','Rechercher un lancement'),input=node('input');input.type='search';input.maxLength=200;input.placeholder='Nom, client, commande ou ORLI';label.append(input);
+ const status=node('small');status.setAttribute('role','status');
+ const controls=node('div'),previous=node('button','Lancements précédents'),next=node('button','Lancements suivants');previous.type=next.type='button';previous.onclick=()=>load(Math.max(0,offset-100));next.onclick=()=>load(offset+100);controls.append(previous,next);
+ (select.closest('label')||select).before(label);label.after(status,controls);
+ let offset=0,sequence=0,timer;
+ function display(rows,total){
+  const chosen=select.value;select.replaceChildren();for(const row of rows){const option=node('option',row.label||`${row.name} · ${row.order_ref||'Sans référence'} · ${row.client_name||'Client non renseigné'}`);option.value=row.id;select.append(option);}
+  if(rows.some(row=>row.id===chosen))select.value=chosen;
+  select.disabled=!rows.length;previous.disabled=offset===0;next.disabled=total===null?rows.length<100:offset+rows.length>=total;
+  status.textContent=total===null?`${rows.length} choix affiché(s). Recherchez ou passez à la page suivante.`:`${total} lancement(s) autorisé(s) · Page ${Math.floor(offset/100)+1}`;
+ }
+ async function load(requestOffset=0){
+  const request=++sequence;select.disabled=true;previous.disabled=true;next.disabled=true;status.textContent='Recherche des lancements…';
+  try{const result=await api('/api/launches?'+new URLSearchParams({page:'true',q:input.value,offset:String(requestOffset),limit:'100'}));if(request!==sequence||!select.isConnected)return;offset=requestOffset;display(result.items,result.total);}
+  catch(error){if(request!==sequence||!select.isConnected)return;select.replaceChildren();status.textContent=error.message||'Recherche impossible. Modifiez la recherche pour réessayer.';}
+ }
+ input.oninput=()=>{clearTimeout(timer);timer=setTimeout(()=>load(0),200)};
+ select._launchSearch={reset(rows){++sequence;clearTimeout(timer);input.value='';offset=0;display(rows,null)}};
+ select._launchSearch.reset(initial);
+}
 function button(text, action) {const b=node('button',text); b.type='button'; b.onclick=()=>{if(b.disabled)return;b.disabled=true;run(action).finally(()=>{if(b.isConnected)b.disabled=false})}; return b;}
 const partnerMutations=new Set();
 async function api(path, method='GET', data) {
@@ -55,7 +78,7 @@ async function refresh(){
  $('mail-state').replaceChildren();
  if(internal){const queue=await api('/api/partners/mail');$('mail-state').append(node('h4','File email (accepté ≠ livré ou lu)'));for(const m of queue)$('mail-state').append(node('p',`${MAIL_STATES[m.status]||m.status} · Tentatives : ${m.attempts} · ${m.last_error}`));}
  else {const pref=await api('/api/partner/mail-preference');$('mail-state').append(node('p',`Emails : ${pref.enabled?'préférence activée':'préférence désactivée'} · Transport ${pref.transport_configured?'activé par administrateur':'désactivé'}`),button(pref.enabled?'Désactiver les emails':'Activer la préférence email',async()=>{await api('/api/partner/mail-preference','PUT',{active:!pref.enabled});await refresh();}));}
- if(internal){await renderPolicies();const options=await api('/api/partners/launch-options');for(const select of document.querySelectorAll('.launch-options')){select.replaceChildren();for(const row of options){const option=node('option',row.label);option.value=row.id;select.append(option);}}const pubs=await api('/api/partners/publication-options');$('publication-options').replaceChildren();for(const row of pubs){const option=node('option',row.label);option.value=row.id;$('publication-options').append(option);}}
+ if(internal){await renderPolicies();const options=await api('/api/partners/launch-options');for(const select of document.querySelectorAll('.launch-options'))installLaunchSearch(select,options);const pubs=await api('/api/partners/publication-options');$('publication-options').replaceChildren();for(const row of pubs){const option=node('option',row.label);option.value=row.id;$('publication-options').append(option);}}
  if(internal)await renderOrderRegistry();
  await renderClientOrders();
  $('administrative-files').replaceChildren();if(!internal)await renderAdministrative($('administrative-files'));
@@ -180,7 +203,7 @@ async function renderOrderRegistry(){
  const rows=await api('/api/orders'),launches=await api('/api/partners/launch-options');$('business-orders').replaceChildren();
  for(const order of rows){const card=node('article');card.append(node('h4',`${order.reference} · ${order.client_name}`));
  for(const launch of order.launches){const line=node('p',`${launch.name} · ${launch.status} · ORLI ${launch.orli_ref||'non renseigné'}`),reason=node('input');reason.setAttribute('aria-label','Motif de retrait du rattachement');line.append(reason,button('Détacher ce lancement',async()=>{if(!confirm(`Détacher ${launch.name} de ${order.reference} ? Le serveur refusera si des documents sont rattachés. Le motif sera conservé dans l’audit.`))return;await api(`/api/orders/${order.id}/launches/${launch.id}`,'DELETE',{reason:reason.value});await renderOrderRegistry();}));card.append(line);}
- const label=node('label','Lancement à rattacher'),select=node('select');for(const launch of launches){const option=node('option',launch.label);option.value=launch.id;select.append(option);}label.append(select);card.append(label,button('Rattacher à cette commande',async()=>{await api(`/api/orders/${order.id}/launches`,'POST',{launch_id:select.value});await renderOrderRegistry();}));
+ const label=node('label','Lancement à rattacher'),select=node('select');for(const launch of launches){const option=node('option',launch.label);option.value=launch.id;select.append(option);}label.append(select);card.append(label,button('Rattacher à cette commande',async()=>{await api(`/api/orders/${order.id}/launches`,'POST',{launch_id:select.value});await renderOrderRegistry();}));installLaunchSearch(select,launches);
  card.append(button('Consulter la synthèse commande',async()=>{const data=await api(`/api/orders/${order.id}`);const summary=node('section');summary.append(node('p',`${data.documents.length} document(s), ${data.supplier_requests.length} demande(s) fournisseur, ${data.internal_materials.length+data.supplier_materials.length} matière(s), ${data.publications.length} publication(s) enregistrée(s)`));for(const doc of data.documents){const latest=doc.versions.at(-1);if(latest){const line=node('p',''),link=node('a',`${doc.title} · ${doc.folder} · v${latest.number}`);link.href=`/api/documents/${doc.id}/versions/${latest.number}/download`;line.append(link);summary.append(line);}}for(const line of data.supplier_materials)summary.append(node('p',`${line.material_ref} · commandé ${line.ordered} ${line.unit} · réceptionné ${line.received} · restant ${line.remaining}`));for(const link of data.orli_links)summary.append(node('p',`Référence ORLI rapprochée : ${link.reference}`));card.append(summary);}));$('business-orders').append(card);
  }
 }
@@ -202,7 +225,7 @@ async function refreshDaily(){
  let daily=$('daily-staff');if(!daily){daily=node('section');daily.id='daily-staff';$('workspace').insertBefore(daily,$('admin'));}
  for(const [id,allowed] of [['request',staffCan('supplier.request')],['order-line',staffCan('receipt.write')]]){const form=$(id);daily.append(form);form.hidden=!allowed;}
  for(const id of ['supplier-options','order-supplier-options']){$(id).replaceChildren();for(const row of home.suppliers){const option=node('option',row.name);option.value=row.id;$(id).append(option);}}
- for(const select of document.querySelectorAll('.launch-options')){select.replaceChildren();for(const row of home.launches){const option=node('option',row.label);option.value=row.id;select.append(option);}}
+ for(const select of document.querySelectorAll('.launch-options'))installLaunchSearch(select,home.launches);
  $('mail-state').replaceChildren(node('p','Les opérations disponibles dépendent des habilitations attribuées par l’administration.'));
  $('items').replaceChildren();if(staffCan('supplier.read')){const params=new URLSearchParams({...requestFilters,offset:String(requestOffset),limit:'20'});const rows=await api(`/api/partners/requests?${params}`);$('request-prev').disabled=requestOffset===0;$('request-next').disabled=rows.length<20;for(const r of rows){const card=node('article');card.append(node('h4',`${r.order_ref} · ${r.title}`),node('p',labels[r.status]),button('Ouvrir',()=>openRequest(r.id)));$('items').append(card);}}
  if(staffCan('receipt.read'))await renderDeliveries();else $('deliveries').replaceChildren();
