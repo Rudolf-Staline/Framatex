@@ -3,7 +3,7 @@ from .order_documents import document_in_launch
 from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from .core import get_db, get_current_user
@@ -18,7 +18,7 @@ from .workflow_models import DocumentReview
 from .workflow import emit_document_impacts
 from .partner_models import PartnerSubmission, PartnerRequest
 from .partner_phase2_models import PartnerIntegration
-from .partner_routes import req_get, claim, event, staff
+from .partner_routes import req_get, claim, event, staff, supplier_writer, request_scope
 
 router=APIRouter(tags=['Intégration documentaire fournisseur'])
 
@@ -39,6 +39,8 @@ def integrate(rid:str,payload:IntegrationInput,user=Depends(get_current_user),db
     request=req_get(db,rid)
     launch=must_access(db,user,request.launch_id)
     must(user,'launch.read');must(user,'document.read',payload.folder);must(user,'document.write',payload.folder);must(user,'document.review',payload.folder)
+    from .partner_routes import org_get
+    if not org_get(db,request.partner_id,'supplier').active:raise HTTPException(409,'Organisation fournisseur suspendue')
     source=db.get(PartnerSubmission,payload.submission_id)
     latest=db.scalar(select(PartnerSubmission).where(PartnerSubmission.request_id==rid).order_by(PartnerSubmission.number.desc()).limit(1))
     if not source or source.request_id!=rid or source.status!='approved' or latest.id!=source.id:
@@ -51,7 +53,7 @@ def integrate(rid:str,payload:IntegrationInput,user=Depends(get_current_user),db
     if payload.document_id:
         document=db.get(Document,payload.document_id)
         previous=db.scalar(select(PartnerIntegration).join(DocumentVersion,PartnerIntegration.version_id==DocumentVersion.id).join(PartnerSubmission,PartnerIntegration.submission_id==PartnerSubmission.id).where(DocumentVersion.document_id==payload.document_id,PartnerSubmission.request_id==rid))
-        if not document or not document_in_launch(db, document, request.launch_id) or document.folder.slug!=payload.folder or not previous:
+        if not document or not document_accessible(db,user,document) or not document_in_launch(db, document, request.launch_id) or document.folder.slug!=payload.folder or not previous:
             raise HTTPException(409,'Document cible étranger à la demande ou au dossier')
     else:
         existing=db.scalar(select(PartnerIntegration).join(PartnerSubmission).where(PartnerSubmission.request_id==rid))
@@ -83,7 +85,7 @@ def provenance(db,version_id):
     if not link:return None
     source=db.get(PartnerSubmission,link.submission_id);request=db.get(PartnerRequest,source.request_id)
     return {'submission_id':source.id,'request_id':request.id,'partner_id':request.partner_id,'account_id':source.account_id,
-            'source_version':source.number,'submitted_at':source.created_at,'sha256':source.sha256,'reviewed_by':source.reviewed_by,
+            'received_by':source.received_by,'received_via':source.received_via,'received_note':source.received_note,'source_version':source.number,'submitted_at':source.created_at,'sha256':source.sha256,'reviewed_by':source.reviewed_by,
             'decision':source.status,'decision_reason':source.reason,'integrated_by':link.integrated_by,'active':link.active,'withdrawal_reason':link.withdrawal_reason}
 
 @router.get('/api/document-versions/{version_id}/supplier-origin')
@@ -100,14 +102,15 @@ def withdraw(version_id:str,payload:ReasonInput,user=Depends(get_current_user),d
     assert_document_access(db,user,version.document);must(user,'document.review',version.document.folder.slug)
     link=db.scalar(select(PartnerIntegration).where(PartnerIntegration.version_id==version_id))
     if not link or not link.active:raise HTTPException(409,'Intégration absente ou déjà retirée')
-    link.active=False;link.withdrawal_reason=payload.reason
+    changed=db.execute(update(PartnerIntegration).where(PartnerIntegration.submission_id==link.submission_id,PartnerIntegration.active.is_(True)).values(active=False,withdrawal_reason=payload.reason))
+    if changed.rowcount!=1:raise HTTPException(409,'Intégration déjà retirée ; actualiser')
     db.add(DocumentReview(document_version_id=version.id,decision='rejected',comment=payload.reason,reviewed_by=user.id))
     audit(db,user,'partner.integration.withdraw','document_version',version.id,{'reason':payload.reason})
     db.commit();return {'active':False}
 
 @router.post('/api/partners/requests/{rid}/reopen')
-def reopen(rid:str,payload:ReasonInput,user=Depends(staff),db:Session=Depends(get_db)):
-    row=req_get(db,rid)
+def reopen(rid:str,payload:ReasonInput,user=Depends(supplier_writer),db:Session=Depends(get_db)):
+    row=request_scope(db,user,req_get(db,rid),'supplier.request')
     if row.status not in ('approved','closed'):raise HTTPException(409,'Demande non clôturée ou approuvée')
     claim(db,row);row.status='requested';event(db,row,'staff:'+user.id,'reopened',payload.reason)
     audit(db,user,'partner.reopen','partner_request',rid,payload.model_dump());db.commit();return {'status':row.status}

@@ -58,5 +58,25 @@
     "screen": "partner-administration",
     "width": 1440,
     "violations": []
+  },
+  {
+    "screen": "purchasing-nonadmin-offportal",
+    "width": 360,
+    "violations": []
+  },
+  {
+    "screen": "purchasing-nonadmin-offportal",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "screen": "purchasing-nonadmin-offportal",
+    "width": 768,
+    "violations": []
+  },
+  {
+    "screen": "purchasing-nonadmin-offportal",
+    "width": 1440,
+    "violations": []
   }
 ]

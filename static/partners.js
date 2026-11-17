@@ -1,5 +1,7 @@
 'use strict';
 let internal = false;
+let staffAdmin=false;let staffPermissions=[];
+function staffCan(action){return staffAdmin||staffPermissions.includes(action);}
 let guidePartnerRequestId=null;
 let guideClientOrderId=null;
 let rights = [];
@@ -26,13 +28,14 @@ async function run(action){$('notice').textContent='Chargement…';try{await act
 function form(id, action){$(id).onsubmit=e=>{e.preventDefault();const b=e.target.querySelector('button');b.disabled=true;run(()=>action(Object.fromEntries(new FormData(e.target)))).finally(()=>b.disabled=false);};}
 form('login',async data=>{await api('/api/partner-auth/login','POST',data);internal=false;await refresh();});
 form('activate',async data=>{await api('/api/partner-auth/activate','POST',data);$('activate').reset();$('notice').textContent='Compte activé. Vous pouvez vous connecter.';});
-$('staff').onclick=()=>run(async()=>{await api('/api/partners/organizations');internal=true;await refresh();});
+$('staff').onclick=()=>run(async()=>{const home=await api('/api/partners/staff-home');staffAdmin=home.admin;staffPermissions=home.permissions;internal=true;await refresh();});
 $('refresh').onclick=()=>run(refresh);
 $('logout').onclick=()=>run(async()=>{await api('/api/partner-auth/logout','POST');location.reload();});
 form('organization',async data=>{await api('/api/partners/organizations','POST',data);$('organization').reset();await refresh();});
 form('request',async data=>{if(!data.due_date)data.due_date=null;await api('/api/partners/requests','POST',data);$('request').reset();await refresh();});
 form('publication',async data=>{if(!confirm(`Publier la pièce sélectionnée pour ${$('client-options').selectedOptions[0]?.textContent||'ce client'} ? Ses contacts habilités pourront télécharger cette version jusqu’à révocation.`))return;await api('/api/partners/publications','POST',data);$('publication').reset();});
 async function refresh(){
+ if(internal&&!staffAdmin){await refreshDaily();return;}
  guidePartnerRequestId=null;
  const who=internal?{organization:'Administration Framatex'}:await api('/api/partner/home');
  rights=who.permissions||[];
@@ -71,17 +74,24 @@ async function openRequest(id){
  guidePartnerRequestId=id;
  const base=internal?'/api/partners':'/api/partner'; const r=await api(`${base}/requests/${id}`);const box=$('detail');box.replaceChildren(node('h3',r.title),node('p',labels[r.status]));
  for(const v of r.versions){const a=node('article');a.append(node('p',`Version ${v.number} · ${labels[v.status]} · ${v.reason}`),node('p',`Identifiant de pièce : ${v.id} · Preuve de dépôt : ${v.created_at} · SHA256 ${v.sha256}`));const link=node('a','Télécharger');link.href=`${base}/requests/${id}/versions/${v.id}/download`;a.append(link);box.append(a);}
+ if(internal&&staffCan('supplier.request')&&['requested','rejected'].includes(r.status)){
+  const form=node('form');const fileLabel=node('label','Pièce reçue hors portail'),file=node('input');file.type='file';file.name='file';file.required=true;fileLabel.append(file);
+  const viaLabel=node('label','Canal de réception'),via=node('select');via.name='received_via';via.setAttribute('aria-label','Canal de réception');for(const [value,label] of [['email','Email'],['paper','Papier numérisé'],['handover','Remise directe'],['other','Autre']]){const option=node('option',label);option.value=value;via.append(option);}viaLabel.append(via);
+  const noteLabel=node('label','Provenance et circonstances'),note=node('textarea');note.name='note';note.setAttribute('aria-label','Provenance et circonstances');note.required=true;note.minLength=3;note.maxLength=2000;noteLabel.append(note);
+  form.append(fileLabel,viaLabel,noteLabel,node('p','Vous enregistrez cette réception avec votre identité de collaborateur. Une décision d’examen distincte restera nécessaire.'),node('button','Enregistrer la pièce reçue'));
+  form.onsubmit=e=>{e.preventDefault();const submit=form.querySelector('button');submit.disabled=true;run(async()=>{await api(`${base}/requests/${id}/received-versions`,'POST',new FormData(form));await openRequest(id);}).finally(()=>submit.disabled=false);};box.append(form);
+ }
  if(!internal&&rights.includes('document.write')&&['requested','rejected'].includes(r.status)){const f=node('input');f.type='file';f.setAttribute('aria-label','Document à transmettre');box.append(f,button('Transmettre une version',async()=>{if(!f.files.length)throw new Error('Choisir un fichier');const data=new FormData();data.append('file',f.files[0]);await api(`${base}/requests/${id}/versions`,'POST',data);await openRequest(id);}));}
- if(internal&&r.status==='pending'){const reason=node('textarea');reason.setAttribute('aria-label','Motif de la décision');box.append(reason);for(const [value,label] of [['approved','Approuver'],['rejected','Demander une correction']])box.append(button(label,async()=>{await api(`${base}/requests/${id}/decision`,'POST',{version_id:r.versions.at(-1).id,decision:value,reason:reason.value});await openRequest(id);}));}
- if(internal&&r.status==='approved')box.append(button('Clôturer',async()=>{if(!confirm(`Clôturer la demande « ${r.title} » ? Les versions restent conservées ; une réouverture sera nécessaire pour recevoir une nouvelle transmission.`))return;await api(`${base}/requests/${id}/close`,'POST');await openRequest(id);}));
+ if(internal&&staffCan('supplier.review')&&r.status==='pending'){const reason=node('textarea');reason.setAttribute('aria-label','Motif de la décision');box.append(reason);for(const [value,label] of [['approved','Approuver'],['rejected','Demander une correction']])box.append(button(label,async()=>{await api(`${base}/requests/${id}/decision`,'POST',{version_id:r.versions.at(-1).id,decision:value,reason:reason.value});await openRequest(id);}));}
+ if(internal&&staffCan('supplier.request')&&r.status==='approved')box.append(button('Clôturer',async()=>{if(!confirm(`Clôturer la demande « ${r.title} » ? Les versions restent conservées ; une réouverture sera nécessaire pour recevoir une nouvelle transmission.`))return;await api(`${base}/requests/${id}/close`,'POST');await openRequest(id);}));
  if(internal&&['approved','closed'].includes(r.status)){
   const folder=node('select');folder.setAttribute('aria-label','Rubrique interne');for(const value of ['jaune','rose','bleu','vert']){const option=node('option',value);option.value=value;folder.append(option);}box.append(folder,button('Intégrer au dossier interne',async()=>{if(!confirm(`Intégrer « ${r.title} » dans la rubrique ${folder.value} de ${r.order_ref} ? Ce justificatif sera utilisable par les collaborateurs habilités de cette commande.`))return;const result=await api(`${base}/requests/${id}/integrate`,'POST',{submission_id:r.versions.at(-1).id,folder:folder.value,document_id:r.integrated_document_id||null});$('notice').textContent=`Document intégré : ${result.document.title}`;await openRequest(id);}));
   const reason=node('input');reason.setAttribute('aria-label','Motif de réouverture');box.append(reason,button('Demander une nouvelle version',async()=>{await api(`${base}/requests/${id}/reopen`,'POST',{reason:reason.value});await openRequest(id);}));
  }
  if(internal&&r.integrated_document_id){const doc=await api(`/api/documents/${r.integrated_document_id}/supplier-detail`);const origin=await api(`/api/document-versions/${doc.latest.id}/supplier-origin`);box.append(button('Vérifier les champs extraits',async()=>{const intake=await api(`/api/document-versions/${doc.latest.id}/intake`);const panel=node('article');panel.append(node('h4','Champs confirmés exploitables'));for(const field of intake.confirmed.filter(x=>x.key==='quantite')){panel.append(node('p',`${field.value} ${field.unit}`));const choices=field.unit==='pièce'?['quantite_lancement']:field.unit==='m'?['besoin_matiere_total']:[];for(const key of choices)panel.append(button(`Utiliser pour ${key}`,async()=>{const full=await api(`/api/document-versions/${doc.latest.id}/intake`);const source=full.confirmed.find(x=>x.key===field.key);await api(`/api/document-versions/${doc.latest.id}/data-from-confirmed`,'POST',{confirmed_id:source.id,field_key:key});}));}panel.append(node('p','Confirmer les valeurs dans le panneau documentaire interne avant de les utiliser. Aucune valeur OCR brute n’est injectée.'));box.append(panel);}));box.append(node('p',`Provenance fournisseur : version ${origin.source_version}, ${origin.submitted_at}, intégration ${origin.active?'active':'retirée'}`));if(origin.active){const reason=node('input');reason.setAttribute('aria-label','Motif du retrait interne');box.append(reason,button('Retirer le justificatif métier',async()=>{if(!confirm(`Retirer « ${doc.title} » des justificatifs exploitables ? Son historique et ses versions seront conservés, mais les contrôles de complétude pourront redevenir incomplets.`))return;await api(`/api/document-versions/${doc.latest.id}/supplier-withdrawal`,'POST',{reason:reason.value});await openRequest(id);}));}}
- renderAttachments(box,r.attachments||[],`${base}/requests/${id}/attachments`,()=>openRequest(id));
+ renderAttachments(box,r.attachments||[],`${base}/requests/${id}/attachments`,()=>openRequest(id),r.status!=='closed');
  box.append(node('h4','Historique et échanges'));const history=node('ul');for(const e of r.history)history.append(node('li',`${e.created_at} · ${e.author} · ${e.kind} : ${e.message}`));box.append(history);
- if(!internal&&!rights.includes('message.write'))return;
+ if((internal&&!staffCan('supplier.request'))||(!internal&&!rights.includes('message.write'))||r.status==='closed')return;
  const message=node('textarea');message.setAttribute('aria-label','Votre message');box.append(message,button('Enregistrer le message',async()=>{await api(`${base}/requests/${id}/messages`,'POST',{message:message.value});await openRequest(id);$('notice').textContent='Message enregistré. Aucun email externe envoyé.';}));
 }
 api('/api/partner/home').then(()=>run(refresh)).catch(()=>{});
@@ -92,9 +102,9 @@ async function renderDeliveries(){
  if(!rows.length)$('deliveries').append(node('p','Aucune commande matière accessible.'));
  for(const r of rows){const a=node('article');a.append(node('h4',`${r.order_ref} · ${r.material_ref}`),node('p',`Prévu : ${r.planned||"non renseigné"} · Annoncé : ${r.announced} · Retourné : ${r.returned} · Commandé : ${r.ordered} ${r.unit} · Déclaré : ${r.declared} · Réceptionné net : ${r.received} · Restant : ${r.remaining}`));
  const differences=node('details');differences.append(node('summary','Historique des écarts et situations successives'),node('p','Les écarts sont des différences de quantités à examiner. Une réception partielle reste normale.'));
- for(const event of r.discrepancy_history||[])differences.append(node('p',`${event.date} · ${event.operation} · ${event.reason} · Commandé − prévu : ${event.ordered_minus_planned??'non renseigné'} · Déclaré − reçu : ${event.declared_minus_received} · Reçu − commandé : ${event.received_minus_ordered} · Restant : ${event.remaining} ${r.unit}`));a.append(differences);
- const history=node('ul');for(const m of r.movements){const line=node('li',`${m.occurred_on} · ${m.kind} : ${m.quantity} ${r.unit} · ${m.note} · ${m.cancelled?'Annulé : '+m.cancellation_reason:''}`);if(!m.cancelled&&(internal||(['announced','declared'].includes(m.kind)&&rights.includes('delivery.write')))){const reason=node('input');reason.setAttribute('aria-label','Motif d’annulation');line.append(reason,button('Annuler ce mouvement',async()=>{await api(`${base}/order-lines/${r.id}/movements/${m.id}/cancel`,'POST',{reason:reason.value});await renderDeliveries();}));}history.append(line);}a.append(history);
- if(!internal&&!rights.includes('delivery.write')){$('deliveries').append(a);continue;}
+ for(const event of r.discrepancy_history||[])differences.append(node('p',`${event.date} · ${event.operation} · ${event.reason} · Commandé − prévu : ${event.ordered_minus_planned??'non renseigné'} · Déclaré − reçu : ${event.declared_minus_received} · Reçu − commandé : ${event.received_minus_ordered} · Restant : ${event.remaining} ${r.unit}`));a.append(differences);if(internal){let historyOffset=0;const load=button('Charger les situations suivantes',async()=>{const page=await api(`/api/partners/order-lines/${r.id}/history?offset=${historyOffset}&limit=50`);for(const event of page.items)differences.append(node('p',`${event.date} · ${event.operation} · ${event.reason} · Reçu : ${event.received} · Restant : ${event.remaining} ${r.unit}`));historyOffset+=page.items.length;if(historyOffset>=page.total)load.remove();});differences.append(load);}
+ const history=node('ul');if(internal){const load=button('Consulter et corriger les mouvements',async()=>{const detail=await api(`/api/partners/order-lines/${r.id}`);for(const m of detail.movements){const line=node('li',`${m.occurred_on} · ${m.kind} : ${m.quantity} ${r.unit} · ${m.note} · ${m.cancelled?'Annulé : '+m.cancellation_reason:''}`);if(!m.cancelled&&staffCan('receipt.write')){const reason=node('input');reason.setAttribute('aria-label','Motif d’annulation');line.append(reason,button('Annuler ce mouvement',async()=>{await api(`/api/partners/order-lines/${r.id}/movements/${m.id}/cancel`,'POST',{reason:reason.value});await renderDeliveries();}));}history.append(line);}load.remove();});a.append(load);}for(const m of r.movements||[]){const line=node('li',`${m.occurred_on} · ${m.kind} : ${m.quantity} ${r.unit} · ${m.note} · ${m.cancelled?'Annulé : '+m.cancellation_reason:''}`);if(!m.cancelled&&(internal||(['announced','declared'].includes(m.kind)&&rights.includes('delivery.write')))){const reason=node('input');reason.setAttribute('aria-label','Motif d’annulation');line.append(reason,button('Annuler ce mouvement',async()=>{await api(`${base}/order-lines/${r.id}/movements/${m.id}/cancel`,'POST',{reason:reason.value});await renderDeliveries();}));}history.append(line);}a.append(history);
+ if((!internal&&!rights.includes('delivery.write'))||(internal&&!staffCan('receipt.write'))){$('deliveries').append(a);continue;}
  const f=node('form');const fields={};for(const [name,label,type] of [['quantity','Quantité','number'],['source_id','Identifiant de la version du justificatif fournisseur','text'],['note','Justification','text'],['occurred_on','Date effective','date']]){const l=node('label',label);const input=node('input');input.name=name;input.type=type;input.required=true;if(type==='number'){input.min='0.001';input.step='0.001';}l.append(input);f.append(l);fields[name]=input;}
  if(internal){const l=node('label','Opération');const kind=node('select');kind.name='kind';for(const [value,label] of [['received','Confirmer réception'],['returned','Enregistrer retour'],['planned','Réviser la quantité prévue']]){const opt=node('option',label);opt.value=value;kind.append(opt);}l.append(kind);f.append(l);}
  if(!internal){const label=node('label','Nature de la déclaration'),select=node('select');select.name='kind';for(const [value,label] of [['declared','Livraison effectuée'],['announced','Livraison annoncée']]){const opt=node('option',label);opt.value=value;select.append(opt);}label.append(select);f.append(label);}
@@ -119,9 +129,9 @@ async function renderProfile(org,container){
 }
 
 form('client-order',async data=>{if(!data.confirmed_due)data.confirmed_due=null;await api('/api/partners/client-orders','POST',data);$('client-order').reset();await renderClientOrders();});
-function renderAttachments(container,attachments,endpoint,refreshView){
+function renderAttachments(container,attachments,endpoint,refreshView,allowWrite=true){
  for(const a of attachments){const link=node('a',`Pièce jointe : ${a.name} (${a.size} octets)`);link.href=`${internal?'/api/partners':'/api/partner'}/attachments/${a.id}/download`;const paragraph=node('p');paragraph.append(link);container.append(paragraph);}
- if(!internal&&!rights.includes('message.write'))return;
+ if(!allowWrite||(!internal&&!rights.includes('message.write'))||(internal&&!staffCan('supplier.request')))return;
  const form=node('form'),label=node('label','Pièce jointe privée'),file=node('input');file.type='file';file.name='file';file.required=true;label.append(file);form.append(label);
  const messageLabel=node('label','Description de la pièce'),message=node('input');message.name='message';message.required=true;messageLabel.append(message);form.append(messageLabel,node('button','Joindre le fichier'));
  form.onsubmit=e=>{e.preventDefault();run(async()=>{await api(endpoint,'POST',new FormData(form));await refreshView();});};container.append(form);
@@ -159,10 +169,10 @@ async function renderAdministrative(container,orgId){
 async function renderPolicies(){
  const policies=await api('/api/admin/completeness/policies');const select=$('policy-rule');select.replaceChildren();for(const row of policies){const option=node('option',row.label);option.value=row.rule_id;select.append(option);}
  $('rule-policy').querySelector('button').disabled=!policies.length;
- function load(){const row=policies.find(r=>r.rule_id===select.value);if(!row)return;for(const key of ['order_type','optional','days_after_launch','requires_client_publication']){const input=$('rule-policy').elements[key];if(input.type==='checkbox')input.checked=row[key];else input.value=row[key]??'';}}
+ function load(){const row=policies.find(r=>r.rule_id===select.value);if(!row)return;for(const key of ['order_type','optional','days_after_launch','requires_client_publication','obligation_scope','deadline_reference']){const input=$('rule-policy').elements[key];if(input.type==='checkbox')input.checked=row[key];else input.value=row[key]??'';}}
  select.onchange=load;load();
 }
-form('rule-policy',async data=>{await api(`/api/admin/completeness/rules/${data.rule_id}/policy`,'PUT',{order_type:data.order_type,optional:!!data.optional,days_after_launch:data.days_after_launch===''?null:Number(data.days_after_launch),requires_client_publication:!!data.requires_client_publication});});
+form('rule-policy',async data=>{await api(`/api/admin/completeness/rules/${data.rule_id}/policy`,'PUT',{order_type:data.order_type,optional:!!data.optional,days_after_launch:data.days_after_launch===''?null:Number(data.days_after_launch),requires_client_publication:!!data.requires_client_publication,obligation_scope:data.obligation_scope,deadline_reference:data.deadline_reference});});
 form('order-context',async data=>{await api(`/api/launches/${data.launch_id}/order-context`,'PUT',{order_type:data.order_type});});
 
 form('business-order',async data=>{await api('/api/orders','POST',data);$('business-order').reset();await renderOrderRegistry();});
@@ -184,4 +194,17 @@ async function renderNoticeCenter(){
  if(n.scope==='order')card.append(button('Consulter les commandes',async()=>{await renderClientOrders();$('client-orders').scrollIntoView({behavior:'smooth'});}));
  if(n.scope==='publication'){const link=node('a','Consulter cette publication');link.href=`/api/partner/publications/${n.target_id}/download`;card.append(link);}
  if(!n.read)card.append(button('Marquer cette notification comme lue',async()=>{await api(`/api/partner/notice-center/${n.id}/read`,'POST');await renderNoticeCenter();}));box.append(card);}
+}
+
+async function refreshDaily(){
+ const home=await api('/api/partners/staff-home');staffPermissions=home.permissions;
+ $('identity').textContent=`Espace métier · ${home.name}`;$('auth').hidden=true;$('workspace').hidden=false;$('admin').hidden=true;$('detail').replaceChildren();
+ let daily=$('daily-staff');if(!daily){daily=node('section');daily.id='daily-staff';$('workspace').insertBefore(daily,$('admin'));}
+ for(const [id,allowed] of [['request',staffCan('supplier.request')],['order-line',staffCan('receipt.write')]]){const form=$(id);daily.append(form);form.hidden=!allowed;}
+ for(const id of ['supplier-options','order-supplier-options']){$(id).replaceChildren();for(const row of home.suppliers){const option=node('option',row.name);option.value=row.id;$(id).append(option);}}
+ for(const select of document.querySelectorAll('.launch-options')){select.replaceChildren();for(const row of home.launches){const option=node('option',row.label);option.value=row.id;select.append(option);}}
+ $('mail-state').replaceChildren(node('p','Les opérations disponibles dépendent des habilitations attribuées par l’administration.'));
+ $('items').replaceChildren();if(staffCan('supplier.read')){const params=new URLSearchParams({...requestFilters,offset:String(requestOffset),limit:'20'});const rows=await api(`/api/partners/requests?${params}`);$('request-prev').disabled=requestOffset===0;$('request-next').disabled=rows.length<20;for(const r of rows){const card=node('article');card.append(node('h4',`${r.order_ref} · ${r.title}`),node('p',labels[r.status]),button('Ouvrir',()=>openRequest(r.id)));$('items').append(card);}}
+ if(staffCan('receipt.read'))await renderDeliveries();else $('deliveries').replaceChildren();
+ $('client-orders').replaceChildren();$('administrative-files').replaceChildren();$('notice-center').replaceChildren();$('partner-notifications').replaceChildren();
 }

@@ -1,0 +1,45 @@
+{
+  "conditions": "Local isolated CPU function benchmark; synthetic Decimal data; 3 serial repetitions; results equivalent; no production/p95 claim",
+  "results": [
+    {
+      "movements": 500,
+      "cancellations": 50,
+      "before": {
+        "milliseconds": [
+          69.08715099780238,
+          57.41534099797718,
+          86.545615002251
+        ],
+        "median_ms": 69.08715099780238
+      },
+      "after": {
+        "milliseconds": [
+          3.6910669987264555,
+          6.298633001279086,
+          4.894054000033066
+        ],
+        "median_ms": 4.894054000033066
+      }
+    },
+    {
+      "movements": 2000,
+      "cancellations": 200,
+      "before": {
+        "milliseconds": [
+          788.2006359977822,
+          701.7239629967662,
+          1154.876853001042
+        ],
+        "median_ms": 788.2006359977822
+      },
+      "after": {
+        "milliseconds": [
+          97.00900199823081,
+          87.44166700125788,
+          42.62486199877458
+        ],
+        "median_ms": 87.44166700125788
+      }
+    }
+  ]
+}
