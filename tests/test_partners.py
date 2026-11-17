@@ -175,10 +175,13 @@ def test_mail_outbox_real_states_retry_optout_and_disabled_transport(monkeypatch
         monkeypatch.delenv('FRAMATEX_EMAIL_ENABLED',raising=False)
         assert process_batch()['status']=='disabled'
         assert staff.get('/api/partners/mail').json()[0]['status']=='pending'
-        def failure(recipient,event_id):raise ConnectionError('secret must not enter log')
+        # A definitive connect rejection is safe to retry; a broken connection
+        # after DATA has an uncertain outcome and is tested separately.
+        import smtplib
+        def failure(recipient,event_id):raise smtplib.SMTPConnectError(421,b'secret must not enter log')
         process_batch(transport=failure)
         row=staff.get('/api/partners/mail').json()[0]
-        assert row['status']=='failed' and row['last_error']=='ConnectionError'
+        assert row['status']=='failed' and row['last_error']=='SMTPConnectError'
         sent=[]
         with SessionLocal() as db:
             m=db.scalar(select(PartnerMail));m.next_at=utcnow()-timedelta(seconds=1);db.commit()

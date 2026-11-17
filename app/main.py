@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+import os
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse
@@ -16,7 +17,7 @@ async def lifespan(app: FastAPI):
     migrate()
     yield
 
-app = FastAPI(title="Framatex · Dossier jaune", version="0.17.0", lifespan=lifespan)
+app = FastAPI(title="Framatex · Dossier jaune", version=os.getenv("FRAMATEX_BUILD_VERSION","consolidation-2026.11"), lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
 @app.middleware("http")
@@ -58,7 +59,28 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.17.0"}
+    from .operations_routes import build_identity
+    return {"status": "ok", **build_identity()}
+
+
+from .operations_routes import router as operations_router
+app.include_router(operations_router)
+
+
+@app.middleware("http")
+async def request_correlation(request: Request, call_next):
+    import logging, time, uuid
+    request_id=uuid.uuid4().hex
+    started=time.monotonic()
+    try:
+        response=await call_next(request)
+    except Exception:
+        logging.getLogger('framat.http').error('request_id=%s method=%s status=500 elapsed_ms=%d',request_id,request.method,int((time.monotonic()-started)*1000))
+        raise
+    response.headers['X-Request-ID']=request_id
+    # Exclude URLs, query strings, bodies, names and identifiers from HTTP logs.
+    logging.getLogger('framat.http').info('request_id=%s method=%s status=%d elapsed_ms=%d',request_id,request.method,response.status_code,int((time.monotonic()-started)*1000))
+    return response
 
 
 from .auth_routes import router as auth_router

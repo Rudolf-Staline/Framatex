@@ -10,6 +10,7 @@ import shutil
 import sqlite3
 import tempfile
 import zipfile
+from contextlib import contextmanager
 
 
 def sha(path):
@@ -33,18 +34,42 @@ def validate(database, files):
                     raise ValueError('Pièce manquante ou empreinte incorrecte')
 
 
+@contextmanager
+def write_barrier(database):
+    """Exclude committing SQLite writers while copying database and immutable blobs.
+
+    Operators still stop HTTP/worker processes: uploads may stage files before
+    their SQL transaction, and such unreferenced files are not business evidence.
+    """
+    with sqlite3.connect(database,timeout=10) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        try:yield
+        finally:blocker.rollback()
+
+
+def space_required(source, database_name):
+    # Staged uncompressed copy plus worst-case archive and SQLite journal margin.
+    total=(source/database_name).stat().st_size
+    files=source/'files'
+    if files.exists():total+=sum(p.stat().st_size for p in files.iterdir() if p.is_file())
+    return total*2+16*1024*1024
+
+
 def backup(source: Path, destination: Path, *, database_name="framat.db"):
     source=source.resolve();destination=destination.resolve()
     if Path(database_name).name!=database_name:raise ValueError('Nom de base local invalide')
     if not (source/database_name).is_file():raise ValueError('Base SQLite locale absente')
     if destination.exists():raise ValueError('La destination existe déjà')
     destination.parent.mkdir(parents=True,exist_ok=True)
+    if shutil.disk_usage(destination.parent).free<space_required(source,database_name):
+        raise ValueError('Espace temporaire insuffisant pour copie et archive de sauvegarde')
     with tempfile.TemporaryDirectory(dir=destination.parent) as tmp:
         stage=Path(tmp);database=stage/'framat.db'
-        with sqlite3.connect(f'file:{source / database_name}?mode=ro',uri=True) as origin, sqlite3.connect(database) as target:
-            origin.backup(target)
-        shutil.copytree(source/'files',stage/'files') if (source/'files').exists() else (stage/'files').mkdir()
-        validate(database,stage/'files')
+        with write_barrier(source/database_name):
+            with sqlite3.connect(f'file:{source / database_name}?mode=ro',uri=True) as origin, sqlite3.connect(database) as target:
+                origin.backup(target)
+            shutil.copytree(source/'files',stage/'files') if (source/'files').exists() else (stage/'files').mkdir()
+            validate(database,stage/'files')
         paths=[p for p in stage.rglob('*') if p.is_file()]
         manifest={str(p.relative_to(stage)):sha(p) for p in paths}
         fd=os.open(destination,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
@@ -65,6 +90,9 @@ def restore(archive: Path, destination: Path):
         stage=Path(tmp)/'restore';stage.mkdir(mode=0o700)
         with zipfile.ZipFile(archive) as z:
             names=z.namelist()
+            required=sum(info.file_size for info in z.infolist())+16*1024*1024
+            if shutil.disk_usage(destination.parent).free<required:
+                raise ValueError('Espace temporaire insuffisant pour restauration')
             if len(names)!=len(set(names)):raise ValueError('Entrées dupliquées')
             if 'manifest.json' not in names:raise ValueError('Manifeste absent')
             manifest=json.loads(z.read('manifest.json'))
@@ -75,7 +103,8 @@ def restore(archive: Path, destination: Path):
                 if path.is_absolute() or '..' in path.parts or not (name=='framat.db' or (len(path.parts)==2 and path.parts[0]=='files')):
                     raise ValueError('Chemin non autorisé')
                 target=stage/path;target.parent.mkdir(exist_ok=True)
-                with z.open(name) as src,target.open('xb') as out:shutil.copyfileobj(src,out)
+                descriptor=os.open(target,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
+                with z.open(name) as src,os.fdopen(descriptor,'wb') as out:shutil.copyfileobj(src,out)
                 if sha(target)!=expected:raise ValueError('Empreinte du manifeste incorrecte')
         (stage/'files').mkdir(exist_ok=True)
         validate(stage/'framat.db',stage/'files')
@@ -86,8 +115,11 @@ def restore(archive: Path, destination: Path):
             if db.execute("SELECT name FROM sqlite_master WHERE name='audit_events'").fetchone():
                 from uuid import uuid4
                 from datetime import datetime,timezone
+                generation=str(uuid4())
                 db.execute("INSERT INTO audit_events(id,action,actor_id,target_type,target_id,detail,occurred_at) VALUES (?, 'session.restore', NULL, 'session', 'all', '{}', ?)",
-                           (str(uuid4()),datetime.now(timezone.utc).isoformat()))
+                           (generation,datetime.now(timezone.utc).isoformat()))
+                if db.execute("SELECT name FROM sqlite_master WHERE name='session_generations'").fetchone():
+                    db.execute("INSERT OR REPLACE INTO session_generations(scope,generation) VALUES ('all',?)",(generation,))
         stage.rename(destination)
     return destination
 
