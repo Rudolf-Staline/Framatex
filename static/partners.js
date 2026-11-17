@@ -9,7 +9,7 @@ let requestOffset=0;
 let requestFilters={q:"",status:"",sort:"newest"};
 const $ = id => document.getElementById(id);
 const THREAD_STATES={open:'Ouvert',waiting_client:'En attente du client',closed:'Terminé'};
-const MAIL_STATES={pending:'En attente d’envoi',sending:'Envoi en cours',sent:'Accepté par le serveur email',failed:'Échec de transport',disabled:'Transport désactivé'};
+const MAIL_STATES={pending:'En attente d’envoi',processing:'Envoi en cours',sending:'Envoi en cours',accepted:'Accepté par le serveur email',sent:'Accepté par le serveur email',failed:'Échec temporaire',permanent_failed:'Échec permanent',exhausted:'Tentatives épuisées',uncertain:'Envoi incertain : rapprochement requis',cancelled:'Annulé',disabled:'Transport désactivé'};
 const labels = {requested:'Document attendu', pending:'Vérification en attente', rejected:'Correction demandée · version rejetée', approved:'Approuvé', closed:'Clôturé'};
 function node(tag, text) { const n=document.createElement(tag); if(text!==undefined)n.textContent=text; return n; }
 // Search and bounded pages reach authorized launches beyond the first choices.
@@ -48,7 +48,7 @@ async function api(path, method='GET', data) {
  }finally{if(key)partnerMutations.delete(key)}
 }
 async function run(action){$('notice').textContent='Chargement…';try{await action();if($('notice').textContent==='Chargement…')$('notice').textContent='Opération confirmée.';}catch(e){$('notice').textContent=e instanceof TypeError?'Connexion interrompue. Vérifiez le réseau puis utilisez Actualiser ; aucune opération ne sera relancée automatiquement.':e.message;}}
-function form(id, action){$(id).onsubmit=e=>{e.preventDefault();const b=e.target.querySelector('button');b.disabled=true;run(()=>action(Object.fromEntries(new FormData(e.target)))).finally(()=>b.disabled=false);};}
+function form(id, action){$(id).onsubmit=e=>{e.preventDefault();const b=e.submitter||e.target.querySelector('button[type=submit],button:not([type])');b.disabled=true;run(()=>action(Object.fromEntries(new FormData(e.target)))).finally(()=>b.disabled=false);};}
 form('login',async data=>{await api('/api/partner-auth/login','POST',data);internal=false;await refresh();});
 form('activate',async data=>{await api('/api/partner-auth/activate','POST',data);$('activate').reset();$('notice').textContent='Compte activé. Vous pouvez vous connecter.';});
 $('staff').onclick=()=>run(async()=>{const home=await api('/api/partners/staff-home');staffAdmin=home.admin;staffPermissions=home.permissions;internal=true;await refresh();});

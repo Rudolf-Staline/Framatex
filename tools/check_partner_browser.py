@@ -265,7 +265,7 @@ def main():
                             dp.locator('#request input[name=order_ref]').fill('CMD-BROWSER')
                             dp.locator('#request input[name=title]').fill('Pièce hors portail navigateur')
                             dp.locator('#request input[name=doc_type]').fill('Certificat')
-                            dp.locator('#request button').click()
+                            dp.locator('#request').get_by_role('button',name='Créer la demande',exact=True).click()
                             dp.locator('#items article').filter(has_text='Pièce hors portail navigateur').get_by_role('button',name='Ouvrir',exact=True).click()
                             dp.get_by_label('Pièce reçue hors portail',exact=True).set_input_files({'name':'recu.txt','mimeType':'text/plain','buffer':b'Piece recue par les achats sans compte fournisseur'})
                             dp.get_by_label('Canal de réception',exact=True).select_option('email')
