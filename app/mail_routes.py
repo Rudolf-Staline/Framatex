@@ -99,10 +99,11 @@ async def import_email(launch_id:str,file:UploadFile=File(...),
                         **{k:parsed[k] for k in ('message_id','subject','sender','recipients','carbon_copy','sent_at_raw','body_excerpt')})
         db.add(x);db.flush()
         audit(db,user,'email.archive','archived_email',x.id,{'launch':launch.id,'version':version.id,'attachments':len(parsed['attachments'])})
+        result={'email':_email_out(x),'document':doc_out(doc)}
         db.commit()
-        return {'email':_email_out(x),'document':doc_out(doc)}
+        return result
     except Exception:
-        db.rollback();(document_storage.STORAGE/disk_name).unlink(missing_ok=True)
+        db.rollback();document_storage.remove_blob(disk_name)
         raise
 
 @router.get('/api/launches/{launch_id}/emails')

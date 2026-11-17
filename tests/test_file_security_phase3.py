@@ -40,7 +40,7 @@ def test_synthetic_docx_pdf_image_protected_and_provenance(tmp_path):
     assert result['method']=='image_ocr' or result['warnings']
 
 
-def test_private_storage_quota_and_concurrent_writer_lock(tmp_path,monkeypatch):
+def test_private_storage_quota_and_legacy_lock_independence(tmp_path,monkeypatch):
     import fcntl,os
     from app import document_storage
     private=tmp_path/'files';private.mkdir()
@@ -52,10 +52,12 @@ def test_private_storage_quota_and_concurrent_writer_lock(tmp_path,monkeypatch):
         assert upload(b'x').status_code==413
         assert sum(p.stat().st_size for p in private.iterdir())==32
         assert all(p.stat().st_mode&0o077==0 for p in private.iterdir())
-        fd=os.open(tmp_path/'.upload-budget.lock',os.O_RDWR)
+        fd=os.open(tmp_path/'.upload-budget.lock',os.O_CREAT|os.O_RDWR,0o600)
         try:
             fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
-            assert upload(b'x').status_code==409
+            # The obsolete global lock no longer serializes complete uploads.
+            # The exhausted quota still applies independently.
+            assert upload(b'x').status_code==413
         finally:fcntl.flock(fd,fcntl.LOCK_UN);os.close(fd)
         assert len(list(private.iterdir()))==2
 
