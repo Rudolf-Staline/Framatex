@@ -4,7 +4,7 @@ Ce module n'ouvre ni API publique, ni compte client/fournisseur, ni transfert ex
 Toutes les actions sont authentifiées et soumises à habilitation serveur.
 """
 from __future__ import annotations
-from .order_documents import document_in_launch
+from .order_documents import document_in_launch, document_accessible
 import re
 import unicodedata
 from datetime import date
@@ -47,6 +47,10 @@ def source(db: Session, version_id: str, launch_id: str):
 
 
 def latest(doc: Document):
+    from sqlalchemy.orm import object_session
+    db = object_session(doc)
+    if db is not None:
+        return db.scalar(select(DocumentVersion).where(DocumentVersion.document_id == doc.id).order_by(DocumentVersion.number.desc()).limit(1))
     return max(doc.versions, key=lambda v: v.number) if doc.versions else None
 
 
@@ -101,7 +105,8 @@ def list_publications(launch_id: str, user: User = Depends(get_current_user), db
                       .order_by(ClientPublication.created_at.desc())).all()
     return {'external_access_enabled':False,'client_name':launch.client_name,
             'items':[pub_out(db,p,launch) for p in rows
-                     if permitted(user,'document.read',db.get(Document,db.get(DocumentVersion,p.document_version_id).document_id).folder.slug)]}
+                     if permitted(user,'document.read',db.get(Document,db.get(DocumentVersion,p.document_version_id).document_id).folder.slug)
+                     and document_accessible(db,user,db.get(Document,db.get(DocumentVersion,p.document_version_id).document_id))]}
 
 
 @router.post('/api/launches/{launch_id}/client-publications',status_code=201)

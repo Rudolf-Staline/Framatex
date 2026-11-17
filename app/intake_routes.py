@@ -41,7 +41,7 @@ async def intake_preview(launch_id:str,file:UploadFile=File(...),user:User=Depen
         result=await run_in_threadpool(preview,path,name)
         result['classification']['suggestions']=[x for x in result['classification']['suggestions'] if permitted(user,'document.write',x['folder'])]
         return result
-    finally:path.unlink(missing_ok=True)
+    finally:document_storage.remove_blob(disk_name)
 
 @router.get('/api/document-versions/{version_id}/intake')
 def version_intake(version_id:str,user:User=Depends(get_current_user),db:Session=Depends(get_db)):

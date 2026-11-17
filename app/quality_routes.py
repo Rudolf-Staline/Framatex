@@ -1,6 +1,6 @@
 """API 0.4 : cohérence inter-documents et inspection de l'intégrité des formules Excel."""
 from __future__ import annotations
-from .order_documents import folder_ids
+from .order_documents import folder_ids, document_accessible
 import json
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -112,7 +112,7 @@ def quality_report(launch_id:str,user:User=Depends(get_current_user),db:Session=
     for r in rules:
         if not (permitted(user,'document.read',r.left_folder) and permitted(user,'document.read',r.right_folder)):
             continue
-        item=comparison(db,launch_id,r)
+        item=comparison(db,launch_id,r,user)
         if item['status']=='difference':
             decision=db.scalar(select(QualityDecision).where(QualityDecision.launch_id==launch_id,
                 QualityDecision.rule_id==r.id,QualityDecision.evidence_signature==item['signature'])
@@ -133,7 +133,7 @@ def decide_quality(launch_id:str,rule_id:str,payload:QualityDecisionIn,user:User
     if not rule or not rule.active: raise HTTPException(404,'Règle inactive ou inexistante')
     for folder in (rule.left_folder,rule.right_folder):
         must(user,'document.read',folder);must(user,'quality.review',folder)
-    item=comparison(db,launch_id,rule)
+    item=comparison(db,launch_id,rule,user)
     if item['status']!='difference' or payload.signature!=item['signature']:
         raise HTTPException(409,'Constat changé : actualisez et recommencez')
     dec=QualityDecision(launch_id=launch_id,rule_id=rule_id,evidence_signature=item['signature'],
@@ -206,7 +206,7 @@ def list_excel_inspections(launch_id:str,user:User=Depends(get_current_user),db:
     docs=db.scalars(select(Document).join(Folder).where(Folder.id.in_(folder_ids(db, launch_id)))).all()
     rows=[]
     for doc in docs:
-        if not permitted(user,'document.read',doc.folder.slug):continue
+        if not document_accessible(db,user,doc) or not permitted(user,'document.read',doc.folder.slug):continue
         for v in doc.versions:
             if Path(v.original_name).suffix.lower()!='.xlsx': continue
             inspection=db.scalar(select(ExcelInspection).where(ExcelInspection.document_version_id==v.id))

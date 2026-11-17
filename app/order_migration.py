@@ -73,3 +73,25 @@ def upgrade(conn):
         WHEN EXISTS(SELECT 1 FROM documents WHERE launch_id=OLD.launch_id)
         BEGIN SELECT RAISE(ABORT,'documented launch cannot be detached'); END''')
     return report
+
+
+def conservative_acl_upgrade(conn):
+    """0025: materialize existing effective access once, never on attachment.
+
+    Only active users who could see the entire legacy linked dossier receive
+    an explicit order grant. Existing explicit grants and owners are preserved.
+    No role/action permission is created. Restriction checks remain per source
+    launch after this revision.
+    """
+    conn.exec_driver_sql('''INSERT OR IGNORE INTO order_members(order_id,user_id)
+        SELECT o.id,u.id FROM business_orders o CROSS JOIN users u
+        WHERE u.active=1 AND EXISTS(
+            SELECT 1 FROM business_order_launches x WHERE x.order_id=o.id)
+        AND NOT EXISTS(
+            SELECT 1 FROM business_order_launches x JOIN launches l ON l.id=x.launch_id
+            WHERE x.order_id=o.id AND l.restricted=1 AND l.created_by<>u.id
+            AND NOT EXISTS(SELECT 1 FROM launch_members m
+                           WHERE m.launch_id=l.id AND m.user_id=u.id))
+        AND NOT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id=ur.role_id
+                       WHERE ur.user_id=u.id AND r.name='Administrateur')
+        AND o.created_by<>u.id''')

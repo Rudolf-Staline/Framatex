@@ -30,13 +30,13 @@ def require_technical(user: User):
 def graph(launch_id: str, user: User=Depends(get_current_user), db: Session=Depends(get_db)):
     must(user, 'launch.read')
     get_launch(db, launch_id)
-    return dependency_graph(db, launch_id, lambda folder: permitted(user, 'document.read', folder))
+    return dependency_graph(db, launch_id, lambda folder: permitted(user, 'document.read', folder), user)
 
 @router.post('/api/launches/{launch_id}/impact-simulations')
 def simulate(launch_id: str, payload: ScenarioInput, user: User=Depends(get_current_user), db: Session=Depends(get_db)):
     require_technical(user)
     get_launch(db, launch_id)
-    result = calculate(db, launch_id, payload.changes)
+    result = calculate(db, launch_id, payload.changes, user)
     scenario_id = None
     if payload.save:
         must(user, 'value.write', 'jaune')
@@ -57,5 +57,13 @@ def history(launch_id: str, user: User=Depends(get_current_user), db: Session=De
     get_launch(db, launch_id)
     rows = db.scalars(select(ImpactSimulation).where(ImpactSimulation.launch_id == launch_id)
                        .order_by(ImpactSimulation.created_at.desc()).limit(30)).all()
+    from .models import DocumentVersion
+    from .order_documents import document_accessible
+    def visible_result(row):
+        result=json.loads(row.result_json)
+        for source in result.get('sources',{}).values():
+            version=db.get(DocumentVersion,source.get('source_version_id'))
+            if not version or not document_accessible(db,user,version.document):return False
+        return True
     return [{'id': r.id, 'title': r.title, 'created_at': r.created_at.isoformat(),
-             'created_by': r.created_by, 'result': json.loads(r.result_json)} for r in rows]
+             'created_by': r.created_by, 'result': json.loads(r.result_json)} for r in rows if visible_result(r)]

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+import os
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse
@@ -16,7 +17,7 @@ async def lifespan(app: FastAPI):
     migrate()
     yield
 
-app = FastAPI(title="Framatex · Dossier jaune", version="0.17.0", lifespan=lifespan)
+app = FastAPI(title="Framatex · Dossier jaune", version=os.getenv("FRAMATEX_BUILD_VERSION","consolidation-2026.11"), lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
 @app.middleware("http")
@@ -28,7 +29,8 @@ async def request_header_guard(request: Request, call_next):
             return Response("En-tête de protection manquant", status_code=403)
     if request.url.path.startswith('/api/'):
         from .access import guard_http_request
-        denied = guard_http_request(request)
+        from starlette.concurrency import run_in_threadpool
+        denied = await run_in_threadpool(guard_http_request,request)
         if denied is not None:
             return denied
     return await call_next(request)
@@ -58,7 +60,28 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.17.0"}
+    from .operations_routes import build_identity
+    return {"status": "ok", **build_identity()}
+
+
+from .operations_routes import router as operations_router
+app.include_router(operations_router)
+
+
+@app.middleware("http")
+async def request_correlation(request: Request, call_next):
+    import logging, time, uuid
+    request_id=uuid.uuid4().hex
+    started=time.monotonic()
+    try:
+        response=await call_next(request)
+    except Exception:
+        logging.getLogger('framat.http').error('request_id=%s method=%s status=500 elapsed_ms=%d',request_id,request.method,int((time.monotonic()-started)*1000))
+        raise
+    response.headers['X-Request-ID']=request_id
+    # Exclude URLs, query strings, bodies, names and identifiers from HTTP logs.
+    logging.getLogger('framat.http').info('request_id=%s method=%s status=%d elapsed_ms=%d',request_id,request.method,response.status_code,int((time.monotonic()-started)*1000))
+    return response
 
 
 from .auth_routes import router as auth_router
@@ -209,3 +232,13 @@ async def safe_integrity_errors(request,exception):
 
 from .guide_routes import router as guide_router
 app.include_router(guide_router)
+
+from .order_fields import router as order_fields_router
+from .document_types import router as document_types_router
+from .document_comments import router as document_comments_router
+app.include_router(order_fields_router)
+app.include_router(document_types_router)
+app.include_router(document_comments_router)
+
+from .order_document_queries import router as order_document_queries_router
+app.include_router(order_document_queries_router)

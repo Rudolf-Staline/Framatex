@@ -1,0 +1,11 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const ctx={console,e:s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;')};
+vm.createContext(ctx);vm.runInContext(fs.readFileSync('static/order-identification.js','utf8'),ctx);
+const html=vm.runInContext(`identificationField({key:'notes',label:'Observations',type:'textarea',max_length:2000},{notes:'<script>test</script>'})`,ctx);
+assert(html.includes('&lt;script>'));assert(!html.includes('<script>'));
+assert(html.includes('for="identification-notes"')&&html.includes('name="notes"'));
+const source=fs.readFileSync('static/orders.js','utf8');
+assert(source.includes('data-document-comments'));assert(source.includes('documentClassificationDialog'));
+assert(source.includes('mountOrderIdentification(id,order)'));assert(source.includes('decorateOrderUpload'));
+assert(fs.readFileSync('static/index.html','utf8').includes('/assets/order-identification.js'));
+console.log('Identification, comments and taxonomy UI: labels, escaping and hooks OK.');

@@ -29,18 +29,19 @@ MAX_CELLS = 40000
 MAX_FINDINGS = 200
 
 
-def latest_document_versions(db: Session, launch_id: str, doc_type: str, folder: str):
+def latest_document_versions(db: Session, launch_id: str, doc_type: str, folder: str, user=None):
     docs = db.scalars(select(Document).join(Folder).where(
         Folder.id.in_(folder_ids(db, launch_id)), Folder.slug == folder, Document.doc_type == doc_type
     )).all()
     from .partner_integration_routes import business_available
-    return [(d, max(d.versions, key=lambda x:x.number)) for d in docs if d.versions and business_available(db, max(d.versions,key=lambda x:x.number).id)]
+    from .order_documents import document_accessible
+    return [(d, max(d.versions, key=lambda x:x.number)) for d in docs if (user is None or document_accessible(db,user,d)) and d.versions and business_available(db, max(d.versions,key=lambda x:x.number).id)]
 
 
-def comparison(db: Session, launch_id: str, rule: CrossDocumentRule):
+def comparison(db: Session, launch_id: str, rule: CrossDocumentRule, user=None):
     """Do not guess when several documents could be the expected source."""
-    left = latest_document_versions(db, launch_id, rule.left_doc_type, rule.left_folder)
-    right = latest_document_versions(db, launch_id, rule.right_doc_type, rule.right_folder)
+    left = latest_document_versions(db, launch_id, rule.left_doc_type, rule.left_folder, user)
+    right = latest_document_versions(db, launch_id, rule.right_doc_type, rule.right_folder, user)
     status = 'unavailable'; reason = 'Pièce manquante'; pair = []
     if not left or not right:
         reason = 'Pièce requise absente' if not left or not right else reason

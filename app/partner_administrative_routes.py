@@ -32,16 +32,18 @@ def staff_files(oid:str,user=Depends(staff),db:Session=Depends(get_db)):
 async def save(db,oid,actor,title,file):
     title=title.strip()
     if not title:raise HTTPException(422,'Titre requis')
-    lock_budget(db,oid)
     name,disk,size,sha,mime=await document_storage.store_upload(file)
     try:
+        lock_budget(db,oid)
+        from .partner_uploads import verify_actor
+        verify_actor(db,oid,actor,'document.write')
         verify_budget(db,oid,size)
         previous=db.scalar(select(PartnerAdministrativeDocument).where(PartnerAdministrativeDocument.partner_id==oid,PartnerAdministrativeDocument.title==title).order_by(PartnerAdministrativeDocument.number.desc()).limit(1))
         row=PartnerAdministrativeDocument(partner_id=oid,title=title,number=previous.number+1 if previous else 1,owner=actor,original_name=name,disk_name=disk,size=size,sha256=sha)
         db.add(row);db.flush();audit(db,None,'partner.admin_document.upload','partner',oid,{'version_id':row.id,'owner':actor,'sha256':sha})
-        db.commit();return out(row)
+        result=out(row);db.commit();return result
     except Exception:
-        db.rollback();(document_storage.STORAGE/disk).unlink(missing_ok=True);raise
+        db.rollback();document_storage.remove_blob(disk);raise
 
 @router.post('/api/partner/administrative-documents',status_code=201)
 async def own_upload(title:str=Form(...,min_length=1,max_length=150),file:UploadFile=File(...),account=Depends(partner),db:Session=Depends(get_db)):
@@ -63,7 +65,7 @@ def review(vid:str,payload:ReviewInput,user=Depends(staff),db:Session=Depends(ge
     current=db.scalar(select(PartnerAdministrativeDocument.id).where(PartnerAdministrativeDocument.partner_id==row.partner_id,PartnerAdministrativeDocument.title==row.title).order_by(PartnerAdministrativeDocument.number.desc()).limit(1))
     if row.status!='pending' or current!=vid:raise HTTPException(409,'Seule la dernière version en attente peut être examinée')
     row.status=payload.status;row.reason=payload.reason;row.reviewed_by=user.id
-    audit(db,user,'partner.admin_document.review','partner',row.partner_id,{'version_id':vid,**payload.model_dump()});db.commit();return out(row)
+    audit(db,user,'partner.admin_document.review','partner',row.partner_id,{'version_id':vid,**payload.model_dump()});result=out(row);db.commit();return result
 
 def file_response(db,vid,account=None):
     row=db.get(PartnerAdministrativeDocument,vid)

@@ -6,9 +6,9 @@ from .audit import audit
 from .launches import get_launch, launch_out, FOLDERS, STATUSES
 from .order_documents import doc_out
 import os
-from fastapi import Depends, HTTPException, Query
+from fastapi import Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select,func,or_
 from sqlalchemy.orm import Session
 from .core import get_current_user, get_db
 from .models import Document, Folder, Launch, User
@@ -36,28 +36,48 @@ class LaunchPatch(BaseModel):
 @router.get("/api/dashboard")
 def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.read")
-    from .access import visible
-    launches = visible(db, user, db.scalars(select(Launch)).all())
-    from .order_documents import document_accessible
-    documents = db.scalars(select(Document).join(Folder)).all()
-    visible_documents = [d for d in documents if document_accessible(db,user,d) and permitted(user, "document.read", d.folder.slug)]
-    completion = [evaluate(db, l, user, permitted) for l in launches]
+    from .access import launch_access_clause
+    launches = list(db.scalars(select(Launch).where(launch_access_clause(user,Launch.id))))
+    from .order_documents import document_access_clause
+    from .models import DocumentVersion
+    folders=[slug for slug,_label in FOLDERS if permitted(user,'document.read',slug)]
+    visible_docs=select(Document.id).join(Folder).where(Folder.slug.in_(folders),document_access_clause(user))
+    document_count=db.scalar(select(func.count()).select_from(visible_docs.subquery()))
+    version_count=db.scalar(select(func.count()).select_from(DocumentVersion).where(DocumentVersion.document_id.in_(visible_docs)))
+    from .partner_phase2_models import BusinessOrder, BusinessOrderLaunch
+    from .order_documents import order_access_clause
+    from .order_completeness import evaluate as evaluate_order
+    orders = list(db.scalars(select(BusinessOrder).where(order_access_clause(user))))
+    completion = [evaluate_order(db, order, user, permitted) for order in orders]
+    completion.extend(evaluate(db, launch, user, permitted) for launch in launches
+                      if not db.get(BusinessOrderLaunch, launch.id))
+    obligations = {r['obligation_key']: r for report in completion for r in report['rows']}
+    open_ids = {l.id for l in launches if l.status != 'Clôturé'}
+    closed_orders = {order.id for order in orders if (linked := list(db.scalars(select(Launch).join(
+        BusinessOrderLaunch).where(BusinessOrderLaunch.order_id == order.id)))) and all(l.status == 'Clôturé' for l in linked)}
     return {"launches": len(launches), "incomplete": sum(l.status == "À compléter" for l in launches),
-            "documents": len(visible_documents), "versions": sum(len(d.versions) for d in visible_documents),
-            "completeness_actions": sum(c["counts"]["missing"] + c["counts"]["pending_validation"] for c in completion),
+            "documents": document_count, "versions": version_count,
+            "completeness_actions": sum(r['due'] and r['status'] in ('missing','pending_validation','pending_publication')
+                and (not r.get('launch_id') or r['launch_id'] in open_ids) and r.get('order_id') not in closed_orders for r in obligations.values()),
             "completeness_unconfigured": sum(not c["configured"] for c in completion),
             "recent": [launch_out(l) for l in sorted(launches, key=lambda l: l.created_at, reverse=True)[:5]]}
 
 
 @router.get("/api/launches")
-def launches(q: str = Query("",max_length=200), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    must(user, "launch.read")
-    from .access import visible
-    rows = visible(db, user, db.scalars(select(Launch).order_by(Launch.created_at.desc())).all())
-    term = q.strip().lower()
-    if term:
-        rows = [l for l in rows if term in " ".join((l.name, l.client_name or "", l.order_ref or "", l.orli_ref or "")).lower()]
-    return [launch_out(l) for l in rows]
+def launches(response:Response,q:str=Query("",max_length=200),offset:int=Query(0,ge=0),limit:int=Query(100,ge=1,le=100),page:bool=False,
+             user:User=Depends(get_current_user),db:Session=Depends(get_db)):
+    from .access import launch_access_clause
+    from .partner_phase2_models import BusinessOrderLaunch
+    must(user,"launch.read")
+    query=select(Launch,BusinessOrderLaunch.order_id).outerjoin(BusinessOrderLaunch).where(launch_access_clause(user,Launch.id))
+    if q.strip():
+        term='%'+q.strip()+'%'
+        query=query.where(or_(*(column.ilike(term) for column in (Launch.name,Launch.client_name,Launch.order_ref,Launch.orli_ref))))
+    total=db.scalar(select(func.count()).select_from(query.subquery()))
+    rows=db.execute(query.order_by(Launch.created_at.desc(),Launch.id).offset(offset).limit(limit))
+    items=[launch_out(launch,order_id) for launch,order_id in rows]
+    response.headers['X-Total-Count']=str(total)
+    return {'items':items,'total':total,'offset':offset,'limit':limit} if page else items
 
 
 @router.post("/api/launches", status_code=201)
@@ -89,11 +109,12 @@ def create_launch(payload: LaunchPayload, user: User = Depends(get_current_user)
 @router.get("/api/launches/{launch_id}")
 def launch_detail(launch_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.read")
+    from .order_documents import document_accessible
     l = get_launch(db, launch_id)
     folders = []
     for slug, label in FOLDERS:
         folder = next((f for f in l.folders if f.slug == slug), None)
-        docs = [] if not folder or not permitted(user, "document.read", slug) else [doc_out(d) for d in folder.documents]
+        docs = [] if not folder or not permitted(user, "document.read", slug) else [doc_out(d) for d in folder.documents if document_accessible(db,user,d)]
         folders.append({"slug": slug, "label": label, "can_read": permitted(user, "document.read", slug), "can_write": permitted(user, "document.write", slug), "documents": docs})
     return {**launch_out(l), "folders": folders, "can_update": permitted(user, "launch.update"), "can_manage_access": is_admin(user)}
 

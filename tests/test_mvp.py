@@ -9,7 +9,7 @@ os.environ["FRAMATEX_SECRET_KEY"] = "test-secret-" * 6
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
-from app.core import SessionLocal, hash_password
+from app.core import SessionLocal, hash_password, Base, engine
 from app.models import Role, RolePermission, User
 from app.main import app
 
@@ -18,6 +18,8 @@ HEADERS = {"X-Framatex-Request": "1"}
 @pytest.fixture(scope="module")
 def client():
     with TestClient(app) as c:
+        Base.metadata.drop_all(engine)
+        Base.metadata.create_all(engine)
         with SessionLocal() as db:
             admin_role = Role(name="Administrateur")
             worker_role = Role(name="Service réception")

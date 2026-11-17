@@ -208,7 +208,7 @@
     },
     {
       "id": "order_launch_difference",
-      "version": 1,
+      "version": 2,
       "locale": "fr",
       "title": "Distinguer commande et lancement",
       "description": "Une commande possède exactement un Dossier Jaune, avec quatre rubriques.",
@@ -260,7 +260,9 @@
           "solution": "Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide."
         }
       ],
-      "limitations": [],
+      "limitations": [
+        "Dans le Dossier Jaune, Fiche d’identification ouvre les champs facultatifs communs à la commande. Fiche du lancement conserve son atelier séparément. Client, référence commande et ORLI sont affichés depuis leurs sources canoniques. En cas de conflit, actualisez la fiche avant de reprendre vos modifications."
+      ],
       "destination": "orders",
       "actions": [
         "open_order_launch_difference",
@@ -704,7 +706,7 @@
     },
     {
       "id": "upload_technical_document",
-      "version": 1,
+      "version": 2,
       "locale": "fr",
       "title": "Ajouter une fiche technique",
       "description": "Ouvrez Commandes et sélectionnez la commande concernée.",
@@ -749,7 +751,7 @@
         {
           "id": "upload_technical_document_step_3",
           "title": "Étape 3",
-          "description": "Dépliez Déposer un document, indiquez titre, type et lancement facultatif."
+          "description": "Dépliez Déposer un document, indiquez le titre, sélectionnez un type de la rubrique et le lancement d’origine s’il existe. « À classer » conserve une pièce dont le type reste à déterminer."
         },
         {
           "id": "upload_technical_document_step_4",
@@ -772,7 +774,9 @@
           "solution": "Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide."
         }
       ],
-      "limitations": [],
+      "limitations": [
+        "Une pièce « À classer » ne satisfait pas automatiquement une exigence de type précis. Le classement se reprend depuis Versions et historique → Classer le document ; le libellé d’origine est conservé."
+      ],
       "destination": "order_upload",
       "actions": [
         "open_upload_technical_document",
@@ -935,7 +939,7 @@
     },
     {
       "id": "document_versions",
-      "version": 1,
+      "version": 2,
       "locale": "fr",
       "title": "Consulter les versions et ajouter une version",
       "description": "Ouvrez le document dans son Dossier Jaune de commande.",
@@ -1001,7 +1005,9 @@
           "solution": "Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide."
         }
       ],
-      "limitations": [],
+      "limitations": [
+        "Versions et historique permet de consulter ou ajouter des commentaires internes sur une version précise. Un commentaire ne remplace ni une demande de correction ni une décision dans le circuit de validation."
+      ],
       "destination": "order_context",
       "actions": [
         "open_document_versions",
@@ -1129,7 +1135,7 @@
         {
           "id": "completeness_step_2",
           "title": "Étape 2",
-          "description": "Distinguez pièce manquante, validation attendue et exigence satisfaite."
+          "description": "Distinguez non applicable, facultatif, non encore exigible, manquant exigible, validation ou publication en attente, satisfait et dérogation justifiée. Une dérogation ne vaut pas présence."
         },
         {
           "id": "completeness_step_3",
@@ -1139,14 +1145,14 @@
         {
           "id": "completeness_step_4",
           "title": "Étape 4",
-          "description": "Déposez les pièces ou faites vérifier la version exacte selon la procédure."
+          "description": "Déposez la pièce commune dans la commande ou rattachez sa provenance au lancement concerné. Faites vérifier la version courante ; une ancienne validation ne couvre pas la nouvelle version. Une personne habilitée peut justifier une dérogation limitée à cette obligation."
         }
       ],
       "result": "Vous distinguez les exigences satisfaites, pièces absentes et validations attendues pour la commande.",
       "problems": [
         {
           "problem": "La commande n’a pas de profil de complétude",
-          "solution": "Demandez à un administrateur de sélectionner le profil et les règles métier confirmées ; aucun état complet ne doit être déduit sans ces règles."
+          "solution": "Demandez à un administrateur de sélectionner un profil. Les profils historiques des lancements restent visibles avec leurs dérogations propres. Aucun état complet ne doit être déduit sans règles configurées ; leur validation officielle reste à organiser avec Framatex."
         },
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -1209,7 +1215,7 @@
         {
           "id": "configure_completeness_step_3",
           "title": "Étape 3",
-          "description": "Sélectionnez profil, phase et type, puis confirmez."
+          "description": "Sélectionnez profil, phase et type. Dans Conditions de complétude, choisissez explicitement une obligation par commande ou par lancement et l’événement de référence du délai. Le délai historique reste lié à la création du lancement ; sans cet événement il n’est pas exigible."
         },
         {
           "id": "configure_completeness_step_4",
@@ -1556,7 +1562,7 @@
     },
     {
       "id": "receipts",
-      "version": 1,
+      "version": 2,
       "locale": "fr",
       "title": "Consulter les réceptions",
       "description": "Ouvrez Réceptions pour consulter les lignes autorisées.",
@@ -1582,13 +1588,17 @@
         {
           "action": "document.read",
           "folder": "rose"
+        },
+        {
+          "action": "receipt.read"
         }
       ],
       "prerequisites": [
         "Disposer d’un compte actif dans l’espace concerné",
         "Avoir accès à la commande ou au lancement concerné",
         "Pouvoir consulter les documents dans la rubrique Jaune",
-        "Pouvoir consulter les documents dans la rubrique Rose"
+        "Pouvoir consulter les documents dans la rubrique Rose",
+        "Disposer de receipt.read pour consulter ; receipt.write est nécessaire pour enregistrer un mouvement"
       ],
       "steps": [
         {
@@ -1599,12 +1609,12 @@
         {
           "id": "receipts_step_2",
           "title": "Étape 2",
-          "description": "Distinguez quantité commandée, déclarée par le fournisseur et réellement reçue."
+          "description": "Distinguez commandé, prévu, annoncé, déclaré, reçu, retourné et restant, avec leurs unités."
         },
         {
           "id": "receipts_step_3",
           "title": "Étape 3",
-          "description": "Ouvrez le lancement et ses pièces Rose pour examiner les sources."
+          "description": "Ouvrez les pièces de réception : le lien conduit à la commande et à sa rubrique Rose lorsqu’elle existe, sinon au lancement réel."
         }
       ],
       "result": "Vous distinguez les quantités déclarées des réceptions confirmées et pouvez retrouver leurs pièces sources.",
@@ -1618,7 +1628,9 @@
           "solution": "Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide."
         }
       ],
-      "limitations": [],
+      "limitations": [
+        "Une réception partielle n’est pas automatiquement une anomalie. L’écart dépend de la règle et de l’échéance configurées. Les permissions de réception sont attribuées explicitement par l’administration ; elles ne sont pas accordées automatiquement aux anciens rôles."
+      ],
       "destination": "receipts",
       "actions": [
         "open_receipts",
@@ -2412,12 +2424,13 @@
     },
     {
       "id": "supplier_integration",
-      "version": 1,
+      "version": 2,
       "locale": "fr",
       "title": "Intégrer une pièce fournisseur approuvée",
       "description": "Ouvrez la demande fournisseur approuvée.",
-      "category": "administration",
+      "category": "partenaires",
       "audience": [
+        "employee",
         "admin"
       ],
       "keywords": [
@@ -2427,19 +2440,34 @@
       ],
       "requires": [
         {
-          "admin": true
+          "action": "launch.read"
+        },
+        {
+          "action": "supplier.read"
+        },
+        {
+          "action": "document.read",
+          "folder": "any"
+        },
+        {
+          "action": "document.write",
+          "folder": "any"
+        },
+        {
+          "action": "document.review",
+          "folder": "any"
         }
       ],
       "prerequisites": [
         "Disposer d’un compte actif dans l’espace concerné",
-        "Être administrateur employé de Framatex",
-        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation"
+        "Utiliser uniquement les demandes ou commandes autorisées de votre organisation",
+        "Disposer de lecture, dépôt et examen documentaire dans la rubrique de destination"
       ],
       "steps": [
         {
           "id": "supplier_integration_step_1",
           "title": "Étape 1",
-          "description": "Ouvrez la demande fournisseur approuvée."
+          "description": "Ouvrez /partners → Espace Framatex avec votre session collaborateur habilitée, puis la demande fournisseur approuvée."
         },
         {
           "id": "supplier_integration_step_2",
@@ -2454,10 +2482,10 @@
         {
           "id": "supplier_integration_step_4",
           "title": "Étape 4",
-          "description": "La pièce rejoint le Dossier Jaune canonique de la commande."
+          "description": "La pièce rejoint la rubrique du dossier autorisé : le Dossier Jaune de la commande lorsqu’il existe, avec sa provenance de lancement conservée."
         }
       ],
-      "result": "La version interne intégrée conserve sa provenance fournisseur et rejoint le dossier canonique de la commande.",
+      "result": "La version interne intégrée conserve sa provenance fournisseur et rejoint la rubrique autorisée du dossier.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -2468,8 +2496,10 @@
           "solution": "Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide."
         }
       ],
-      "limitations": [],
-      "destination": "partner_admin",
+      "limitations": [
+        "L’examen fournisseur demande supplier.review ; l’intégration demande les permissions documentaires de la rubrique choisie. Ces droits sensibles sont attribués explicitement sans rendre le collaborateur administrateur."
+      ],
+      "destination": "supplier_work",
       "actions": [
         "open_supplier_integration",
         "show_supplier_integration",
@@ -4047,6 +4077,86 @@
       "sources": [
         "static/partners.js"
       ]
+    },
+    {
+      "id": "record_received_supplier_document",
+      "version": 1,
+      "locale": "fr",
+      "title": "Enregistrer une pièce fournisseur reçue hors portail",
+      "description": "Ouvrez la demande autorisée dans Espace Framatex, sans utiliser le compte du fournisseur.",
+      "category": "fournisseurs",
+      "audience": [
+        "employee",
+        "admin"
+      ],
+      "keywords": [
+        "hors portail",
+        "pièce reçue",
+        "réception email fournisseur",
+        "papier fournisseur"
+      ],
+      "requires": [
+        {
+          "action": "launch.read"
+        },
+        {
+          "action": "supplier.read"
+        },
+        {
+          "action": "supplier.request"
+        }
+      ],
+      "prerequisites": [
+        "Disposer d’un compte collaborateur actif et des permissions supplier.read et supplier.request",
+        "Avoir accès à la commande et au lancement de la demande"
+      ],
+      "steps": [
+        {
+          "id": "record_received_supplier_document_step_1",
+          "title": "Étape 1",
+          "description": "Ouvrez /partners → Espace Framatex avec votre session collaborateur, puis la demande fournisseur autorisée."
+        },
+        {
+          "id": "record_received_supplier_document_step_2",
+          "title": "Étape 2",
+          "description": "Sélectionnez Pièce reçue hors portail et indiquez le canal de réception."
+        },
+        {
+          "id": "record_received_supplier_document_step_3",
+          "title": "Étape 3",
+          "description": "Décrivez la provenance et sélectionnez le fichier ; confirmez l’enregistrement."
+        },
+        {
+          "id": "record_received_supplier_document_step_4",
+          "title": "Étape 4",
+          "description": "Un collaborateur habilité supplier.review examine ensuite la bonne version ; une correction se dépose comme nouvelle version, avant une intégration explicite."
+        }
+      ],
+      "result": "La pièce est conservée comme transmission reçue par un collaborateur, avec canal, provenance et version ; son examen reste distinct.",
+      "problems": [
+        {
+          "problem": "La fonction est absente ou inaccessible",
+          "solution": "Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits."
+        },
+        {
+          "problem": "La cible de visite a changé",
+          "solution": "Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide."
+        }
+      ],
+      "limitations": [
+        "Le portail n’est pas obligatoire pour enregistrer une pièce reçue. Une réception documentaire ne constitue ni une approbation ni une réception de quantité. Aucune identité fournisseur n’est usurpée."
+      ],
+      "destination": "supplier_work",
+      "actions": [
+        "open_record_received_supplier_document",
+        "show_record_received_supplier_document",
+        "read_record_received_supplier_document"
+      ],
+      "tour_id": "tour_record_received_supplier_document",
+      "legacy_area": null,
+      "sources": [
+        "static/partners.js"
+      ]
     }
   ],
   "tours": [
@@ -4694,7 +4804,7 @@
           "destination": "order_context",
           "target": "order-dossier",
           "title": "Comprendre la complétude d’une commande · 2/4",
-          "description": "Distinguez pièce manquante, validation attendue et exigence satisfaite."
+          "description": "Distinguez non applicable, facultatif, non encore exigible, manquant exigible, validation ou publication en attente, satisfait et dérogation justifiée. Une dérogation ne vaut pas présence."
         },
         {
           "id": "completeness_step_3",
@@ -4708,7 +4818,7 @@
           "destination": "order_context",
           "target": "order-dossier",
           "title": "Comprendre la complétude d’une commande · 4/4",
-          "description": "Déposez les pièces ou faites vérifier la version exacte selon la procédure."
+          "description": "Déposez la pièce commune dans la commande ou rattachez sa provenance au lancement concerné. Faites vérifier la version courante ; une ancienne validation ne couvre pas la nouvelle version. Une personne habilitée peut justifier une dérogation limitée à cette obligation."
         }
       ]
     },
@@ -4745,7 +4855,7 @@
           "destination": "admin",
           "target": "admin-screen",
           "title": "Configurer les règles de complétude · 3/4",
-          "description": "Sélectionnez profil, phase et type, puis confirmez."
+          "description": "Sélectionnez profil, phase et type. Dans Conditions de complétude, choisissez explicitement une obligation par commande ou par lancement et l’événement de référence du délai. Le délai historique reste lié à la création du lancement ; sans cet événement il n’est pas exigible."
         },
         {
           "id": "configure_completeness_step_4",
@@ -4950,7 +5060,7 @@
     },
     {
       "id": "tour_receipts",
-      "version": 1,
+      "version": 2,
       "procedure_id": "receipts",
       "audience": [
         "employee",
@@ -4967,6 +5077,9 @@
         {
           "action": "document.read",
           "folder": "rose"
+        },
+        {
+          "action": "receipt.read"
         }
       ],
       "steps": [
@@ -4982,14 +5095,14 @@
           "destination": "receipts",
           "target": "receipts-screen",
           "title": "Consulter les réceptions · 2/3",
-          "description": "Distinguez quantité commandée, déclarée par le fournisseur et réellement reçue."
+          "description": "Distinguez commandé, prévu, annoncé, déclaré, reçu, retourné et restant, avec leurs unités."
         },
         {
           "id": "receipts_step_3",
           "destination": "receipts",
           "target": "receipts-screen",
           "title": "Consulter les réceptions · 3/3",
-          "description": "Ouvrez le lancement et ses pièces Rose pour examiner les sources."
+          "description": "Ouvrez les pièces de réception : le lien conduit à la commande et à sa rubrique Rose lorsqu’elle existe, sinon au lancement réel."
         }
       ]
     },
@@ -5443,44 +5556,60 @@
     },
     {
       "id": "tour_supplier_integration",
-      "version": 1,
+      "version": 2,
       "procedure_id": "supplier_integration",
       "audience": [
+        "employee",
         "admin"
       ],
       "requires": [
         {
-          "admin": true
+          "action": "launch.read"
+        },
+        {
+          "action": "supplier.read"
+        },
+        {
+          "action": "document.read",
+          "folder": "any"
+        },
+        {
+          "action": "document.write",
+          "folder": "any"
+        },
+        {
+          "action": "document.review",
+          "folder": "any"
         }
       ],
       "steps": [
         {
           "id": "supplier_integration_step_1",
-          "destination": "partner_admin",
+          "destination": "supplier_work",
           "target": "partner_admin-screen",
           "title": "Intégrer une pièce fournisseur approuvée · 1/4",
-          "description": "Ouvrez la demande fournisseur approuvée."
+          "description": "Ouvrez /partners → Espace Framatex avec votre session collaborateur habilitée, puis la demande fournisseur approuvée."
         },
         {
           "id": "supplier_integration_step_2",
-          "destination": "partner_admin",
+          "destination": "supplier_work",
           "target": "partner_admin-screen",
           "title": "Intégrer une pièce fournisseur approuvée · 2/4",
           "description": "Choisissez sa rubrique interne puis Intégrer au dossier interne."
         },
         {
           "id": "supplier_integration_step_3",
-          "destination": "partner_admin",
+          "destination": "supplier_work",
           "target": "partner_admin-screen",
           "title": "Intégrer une pièce fournisseur approuvée · 3/4",
           "description": "Vérifiez la commande et confirmez : la version garde sa provenance fournisseur."
         },
         {
           "id": "supplier_integration_step_4",
-          "destination": "partner_admin",
+          "destination": "supplier_work",
           "target": "partner_admin-screen",
           "title": "Intégrer une pièce fournisseur approuvée · 4/4",
-          "description": "La pièce rejoint le Dossier Jaune canonique de la commande."
+          "description": "La pièce rejoint la rubrique du dossier autorisé : le Dossier Jaune de la commande lorsqu’il existe, avec sa provenance de lancement conservée."
         }
       ]
     },
@@ -6552,6 +6681,56 @@
           "description": "Découvrez cette fonction de votre espace. Vous pouvez quitter la visite à tout moment ; aucune opération métier ne sera exécutée."
         }
       ]
+    },
+    {
+      "id": "tour_record_received_supplier_document",
+      "procedure_id": "record_received_supplier_document",
+      "version": 1,
+      "audience": [
+        "employee",
+        "admin"
+      ],
+      "requires": [
+        {
+          "action": "launch.read"
+        },
+        {
+          "action": "supplier.read"
+        },
+        {
+          "action": "supplier.request"
+        }
+      ],
+      "steps": [
+        {
+          "id": "record_received_supplier_document_step_1",
+          "destination": "supplier_work",
+          "target": "partner_admin-screen",
+          "title": "Enregistrer une pièce fournisseur reçue hors portail · 1/4",
+          "description": "Ouvrez /partners → Espace Framatex avec votre session collaborateur, puis la demande fournisseur autorisée."
+        },
+        {
+          "id": "record_received_supplier_document_step_2",
+          "destination": "supplier_work",
+          "target": "partner_admin-screen",
+          "title": "Enregistrer une pièce fournisseur reçue hors portail · 2/4",
+          "description": "Sélectionnez Pièce reçue hors portail et indiquez le canal de réception."
+        },
+        {
+          "id": "record_received_supplier_document_step_3",
+          "destination": "supplier_work",
+          "target": "partner_admin-screen",
+          "title": "Enregistrer une pièce fournisseur reçue hors portail · 3/4",
+          "description": "Décrivez la provenance et sélectionnez le fichier ; confirmez l’enregistrement."
+        },
+        {
+          "id": "record_received_supplier_document_step_4",
+          "destination": "supplier_work",
+          "target": "partner_admin-screen",
+          "title": "Enregistrer une pièce fournisseur reçue hors portail · 4/4",
+          "description": "Un collaborateur habilité supplier.review examine ensuite la bonne version ; une correction se dépose comme nouvelle version, avant une intégration explicite."
+        }
+      ]
     }
   ],
   "actions": {
@@ -7022,7 +7201,7 @@
       "type": "navigate",
       "label": "Ouvrir la fonctionnalité",
       "procedure_id": "supplier_integration",
-      "destination": "partner_admin"
+      "destination": "supplier_work"
     },
     "show_supplier_integration": {
       "id": "show_supplier_integration",
@@ -7730,6 +7909,27 @@
       "label": "Consulter la procédure détaillée",
       "procedure_id": "client_history",
       "destination": "client_history"
+    },
+    "open_record_received_supplier_document": {
+      "id": "open_record_received_supplier_document",
+      "type": "navigate",
+      "label": "Ouvrir la fonctionnalité",
+      "procedure_id": "record_received_supplier_document",
+      "destination": "supplier_work"
+    },
+    "show_record_received_supplier_document": {
+      "id": "show_record_received_supplier_document",
+      "type": "start_tour",
+      "label": "Me montrer comment faire",
+      "procedure_id": "record_received_supplier_document",
+      "destination": "tour_record_received_supplier_document"
+    },
+    "read_record_received_supplier_document": {
+      "id": "read_record_received_supplier_document",
+      "type": "open_procedure",
+      "label": "Lire la procédure",
+      "procedure_id": "record_received_supplier_document",
+      "destination": "record_received_supplier_document"
     }
   }
 }

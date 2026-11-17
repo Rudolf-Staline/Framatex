@@ -83,7 +83,8 @@ def evidence(db:Session, launch_id:str, version_id:str, required_folder:str, use
     if version is None: raise HTTPException(422,'Version documentaire introuvable')
     doc=db.get(Document,version.document_id)
     folder=db.get(Folder,doc.folder_id)
-    from .order_documents import document_in_launch
+    from .order_documents import document_in_launch, document_accessible
+    if not document_accessible(db,user,doc):raise HTTPException(404,'Justificatif introuvable')
     if not document_in_launch(db,doc,launch_id) or folder.slug!=required_folder:
         raise HTTPException(422,'Justificatif hors du lancement ou du sous-dossier requis')
     must(user,'document.read',required_folder)
@@ -99,10 +100,19 @@ def require_report_access(user:User, writable=False):
         must(user,'launch.update')
 
 
-def material_line(db,launch_id,line_id):
+def material_line(db,launch_id,line_id,user=None):
     line=db.get(MaterialLine,line_id)
-    if not line or line.launch_id!=launch_id: raise HTTPException(404,'Matière introuvable dans ce lancement')
+    if not line or line.launch_id!=launch_id or (user is not None and not material_line_accessible(db,user,line)): raise HTTPException(404,'Matière introuvable dans ce lancement')
     return line
+
+
+def material_line_accessible(db,user,line):
+    from .order_documents import document_access_clause
+    sources=select(MaterialPlanRevision.source_version_id).where(MaterialPlanRevision.line_id==line.id).union(
+        select(MaterialMovement.source_version_id).where(MaterialMovement.line_id==line.id))
+    hidden=db.scalar(select(Document.id).join(DocumentVersion).where(DocumentVersion.id.in_(sources),
+        ~document_access_clause(user)).limit(1))
+    return hidden is None
 
 
 def amount(n:Decimal)->str:
@@ -157,7 +167,7 @@ def material_report(launch_id:str,user:User=Depends(get_current_user),db:Session
     lines=db.scalars(select(MaterialLine).where(MaterialLine.launch_id==launch_id)
                      .order_by(MaterialLine.reference)).all()
     return {'launch_id':launch_id,'source':'saisies confirmées et versions documentaires — pas un stock ORLI',
-            'lines':[output_line(line,db) for line in lines]}
+            'lines':[output_line(line,db) for line in lines if material_line_accessible(db,user,line)]}
 
 
 @router.post('/api/launches/{launch_id}/materials',status_code=201)
@@ -184,7 +194,7 @@ def create_material(launch_id:str,payload:LinePayload,user:User=Depends(get_curr
 @router.post('/api/launches/{launch_id}/materials/{line_id}/plans',status_code=201)
 def revise_plan(launch_id:str,line_id:str,payload:QuantityPayload,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
     require_report_access(user,True)
-    line=material_line(db,launch_id,line_id)
+    line=material_line(db,launch_id,line_id,user)
     evidence(db,launch_id,payload.source_version_id,'jaune',user)
     db.add(MaterialPlanRevision(line_id=line.id,quantity=payload.quantity,source_version_id=payload.source_version_id,
                                 note=safe_text(payload.note),recorded_by=user.id))
@@ -196,7 +206,7 @@ def revise_plan(launch_id:str,line_id:str,payload:QuantityPayload,user:User=Depe
 @router.post('/api/launches/{launch_id}/materials/{line_id}/movements',status_code=201)
 def add_movement(launch_id:str,line_id:str,payload:MovementPayload,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
     require_report_access(user,True)
-    line=material_line(db,launch_id,line_id)
+    line=material_line(db,launch_id,line_id,user)
     slug='jaune' if payload.kind=='ordered' else 'rose'
     evidence(db,launch_id,payload.source_version_id,slug,user)
     movement=MaterialMovement(line_id=line.id,kind=payload.kind,quantity=payload.quantity,
@@ -213,7 +223,7 @@ def add_movement(launch_id:str,line_id:str,payload:MovementPayload,user:User=Dep
 def cancel_movement(launch_id:str,line_id:str,movement_id:str,payload:CancelPayload,
                     user:User=Depends(get_current_user),db:Session=Depends(get_db)):
     require_report_access(user,True)
-    line=material_line(db,launch_id,line_id)
+    line=material_line(db,launch_id,line_id,user)
     movement=db.get(MaterialMovement,movement_id)
     if movement is None or movement.line_id!=line.id: raise HTTPException(404,'Mouvement introuvable')
     folder='jaune' if movement.kind=='ordered' else 'rose'

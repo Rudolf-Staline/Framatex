@@ -1,32 +1,36 @@
 """Order-owned dossier API; launch routes remain compatibility entrypoints."""
 from typing import Literal
 from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import select,func
 from sqlalchemy.orm import Session
 from .core import get_db, get_current_user
 from .models import Folder, Document, DocumentVersion
-from .access import must, permitted
+from .access import must, permitted, must_access
 from . import document_storage
 from .order_documents import doc_out
 from .audit import audit
-from .order_documents import dossier, must_order, launch_order, OrderDossier
+from .order_documents import dossier, must_order, launch_order, OrderDossier, document_accessible, order_accessible, document_access_clause
 
 router=APIRouter(tags=['Dossiers Jaunes par commande'])
 
 @router.get('/api/orders/{oid}/dossier')
-def detail(oid:str, launch_id:str|None=None, q:str=Query('',max_length=200),
+def detail(oid:str, launch_id:str|None=None, q:str=Query('',max_length=200),summary:bool=False,
            user=Depends(get_current_user),db:Session=Depends(get_db)):
     must(user,'launch.read');order=must_order(db,user,oid)
     root=db.scalar(select(OrderDossier).where(OrderDossier.order_id==oid))
     if not root:raise HTTPException(409,'Dossier absent : migration requise')
     if launch_id:
+        must_access(db,user,launch_id)
         link=launch_order(db,launch_id)
         if not link or link.order_id!=oid:raise HTTPException(422,'Lancement étranger à la commande')
     sections=[]
     for f in db.scalars(select(Folder).where(Folder.dossier_id==root.id).order_by(Folder.slug)):
         can_read=permitted(user,'document.read',f.slug)
-        docs=[doc_out(d) for d in f.documents if (not launch_id or d.launch_id==launch_id) and (not q or q.casefold() in (d.title+' '+d.doc_type).casefold())] if can_read else []
-        sections.append({'id':f.id,'slug':f.slug,'label':f.label,'can_read':can_read,'can_write':permitted(user,'document.write',f.slug),'documents':docs})
+        docs=[doc_out(d) for d in f.documents if document_accessible(db,user,d) and (not launch_id or d.launch_id==launch_id) and (not q or q.casefold() in (d.title+' '+d.doc_type).casefold())] if can_read and not summary else []
+        count_query=select(func.count()).select_from(Document).where(Document.folder_id==f.id,document_access_clause(user))
+        if launch_id:count_query=count_query.where(Document.launch_id==launch_id)
+        if q:count_query=count_query.where((Document.title.ilike('%'+q+'%'))|(Document.doc_type.ilike('%'+q+'%')))
+        sections.append({'id':f.id,'slug':f.slug,'label':f.label,'can_read':can_read,'can_write':permitted(user,'document.write',f.slug),'documents':docs,'total':db.scalar(count_query) if can_read else 0})
     sections.sort(key=lambda item:['jaune','rose','bleu','vert'].index(item['slug']))
     return {'id':root.id,'order_id':oid,'reference':order.reference,'client_id':order.client_id,'sections':sections}
 
@@ -38,22 +42,38 @@ async def upload(oid:str,folder:Literal['jaune','rose','bleu','vert']=Form(...),
     must(user,'launch.read');must(user,'document.write',folder);must_order(db,user,oid)
     if not title.strip() or not doc_type.strip():raise HTTPException(422,'Titre et type nécessaires')
     if launch_id:
+        must_access(db,user,launch_id)
         link=launch_order(db,launch_id)
         if not link or link.order_id!=oid:raise HTTPException(422,'Lancement étranger à la commande')
-    root=dossier(db,oid)
-    section=db.scalar(select(Folder).where(Folder.dossier_id==root.id,Folder.slug==folder))
+    # Do not hold the SQLite writer while copying, validating and scanning.
+    actor_id=user.id
+    db.rollback()
     original,disk_name,size,sha,mime=await document_storage.store_upload(file)
     try:
+        from .models import User
+        db.expire_all()
+        user=db.get(User,actor_id)
+        if not user or not user.active:raise HTTPException(401,'Connexion nécessaire')
+        must(user,'launch.read');must(user,'document.write',folder);must_order(db,user,oid)
+        if launch_id:
+            must_access(db,user,launch_id)
+            link=launch_order(db,launch_id)
+            if not link or link.order_id!=oid:raise HTTPException(409,'Rattachement modifié pendant le dépôt : actualiser')
+        root=dossier(db,oid)
+        section=db.scalar(select(Folder).where(Folder.dossier_id==root.id,Folder.slug==folder))
         doc=Document(folder_id=section.id,launch_id=launch_id,title=title.strip(),doc_type=doc_type.strip(),created_by=user.id)
         db.add(doc);db.flush()
+        from .document_types import register_type
+        register_type(db,doc)
         version=DocumentVersion(document_id=doc.id,number=1,original_name=original,disk_name=disk_name,size=size,sha256=sha,content_type=mime,uploaded_by=user.id)
         db.add(version);db.flush()
         from .quality_routes import auto_inspect_excel
         auto_inspect_excel(db,version,user.id)
         audit(db,user,'document.upload','document',doc.id,{'order_id':oid,'launch_id':launch_id,'sha256':sha})
-        db.commit();return doc_out(doc)
+        result=doc_out(doc)
+        db.commit();return result
     except Exception:
-        db.rollback();(document_storage.STORAGE/disk_name).unlink(missing_ok=True);raise
+        db.rollback();document_storage.remove_blob(disk_name);raise
 
 
 @router.get('/api/orders/{oid}/approval-overview')
@@ -65,7 +85,7 @@ def approvals(oid:str,user=Depends(get_current_user),db:Session=Depends(get_db))
     if not root:raise HTTPException(409,'Migration documentaire requise')
     result=[]
     for doc in db.scalars(select(Document).join(Folder).where(Folder.dossier_id==root.id)):
-        if not permitted(user,'document.read',doc.folder.slug) or not doc.versions:continue
+        if not document_accessible(db,user,doc) or not permitted(user,'document.read',doc.folder.slug) or not doc.versions:continue
         version=latest_version(doc);template=applicable_template(db,doc)
         runs=list(db.scalars(select(ApprovalRun).join(DocumentVersion).where(DocumentVersion.document_id==doc.id).order_by(ApprovalRun.started_at.desc(),ApprovalRun.cycle.desc())))
         run=next((r for r in runs if r.document_version_id==version.id),None)
@@ -101,7 +121,10 @@ def revoke_member(oid:str,user_id:str,user=Depends(get_current_user),db:Session=
     row=db.get(OrderMember,(oid,user_id))
     if not row:raise HTTPException(404,'Habilitation absente')
     db.delete(row);audit(db,user,'order.member.revoke','order',oid,{'user_id':user_id});db.commit()
-    return {'revoked':True}
+    from .models import User
+    target=db.get(User,user_id)
+    return {'revoked':True,'effective_access':bool(target and order_accessible(db,target,oid)),
+            'notice':'Le propriétaire et les administrateurs conservent leur accès propre.'}
 
 
 @router.get('/api/orders/{oid}/paper-link')

@@ -1,0 +1,29 @@
+{
+  "conditions": "SQLite migrated empty synthetic schema; index selection only, no throughput claim",
+  "plans": {
+    "folder_page": [
+      {
+        "id": 4,
+        "parent": 0,
+        "notused": 54,
+        "detail": "SEARCH documents USING COVERING INDEX ix_documents_folder_created (folder_id=?)"
+      }
+    ],
+    "client_order_page": [
+      {
+        "id": 4,
+        "parent": 0,
+        "notused": 55,
+        "detail": "SEARCH business_orders USING COVERING INDEX ix_orders_client_created (client_id=?)"
+      }
+    ],
+    "latest_document_version": [
+      {
+        "id": 5,
+        "parent": 0,
+        "notused": 61,
+        "detail": "SEARCH document_versions USING INDEX sqlite_autoindex_document_versions_2 (document_id=?)"
+      }
+    ]
+  }
+}

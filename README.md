@@ -1,4 +1,19 @@
-# Framatex — Dossier jaune numérique (MVP 0.19)
+# Framatex — Dossier Jaune par commande
+
+Consolidation technique du 17 novembre 2026 : une commande possède un dossier et
+quatre rubriques, avec pièces communes et plusieurs lancements possibles.
+[Rapport et limites](docs/CONSOLIDATION_REPORT.md),
+[installation interne](docs/DEPLOIEMENT_INTERNE.md),
+[état de reprise](docs/CONSOLIDATION_PROGRESS.md),
+[grille de recette métier](docs/RECETTE_CONSOLIDATION.md).
+Les essais locaux synthétiques ne constituent pas une recette Framatex ni un
+dimensionnement des serveurs. Aucun déploiement n'a été effectué.
+
+## Historique des versions et annonces antérieures
+
+Les annonces et descriptions ci-dessous sont conservées pour leur historique.
+Le modèle commande et les procédures actuelles sont décrits dans les documents
+ci-dessus et dans le guide intégré actualisé.
 
 > **Framatex Guide.** Centre d’aide permanent, 56 procédures, 60 visites et progression personnelle pour employés, fournisseurs et clients. Gemini facultatif et désactivé par défaut. [Manuel utilisateur](GUIDE_UTILISATEUR_FRAMATEX.md), [rapport de livraison et limites](docs/FRAMATEX_GUIDE_DELIVERY.md), [configuration Gemini](docs/FRAMATEX_GUIDE_GEMINI.md), [tests](docs/FRAMATEX_GUIDE_TESTS.md). Migration additive 0024 ; aucun déploiement pendant cette livraison. Les présentations de Framatex Assist ci-dessous sont historiques.
 

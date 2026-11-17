@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from .order_documents import document_accessible, document_order_id
 from .core import get_db, get_current_user, utcnow
@@ -83,9 +83,15 @@ def applicable_template(db: Session, doc: Document):
 
 
 def latest_version(doc: Document):
-    if not doc.versions:
-        raise HTTPException(422, 'Aucune version documentaire')
-    return max(doc.versions, key=lambda v: v.number)
+    db=object_session(doc)
+    if db is not None:
+        version=db.scalar(select(DocumentVersion).where(DocumentVersion.document_id==doc.id)
+                          .order_by(DocumentVersion.number.desc()).limit(1))
+    else:
+        version=max(doc.versions,key=lambda v:v.number) if doc.versions else None
+    if version is None:
+        raise HTTPException(422, "Aucune version documentaire")
+    return version
 
 
 def can_decide(db: Session, user: User, run: ApprovalRun, doc: Document):
@@ -203,7 +209,7 @@ def get_approval_overview(launch_id: str, user: User = Depends(get_current_user)
         if not permitted(user,'document.read',folder.slug):
             continue
         for doc in folder.documents:
-            if not doc.versions:
+            if not doc.versions or not document_accessible(db,user,doc):
                 continue
             version = latest_version(doc)
             template = applicable_template(db, doc)

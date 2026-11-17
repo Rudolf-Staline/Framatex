@@ -64,4 +64,8 @@ def notification_scope(db,user,launch_id,order_id=None):
     from .order_documents import order_accessible
     from .access import accessible
     from .models import Launch
-    return order_accessible(db,user,order_id) if order_id else bool(launch_id and accessible(db,user,db.get(Launch,launch_id)))
+    if order_id and not order_accessible(db,user,order_id):
+        return False
+    if launch_id:
+        return accessible(db,user,db.get(Launch,launch_id))
+    return bool(order_id)

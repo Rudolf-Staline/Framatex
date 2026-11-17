@@ -1,4 +1,4 @@
-"""Partner portal. All internal operations require an administrator initially.
+"""Partner portal. Daily operations use explicit business grants and contextual launch access.
 No implicit access to internal launches, documents, users or search is granted.
 """
 from datetime import timedelta, date
@@ -6,7 +6,7 @@ import hashlib
 import os
 import secrets
 from typing import Literal
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile, File, Form, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select, update, or_
@@ -17,7 +17,7 @@ from .core import (get_db, get_current_user, utcnow, hash_password, check_passwo
 from .models import User, Launch, DocumentVersion
 from .partner_models import (Partner, PartnerAccount, PartnerToken, PartnerRequest,
                              PartnerSubmission, PartnerEvent, PartnerPublication)
-from .access import admin_only
+from .access import admin_only, must, must_access, permitted, is_admin
 from .audit import audit
 from . import document_storage
 
@@ -30,6 +30,28 @@ def digest(token):
 def staff(user: User = Depends(get_current_user)):
     admin_only(user)
     return user
+
+def business_staff(action):
+    """No implicit grants: administrators keep access; roles opt in explicitly."""
+    def dependency(user: User = Depends(get_current_user)):
+        must(user, action)
+        return user
+    return dependency
+
+supplier_reader = business_staff('supplier.read')
+supplier_writer = business_staff('supplier.request')
+supplier_reviewer = business_staff('supplier.review')
+receipt_reader = business_staff('receipt.read')
+receipt_writer = business_staff('receipt.write')
+
+
+def request_scope(db, user, row, action='supplier.read'):
+    must_access(db, user, row.launch_id)
+    must(user, 'launch.read')
+    must(user, 'document.read', 'jaune')
+    must(user, action)
+    return row
+
 
 def partner(request: Request, db: Session = Depends(get_db)):
     token = db.get(PartnerToken, digest(request.cookies.get(COOKIE, '')))
@@ -53,7 +75,7 @@ def org_get(db, org_id, kind=None):
 
 def req_get(db, request_id, account=None):
     row = db.get(PartnerRequest, request_id)
-    if not row or (account and row.partner_id != account.partner_id):
+    if not row or (account and (row.partner_id != account.partner_id or org_get(db, account.partner_id).kind != 'supplier')):
         raise HTTPException(404, 'Demande introuvable')
     return row
 
@@ -79,15 +101,15 @@ def request_out(row):
     return {k: getattr(row, k) for k in ('id','partner_id','order_ref','title','doc_type','due_date','status','created_at')}
 
 def submission_out(row):
-    return {k: getattr(row, k) for k in ('id','number','original_name','sha256','size','status','reason','created_at')}
+    return {**{k: getattr(row, k) for k in ('id','number','original_name','sha256','size','status','reason','created_at')}, 'origin': 'staff_received' if row.received_by else 'partner_portal', 'received_via': row.received_via}
 
-def detail(db, row):
+def detail(db, row, include_internal=True):
     versions = db.scalars(select(PartnerSubmission).where(PartnerSubmission.request_id == row.id).order_by(PartnerSubmission.number)).all()
     events = db.scalars(select(PartnerEvent).where(PartnerEvent.request_id == row.id).order_by(PartnerEvent.created_at, PartnerEvent.id)).all()
     from .partner_phase2_models import PartnerIntegration
     from .models import DocumentVersion
     links = list(db.scalars(select(PartnerIntegration).where(PartnerIntegration.submission_id.in_([v.id for v in versions]))))
-    return {**request_out(row), 'integrated_document_id': db.get(DocumentVersion,links[0].version_id).document_id if links else None, 'versions': [submission_out(v) for v in versions],
+    return {**request_out(row), 'integrated_document_id': db.get(DocumentVersion,links[0].version_id).document_id if links else None, 'versions': [{**submission_out(v),**({'account_id':v.account_id,'received_by':v.received_by,'received_note':v.received_note} if include_internal else {})} for v in versions],
             'attachments': attachments_for_request(db,row.id),
             'history': [{'id': e.id, 'author': 'Framatex' if e.actor.startswith('staff:') else 'Fournisseur',
                          'kind': e.kind, 'message': e.message, 'created_at': e.created_at} for e in events]}
@@ -140,6 +162,18 @@ class DecisionInput(BaseModel):
 def page():
     return FileResponse(ROOT / 'static' / 'partners.html', headers={'Cache-Control':'no-store',
         'Content-Security-Policy': "default-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'"})
+
+@router.get('/api/partners/staff-home')
+def staff_home(user=Depends(get_current_user),db:Session=Depends(get_db)):
+    actions=('supplier.read','supplier.request','supplier.review','receipt.read','receipt.write')
+    allowed=[a for a in actions if permitted(user,a)]
+    if not allowed:raise HTTPException(403,'Habilitation métier partenaire requise')
+    must(user,'launch.read');must(user,'document.read','jaune')
+    from .access import launch_access_clause
+    return {'admin':is_admin(user),'name':user.name,'permissions':allowed,
+        'suppliers':[{'id':p.id,'name':p.name} for p in db.scalars(select(Partner).where(Partner.kind=='supplier',Partner.active.is_(True)).order_by(Partner.name))] if is_admin(user) or any(a in allowed for a in ('supplier.request','receipt.write')) else [],
+        'launches':[{'id':l.id,'label':f'{l.order_ref or l.name} · {l.client_name or "Client non renseigné"}'} for l in db.scalars(select(Launch).where(launch_access_clause(user,Launch.id)).order_by(Launch.created_at.desc(),Launch.id).limit(100))]}
+
 
 @router.get('/api/partners/organizations')
 def organizations(user=Depends(staff), db: Session = Depends(get_db)):
@@ -268,10 +302,11 @@ def home(account=Depends(partner), db: Session = Depends(get_db)):
     return {'organization': org.name, 'kind': org.kind, 'email': account.email, 'permissions': sorted(permissions(db, account))}
 
 @router.post('/api/partners/requests', status_code=201)
-def create_request(payload: RequestInput, user=Depends(staff), db: Session = Depends(get_db)):
+def create_request(payload: RequestInput, user=Depends(supplier_writer), db: Session = Depends(get_db)):
     org = org_get(db, payload.partner_id, 'supplier')
     if not org.active or not db.get(Launch, payload.launch_id):
         raise HTTPException(422, 'Organisation inactive ou lancement inexistant')
+    must_access(db,user,payload.launch_id);must(user,'launch.read');must(user,'document.read','jaune')
     from .order_registry_routes import check_order_scope
     check_order_scope(db,payload.launch_id,reference=payload.order_ref)
     row = PartnerRequest(**payload.model_dump(), created_by=user.id)
@@ -282,20 +317,21 @@ def create_request(payload: RequestInput, user=Depends(staff), db: Session = Dep
     return request_out(row)
 
 @router.get('/api/partners/requests')
-def staff_requests(user=Depends(staff), db: Session = Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=100), q: str = Query('',max_length=200), status: str | None = None, sort: Literal['newest','oldest','due']='newest'):
-    return request_search(db,None,q,status,sort,offset,limit)
+def staff_requests(user=Depends(supplier_reader), db: Session = Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=100), q: str = Query('',max_length=200), status: str | None = None, sort: Literal['newest','oldest','due']='newest'):
+    return request_search(db,None,q,status,sort,offset,limit,user=user)
 
 @router.get('/api/partner/requests')
 def supplier_requests(account=Depends(partner), db: Session = Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=100), q: str = Query('',max_length=200), status: str | None = None, sort: Literal['newest','oldest','due']='newest'):
+    if org_get(db,account.partner_id).kind!='supplier':return []
     return request_search(db,account.partner_id,q,status,sort,offset,limit)
 
 @router.get('/api/partners/requests/{rid}')
-def staff_detail(rid: str, user=Depends(staff), db: Session = Depends(get_db)):
-    return detail(db, req_get(db, rid))
+def staff_detail(rid: str, user=Depends(supplier_reader), db: Session = Depends(get_db)):
+    return detail(db, request_scope(db,user,req_get(db, rid)))
 
 @router.get('/api/partner/requests/{rid}')
 def supplier_detail(rid: str, account=Depends(partner), db: Session = Depends(get_db)):
-    result = detail(db, req_get(db, rid, account))
+    result = detail(db, req_get(db, rid, account),include_internal=False)
     result.pop('integrated_document_id',None)
     return result
 
@@ -306,11 +342,12 @@ async def upload(rid: str, file: UploadFile = File(...), account=Depends(partner
     row = req_get(db, rid, account)
     if row.status not in ('requested','rejected'):
         raise HTTPException(409, 'Dépôt autorisé pour une demande ouverte ou refusée uniquement')
-    claim(db, row)
     from .partner_uploads import lock_budget,verify_budget
-    lock_budget(db,row.partner_id)
     original, disk, size, sha, mime = await document_storage.store_upload(file)
     try:
+        claim(db,row);lock_budget(db,row.partner_id)
+        from .partner_uploads import verify_actor
+        verify_actor(db,row.partner_id,'partner:'+account.id,'document.write')
         verify_budget(db,row.partner_id,size)
         latest = db.scalar(select(PartnerSubmission).where(PartnerSubmission.request_id == rid).order_by(PartnerSubmission.number.desc()).limit(1))
         version = PartnerSubmission(request_id=rid, number=latest.number+1 if latest else 1,
@@ -321,14 +358,46 @@ async def upload(rid: str, file: UploadFile = File(...), account=Depends(partner
         from .internal_notifications import emit_to_user
         emit_to_user(db, user_id=row.created_by, launch_id=row.launch_id, folder='jaune',
             event_key='partner-submission:'+version.id, kind='supplier_submission', title='Document fournisseur reçu', message=row.title)
+        result=submission_out(version)
         db.commit()
-        return submission_out(version)
+        return result
     except Exception:
-        db.rollback(); (document_storage.STORAGE / disk).unlink(missing_ok=True); raise
+        db.rollback(); document_storage.remove_blob(disk); raise
+
+@router.post('/api/partners/requests/{rid}/received-versions', status_code=201)
+async def record_received(rid: str, file: UploadFile = File(...),
+                          received_via: Literal['email','paper','handover','other'] = Form(...),
+                          note: str = Form(..., min_length=3, max_length=2000),
+                          user=Depends(supplier_writer), db: Session = Depends(get_db)):
+    """Register a supplied piece without requiring a supplier portal account."""
+    row = request_scope(db,user,req_get(db,rid),'supplier.request')
+    must(user,'document.write','jaune')
+    if row.status not in ('requested','rejected'):
+        raise HTTPException(409,'Une demande ouverte ou refusée est requise')
+    from .partner_uploads import lock_budget,verify_budget
+    original,disk,size,sha,mime=await document_storage.store_upload(file)
+    try:
+        db.refresh(user);db.expire(user,['roles'])
+        if not user.active:raise HTTPException(403,'Compte collaborateur désactivé')
+        request_scope(db,user,row,'supplier.request');must(user,'document.write','jaune')
+        claim(db,row);lock_budget(db,row.partner_id)
+        verify_budget(db,row.partner_id,size)
+        latest=db.scalar(select(PartnerSubmission).where(PartnerSubmission.request_id==rid).order_by(PartnerSubmission.number.desc()).limit(1))
+        version=PartnerSubmission(request_id=rid,number=latest.number+1 if latest else 1,
+            account_id=None,received_by=user.id,received_via=received_via,received_note=note,
+            original_name=original,disk_name=disk,size=size,sha256=sha,content_type=mime)
+        db.add(version);db.flush();row.status='pending'
+        event(db,row,'staff:'+user.id,'received',f'Version {version.number} reçue hors portail ({received_via}) : {note}')
+        audit(db,user,'partner.staff_received','partner_submission',version.id,{'channel':received_via,'partner_id':row.partner_id,'sha256':sha})
+        result=submission_out(version)
+        db.commit();return result
+    except Exception:
+        db.rollback();document_storage.remove_blob(disk);raise
+
 
 @router.post('/api/partners/requests/{rid}/decision')
-def decision(rid: str, payload: DecisionInput, user=Depends(staff), db: Session = Depends(get_db)):
-    row = req_get(db, rid)
+def decision(rid: str, payload: DecisionInput, user=Depends(supplier_reviewer), db: Session = Depends(get_db)):
+    row = request_scope(db,user,req_get(db, rid),'supplier.review')
     latest = db.scalar(select(PartnerSubmission).where(PartnerSubmission.request_id == rid).order_by(PartnerSubmission.number.desc()).limit(1))
     if row.status != 'pending' or not latest or latest.id != payload.version_id:
         raise HTTPException(409, 'Seule la version courante en attente peut être examinée')
@@ -341,8 +410,8 @@ def decision(rid: str, payload: DecisionInput, user=Depends(staff), db: Session 
     return detail(db, row)
 
 @router.post('/api/partners/requests/{rid}/close')
-def close(rid: str, user=Depends(staff), db: Session = Depends(get_db)):
-    row = req_get(db, rid)
+def close(rid: str, user=Depends(supplier_writer), db: Session = Depends(get_db)):
+    row = request_scope(db,user,req_get(db, rid),'supplier.request')
     if row.status != 'approved':
         raise HTTPException(409, 'Approbation requise avant clôture')
     claim(db, row); row.status = 'closed'
@@ -355,12 +424,13 @@ def supplier_message(rid: str, payload: MessageInput, account=Depends(partner), 
     from .partner_permissions import require
     require(db, account, 'message.write')
     row = req_get(db, rid, account)
+    if row.status=='closed':raise HTTPException(409,'Demande clôturée ; réouverture requise')
     event(db, row, 'partner:'+account.id, 'message', payload.message)
     db.commit(); return {'recorded':True, 'email_status':'not_sent'}
 
 @router.post('/api/partners/requests/{rid}/messages', status_code=201)
-def staff_message(rid: str, payload: MessageInput, user=Depends(staff), db: Session = Depends(get_db)):
-    event(db, req_get(db, rid), 'staff:'+user.id, 'message', payload.message)
+def staff_message(rid: str, payload: MessageInput, user=Depends(supplier_writer), db: Session = Depends(get_db)):
+    event(db, request_scope(db,user,req_get(db, rid),'supplier.request'), 'staff:'+user.id, 'message', payload.message)
     db.commit(); return {'recorded':True, 'email_status':'not_sent'}
 
 def download(db, rid, vid, account=None):
@@ -375,7 +445,8 @@ def supplier_download(rid: str, vid: str, account=Depends(partner), db: Session 
     return download(db, rid, vid, account)
 
 @router.get('/api/partners/requests/{rid}/versions/{vid}/download')
-def staff_download(rid: str, vid: str, user=Depends(staff), db: Session = Depends(get_db)):
+def staff_download(rid: str, vid: str, user=Depends(supplier_reader), db: Session = Depends(get_db)):
+    request_scope(db,user,req_get(db,rid))
     return download(db, rid, vid)
 
 class PublicationInput(BaseModel):
@@ -476,8 +547,12 @@ def attachments_for_request(db,rid):
     return [out(a) for a in db.scalars(select(PartnerAttachment).join(PartnerEvent).where(PartnerEvent.request_id==rid))]
 
 
-def request_search(db,partner_id,q,status,sort,offset,limit):
+def request_search(db,partner_id,q,status,sort,offset,limit,user=None):
     query=select(PartnerRequest)
+    if user:
+        from .access import launch_access_clause
+        must(user,'launch.read');must(user,'document.read','jaune')
+        query=query.where(launch_access_clause(user,PartnerRequest.launch_id))
     if partner_id:query=query.where(PartnerRequest.partner_id==partner_id)
     if q:query=query.where(or_(PartnerRequest.title.ilike('%'+q+'%'),PartnerRequest.order_ref.ilike('%'+q+'%'),PartnerRequest.doc_type.ilike('%'+q+'%')))
     if status:query=query.where(PartnerRequest.status==status)
@@ -487,6 +562,7 @@ def request_search(db,partner_id,q,status,sort,offset,limit):
 @router.get('/api/partner/notifications')
 def partner_notifications(account=Depends(partner),db:Session=Depends(get_db),offset:int=Query(0,ge=0),limit:int=Query(50,ge=1,le=100)):
     from .partner_phase2_models import PartnerEventRead
+    if org_get(db,account.partner_id).kind!='supplier':return []
     rows=db.scalars(select(PartnerEvent).join(PartnerRequest).where(PartnerRequest.partner_id==account.partner_id,PartnerEvent.actor.like('staff:%')).order_by(PartnerEvent.created_at.desc(),PartnerEvent.id).offset(offset).limit(limit))
     return [{'id':e.id,'request_id':e.request_id,'kind':e.kind,'message':e.message,'created_at':e.created_at,'read':db.get(PartnerEventRead,(account.id,e.id)) is not None} for e in rows]
 

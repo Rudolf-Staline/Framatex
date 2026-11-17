@@ -5,7 +5,7 @@ Les preuves et leurs versions exactes restent consultables.
 """
 from __future__ import annotations
 from . import document_storage
-from .order_documents import document_in_launch
+from .order_documents import document_in_launch, document_accessible
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -27,7 +27,7 @@ router = APIRouter(tags=['0.7 — Exigences et ambiguïtés'])
 
 def _version(db:Session, version_id:str, launch_id:str, user:User, write=False):
     version=db.get(DocumentVersion,version_id)
-    if not version or not document_in_launch(db, version.document, launch_id):
+    if not version or not document_accessible(db,user,version.document) or not document_in_launch(db, version.document, launch_id):
         raise HTTPException(404,'Document ou version introuvable dans ce lancement')
     folder=version.document.folder.slug
     must(user,'document.read',folder)
@@ -152,13 +152,13 @@ def list_specifications(launch_id:str,user:User=Depends(get_current_user),db:Ses
     for x in db.scalars(select(ClientRequirement).where(ClientRequirement.launch_id==launch_id).order_by(ClientRequirement.created_at,ClientRequirement.id)).all():
         v=db.get(DocumentVersion,x.source_version_id)
         ev=db.get(DocumentVersion,x.evidence_version_id) if x.evidence_version_id else None
-        if not permitted(user,'document.read',v.document.folder.slug) or (ev and not permitted(user,'document.read',ev.document.folder.slug)):
+        if not document_accessible(db,user,v.document) or not permitted(user,'document.read',v.document.folder.slug) or (ev and (not document_accessible(db,user,ev.document) or not permitted(user,'document.read',ev.document.folder.slug))):
             continue  # Ne pas révéler qu'une preuve existe dans une rubrique restreinte.
         requirements.append(_req_output(db,x,user))
     for x in db.scalars(select(SpecificationAmbiguity).where(SpecificationAmbiguity.launch_id==launch_id).order_by(SpecificationAmbiguity.confirmed_at,SpecificationAmbiguity.id)).all():
         v=db.get(DocumentVersion,x.source_version_id)
         clar=db.get(DocumentVersion,x.clarification_version_id) if x.clarification_version_id else None
-        if not permitted(user,'document.read',v.document.folder.slug) or (clar and not permitted(user,'document.read',clar.document.folder.slug)):
+        if not document_accessible(db,user,v.document) or not permitted(user,'document.read',v.document.folder.slug) or (clar and (not document_accessible(db,user,clar.document) or not permitted(user,'document.read',clar.document.folder.slug))):
             continue
         ambiguities.append(_amb_output(db,x,user))
     return {'requirements':requirements,'ambiguities':ambiguities,

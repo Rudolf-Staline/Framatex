@@ -1,0 +1,8 @@
+{
+  "conditions": "1 execution isolated local Linux; synthetic SQLite; 1 document/2 versions; 2x512KiB pseudorandom payloads; no SMTP; no production inference",
+  "input_blob_bytes": 1048576,
+  "archive_bytes": 1074939,
+  "backup_seconds": 0.125664,
+  "restore_seconds": 0.0351,
+  "checks": "SQLite FK and integrity, manifest, both SHA256 and versions, synthetic decision audit, restore generation"
+}

@@ -25,6 +25,8 @@ MIMES = {".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-off
 
 def scan(path):
     mode=os.getenv('FRAMATEX_UPLOAD_SCAN_MODE','disabled')
+    if os.getenv('FRAMATEX_MODE','DEVELOPMENT').upper()=='OPERATIONAL' and mode!='required':
+        raise HTTPException(503,'En exploitation, le scan antivirus obligatoire doit être configuré')
     if mode=='disabled':return 'not_scanned'
     if mode!='required':raise HTTPException(503,'Politique antivirus invalide')
     backend=os.getenv('FRAMATEX_SCANNER_BACKEND','command')
@@ -67,33 +69,39 @@ async def store_upload(file: UploadFile):
     if not original_name or suffix not in EXTS:
         raise HTTPException(422, "Format non autorisé (PDF, DOCX, XLSX, PNG, JPEG, TXT ou EML)")
     disk_name = secrets.token_hex(24)
-    target = STORAGE / disk_name
     sha = hashlib.sha256()
     total = 0
-    created = False
     try:
-        from .storage_budget import upload_budget
-        with upload_budget(STORAGE) as remaining:
-            descriptor=os.open(target,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
-            created=True
-            with os.fdopen(descriptor,"wb") as out:
+        from .storage_budget import upload_reservation
+        expected = file.size if isinstance(file.size, int) and file.size >= 0 else 0
+        if expected > MAX_UPLOAD:
+            raise HTTPException(413, "Fichier trop volumineux (20 Mo maximum)")
+        async with upload_reservation(STORAGE, disk_name, expected) as reservation:
+            descriptor = os.open(reservation.path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(descriptor, "wb") as out:
                 while chunk := await file.read(1024 * 1024):
                     total += len(chunk)
-                    if total > remaining:
-                        raise HTTPException(413,'Quota du stockage privé dépassé')
                     if total > MAX_UPLOAD:
                         raise HTTPException(413, "Fichier trop volumineux (20 Mo maximum)")
+                    await run_in_threadpool(reservation.reserve, total)
                     sha.update(chunk)
-                    out.write(chunk)
+                    await run_in_threadpool(out.write, chunk)
+                await run_in_threadpool(out.flush)
+                await run_in_threadpool(os.fsync, out.fileno())
             if total == 0:
                 raise HTTPException(422, "Fichier vide")
-            await run_in_threadpool(verify_file,target,suffix)
-            await run_in_threadpool(scan,target)
+            # Checked files remain outside the download directory until all checks pass.
+            await run_in_threadpool(verify_file, reservation.path, suffix)
+            await run_in_threadpool(reservation.reserve, total)
+            await run_in_threadpool(scan, reservation.path)
+            await run_in_threadpool(reservation.publish, total)
             return original_name, disk_name, total, sha.hexdigest(), MIMES[suffix]
     except FileExistsError:
-        raise HTTPException(409,"Conflit de stockage : aucun fichier existant n’a été modifié")
-    except Exception:
-        if created:target.unlink(missing_ok=True)
-        raise
+        raise HTTPException(409, "Conflit de stockage : aucun fichier existant n’a été modifié")
     finally:
         await file.close()
+
+
+def remove_blob(disk_name):
+    from .storage_budget import remove_blob as release
+    release(STORAGE, disk_name)

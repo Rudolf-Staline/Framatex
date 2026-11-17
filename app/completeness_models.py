@@ -62,3 +62,14 @@ class RequirementException(Base):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     recorded_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class OrderRequirementException(Base):
+    """An explicit order waiver never broadens a historical launch waiver."""
+    __tablename__ = 'order_requirement_exceptions'
+    order_id: Mapped[str] = mapped_column(ForeignKey('business_orders.id'), primary_key=True)
+    rule_id: Mapped[str] = mapped_column(ForeignKey('completeness_rules.id'), primary_key=True)
+    reason: Mapped[str] = mapped_column(Text, default='')
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    recorded_by: Mapped[str] = mapped_column(ForeignKey('users.id'))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)

@@ -1,0 +1,57 @@
+{
+  "conditions": "Local SQLite temporary DB; reader; canonical order, shared documents, one linked launch; 3 versions/document; metadata search endpoint function including ORM user lookup; no HTTP/network; tracemalloc enabled; sequential samples; no production or p95 claim",
+  "results": [
+    {
+      "documents": 100,
+      "versions": 300,
+      "page_size": 25,
+      "samples": [
+        {
+          "sql": 379,
+          "latency_ms": 556.05,
+          "json_bytes": 9776,
+          "peak_python_bytes": 927864
+        },
+        {
+          "sql": 379,
+          "latency_ms": 523.49,
+          "json_bytes": 9776,
+          "peak_python_bytes": 512562
+        },
+        {
+          "sql": 379,
+          "latency_ms": 702.53,
+          "json_bytes": 9776,
+          "peak_python_bytes": 510915
+        }
+      ],
+      "median_latency_ms": 556.05
+    },
+    {
+      "documents": 1000,
+      "versions": 3000,
+      "page_size": 25,
+      "samples": [
+        {
+          "sql": 3079,
+          "latency_ms": 5782.29,
+          "json_bytes": 9852,
+          "peak_python_bytes": 3927710
+        },
+        {
+          "sql": 3079,
+          "latency_ms": 19276.89,
+          "json_bytes": 9852,
+          "peak_python_bytes": 3906718
+        },
+        {
+          "sql": 3079,
+          "latency_ms": 5526.31,
+          "json_bytes": 9852,
+          "peak_python_bytes": 3905998
+        }
+      ],
+      "median_latency_ms": 5782.29
+    }
+  ]
+}

@@ -1,9 +1,9 @@
 """Explicit client order grants and conversations; no internal dossier projection."""
 from datetime import date
 from typing import Literal
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from .core import get_db
@@ -136,8 +136,14 @@ def thread_status(tid:str,payload:StatusInput,user=Depends(staff),db:Session=Dep
     audit(db,user,'client.thread.status','partner_thread',tid,payload.model_dump());db.commit();return thread_out(db,row)
 
 @router.get('/api/partners/launch-options')
-def launch_options(user=Depends(staff),db:Session=Depends(get_db)):
-    return [{'id':l.id,'label':f'{l.order_ref or l.name} · {l.client_name or "Client non renseigné"}'} for l in db.scalars(select(Launch).order_by(Launch.created_at.desc()))]
+def launch_options(q:str=Query('',max_length=200),offset:int=Query(0,ge=0),limit:int=Query(100,ge=1,le=100),user=Depends(staff),db:Session=Depends(get_db)):
+    from .access import launch_access_clause,must
+    must(user,'launch.read')
+    query=select(Launch).where(launch_access_clause(user,Launch.id))
+    if q.strip():
+        term='%'+q.strip()+'%'
+        query=query.where(or_(*(column.ilike(term) for column in (Launch.name,Launch.order_ref,Launch.client_name,Launch.orli_ref))))
+    return [{'id':l.id,'label':f'{l.order_ref or l.name} · {l.client_name or "Client non renseigné"}'} for l in db.scalars(query.order_by(Launch.created_at.desc(),Launch.id).offset(offset).limit(limit))]
 
 @router.get('/api/partners/publication-options')
 def publication_options(user=Depends(staff),db:Session=Depends(get_db)):

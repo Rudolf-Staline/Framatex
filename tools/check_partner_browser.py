@@ -63,7 +63,7 @@ def main():
                         page.get_by_label('Document à transmettre').set_input_files({'name':'certificat.txt','mimeType':'text/plain','buffer':b'Certificat fictif version 1'})
                         page.get_by_role('button',name='Transmettre une version').click();page.get_by_text('Version 1 · Vérification en attente',exact=False).wait_for()
                         admin=browser.new_context();admin.add_cookies([{'name':c.name,'value':c.value,'url':base} for c in api.cookies.jar])
-                        review=admin.new_page();review.on('dialog',lambda dialog:dialog.accept());review.goto(base+'/partners');review.get_by_role('button',name='Administration',exact=False).click()
+                        review=admin.new_page();review.on('dialog',lambda dialog:dialog.accept());review.goto(base+'/partners');review.locator('#staff').click()
                         review.get_by_role('button',name='Ouvrir',exact=True).click();review.get_by_label('Motif de la décision').fill('Signature manquante')
                         review.get_by_role('button',name='Demander une correction').click();review.get_by_text('Version 1 · Correction demandée',exact=False).wait_for()
                         page.get_by_role('button',name='Actualiser',exact=True).click();page.get_by_role('button',name='Ouvrir',exact=True).click()
@@ -167,6 +167,8 @@ def main():
                         role=post('/api/admin/roles',{'name':'Valideur navigateur','permissions':permissions})
                         deputy_role=post('/api/admin/roles',{'name':'Suppléant navigateur','permissions':permissions})
                         deputy=post('/api/admin/users',{'name':'Suppléant','email':'deputy@example.local','password':PWD,'role_ids':[deputy_role['id']]})
+                        canonical_order=next(o for o in api.get('/api/orders').json() if o['reference']=='CMD-BROWSER')
+                        post(f'/api/orders/{canonical_order["id"]}/members',{'user_id':deputy['id'],'reason':'Habilitation explicite au dossier de recette navigateur'})
                         with BrowserEvidence(admin,base,ROOT/'artifacts/partner-admin') as evidence:
                             internal_page=admin.new_page();internal_page.on('pageerror',lambda e:errors.append(str(e)))
                             open_internal_admin(internal_page,base,evidence)
@@ -246,6 +248,40 @@ def main():
                             (ROOT/'artifacts/phase3-partner-axe.json').write_text(json.dumps(audits,indent=2))
                             assert not [r for r in audits if r['violations']],[r for r in audits if r['violations']]
                             assert not errors,errors
+                        # New daily workflow: a purchasing employee records an off-portal
+                        # source under their own identity, without admin or supplier account.
+                        daily_role=post('/api/admin/roles',{'name':'Achats hors portail navigateur','permissions':[{'action':a} for a in ['launch.read','document.read','document.write','supplier.read','supplier.request','receipt.read','receipt.write']]})
+                        daily_user=post('/api/admin/users',{'name':'Achats navigateur','email':'purchasing@example.local','password':PWD,'role_ids':[daily_role['id']]})
+                        post(f'/api/orders/{canonical_order["id"]}/members',{'user_id':daily_user['id'],'reason':'Accès explicite au parcours achats hors portail de recette'})
+                        offline_org=post('/api/partners/organizations',{'name':'Fournisseur sans compte navigateur','kind':'supplier'})['id']
+                        with httpx.Client(base_url=base,headers=H) as daily_api:
+                            daily_api.post('/api/auth/login',json={'email':'purchasing@example.local','password':PWD}).raise_for_status()
+                            assert not daily_api.get('/api/auth/me').json()['admin']
+                            daily_context=browser.new_context();daily_context.add_cookies([{'name':c.name,'value':c.value,'url':base} for c in daily_api.cookies.jar])
+                            dp=daily_context.new_page();dp.on('pageerror',lambda e:errors.append(str(e)))
+                            dp.goto(base+'/partners');dp.locator('#staff').click()
+                            dp.locator('#request select[name=partner_id]').select_option(offline_org)
+                            dp.locator('#request select[name=launch_id]').select_option(lid)
+                            dp.locator('#request input[name=order_ref]').fill('CMD-BROWSER')
+                            dp.locator('#request input[name=title]').fill('Pièce hors portail navigateur')
+                            dp.locator('#request input[name=doc_type]').fill('Certificat')
+                            dp.locator('#request').get_by_role('button',name='Créer la demande',exact=True).click()
+                            dp.locator('#items article').filter(has_text='Pièce hors portail navigateur').get_by_role('button',name='Ouvrir',exact=True).click()
+                            dp.get_by_label('Pièce reçue hors portail',exact=True).set_input_files({'name':'recu.txt','mimeType':'text/plain','buffer':b'Piece recue par les achats sans compte fournisseur'})
+                            dp.get_by_label('Canal de réception',exact=True).select_option('email')
+                            dp.get_by_label('Provenance et circonstances',exact=True).fill('Pièce jointe reçue par email et enregistrée par les achats')
+                            dp.get_by_role('button',name='Enregistrer la pièce reçue',exact=True).click()
+                            dp.get_by_text('Version 1 · Vérification en attente',exact=False).wait_for()
+                            expect(dp.get_by_role('button',name='Approuver',exact=True)).to_have_count(0)
+                            recorded=next(r for r in daily_api.get('/api/partners/requests').json() if r['title']=='Pièce hors portail navigateur')
+                            saved=daily_api.get(f'/api/partners/requests/{recorded["id"]}').json()['versions'][0]
+                            assert saved['origin']=='staff_received' and saved['received_by']==daily_user['id'] and saved['account_id'] is None
+                            assert api.get(f'/api/partners/organizations/{offline_org}/accounts').json()==[]
+                            audit_page(dp,'purchasing-nonadmin-offportal')
+                            (ROOT/'artifacts/phase3-partner-axe.json').write_text(json.dumps(audits,indent=2))
+                            assert not [r for r in audits if r['violations']],[r for r in audits if r['violations']]
+                            daily_context.close()
+                        assert not errors,errors
                         browser.close()
                         print('PASS: supplier/client journeys, isolation revocation, administrative files, integration, search, order registry, completeness, approval delegation, batch drag-and-drop with partial failure, classification, human confirmation, employee access, mobile layouts')
             finally:

@@ -100,12 +100,9 @@ def check_password(digest: str, plain: str) -> bool:
 
 
 def session_generation(db,user_id):
-    from .models import AuditEvent
-    from sqlalchemy import select
-    def latest(action,target):
-        return db.scalar(select(AuditEvent.id).where(AuditEvent.action==action,AuditEvent.target_id==target)
-            .order_by(AuditEvent.occurred_at.desc(),AuditEvent.id.desc()).limit(1))
-    return [latest('session.restore','all'),latest('session.revoke_all',user_id)]
+    from .operations_models import SessionGeneration
+    rows=[db.get(SessionGeneration,key) for key in ('all','user:'+user_id)]
+    return [row.generation if row else None for row in rows]
 
 
 def cookie_secure():
@@ -132,11 +129,8 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         session_id = payload.get("jti")
         if not isinstance(session_id, str) or len(session_id) != 32:
             raise HTTPException(401, "Session précédente expirée : veuillez vous reconnecter")
-        from .models import AuditEvent
-        from sqlalchemy import select
-        revoked = db.scalar(select(AuditEvent.id).where(
-            AuditEvent.action == "session.logout",
-            AuditEvent.target_id == session_id).limit(1))
+        from .operations_models import SessionRevocation
+        revoked = db.get(SessionRevocation,session_id)
         if revoked is not None:
             raise HTTPException(401, "Session révoquée : veuillez vous reconnecter")
         if payload.get('generation',[None,None])!=session_generation(db,payload['sub']):

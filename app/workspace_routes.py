@@ -26,9 +26,10 @@ from .access import must, permitted
 router = APIRouter(tags=["0.9 — Pilotage et aide"])
 
 
-def _source_folder(db: Session, version_id: str | None) -> str | None:
+def _source_folder(db: Session, version_id: str | None, user=None) -> str | None:
     version = db.get(DocumentVersion, version_id) if version_id else None
-    return version.document.folder.slug if version else None
+    from .order_documents import document_accessible
+    return version.document.folder.slug if version and (user is None or document_accessible(db, user, version.document)) else None
 
 
 def _add(out: list, launch: Launch, *, kind: str, title: str, description: str, rank: int,
@@ -41,6 +42,30 @@ def _add(out: list, launch: Launch, *, kind: str, title: str, description: str, 
                     "Vérification documentaire ou métier requise" if rank == 1 else
                     "Action à suivre"),
                 "area": area, "action": action, "deadline": deadline})
+
+
+def _add_document_obligations(items, report, launch=None, order=None, seen=None):
+    seen = seen if seen is not None else set()
+    for row in report.get("rows", []):
+        if not row["due"] or row["status"] not in ("missing", "pending_validation", "pending_publication"):
+            continue
+        key = row["obligation_key"]
+        if key in seen: continue
+        seen.add(key)
+        kind = {"missing": "missing", "pending_validation": "validation", "pending_publication": "publication"}[row["status"]]
+        prefix = {"missing": "Pièce manquante : ", "validation": "Validation à obtenir : ", "publication": "Publication à effectuer : "}[kind]
+        description = f"Sous-dossier {row['folder'].capitalize()} · {row['document_type']}"
+        if order:
+            items.append({"id": f"{kind}:{key}", "order_id": order.id,
+                "launch_id": row.get("launch_id"), "launch_name": order.reference,
+                "kind": kind, "title": prefix + row["title"], "description": description,
+                "rank": 1, "priority": "high", "priority_reason": "Obligation documentaire exigible",
+                "area": "documents", "folder": row["folder"], "action": "open_order",
+                "url": f"/#/order/{order.id}", "deadline": row["due_date"]})
+        else:
+            _add(items, launch, kind=kind, title=prefix + row["title"], description=description,
+                rank=1, area="documents", action="open_launch", item_id=key, deadline=row["due_date"])
+            items[-1]["folder"] = row["folder"]
 
 
 @router.get("/api/workspace/priorities")
@@ -57,19 +82,30 @@ def priorities(user: User = Depends(get_current_user), db: Session = Depends(get
     launches = visible(db, user, db.scalars(select(Launch).order_by(Launch.created_at.desc())).all())
     items = []
     visible_launches = [l for l in launches if l.status != "Clôturé"]
+    from .partner_phase2_models import BusinessOrder, BusinessOrderLaunch
+    from .order_documents import order_access_clause
+    from .order_completeness import evaluate as evaluate_order
+    seen = set()
+    visible_ids = {l.id for l in visible_launches}
+    orders = list(db.scalars(select(BusinessOrder).where(order_access_clause(user)).order_by(BusinessOrder.created_at.desc())))
+    orders_considered = 0
+    for order in orders:
+        linked = list(db.scalars(select(Launch).join(BusinessOrderLaunch).where(BusinessOrderLaunch.order_id == order.id)))
+        # An order with launches all closed contributes no common action. A
+        # launchless order remains actionable; no fictional launch is created.
+        if linked and all(l.status == 'Clôturé' for l in linked): continue
+        report = evaluate_order(db, order, user, permitted)
+        report['rows'] = [r for r in report['rows'] if not r.get('launch_id') or r['launch_id'] in visible_ids]
+        _add_document_obligations(items, report, order=order, seen=seen)
+        orders_considered += 1
     for launch in visible_launches:
-        report = evaluate(db, launch, user, permitted)
-        for row in report.get("rows", []):
-            if row["status"] not in ("missing", "pending_validation"):
-                continue
-            kind = "missing" if row["status"] == "missing" else "validation"
-            _add(items, launch, kind=kind,
-                 title=("Pièce manquante : " if kind == "missing" else "Validation à obtenir : ") + row["title"],
-                 description=f"Sous-dossier {row['folder'].capitalize()} · {row['document_type']}",
-                 rank=1, area="documents", action="open_launch", item_id=row["id"])
+        if not db.get(BusinessOrderLaunch, launch.id):
+            _add_document_obligations(items, evaluate(db, launch, user, permitted), launch=launch, seen=seen)
         alerts = db.scalars(select(ImpactAlert).where(ImpactAlert.launch_id == launch.id,
                                                       ImpactAlert.status == "to_review")).all()
         for alert in alerts:
+            from .workflow_routes import alert_source_accessible
+            if not alert_source_accessible(db, user, alert): continue
             rule = db.get(ImpactRule, alert.rule_id)
             if not rule or not (permitted(user,"document.read",rule.source_folder)
                                 and permitted(user,"document.read",rule.target_folder)):
@@ -78,8 +114,8 @@ def priorities(user: User = Depends(get_current_user), db: Session = Depends(get
                  description=rule.instruction[:210], rank=1, area="workflow",
                  action="open_launch", item_id=alert.id)
         for req in db.scalars(select(ClientRequirement).where(ClientRequirement.launch_id == launch.id)).all():
-            source_folder = _source_folder(db, req.source_version_id)
-            evidence_folder = _source_folder(db, req.evidence_version_id)
+            source_folder = _source_folder(db, req.source_version_id, user)
+            evidence_folder = _source_folder(db, req.evidence_version_id, user)
             if not source_folder or not permitted(user,"document.read",source_folder):
                 continue
             if req.evidence_version_id and (not evidence_folder or not permitted(user,"document.read",evidence_folder)):
@@ -92,8 +128,8 @@ def priorities(user: User = Depends(get_current_user), db: Session = Depends(get
                               "source_changed":"Document source modifié", "evidence_changed":"Preuve remplacée"}.get(state,"À examiner"),
                  rank=1, area="spec", action="open_launch", item_id=req.id)
         for amb in db.scalars(select(SpecificationAmbiguity).where(SpecificationAmbiguity.launch_id == launch.id)).all():
-            source_folder = _source_folder(db, amb.source_version_id)
-            clarification_folder = _source_folder(db, amb.clarification_version_id)
+            source_folder = _source_folder(db, amb.source_version_id, user)
+            clarification_folder = _source_folder(db, amb.clarification_version_id, user)
             if not source_folder or not permitted(user,"document.read",source_folder):
                 continue
             if amb.clarification_version_id and (not clarification_folder or not permitted(user,"document.read",clarification_folder)):
@@ -107,6 +143,9 @@ def priorities(user: User = Depends(get_current_user), db: Session = Depends(get
             for commitment in db.scalars(select(EmailCommitment).where(
                     EmailCommitment.launch_id == launch.id,
                     EmailCommitment.status.in_(["pending", "postponed"]))).all():
+                from .mail_models import ArchivedEmail
+                email = db.get(ArchivedEmail, commitment.email_id)
+                if not email or not _source_folder(db, email.document_version_id, user): continue
                 if not commitment.due_date:
                     continue  # Date inconnue : ne pas inventer d'urgence.
                 try:
@@ -126,7 +165,7 @@ def priorities(user: User = Depends(get_current_user), db: Session = Depends(get
               "high":sum(i["priority"] == "high" for i in items),
               "normal":sum(i["priority"] == "normal" for i in items)}
     return {"total":len(items), "counts":counts, "items":items[:100],
-            "truncated":len(items)>100,"launches_considered":len(visible_launches),
+            "truncated":len(items)>100,"launches_considered":len(visible_launches),"orders_considered":orders_considered,
             "method":"Urgent : engagement dépassé ; prioritaire : écart ou vérification ; à suivre : échéance dans 7 jours.",
             "as_of":today.isoformat()}
 

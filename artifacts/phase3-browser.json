@@ -323,5 +323,11 @@
     }
   ],
   "console_errors": [],
-  "full_wcag_audit": false
+  "full_wcag_audit": false,
+  "consolidation_journeys": [
+    "order_identification_decimal",
+    "launch_workshop",
+    "version_comments_isolated",
+    "explicit_document_classification"
+  ]
 }

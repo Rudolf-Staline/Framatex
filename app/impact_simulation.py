@@ -4,7 +4,7 @@ Les résultats sont des estimations arithmétiques *illustratives*, non une simu
 financière complète. Entrées sourcées, Decimal exact et aucune écriture dans ORLI.
 """
 from __future__ import annotations
-from .order_documents import document_in_launch
+from .order_documents import document_in_launch, document_accessible
 from decimal import Decimal, InvalidOperation
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -45,7 +45,7 @@ def number(value: str | None, *, key: str) -> Decimal:
 def fmt(value: Decimal) -> str:
     return format(value, 'f')
 
-def current_inputs(db: Session, launch_id: str):
+def current_inputs(db: Session, launch_id: str, user=None):
     """Lire uniquement les révisions courantes, avec provenance et versions."""
     rows = db.scalars(select(BusinessValueRevision).where(
         BusinessValueRevision.launch_id == launch_id,
@@ -57,7 +57,7 @@ def current_inputs(db: Session, launch_id: str):
             continue
         version = db.get(DocumentVersion, row.source_version_id)
         document = db.get(Document, version.document_id) if version else None
-        if not document or not document_in_launch(db, document, launch_id) or document.folder.slug != 'jaune':
+        if not document or (user is not None and not document_accessible(db,user,document)) or not document_in_launch(db, document, launch_id) or document.folder.slug != 'jaune':
             # Seules les valeurs métier du sous-dossier technique participent.
             # Cela évite de révéler une donnée issue d'une autre rubrique.
             continue
@@ -83,12 +83,12 @@ def estimate(inputs: dict[str, Decimal]):
     cost = needs * rate if needs is not None and rate is not None else None
     return {'besoin_calcule': needs, 'cout_matiere_estime': cost}
 
-def calculate(db: Session, launch_id: str, proposed: dict[str, str]):
+def calculate(db: Session, launch_id: str, proposed: dict[str, str], user=None):
     if not proposed:
         raise HTTPException(422, 'Précisez au moins une valeur à faire varier')
     if unknown := set(proposed) - set(INPUTS):
         raise HTTPException(422, 'Champ non pris en charge : ' + ', '.join(sorted(unknown)))
-    sources = current_inputs(db, launch_id)
+    sources = current_inputs(db, launch_id, user)
     if set(proposed) - sources.keys():
         raise HTTPException(422, 'Enregistrez d’abord les valeurs métier de référence : '+', '.join(sorted(set(proposed)-sources.keys())))
     baseline = {key: number(source['value'], key=key) for key, source in sources.items()}
@@ -115,11 +115,11 @@ def calculate(db: Session, launch_id: str, proposed: dict[str, str]):
                   'changed': key in proposed and scenario[key] != baseline[key]} for key in INPUTS],
             'outputs': output, 'warnings': warnings, 'changed_keys': sorted(proposed)}
 
-def dependency_graph(db: Session, launch_id: str, can_access_folder):
+def dependency_graph(db: Session, launch_id: str, can_access_folder, user=None):
     if not can_access_folder('jaune'):
         # Aucun nœud technique ou valeur ne doit être révélé en cas d'absence de droit.
         return {'nodes': [], 'edges': [], 'limited': True}
-    sources = current_inputs(db, launch_id)
+    sources = current_inputs(db, launch_id, user)
     nodes = [{'id': k, 'label': label, 'kind': 'input', 'unit': unit,
               'available': k in sources, 'value': sources.get(k, {}).get('value'),
               'source_title': sources.get(k, {}).get('source_title'),

@@ -85,11 +85,15 @@ class Document(Base):
     def context_launch_id(self):
         if self.launch_id: return self.launch_id
         if self.folder.launch_id: return self.folder.launch_id
-        from .partner_phase2_models import BusinessOrderLaunch
-        from .order_documents import OrderDossier
-        from sqlalchemy import select
-        db=object_session(self)
-        return db.scalar(select(BusinessOrderLaunch.launch_id).join(OrderDossier, OrderDossier.order_id==BusinessOrderLaunch.order_id).where(OrderDossier.id==self.folder.dossier_id).order_by(BusinessOrderLaunch.launch_id).limit(1))
+        # A common order document has no source launch. Keep the historical
+        # property name for compatibility without fabricating provenance.
+        return None
+
+    @property
+    def context_order_id(self):
+        from .order_documents import document_order_id
+        return document_order_id(object_session(self), self)
+
     versions: Mapped[list[DocumentVersion]] = relationship(back_populates="document", cascade="all, delete-orphan", order_by="DocumentVersion.number")
 
 class DocumentVersion(Base):

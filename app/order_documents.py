@@ -62,17 +62,62 @@ def adopt_launch(db, launch_id, order_id):
     db.flush(); db.expire_all()
 
 
+def order_access_clause(user, order_id=None):
+    """SQL equivalent of the canonical ACL, usable before count/pagination.
+
+    A launch attachment never grants order membership. Historical launch
+    restrictions remain an additional condition on launch-owned documents.
+    """
+    from sqlalchemy import exists, or_, false, true
+    from sqlalchemy.orm import aliased
+    from .partner_phase2_models import BusinessOrder
+    from .access import is_admin
+    if not user.active:
+        return false()
+    if is_admin(user):
+        return true()
+    order = aliased(BusinessOrder)
+    member = aliased(OrderMember)
+    target = BusinessOrder.id if order_id is None else order_id
+    return exists(select(order.id).where(order.id == target, or_(
+        order.created_by == user.id,
+        exists(select(member.order_id).where(member.order_id == order.id, member.user_id == user.id)))))
+
+
+def source_launch_access_clause(user, launch_id):
+    """Historical launch ACL only; deliberately independent of order grants."""
+    from sqlalchemy import exists, or_, false, true
+    from sqlalchemy.orm import aliased
+    from .models import Launch, LaunchMember
+    from .access import is_admin
+    if not user.active:
+        return false()
+    if is_admin(user):
+        return true()
+    launch, member = aliased(Launch), aliased(LaunchMember)
+    return exists(select(launch.id).where(launch.id == launch_id, or_(
+        launch.restricted.is_(False), launch.created_by == user.id,
+        exists(select(member.id).where(member.launch_id == launch.id, member.user_id == user.id)))).correlate_except(launch))
+
+
+def document_access_clause(user, document=None):
+    """Document ACL in SQL, independent of selected joins and ORM loading."""
+    from sqlalchemy import exists, and_, or_
+    from sqlalchemy.orm import aliased
+    from .models import Folder
+    document = Document if document is None else document
+    folder, root = aliased(Folder), aliased(OrderDossier)
+    canonical = and_(folder.dossier_id.is_not(None), exists(select(root.id).where(
+        root.id == folder.dossier_id, order_access_clause(user, root.order_id))),
+        or_(document.launch_id.is_(None), source_launch_access_clause(user, document.launch_id)))
+    legacy = and_(folder.dossier_id.is_(None), source_launch_access_clause(user, folder.launch_id))
+    return exists(select(folder.id).where(folder.id == document.folder_id, or_(canonical, legacy)))
+
+
 def order_accessible(db, user, order_id):
-    from .partner_phase2_models import BusinessOrder, BusinessOrderLaunch
-    from .models import Launch
-    from .access import accessible_launch
-    order = db.get(BusinessOrder, order_id)
-    if not order or not user.active: return False
-    if any(r.name == 'Administrateur' for r in user.roles): return True
-    launches = list(db.scalars(select(Launch).join(BusinessOrderLaunch).where(BusinessOrderLaunch.order_id == order_id)))
-    # Never widen historical restricted launch access by linking an order.
-    if launches: return all(accessible_launch(db, user, l) for l in launches)
-    return order.created_by == user.id or db.get(OrderMember, (order_id,user.id)) is not None
+    from .partner_phase2_models import BusinessOrder
+    return db.scalar(select(BusinessOrder.id).where(BusinessOrder.id == order_id,
+        order_access_clause(user, BusinessOrder.id))) is not None
 
 
 def must_order(db, user, order_id):
@@ -82,11 +127,15 @@ def must_order(db, user, order_id):
 
 
 def document_accessible(db, user, doc):
+    if doc is None or not user.active:
+        return False
     from .access import accessible_launch
+    from .models import Launch
     if doc.folder.dossier_id:
-        root=db.get(OrderDossier, doc.folder.dossier_id)
-        return order_accessible(db,user,root.order_id)
-    return accessible_launch(db,user,doc.folder.launch)
+        root = db.get(OrderDossier, doc.folder.dossier_id)
+        return bool(root and order_accessible(db, user, root.order_id) and
+                    (not doc.launch_id or accessible_launch(db, user, db.get(Launch, doc.launch_id))))
+    return accessible_launch(db, user, doc.folder.launch)
 
 
 def document_order_id(db, doc):
@@ -127,4 +176,5 @@ def version_out(v: DocumentVersion):
 
 def doc_out(d: Document):
     versions = sorted(d.versions, key=lambda v: v.number)
-    return {"order_id": document_order_id(object_session(d), d), "launch_id": d.launch_id, "id": d.id, "title": d.title, "doc_type": d.doc_type, "folder": d.folder.slug, "created_at": d.created_at.isoformat(), "versions": [version_out(v) for v in versions], "latest": version_out(versions[-1]) if versions else None}
+    from .document_types import type_out
+    return {"classification": type_out(object_session(d),d), "order_id": document_order_id(object_session(d), d), "launch_id": d.launch_id, "id": d.id, "title": d.title, "doc_type": d.doc_type, "folder": d.folder.slug, "created_at": d.created_at.isoformat(), "versions": [version_out(v) for v in versions], "latest": version_out(versions[-1]) if versions else None}

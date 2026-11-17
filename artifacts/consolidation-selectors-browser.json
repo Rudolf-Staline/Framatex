@@ -1,0 +1,11 @@
+{
+  "synthetic": true,
+  "browser": "Chromium",
+  "scenarios": [
+    "historical order picker search beyond100",
+    "nonadmin daily search excludes restricted match",
+    "nonadmin daily next page reaches old launch"
+  ],
+  "javascript_errors": [],
+  "result": "passed"
+}
