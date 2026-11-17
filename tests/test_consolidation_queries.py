@@ -71,3 +71,17 @@ def test_canonical_client_search_and_sql_pages_before_permissions():
         assert all(set(item)=={'id','name'} for item in clients['items'])
         created=post(reader,'/api/orders',{'client_id':cid,'reference':'NON-ADMIN-CREATED'})
         assert reader.get(f'/api/orders/{created["id"]}/dossier').status_code==200
+
+        # Removing the base read permission must also close indirect surfaces,
+        # even while a document-specific grant and order membership remain.
+        with SessionLocal() as db:
+            employee=db.scalar(select(User).where(User.email=='queries@sample.local'))
+            for grant in list(employee.roles[0].grants):
+                if grant.action=='launch.read':db.delete(grant)
+            db.commit()
+        assert reader.get(f'/api/documents/{doc["id"]}/history').status_code==403
+        assert reader.get(f'/api/documents/{doc["id"]}/versions/1/download').status_code==403
+        assert reader.get(f'/api/document-versions/{doc["latest"]["id"]}/comments').status_code==403
+        assert reader.post(f'/api/document-versions/{doc["latest"]["id"]}/comments',json={'text':'Denied'},headers=H).status_code==403
+        assert reader.patch(f'/api/documents/{doc["id"]}/classification',json={'type_id':'certificate','expected_label':doc['doc_type']},headers=H).status_code==403
+        assert reader.post(f'/api/documents/{doc["id"]}/versions',files={'file':('deny.txt',b'Denied','text/plain')},headers=H).status_code==403

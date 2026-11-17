@@ -27,6 +27,7 @@ class CommentInput(BaseModel):
     text:str=Field(min_length=1,max_length=4000)
 
 def version_scope(db,user,version_id,write=False):
+    must(user,'launch.read')
     version=db.get(DocumentVersion,version_id)
     if not version or not document_accessible(db,user,version.document):raise HTTPException(404,'Version introuvable')
     must(user,'document.read',version.document.folder.slug)

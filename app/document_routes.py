@@ -66,6 +66,7 @@ async def upload_document(launch_id: str, folder: str = Form(...), title: str = 
 
 @router.post("/api/documents/{doc_id}/versions", status_code=201)
 async def new_version(doc_id: str, file: UploadFile = File(...), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    must(user,"launch.read")
     d = get_doc(db, doc_id)
     must(user, "document.write", d.folder.slug)
     actor_id = user.id
@@ -106,6 +107,7 @@ async def new_version(doc_id: str, file: UploadFile = File(...), user: User = De
 
 @router.get("/api/documents/{doc_id}/versions/{number}/download")
 def download(doc_id: str, number: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    must(user,"launch.read")
     doc = get_doc(db, doc_id)
     must(user, "document.read", doc.folder.slug)
     version = db.scalar(select(DocumentVersion).where(DocumentVersion.document_id==doc.id,DocumentVersion.number==number))

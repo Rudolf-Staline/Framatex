@@ -95,6 +95,7 @@ class ClassificationInput(BaseModel):
 
 @router.patch('/api/documents/{doc_id}/classification')
 def classify(doc_id:str,payload:ClassificationInput,user=Depends(get_current_user),db:Session=Depends(get_db)):
+    must(user,'launch.read')
     doc=db.get(Document,doc_id)
     if not doc or not document_accessible(db,user,doc):raise HTTPException(404,'Document introuvable')
     must(user,'document.read',doc.folder.slug);must(user,'document.write',doc.folder.slug)
