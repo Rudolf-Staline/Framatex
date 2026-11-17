@@ -19,7 +19,10 @@ Départ : 33e7836. Ancienne branche `feat/commande-identification` lue au commit
 - Relance isolée `FRAMATEX_DATA_DIR=$(mktemp -d /tmp/framatex-docs-guide.XXXXXX) python -m pytest -q tests/test_guide_catalog.py tests/test_guide_evaluation.py tests/test_guide_api.py tests/test_consolidation_documents.py tests/test_intake.py` : 38 réussis en 66,63 s. Le défaut initial était un partage de base entre processus de test ; aucun contournement fonctionnel.
 - `node tests/test_guide_frontend.cjs` : réussi après installation npm des dépendances épinglées.
 - Test supplémentaire : reprise idempotente de identification_json (ancienne branche), avec clé retirée conservée.
-- Navigateur : nouveaux parcours identification décimale, atelier par lancement, commentaire v1 conservé et absent v2, reclassement explicite, nouvelle version et téléchargement vérifiés ; 4 contrôles axe/mobile du dossier réussis. Contrôle transverse complet en cours après correction centrale de l'import ApprovalStageAssignment dans la file de validation.
+- Navigateur : nouveaux parcours identification décimale, atelier par lancement, commentaire v1 conservé et absent v2, reclassement explicite, nouvelle version et téléchargement vérifiés ; 4 contrôles axe/mobile du dossier réussis. Le premier contrôle transverse a détecté un import ApprovalStageAssignment erroné dans la file de validation ; il a été corrigé centralement, puis le parcours complet a réussi.
+- Guide métier après mise à jour quotidienne fournisseur/réception : 31 tests catalog/evaluation/API et permissions non administrateur réussis en 35,61 s ; catalogue validé (57 procédures, 61 visites, 171 actions), manuel régénéré et frontend vérifié.
+- `FRAMATEX_BROWSER_EXECUTABLE=/usr/bin/chromium python tools/check_phase3_browser.py` : réussi, Chrome local, serveur/bases temporaires synthétiques ; 64 contrôles de surface/viewport (360, 390, 768, 1440 px), zéro violation axe rapportée, zéro erreur JS. Les nouveaux parcours sont déclarés dans artifacts/phase3-browser.json. Ce contrôle technique ne constitue pas un audit WCAG complet ni une recette Framatex.
+- Régression documents finale avec reprise de l’ancienne fiche : 4 tests réussis en 9,02 s.
 - Suite globale : intégration centrale à suivre.
 
 ## Limites et décisions restantes

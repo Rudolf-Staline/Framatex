@@ -2482,10 +2482,10 @@
         {
           "id": "supplier_integration_step_4",
           "title": "Étape 4",
-          "description": "La pièce rejoint le Dossier Jaune canonique de la commande."
+          "description": "La pièce rejoint la rubrique du dossier autorisé : le Dossier Jaune de la commande lorsqu’il existe, avec sa provenance de lancement conservée."
         }
       ],
-      "result": "La version interne intégrée conserve sa provenance fournisseur et rejoint le dossier canonique de la commande.",
+      "result": "La version interne intégrée conserve sa provenance fournisseur et rejoint la rubrique autorisée du dossier.",
       "problems": [
         {
           "problem": "La fonction est absente ou inaccessible",
@@ -5609,7 +5609,7 @@
           "destination": "supplier_work",
           "target": "partner_admin-screen",
           "title": "Intégrer une pièce fournisseur approuvée · 4/4",
-          "description": "La pièce rejoint le Dossier Jaune canonique de la commande."
+          "description": "La pièce rejoint la rubrique du dossier autorisé : le Dossier Jaune de la commande lorsqu’il existe, avec sa provenance de lancement conservée."
         }
       ]
     },

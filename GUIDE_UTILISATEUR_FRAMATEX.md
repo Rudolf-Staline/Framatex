@@ -91,6 +91,8 @@ Problèmes fréquents :
 
 Raccourci : destination enregistrée `orders`. Visite : `tour_order_launch_difference`.
 
+Limites : Dans le Dossier Jaune, Fiche d’identification ouvre les champs facultatifs communs à la commande. Fiche du lancement conserve son atelier séparément. Client, référence commande et ORLI sont affichés depuis leurs sources canoniques. En cas de conflit, actualisez la fiche avant de reprendre vos modifications.
+
 ## Ajouter un lancement à une commande
 
 Identifiant permanent : `create_launch` · profils : employé, administrateur · catégorie : commandes
@@ -230,7 +232,7 @@ Prérequis : Disposer d’un compte actif dans l’espace concerné ; Avoir acc�
 
 1. Ouvrez Commandes et sélectionnez la commande concernée.
 2. Dans son Dossier Jaune unique, ouvrez Jaune — Technique et commercial.
-3. Dépliez Déposer un document, indiquez titre, type et lancement facultatif.
+3. Dépliez Déposer un document, indiquez le titre, sélectionnez un type de la rubrique et le lancement d’origine s’il existe. « À classer » conserve une pièce dont le type reste à déterminer.
 4. Sélectionnez le fichier, vérifiez son classement puis confirmez vous-même le dépôt.
 
 Résultat : Après votre dépôt, la pièce et sa version figurent dans la rubrique Jaune de la commande ; son lancement d’origine peut être renseigné.
@@ -241,6 +243,8 @@ Problèmes fréquents :
 - La cible de visite a changé : Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide.
 
 Raccourci : destination enregistrée `order_upload`. Visite : `tour_upload_technical_document`.
+
+Limites : Une pièce « À classer » ne satisfait pas automatiquement une exigence de type précis. Le classement se reprend depuis Versions et historique → Classer le document ; le libellé d’origine est conservé.
 
 ## Retrouver une facture
 
@@ -305,6 +309,8 @@ Problèmes fréquents :
 
 Raccourci : destination enregistrée `order_context`. Visite : `tour_document_versions`.
 
+Limites : Versions et historique permet de consulter ou ajouter des commentaires internes sur une version précise. Un commentaire ne remplace ni une demande de correction ni une décision dans le circuit de validation.
+
 ## Rechercher et filtrer les documents
 
 Identifiant permanent : `search_documents` · profils : employé, administrateur · catégorie : recherche
@@ -335,14 +341,14 @@ Ouvrez le Dossier Jaune de la commande et sa section Complétude.
 Prérequis : Disposer d’un compte actif dans l’espace concerné ; Avoir accès à la commande ou au lancement concerné.
 
 1. Ouvrez le Dossier Jaune de la commande et sa section Complétude.
-2. Distinguez pièce manquante, validation attendue et exigence satisfaite.
+2. Distinguez non applicable, facultatif, non encore exigible, manquant exigible, validation ou publication en attente, satisfait et dérogation justifiée. Une dérogation ne vaut pas présence.
 3. Sans profil configuré, la complétude ne peut pas être déclarée.
-4. Déposez les pièces ou faites vérifier la version exacte selon la procédure.
+4. Déposez la pièce commune dans la commande ou rattachez sa provenance au lancement concerné. Faites vérifier la version courante ; une ancienne validation ne couvre pas la nouvelle version. Une personne habilitée peut justifier une dérogation limitée à cette obligation.
 
 Résultat : Vous distinguez les exigences satisfaites, pièces absentes et validations attendues pour la commande.
 
 Problèmes fréquents :
-- La commande n’a pas de profil de complétude : Demandez à un administrateur de sélectionner le profil et les règles métier confirmées ; aucun état complet ne doit être déduit sans ces règles.
+- La commande n’a pas de profil de complétude : Demandez à un administrateur de sélectionner un profil. Les profils historiques des lancements restent visibles avec leurs dérogations propres. Aucun état complet ne doit être déduit sans règles configurées ; leur validation officielle reste à organiser avec Framatex.
 - La fonction est absente ou inaccessible : Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits.
 - La cible de visite a changé : Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide.
 
@@ -358,7 +364,7 @@ Prérequis : Disposer d’un compte actif dans l’espace concerné ; Être admi
 
 1. Dans Administration, créez un profil et ses exigences documentaires.
 2. Dans le Dossier Jaune, choisissez Configurer la complétude de la commande.
-3. Sélectionnez profil, phase et type, puis confirmez.
+3. Sélectionnez profil, phase et type. Dans Conditions de complétude, choisissez explicitement une obligation par commande ou par lancement et l’événement de référence du délai. Le délai historique reste lié à la création du lancement ; sans cet événement il n’est pas exigible.
 4. Faites valider les obligations métier par Framatex.
 
 Résultat : Après votre confirmation, le profil, la phase et le type sélectionnés déterminent les exigences documentaires de la commande.
@@ -461,11 +467,11 @@ Identifiant permanent : `receipts` · profils : employé, administrateur · cat�
 
 Ouvrez Réceptions pour consulter les lignes autorisées.
 
-Prérequis : Disposer d’un compte actif dans l’espace concerné ; Avoir accès à la commande ou au lancement concerné ; Pouvoir consulter les documents dans la rubrique Jaune ; Pouvoir consulter les documents dans la rubrique Rose.
+Prérequis : Disposer d’un compte actif dans l’espace concerné ; Avoir accès à la commande ou au lancement concerné ; Pouvoir consulter les documents dans la rubrique Jaune ; Pouvoir consulter les documents dans la rubrique Rose ; Disposer de receipt.read pour consulter ; receipt.write est nécessaire pour enregistrer un mouvement.
 
 1. Ouvrez Réceptions pour consulter les lignes autorisées.
-2. Distinguez quantité commandée, déclarée par le fournisseur et réellement reçue.
-3. Ouvrez le lancement et ses pièces Rose pour examiner les sources.
+2. Distinguez commandé, prévu, annoncé, déclaré, reçu, retourné et restant, avec leurs unités.
+3. Ouvrez les pièces de réception : le lien conduit à la commande et à sa rubrique Rose lorsqu’elle existe, sinon au lancement réel.
 
 Résultat : Vous distinguez les quantités déclarées des réceptions confirmées et pouvez retrouver leurs pièces sources.
 
@@ -474,6 +480,8 @@ Problèmes fréquents :
 - La cible de visite a changé : Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide.
 
 Raccourci : destination enregistrée `receipts`. Visite : `tour_receipts`.
+
+Limites : Une réception partielle n’est pas automatiquement une anomalie. L’écart dépend de la règle et de l’échéance configurées. Les permissions de réception sont attribuées explicitement par l’administration ; elles ne sont pas accordées automatiquement aux anciens rôles.
 
 ## Suivre les matières et mouvements
 
@@ -703,24 +711,26 @@ Raccourci : destination enregistrée `partner_admin`. Visite : `tour_publish_cli
 
 ## Intégrer une pièce fournisseur approuvée
 
-Identifiant permanent : `supplier_integration` · profils : administrateur · catégorie : administration
+Identifiant permanent : `supplier_integration` · profils : employé, administrateur · catégorie : partenaires
 
 Ouvrez la demande fournisseur approuvée.
 
-Prérequis : Disposer d’un compte actif dans l’espace concerné ; Être administrateur employé de Framatex ; Utiliser uniquement les demandes ou commandes autorisées de votre organisation.
+Prérequis : Disposer d’un compte actif dans l’espace concerné ; Utiliser uniquement les demandes ou commandes autorisées de votre organisation ; Disposer de lecture, dépôt et examen documentaire dans la rubrique de destination.
 
-1. Ouvrez la demande fournisseur approuvée.
+1. Ouvrez /partners → Espace Framatex avec votre session collaborateur habilitée, puis la demande fournisseur approuvée.
 2. Choisissez sa rubrique interne puis Intégrer au dossier interne.
 3. Vérifiez la commande et confirmez : la version garde sa provenance fournisseur.
-4. La pièce rejoint le Dossier Jaune canonique de la commande.
+4. La pièce rejoint la rubrique du dossier autorisé : le Dossier Jaune de la commande lorsqu’il existe, avec sa provenance de lancement conservée.
 
-Résultat : La version interne intégrée conserve sa provenance fournisseur et rejoint le dossier canonique de la commande.
+Résultat : La version interne intégrée conserve sa provenance fournisseur et rejoint la rubrique autorisée du dossier.
 
 Problèmes fréquents :
 - La fonction est absente ou inaccessible : Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits.
 - La cible de visite a changé : Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide.
 
-Raccourci : destination enregistrée `partner_admin`. Visite : `tour_supplier_integration`.
+Raccourci : destination enregistrée `supplier_work`. Visite : `tour_supplier_integration`.
+
+Limites : L’examen fournisseur demande supplier.review ; l’intégration demande les permissions documentaires de la rubrique choisie. Ces droits sensibles sont attribués explicitement sans rendre le collaborateur administrateur.
 
 ## Importer et comparer un export ORLI
 
@@ -1175,3 +1185,26 @@ Problèmes fréquents :
 - La cible de visite a changé : Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide.
 
 Raccourci : destination enregistrée `client_orders`. Visite : `tour_client_history`.
+
+## Enregistrer une pièce fournisseur reçue hors portail
+
+Identifiant permanent : `record_received_supplier_document` · profils : employé, administrateur · catégorie : fournisseurs
+
+Ouvrez la demande autorisée dans Espace Framatex, sans utiliser le compte du fournisseur.
+
+Prérequis : Disposer d’un compte collaborateur actif et des permissions supplier.read et supplier.request ; Avoir accès à la commande et au lancement de la demande.
+
+1. Ouvrez /partners → Espace Framatex avec votre session collaborateur, puis la demande fournisseur autorisée.
+2. Sélectionnez Pièce reçue hors portail et indiquez le canal de réception.
+3. Décrivez la provenance et sélectionnez le fichier ; confirmez l’enregistrement.
+4. Un collaborateur habilité supplier.review examine ensuite la bonne version ; une correction se dépose comme nouvelle version, avant une intégration explicite.
+
+Résultat : La pièce est conservée comme transmission reçue par un collaborateur, avec canal, provenance et version ; son examen reste distinct.
+
+Problèmes fréquents :
+- La fonction est absente ou inaccessible : Vérifiez votre profil et vos habilitations. Le guide ne peut pas accorder de droits.
+- La cible de visite a changé : Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide.
+
+Raccourci : destination enregistrée `supplier_work`. Visite : `tour_record_received_supplier_document`.
+
+Limites : Le portail n’est pas obligatoire pour enregistrer une pièce reçue. Une réception documentaire ne constitue ni une approbation ni une réception de quantité. Aucune identité fournisseur n’est usurpée.

@@ -755,5 +755,24 @@
     ],
     "source": "static/partners.html",
     "route": "/partners"
+  },
+  "supplier_work": {
+    "id": "supplier_work",
+    "label": "Espace Framatex fournisseurs",
+    "surface": "internal",
+    "handler": "partner_admin",
+    "view": "partner_admin",
+    "target": "partner_admin-screen",
+    "context": null,
+    "requires": [
+      {
+        "action": "launch.read"
+      },
+      {
+        "action": "supplier.read"
+      }
+    ],
+    "source": "static/partners.js",
+    "route": "/partners"
   }
 }
