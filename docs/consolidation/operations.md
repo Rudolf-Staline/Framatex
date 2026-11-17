@@ -86,3 +86,21 @@ ni un dimensionnement de production. Aucun avant/après comparable n'est revendi
   aucun jeu synthétique ne constitue une recette officielle.
 
 Revalidation finale : `FRAMATEX_DATA_DIR=/tmp/framat-operations-latest-whole /tmp/framatex-venv/bin/python -m pytest -q tests/test_consolidation_operations.py` : **13 passed in 21.50s**. Compilation Python des six modules opérationnels : succès. `git diff --check` : succès au contrôle.
+
+## Revue complémentaire des baux SMTP
+
+Deux défauts supplémentaires ont été reproduits sur `df0a0c7` avec des points
+d'arrêt simulés : une réservation expirée pouvait encore être envoyée par son
+ancien worker ; la fin d'une ancienne tentative pouvait écraser le bail d'un
+nouveau propriétaire ou une décision opérateur. La reprise et le passage à
+envoi sont maintenant sérialisés par transaction courte `BEGIN IMMEDIATE`,
+l'expiration est vérifiée avant transport et la finalisation exige encore le
+même token et le statut processing. Aucune session SQL n'est maintenue pendant
+l'appel SMTP. Une tentative devenue obsolète conserve l'état incertain/décidé.
+Deux workers récupérant la même réservation expirée ne déclenchent qu'un transport.
+
+Le retour positif de DATA est également conservé comme accepté si seule la
+fermeture/commande QUIT SMTP échoue ensuite. Un mock a confirmé cette fenêtre,
+sans connexion SMTP réelle. Régressions des baux + suite opérations + test SMTP
+historique : **17 passed in 17.85s** ; mock QUIT : **1 passed in 2.12s**.
+Aucune nouvelle règle métier ou permission n'est introduite par cette revue.

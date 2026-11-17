@@ -152,3 +152,68 @@ def test_missing_0020_with_later_ledger_and_unknown_revision_rejection(tmp_path,
     with engine.connect() as db:
         assert db.execute(text("SELECT count(*) FROM schema_migrations WHERE version='9999_unknown'")).scalar_one()==1
     engine.dispose()
+
+
+def test_expired_reservation_is_not_sent_by_original_worker():
+    with TestClient(app) as staff,TestClient(app) as supplier:
+        mail_fixture(staff,supplier);sent=[]
+        def expire(at,mid):
+            if at=='reserved':
+                with SessionLocal() as db:
+                    lease=db.get(PartnerMailLease,mid);lease.expires_at=utcnow()-timedelta(seconds=1);db.commit()
+        process_batch(transport=lambda *args:sent.append(args),checkpoint=expire)
+        assert sent==[]
+        process_batch(transport=lambda *args:sent.append(args))
+        assert len(sent)==1
+
+
+def test_obsolete_smtp_attempt_cannot_erase_replacement_lease_or_decision():
+    with TestClient(app) as staff,TestClient(app) as supplier:
+        mail_fixture(staff,supplier)
+        def replace(at,mid):
+            if at=='accepted_before_commit':
+                with SessionLocal() as db:
+                    lease=db.get(PartnerMailLease,mid)
+                    lease.token='replacement-owner';lease.phase='reserved'
+                    row=db.get(PartnerMail,mid);row.status='cancelled';db.commit()
+        process_batch(transport=lambda *args:None,checkpoint=replace)
+        with SessionLocal() as db:
+            assert db.scalar(select(PartnerMail)).status=='cancelled'
+            assert db.scalar(select(PartnerMailLease)).token=='replacement-owner'
+
+
+def test_two_workers_recover_one_expired_reservation_without_duplicate_transport():
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Lock
+    with TestClient(app) as staff,TestClient(app) as supplier:
+        mail_fixture(staff,supplier)
+        def crash(at,mid):
+            if at=='reserved':raise SimulatedPowerLoss()
+        with pytest.raises(SimulatedPowerLoss):process_batch(transport=lambda *args:None,checkpoint=crash)
+        with SessionLocal() as db:
+            lease=db.scalar(select(PartnerMailLease));lease.expires_at=utcnow()-timedelta(seconds=1);db.commit()
+        sent=[];lock=Lock()
+        def send(*args):
+            with lock:sent.append(args)
+        with ThreadPoolExecutor(max_workers=2) as workers:
+            results=list(workers.map(lambda _:process_batch(transport=send),range(2)))
+        assert len(sent)==1 and sum(r['processed'] for r in results)==1
+
+
+def test_smtp_quit_failure_does_not_reclassify_known_acceptance(monkeypatch):
+    import app.partner_mail as mail
+    accepted=[]
+    class MockSMTP:
+        def __init__(self,*args,**kwargs):pass
+        def __enter__(self):return self
+        def __exit__(self,*args):raise smtplib.SMTPResponseException(500,b'Synthetic QUIT failure after DATA success')
+        def ehlo(self):pass
+        def starttls(self,**kwargs):pass
+        def send_message(self,message):accepted.append(message['Message-ID']);return {}
+    monkeypatch.setattr(mail.smtplib,'SMTP',MockSMTP)
+    monkeypatch.setenv('FRAMATEX_EMAIL_ENABLED','1')
+    monkeypatch.setenv('FRAMATEX_SMTP_HOST','mock.invalid')
+    monkeypatch.setenv('FRAMATEX_SMTP_FROM','mock@sample.local')
+    monkeypatch.delenv('FRAMATEX_SMTP_USER',raising=False)
+    mail.smtp_send('synthetic@sample.local','event-mock')
+    assert accepted==['<event-mock@framatex.local>']
