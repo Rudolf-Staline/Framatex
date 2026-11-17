@@ -29,7 +29,8 @@ async def request_header_guard(request: Request, call_next):
             return Response("En-tête de protection manquant", status_code=403)
     if request.url.path.startswith('/api/'):
         from .access import guard_http_request
-        denied = guard_http_request(request)
+        from starlette.concurrency import run_in_threadpool
+        denied = await run_in_threadpool(guard_http_request,request)
         if denied is not None:
             return denied
     return await call_next(request)
