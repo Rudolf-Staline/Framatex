@@ -1,0 +1,361 @@
+{
+  "conditions": "Shared development host (no exclusive CPU/RAM isolation); Local SQLite temporary DB; reader; canonical order, shared documents, one linked launch; 3 versions/document; metadata search endpoint function including ORM user lookup; no HTTP/network; tracemalloc enabled; sequential samples plus optional isolated concurrent waves (one Session/thread, fixed first page); concurrent memory is aggregate; no production or p95 claim",
+  "results": [
+    {
+      "documents": 100,
+      "versions": 300,
+      "page_size": 25,
+      "samples": [
+        {
+          "sql": 5,
+          "latency_ms": 162.41,
+          "json_bytes": 10126,
+          "peak_python_bytes": 1193755
+        },
+        {
+          "sql": 5,
+          "latency_ms": 99.0,
+          "json_bytes": 10126,
+          "peak_python_bytes": 796523
+        },
+        {
+          "sql": 5,
+          "latency_ms": 44.22,
+          "json_bytes": 10126,
+          "peak_python_bytes": 693818
+        }
+      ],
+      "median_latency_ms": 99.0,
+      "concurrent": [
+        {
+          "concurrency": 2,
+          "waves": 3,
+          "requests": 6,
+          "errors": 0,
+          "samples": [
+            {
+              "wave": 1,
+              "worker": 1,
+              "sql": 5,
+              "latency_ms": 102.38,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 1,
+              "worker": 2,
+              "sql": 5,
+              "latency_ms": 116.28,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 2,
+              "worker": 1,
+              "sql": 5,
+              "latency_ms": 115.21,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 2,
+              "worker": 2,
+              "sql": 5,
+              "latency_ms": 134.81,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 3,
+              "worker": 1,
+              "sql": 5,
+              "latency_ms": 313.57,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 3,
+              "worker": 2,
+              "sql": 5,
+              "latency_ms": 304.88,
+              "json_bytes": 10126
+            }
+          ],
+          "batch_elapsed_ms": 574.17,
+          "requests_per_second": 10.45,
+          "peak_python_bytes_all_threads": 2195113,
+          "median_latency_ms": 125.55
+        },
+        {
+          "concurrency": 4,
+          "waves": 3,
+          "requests": 12,
+          "errors": 0,
+          "samples": [
+            {
+              "wave": 1,
+              "worker": 1,
+              "sql": 5,
+              "latency_ms": 228.01,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 1,
+              "worker": 2,
+              "sql": 5,
+              "latency_ms": 191.07,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 1,
+              "worker": 3,
+              "sql": 5,
+              "latency_ms": 344.49,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 1,
+              "worker": 4,
+              "sql": 5,
+              "latency_ms": 357.77,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 2,
+              "worker": 1,
+              "sql": 5,
+              "latency_ms": 222.73,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 2,
+              "worker": 2,
+              "sql": 5,
+              "latency_ms": 245.03,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 2,
+              "worker": 3,
+              "sql": 5,
+              "latency_ms": 255.39,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 2,
+              "worker": 4,
+              "sql": 5,
+              "latency_ms": 231.78,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 3,
+              "worker": 1,
+              "sql": 5,
+              "latency_ms": 267.02,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 3,
+              "worker": 2,
+              "sql": 5,
+              "latency_ms": 260.78,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 3,
+              "worker": 3,
+              "sql": 5,
+              "latency_ms": 281.56,
+              "json_bytes": 10126
+            },
+            {
+              "wave": 3,
+              "worker": 4,
+              "sql": 5,
+              "latency_ms": 241.64,
+              "json_bytes": 10126
+            }
+          ],
+          "batch_elapsed_ms": 910.98,
+          "requests_per_second": 13.17,
+          "peak_python_bytes_all_threads": 4822354,
+          "median_latency_ms": 250.21
+        }
+      ]
+    },
+    {
+      "documents": 1000,
+      "versions": 3000,
+      "page_size": 25,
+      "samples": [
+        {
+          "sql": 5,
+          "latency_ms": 78.97,
+          "json_bytes": 10202,
+          "peak_python_bytes": 689106
+        },
+        {
+          "sql": 5,
+          "latency_ms": 66.42,
+          "json_bytes": 10202,
+          "peak_python_bytes": 691824
+        },
+        {
+          "sql": 5,
+          "latency_ms": 68.15,
+          "json_bytes": 10202,
+          "peak_python_bytes": 691205
+        }
+      ],
+      "median_latency_ms": 68.15,
+      "concurrent": [
+        {
+          "concurrency": 2,
+          "waves": 3,
+          "requests": 6,
+          "errors": 0,
+          "samples": [
+            {
+              "wave": 1,
+              "worker": 1,
+              "sql": 5,
+              "latency_ms": 83.34,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 1,
+              "worker": 2,
+              "sql": 5,
+              "latency_ms": 93.64,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 2,
+              "worker": 1,
+              "sql": 5,
+              "latency_ms": 88.72,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 2,
+              "worker": 2,
+              "sql": 5,
+              "latency_ms": 103.99,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 3,
+              "worker": 1,
+              "sql": 5,
+              "latency_ms": 92.61,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 3,
+              "worker": 2,
+              "sql": 5,
+              "latency_ms": 135.37,
+              "json_bytes": 10202
+            }
+          ],
+          "batch_elapsed_ms": 336.89,
+          "requests_per_second": 17.81,
+          "peak_python_bytes_all_threads": 2168420,
+          "median_latency_ms": 93.12
+        },
+        {
+          "concurrency": 4,
+          "waves": 3,
+          "requests": 12,
+          "errors": 0,
+          "samples": [
+            {
+              "wave": 1,
+              "worker": 1,
+              "sql": 5,
+              "latency_ms": 174.09,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 1,
+              "worker": 2,
+              "sql": 5,
+              "latency_ms": 177.78,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 1,
+              "worker": 3,
+              "sql": 5,
+              "latency_ms": 206.42,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 1,
+              "worker": 4,
+              "sql": 5,
+              "latency_ms": 207.42,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 2,
+              "worker": 1,
+              "sql": 5,
+              "latency_ms": 211.72,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 2,
+              "worker": 2,
+              "sql": 5,
+              "latency_ms": 183.77,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 2,
+              "worker": 3,
+              "sql": 5,
+              "latency_ms": 227.23,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 2,
+              "worker": 4,
+              "sql": 5,
+              "latency_ms": 218.27,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 3,
+              "worker": 1,
+              "sql": 5,
+              "latency_ms": 444.5,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 3,
+              "worker": 2,
+              "sql": 5,
+              "latency_ms": 472.83,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 3,
+              "worker": 3,
+              "sql": 5,
+              "latency_ms": 464.13,
+              "json_bytes": 10202
+            },
+            {
+              "wave": 3,
+              "worker": 4,
+              "sql": 5,
+              "latency_ms": 458.43,
+              "json_bytes": 10202
+            }
+          ],
+          "batch_elapsed_ms": 935.4,
+          "requests_per_second": 12.83,
+          "peak_python_bytes_all_threads": 4636381,
+          "median_latency_ms": 215.0
+        }
+      ]
+    }
+  ]
+}
