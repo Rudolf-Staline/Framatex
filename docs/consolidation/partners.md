@@ -32,7 +32,7 @@ Données brutes : `artifacts/consolidation-delivery-history.json`. Mesure de fon
 ## Limites précises
 - Les règles de tolérance, délais, acteurs habilités à l'approbation et circuits officiels restent à valider par Framatex. Les droits proposés sont des mécanismes techniques, pas une politique officielle validée.
 - Le portail fournisseur conserve pour compatibilité l'historique sur les lignes de sa page (50 lignes max) ; sa projection pourra encore être allégée. L'endpoint d'historique interne calcule linéairement les soldes antérieurs avant de renvoyer une page ; une très longue ligne pourra nécessiter une matérialisation validée.
-- L'écran d'options employés limite les lancements à 100 ; un sélecteur de recherche supplémentaire sera nécessaire au-delà. La pagination par offset est déterministe mais ne constitue pas un instantané transactionnel entre deux consultations.
+- Le sélecteur qui se limitait à 100 lancements a été corrigé dans 734da38 : recherche et pagination serveur, contrôles API et Chromium au-delà de ce seuil (voir selectors.md). La pagination par offset est déterministe mais ne constitue pas un instantané transactionnel entre deux consultations.
 - Aucun test de charge de production, email réel ni validation du corpus Framatex.
 
 Revue centrale et indépendante finale : sources et contrôles CAS examinés ; aucun défaut supplémentaire confirmé. Aucun résultat navigateur synthétique ne vaut recette Framatex.

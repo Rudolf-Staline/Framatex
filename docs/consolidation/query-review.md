@@ -34,3 +34,15 @@ Données jetables créées dans un répertoire temporaire, variables de base imp
 | 1 000 / 3 000 | 4 | 12 | 0 | 5 | 10 202 octets | 215,00 ms | 4 636 381 octets |
 
 La variation de latence entre corpus ne constitue pas une amélioration démontrée : charge partagée, caches, ordonnancement et instrumentation interviennent. Le résultat robuste ici est le nombre constant de cinq instructions SQL pour la page et l'absence d'erreur sur les 36 requêtes concurrentes. Les échantillons bruts, durées par vague et mémoire agrégée restent inspectables dans `search-concurrent.json`.
+
+
+## Résolution centrale
+- Points1–5 corrigés : permission de base sur les surfaces indirectes, création
+  par permission métier et sélection client minimale, réponses tardives écartées
+  y compris après navigation vers l'administration, compteurs avec filtres.
+- Les templates/circuits courants de la page documentaire sont chargés par lots ;
+  les détails de chaque circuit restent bornés à la page. Le tableau de bord
+  agrège maintenant commandes (y compris sans lancement) et lancements isolés,
+  avec déduplication des obligations et échéances.
+- La limite de snapshot offset reste documentée. Les sélecteurs au-delà de100
+  ont été complétés par recherche/pages, testées API et Chromium.
