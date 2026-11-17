@@ -163,7 +163,9 @@ def classify_document(filename: str, content: str) -> dict:
     matches.sort(key=lambda x:x["score"],reverse=True)
     result=[]
     for m in matches[:3]:
-        result.append({"doc_type":m["doc_type"],"folder":m["folder"],"reason":"Mots-clés repérés : "+", ".join(m["evidence"]),"confidence_label":"indice fort" if m["score"]>=3 else "indice faible"})
+        from .document_types import resolve_type
+        known=resolve_type(m['doc_type'])
+        result.append({"doc_type":m["doc_type"],"type_id":known["id"] if known else "unclassified","folder":m["folder"],"reason":"Mots-clés repérés : "+", ".join(m["evidence"]),"confidence_label":"indice fort" if m["score"]>=3 else "indice faible"})
     return {"suggestions":result,"needs_confirmation":True,"ambiguous":len(matches)>1 and matches[0]["score"]==matches[1]["score"]}
 
 

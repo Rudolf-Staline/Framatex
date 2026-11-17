@@ -208,7 +208,7 @@
     },
     {
       "id": "order_launch_difference",
-      "version": 1,
+      "version": 2,
       "locale": "fr",
       "title": "Distinguer commande et lancement",
       "description": "Une commande possède exactement un Dossier Jaune, avec quatre rubriques.",
@@ -260,7 +260,9 @@
           "solution": "Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide."
         }
       ],
-      "limitations": [],
+      "limitations": [
+        "Dans le Dossier Jaune, Fiche d’identification ouvre les champs facultatifs communs à la commande. Fiche du lancement conserve son atelier séparément. Client, référence commande et ORLI sont affichés depuis leurs sources canoniques. En cas de conflit, actualisez la fiche avant de reprendre vos modifications."
+      ],
       "destination": "orders",
       "actions": [
         "open_order_launch_difference",
@@ -704,7 +706,7 @@
     },
     {
       "id": "upload_technical_document",
-      "version": 1,
+      "version": 2,
       "locale": "fr",
       "title": "Ajouter une fiche technique",
       "description": "Ouvrez Commandes et sélectionnez la commande concernée.",
@@ -749,7 +751,7 @@
         {
           "id": "upload_technical_document_step_3",
           "title": "Étape 3",
-          "description": "Dépliez Déposer un document, indiquez titre, type et lancement facultatif."
+          "description": "Dépliez Déposer un document, indiquez le titre, sélectionnez un type de la rubrique et le lancement d’origine s’il existe. « À classer » conserve une pièce dont le type reste à déterminer."
         },
         {
           "id": "upload_technical_document_step_4",
@@ -772,7 +774,9 @@
           "solution": "Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide."
         }
       ],
-      "limitations": [],
+      "limitations": [
+        "Une pièce « À classer » ne satisfait pas automatiquement une exigence de type précis. Le classement se reprend depuis Versions et historique → Classer le document ; le libellé d’origine est conservé."
+      ],
       "destination": "order_upload",
       "actions": [
         "open_upload_technical_document",
@@ -935,7 +939,7 @@
     },
     {
       "id": "document_versions",
-      "version": 1,
+      "version": 2,
       "locale": "fr",
       "title": "Consulter les versions et ajouter une version",
       "description": "Ouvrez le document dans son Dossier Jaune de commande.",
@@ -1001,7 +1005,9 @@
           "solution": "Quittez la visite et consultez la procédure. Signalez une étape manquante depuis le guide."
         }
       ],
-      "limitations": [],
+      "limitations": [
+        "Versions et historique permet de consulter ou ajouter des commentaires internes sur une version précise. Un commentaire ne remplace ni une demande de correction ni une décision dans le circuit de validation."
+      ],
       "destination": "order_context",
       "actions": [
         "open_document_versions",
