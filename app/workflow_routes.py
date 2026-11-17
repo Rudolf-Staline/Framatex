@@ -3,7 +3,7 @@
 Aucun calcul n'altère les documents, ORLI ou les montants validés.
 """
 from __future__ import annotations
-from .order_documents import document_in_launch
+from .order_documents import document_in_launch, document_accessible
 from .order_documents import folder_ids
 from decimal import Decimal, InvalidOperation
 from typing import Literal
@@ -58,12 +58,14 @@ class AlertDecision(BaseModel):
     note: str = Field(min_length=12, max_length=1500)
 
 
-def get_source(db: Session, launch_id: str, version_id: str):
+def get_source(db: Session, launch_id: str, version_id: str, user=None):
     version = db.get(DocumentVersion, version_id)
     if not version:
         raise HTTPException(404, 'Version source introuvable')
     doc = db.get(Document, version.document_id)
-    if not doc or not document_in_launch(db, doc, launch_id):
+    if not doc or (user is not None and not document_accessible(db,user,doc)):
+        raise HTTPException(404, 'Version source introuvable')
+    if not document_in_launch(db, doc, launch_id):
         raise HTTPException(422, 'La version ne relève pas de ce lancement')
     if max(v.number for v in doc.versions) != version.number:
         raise HTTPException(409, 'Choisissez la version courante du document source')
@@ -87,7 +89,7 @@ def list_reviews(launch_id: str, user: User = Depends(get_current_user), db: Ses
     documents = db.scalars(select(Document).join(Folder).where(Folder.id.in_(folder_ids(db, launch_id)))).all()
     results = []
     for doc in documents:
-        if not permitted(user, 'document.read', doc.folder.slug) or not doc.versions:
+        if not document_accessible(db,user,doc) or not permitted(user, 'document.read', doc.folder.slug) or not doc.versions:
             continue
         version = max(doc.versions, key=lambda v: v.number)
         current = latest_review(db, version.id)
@@ -169,7 +171,7 @@ def list_values(launch_id: str, user: User = Depends(get_current_user), db: Sess
         visible = []
         for row in revisions:
             doc = db.get(Document, db.get(DocumentVersion, row.source_version_id).document_id)
-            if permitted(user, 'document.read', doc.folder.slug):
+            if document_accessible(db,user,doc) and permitted(user, 'document.read', doc.folder.slug):
                 visible.append(value_out(db, row))
         if visible:
             output.append({'key': key, 'label': VALUE_FIELDS[key][0], 'current': visible[0],
@@ -192,7 +194,7 @@ def record_value(launch_id: str, payload: ValuePayload, user: User = Depends(get
     unit = payload.unit.strip()
     if not unit:
         raise HTTPException(422, 'Unité requise')
-    version, doc = get_source(db, launch_id, payload.source_version_id)
+    version, doc = get_source(db, launch_id, payload.source_version_id, user)
     must(user, 'document.read', doc.folder.slug)
     must(user, 'value.write', doc.folder.slug)
     revisions = latest_values(db, launch_id).get(payload.key, [])
@@ -273,6 +275,14 @@ def alert_visible(user: User, rule: ImpactRule):
     return permitted(user, 'document.read', rule.source_folder) and permitted(user, 'document.read', rule.target_folder)
 
 
+def alert_source_accessible(db, user, alert):
+    rule = db.get(ImpactRule, alert.rule_id)
+    source = db.get(BusinessValueRevision, alert.source_ref_id) if rule and rule.source_kind == 'value' else None
+    version_id = source.source_version_id if source else alert.source_ref_id
+    version = db.get(DocumentVersion, version_id)
+    return bool(version and document_accessible(db,user,version.document))
+
+
 def alert_out(alert: ImpactAlert, rule: ImpactRule, user: User):
     return {'id': alert.id, 'launch_id': alert.launch_id, 'rule_id': rule.id,
             'rule_name': rule.name, 'instruction': rule.instruction,
@@ -294,7 +304,7 @@ def list_impacts(launch_id: str, user: User = Depends(get_current_user), db: Ses
     out = []
     for alert in alerts:
         rule = db.get(ImpactRule, alert.rule_id)
-        if rule and alert_visible(user, rule):
+        if rule and alert_visible(user, rule) and alert_source_accessible(db,user,alert):
             out.append(alert_out(alert, rule, user))
     return out
 
@@ -306,7 +316,7 @@ def decide_impact(alert_id: str, payload: AlertDecision, user: User = Depends(ge
     if not alert:
         raise HTTPException(404, 'Alerte introuvable')
     rule = db.get(ImpactRule, alert.rule_id)
-    if not rule or not alert_visible(user, rule):
+    if not rule or not alert_visible(user, rule) or not alert_source_accessible(db,user,alert):
         raise HTTPException(403, 'Accès interdit')
     must(user, 'impact.review', rule.target_folder)
     if alert.status in {'acknowledged', 'not_applicable'}:

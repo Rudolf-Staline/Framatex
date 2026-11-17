@@ -22,6 +22,8 @@ def is_admin(user: User) -> bool:
 
 
 def permitted(user: User, action: str, folder: str | None = None) -> bool:
+    if not user.active:
+        return False
     if is_admin(user):
         return True
     for role in user.roles:
@@ -57,6 +59,19 @@ def accessible(db, user, launch):
     from .order_documents import launch_order, order_accessible
     link=launch_order(db,launch.id)
     return not link or order_accessible(db,user,link.order_id)
+
+
+def launch_access_clause(user, launch_id):
+    """Launch ACL plus canonical order membership, before SQL pagination."""
+    from sqlalchemy import exists, or_, and_
+    from sqlalchemy.orm import aliased
+    from .partner_phase2_models import BusinessOrderLaunch
+    from .order_documents import source_launch_access_clause, order_access_clause
+    link = aliased(BusinessOrderLaunch)
+    return and_(source_launch_access_clause(user, launch_id), or_(
+        ~exists(select(link.launch_id).where(link.launch_id == launch_id)),
+        exists(select(link.launch_id).where(link.launch_id == launch_id,
+            order_access_clause(user, link.order_id)))))
 
 
 def visible(db: Session, user: User, launches: list[Launch]) -> list[Launch]:
@@ -168,4 +183,4 @@ def guard_http_request(request: Request):
             return JSONResponse({'detail':'Lancement introuvable'},status_code=404)
     return None
 
-ACTIONS = {"launch.read", "launch.create", "launch.update", "document.read", "document.write", "audit.read", "completeness.review", "document.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"}
+ACTIONS = {"order.create", "supplier.request", "supplier.review", "receipt.read", "receipt.write", "supplier.read", "launch.read", "launch.create", "launch.update", "document.read", "document.write", "audit.read", "completeness.review", "document.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"}
