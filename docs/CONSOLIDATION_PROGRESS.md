@@ -4,7 +4,7 @@
 - Départ : `33e7836c1999db1b63331b626f5fa69d50bf193f`, origin/main récupéré et revérifié inchangé.
 - Branche : `consolidation/framatex-2026-11-17` ; arbre initial propre, aucun AGENTS.md applicable trouvé dans /workspace.
 - Code stabilisé : `50b68ae` (inclut `734da38` sélecteurs, `171f88e` antivirus exploitation, `ca52054` permissions indirectes).
-- Git push et référence distante vérifiés jusqu'à `734da38` ; dernier push à faire après rapport final.
+- Tous les commits et le rapport ont été poussés ; SHA local/distant `be0e9a9` identiques avant ce dernier compte rendu. Arbre propre vérifié avant mise à jour de publication.
 - Aucun déploiement, fusion, contact, email réel ou modification de données réelles.
 - Profil de revue : Linux x86_64, Python3.12.14 isolé `/tmp/framatex-venv`, SQLite ; Node local24.22.1, CI déclarée Node22. Aucune qualification des serveurs Framatex.
 
@@ -26,7 +26,7 @@
 | 4 Documents/identification/guide | Implémenté et vérifié localement | IDs/types/alias, JSON ancien conservé, version/commentaire, clavier/mobile/axe ; catalogue et champs provisoires |
 | 5 Volumétrie/concurrence | Corrigé et mesuré sur scénarios synthétiques ; limites restantes explicites | SQL pages constant, quota/quarantaine/reprise, incrémental ; anciennes projections complètes et agrégats globaux encore coûteux à très grand volume |
 | 6 Exploitation | Implémenté et vérifié sur profil SQLite | Sauvegarde/restauration, audit durable, readiness, baux SMTP ; ClamAV réel/serveurs/relais externes non qualifiés |
-| 7 Validation/livraison | Validation locale terminée | 208 tests réussis ; PR à tenter après dernier push, API GitHub Forbidden |
+| 7 Validation/livraison | Validation locale terminée, branche publiée ; PR bloquée | 208 tests réussis ; tentative GraphQL Forbidden, aucune PR créée |
 
 Choix explicites : aucun rôle sensible accordé implicitement ; owner/admin restent des accès propres après retrait de membre ; source restreinte indépendante de l'accès commande ; pas de lancement artificiel ; règles/portées/échéances configurables sans attestation inventée ; pas de portage PostgreSQL partiel.
 
@@ -63,9 +63,10 @@ Choix explicites : aucun rôle sensible accordé implicitement ; owner/admin res
 - Corpus réel, règles et acteurs officiels, paramètres serveurs/scanner/SMTP, conservation/RPO/RTO et recette Framatex restent externes.
 - Anciens endpoints complets et agrégats globaux : limites exposées dans le rapport ; pas de promesse de volume illimité ni de snapshot entre pages offset.
 
-## Prochaine action de reprise
-1. Résultats finaux reportés, contrôles de format réussis.
-2. Commiter documents et preuves, pousser branche et vérifier SHA distant.
-3. Tenter PR draft avec `docs/PULL_REQUEST_CONSOLIDATION.md` ; si Forbidden persiste, conserver branche et commande de création précise, sans prétendre à une PR existante.
+## Publication finale et reprise
+- Push réussi jusqu'au rapport `be0e9a9`, égalité SHA local/distant vérifiée ; le présent compte rendu est également commité et poussé. Rien ne reste à pousser.
+- Tentative réelle de PR : `gh pr create --draft --base main --head consolidation/framatex-2026-11-17 --title "Consolidation Framatex : droits, documents, fournisseurs et exploitation" --body-file docs/PULL_REQUEST_CONSOLIDATION.md` → `Post "https://api.github.com/graphql": Forbidden`, code1. Aucune PR créée, aucune URL de PR annoncée.
+- À la reprise : rétablir l'accès API GitHub puis exécuter cette commande et vérifier la CI distante. Ne pas fusionner ni déployer sans instruction.
+- Poursuivre la recette et le dimensionnement avec Framatex : corpus réel, règles/acteurs/délais, scanner et signatures, SMTP, conservation/RPO/RTO. Les limites des anciennes projections complètes restent documentées.
 
 Détails par lot dans `docs/consolidation/*.md`. Rapport : `docs/CONSOLIDATION_REPORT.md`. Installation : `docs/DEPLOIEMENT_INTERNE.md`. Grille métier : `docs/RECETTE_CONSOLIDATION.md`.

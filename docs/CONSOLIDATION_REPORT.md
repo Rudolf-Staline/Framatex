@@ -271,8 +271,15 @@ page passe de 9 852 à 10 202 octets car le client canonique est désormais rens
   supervision doivent être configurés/qualifiés sur les serveurs retenus.
 - Le test du fournisseur IA optionnel reste volontairement désactivé ; il n'est
   nécessaire ni à la GED ni à la qualification de cette livraison.
-- Publication GitHub : branche poussée ; création de PR à vérifier à la fin.
-  Aucun déploiement ni fusion dans main.
+- Publication GitHub : branche et tous les commits poussés. SHA distant du rapport
+  vérifié : `be0e9a982bf88e1bf4e9eeecdb65e58b93e6fdb0` avant l'ultime compte rendu
+  de publication. Tentative réelle `gh pr create --draft --base main --head
+  consolidation/framatex-2026-11-17 --title "Consolidation Framatex : droits,
+  documents, fournisseurs et exploitation" --body-file docs/PULL_REQUEST_CONSOLIDATION.md`
+  → **`Post "https://api.github.com/graphql": Forbidden`**, code1.
+  Aucune PR n'existe à l'issue de cette tentative ; aucune URL de PR annoncée.
+  Il reste à exécuter la même commande après rétablissement de l'accès API, puis
+  vérifier la CI distante. Rien ne reste à pousser. Aucun déploiement ni fusion dans main.
 
 ## Vérification courte pour le relecteur
 
