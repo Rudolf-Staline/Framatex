@@ -13,7 +13,7 @@ from argon2.exceptions import VerifyMismatchError, VerificationError
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy import create_engine,event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
-from .core_pg_config import data_dir, database_configuration
+from .core_pg_config import data_dir, database_configuration, install_postgresql_search_path
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = data_dir(ROOT)
@@ -27,6 +27,8 @@ if engine.dialect.name=='sqlite':
         cursor.execute('PRAGMA foreign_keys=ON')
         cursor.execute('PRAGMA busy_timeout=10000')
         cursor.close()
+if engine.dialect.name == 'postgresql':
+    install_postgresql_search_path(engine, PG_SCHEMA)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 class Base(DeclarativeBase):
