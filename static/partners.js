@@ -1,4 +1,11 @@
 'use strict';
+// The entry-space selector is a navigation aid, not an authorization boundary.
+const chosenPartnerSpace = new URLSearchParams(location.search).get('space');
+if (chosenPartnerSpace === 'client' || chosenPartnerSpace === 'supplier') {
+  const label = chosenPartnerSpace === 'client' ? 'client' : 'fournisseur';
+  document.querySelector('header h1').textContent = 'Espace ' + label;
+  document.querySelector('#auth h2').textContent = 'Connexion ' + label;
+}
 let internal = false;
 let staffAdmin=false;let staffPermissions=[];
 function staffCan(action){return staffAdmin||staffPermissions.includes(action);}

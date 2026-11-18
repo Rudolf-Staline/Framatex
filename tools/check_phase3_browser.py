@@ -41,7 +41,7 @@ def main():
                     with sync_playwright() as p:
                         browser=p.chromium.launch(executable_path=os.getenv('FRAMATEX_BROWSER_EXECUTABLE'),headless=True,args=['--no-sandbox'])
                         context=browser.new_context();page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
-                        page.goto(base+'/');page.get_by_label('Adresse email').fill('admin@example.local');page.get_by_label('Mot de passe',exact=True).fill(PWD);page.get_by_role('button',name='Se connecter').click()
+                        page.goto(base+'/');expect(page.get_by_role('heading',name='Choisissez votre espace')).to_be_visible();page.get_by_role('button',name='Espace interne').click();page.get_by_role('button',name='Changer d’espace').click();page.get_by_role('button',name='Espace interne').click();page.get_by_label('Adresse email').fill('admin@example.local');page.get_by_label('Mot de passe',exact=True).fill(PWD);page.get_by_role('button',name='Se connecter').click()
                         page.get_by_role('button',name='Commandes',exact=True).wait_for();page.get_by_role('button',name='Commandes',exact=True).click()
                         page.get_by_label('Rechercher une commande ou un client').fill('NAV-001')
                         expect(page.locator('#order-count')).to_have_text('1 commande(s) · Page 1')
