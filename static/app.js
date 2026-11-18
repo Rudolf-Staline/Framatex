@@ -87,7 +87,7 @@ function renderLogin(){overlay.innerHTML='';app.innerHTML=`<div class="login-pag
     <h1 id="login-title">Connexion</h1>
     <form id="login-form" class="login-form" aria-labelledby="login-title">
       <div id="login-error" role="alert" aria-live="assertive"></div>
-      <div class="field"><label for="email">Adresse e-mail</label><input id="email" type="email" autocomplete="username" required /></div>
+      <div class="field"><label for="email">Adresse email</label><input id="email" type="email" autocomplete="username" required /></div>
       <div class="field"><label for="password">Mot de passe</label><input id="password" type="password" autocomplete="current-password" required /></div>
       <button class="primary" type="submit">Se connecter</button>
     </form>
