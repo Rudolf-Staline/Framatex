@@ -206,3 +206,66 @@ input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{
  .executive-card{padding:14px 12px}
  .dashboard-strip-title{margin:26px 0 13px}
 }
+
+
+/* Framatex · Retour au jaune — écran de connexion uniquement.
+   Safran / ivoire / graphite : identité Dossier Jaune, contraste lisible. */
+.login-page{
+  --login-ink:#292316;
+  --login-amber:#b67a09;
+  --login-border:#e9dcc3;
+  background:#fffcf4;
+}
+.login-page .login-art{
+  background:linear-gradient(150deg,#f9dd7a 0%,#f3c74a 55%,#e6ae2e 100%);
+  color:var(--login-ink);
+}
+.login-page .login-art::before,
+.login-page .login-art::after{border-color:rgba(81,56,14,.2)}
+.login-page .login-art .brand{border-bottom-color:rgba(81,56,14,.19)}
+.login-page .login-art .brand-logo{
+  background:#342a18;
+  border-color:#342a18;
+  color:#ffe6a0;
+  box-shadow:0 8px 22px rgba(62,40,9,.15);
+}
+.login-page .login-art .brand-name,
+.login-page .login-art .brand-name > span:first-child{color:var(--login-ink)}
+.login-page .login-art .brand-sub{color:#66501e}
+.login-page .login-hero h1{color:var(--login-ink)}
+.login-page .login-hero .eyebrow{color:#755018}
+.login-page .login-hero p{color:#514022}
+.login-page .login-caption{color:#5d4822}
+.login-page .login-form-wrap{background:#fffcf4}
+.login-page .login-form h2{color:var(--login-ink)}
+.login-page .login-form > p{color:#6d6556}
+.login-page .login-form .page-kicker{color:#92610a}
+.login-page .login-form .field label{color:#494131}
+.login-page .login-form .field input{
+  background:#fff;
+  color:var(--login-ink);
+  border-color:var(--login-border);
+  border-radius:9px;
+}
+.login-page .login-form .field input::placeholder{color:#8d8371}
+.login-page .login-form .field input:focus{
+  border-color:#a77711;
+  box-shadow:0 0 0 3px rgba(231,178,48,.22);
+}
+.login-page .login-form .primary{
+  color:#292316;
+  background:#edbf46;
+  border-color:#dcaa2d;
+  box-shadow:0 6px 19px rgba(130,85,10,.13);
+}
+.login-page .login-form .primary:hover{
+  color:#292316;
+  background:#e2ae2d;
+  border-color:#c99320;
+}
+.login-page .login-form .primary:focus-visible,
+.login-page .login-form .field input:focus-visible{
+  outline:2px solid #805506;
+  outline-offset:3px;
+}
+.login-page .login-form .notice{color:#716959}
