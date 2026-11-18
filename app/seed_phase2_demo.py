@@ -19,6 +19,7 @@ def main():
     from .partner_phase2_models import PartnerRole,PartnerRoleAssignment,PartnerClientOrder,PartnerClientOrderEvent,BusinessOrder,BusinessOrderLaunch,PartnerIntegration
     from .workflow_models import DocumentReview
     from .sharing_models import ClientPublication
+    from .partner_delivery_routes import save_history_event
     from .seed_quality_demo import add_doc
     from .partner_notice_routes import emit,generate_due
     migrate()
@@ -57,7 +58,9 @@ def main():
                 db.add(PartnerEvent(request_id=request.id,actor='staff:'+admin.id,kind='approved',message='Exemple fictif de validation fournisseur'))
                 line=PartnerOrderLine(partner_id=supplier.id,launch_id=launch.id,order_ref=launch.order_ref,material_ref='TISSU-DEMO-'+letter,unit='m',ordered=Decimal('100'),created_by=admin.id);db.add(line);db.flush()
                 for kind,quantity in [('planned','100'),('announced','40'),('declared','40'),('received','35')]:
-                    db.add(PartnerDelivery(line_id=line.id,operation_key='demo-'+kind,kind=kind,quantity=Decimal(quantity),source_id=submission.id,actor=('partner:'+accounts['supplier'].id if kind in ('announced','declared') else 'staff:'+admin.id),note='Exemple fictif de réception partielle',occurred_on=date.today()))
+                    movement = PartnerDelivery(line_id=line.id,operation_key='demo-'+kind,kind=kind,quantity=Decimal(quantity),source_id=submission.id,actor=('partner:'+accounts['supplier'].id if kind in ('announced','declared') else 'staff:'+admin.id),note='Exemple fictif de réception partielle',occurred_on=date.today())
+                    db.add(movement);db.flush()
+                    save_history_event(db,line,movement)
                 order=PartnerClientOrder(partner_id=client.id,launch_id=launch.id,reference=launch.order_ref,status='En préparation',confirmed_due=date.today()+timedelta(days=2));db.add(order);db.flush()
                 db.add(PartnerClientOrderEvent(order_id=order.id,actor_id=admin.id,message='Commande fictive autorisée pour démonstration'))
                 public_doc,public_version=add_doc(db,launch,admin,'Fiche client DÉMO','Fiche technique',b'Fiche client fictive sans tarif ni information fournisseur','client-demo.txt')

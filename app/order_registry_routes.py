@@ -119,5 +119,12 @@ def unlink(oid:str,lid:str,payload:UnlinkInput,user=Depends(staff),db:Session=De
     if not relation or relation.order_id!=oid:raise HTTPException(404,'Rattachement absent')
     if db.scalar(select(Document.id).where(Document.launch_id==lid).limit(1)):
         raise HTTPException(409,'Ce lancement porte des documents : détachement interdit, migration explicite requise')
+    from .launches import FOLDERS
+    historical = {f.slug: f for f in db.scalars(select(Folder).where(Folder.launch_id == lid))}
+    for slug, label in FOLDERS:
+        if slug in historical:
+            historical[slug].canonical_id = None
+        else:
+            db.add(Folder(launch_id=lid, slug=slug, label=label))
     db.delete(relation);audit(db,user,'order.launch.unlink','order',oid,{'launch_id':lid,'reason':payload.reason});db.commit()
     return {'unlinked':True,'documents_preserved':True}

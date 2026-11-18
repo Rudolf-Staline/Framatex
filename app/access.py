@@ -183,4 +183,4 @@ def guard_http_request(request: Request):
             return JSONResponse({'detail':'Lancement introuvable'},status_code=404)
     return None
 
-ACTIONS = {"order.create", "supplier.request", "supplier.review", "receipt.read", "receipt.write", "supplier.read", "launch.read", "launch.create", "launch.update", "document.read", "document.write", "audit.read", "completeness.review", "document.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"}
+ACTIONS = {"order.create", "supplier.request", "supplier.review", "receipt.read", "receipt.write", "supplier.read", "launch.read", "launch.create", "launch.update", "document.read", "document.write", "completeness.review", "document.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"}

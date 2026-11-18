@@ -38,6 +38,7 @@ class ApprovalRun(Base):
     template_id: Mapped[str] = mapped_column(ForeignKey("approval_templates.id"))
     document_version_id: Mapped[str] = mapped_column(ForeignKey("document_versions.id"), index=True)
     cycle: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    obsolete: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     previous_run_id: Mapped[str | None] = mapped_column(ForeignKey("approval_runs.id"), nullable=True, unique=True)
     reopen_reason: Mapped[str] = mapped_column(Text, default="", server_default="")
     current_position: Mapped[int] = mapped_column(Integer, default=1)

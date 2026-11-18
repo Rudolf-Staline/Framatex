@@ -197,10 +197,8 @@ def validate_requirement(launch_id: str, rule_id: str, payload: ValidationPayloa
     # Une exigence de complétude ne remplace pas le circuit métier configuré.
     from .approval_routes import applicable_template
     if applicable_template(db, doc):
-        from .approval_models import ApprovalRun
-        approved = db.scalar(select(ApprovalRun).where(
-            ApprovalRun.document_version_id == version.id, ApprovalRun.status == 'approved'))
-        if not approved:
+        from .sharing_routes import is_approved
+        if not is_approved(db,version,doc):
             raise HTTPException(409, 'Circuit de validation non achevé pour cette version')
     review_decision = latest_review(db, version.id)
     if review_decision and review_decision.decision in {'rejected', 'changes_requested'}:

@@ -73,13 +73,21 @@ def locked_run(db,run_id):
     return run
 
 
-def applicable_template(db: Session, doc: Document):
-    matches = db.scalars(select(ApprovalTemplate).where(
-        ApprovalTemplate.active.is_(True), ApprovalTemplate.folder_slug == doc.folder.slug,
-        ApprovalTemplate.document_type == doc.doc_type)).all()
-    if len(matches) > 1:
-        raise HTTPException(409, 'Plusieurs circuits actifs pour ce type de document')
-    return matches[0] if matches else None
+def active_templates(db, folder):
+    from .document_types import type_key
+    templates = {}
+    for row in db.scalars(select(ApprovalTemplate).where(ApprovalTemplate.folder_slug == folder,
+                                                         ApprovalTemplate.active.is_(True))):
+        key = type_key(row.document_type)
+        if key in templates:
+            raise HTTPException(409, 'Plusieurs circuits actifs pour ce type de document')
+        templates[key] = row
+    return templates
+
+
+def applicable_template(db, doc):
+    from .document_types import type_key
+    return active_templates(db, doc.folder.slug).get(type_key(doc.doc_type))
 
 
 def latest_version(doc: Document):
@@ -115,7 +123,7 @@ def can_decide(db: Session, user: User, run: ApprovalRun, doc: Document):
 def run_out(db: Session, run: ApprovalRun, user: User, doc: Document):
     version = db.get(DocumentVersion, run.document_version_id)
     current_version = latest_version(doc)
-    stale = version.id != current_version.id
+    stale = run.obsolete or version.id != current_version.id
     stages = steps(db, run.template_id)
     decisions = {d.stage_id: d for d in db.scalars(select(ApprovalDecision)
                  .where(ApprovalDecision.run_id == run.id)).all()}
@@ -127,7 +135,7 @@ def run_out(db: Session, run: ApprovalRun, user: User, doc: Document):
                 not stale and run.status == 'pending' and can_decide(db, user, run, doc),
             'cycle':run.cycle,'previous_run_id':run.previous_run_id,'reopen_reason':run.reopen_reason,
             'current_position': run.current_position, 'started_at': run.started_at.isoformat(),
-            'can_reopen': run.status in ('approved','rejected','changes_requested') and any(r.name=='Administrateur' for r in user.roles),
+            'can_reopen': not run.obsolete and run.status in ('approved','rejected','changes_requested') and any(r.name=='Administrateur' for r in user.roles),
             'can_delegate': not stale and run.status=='pending' and any(r.name=='Administrateur' for r in user.roles),
             'stages': [{'name': s.name, 'position': s.position, 'role_id': s.reviewer_role_id,
                         'due_at': assignments[s.id].due_at if s.id in assignments else None,
@@ -154,9 +162,11 @@ def get_templates(user: User = Depends(get_current_user), db: Session = Depends(
 @router.post('/api/admin/approval-templates', status_code=201)
 def create_template(payload: TemplateInput, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     admin_only(user)
-    if db.scalar(select(ApprovalTemplate.id).where(ApprovalTemplate.active.is_(True),
-                 ApprovalTemplate.folder_slug == payload.folder_slug,
-                 ApprovalTemplate.document_type == payload.document_type.strip())):
+    from .document_types import type_key
+    # Serialize the first template too, when the folder contains no rows yet.
+    db.execute(update(ApprovalTemplate).where(ApprovalTemplate.folder_slug == payload.folder_slug)
+               .values(active=ApprovalTemplate.active), execution_options={'synchronize_session': False})
+    if type_key(payload.document_type) in active_templates(db, payload.folder_slug):
         raise HTTPException(409, 'Un circuit actif existe déjà pour ce type et ce sous-dossier')
     for stage in payload.stages:
         role = db.get(Role, stage.reviewer_role_id)
@@ -189,10 +199,10 @@ def toggle_template(template_id: str, payload: ActiveInput,
     template = db.get(ApprovalTemplate, template_id)
     if not template:
         raise HTTPException(404, 'Circuit introuvable')
-    if payload.active and db.scalar(select(ApprovalTemplate.id).where(
-            ApprovalTemplate.active.is_(True), ApprovalTemplate.id != template.id,
-            ApprovalTemplate.folder_slug == template.folder_slug,
-            ApprovalTemplate.document_type == template.document_type)):
+    from .document_types import type_key
+    db.execute(update(ApprovalTemplate).where(ApprovalTemplate.id == template_id).values(id=template_id))
+    existing = active_templates(db, template.folder_slug).get(type_key(template.document_type)) if payload.active else None
+    if existing and existing.id != template.id:
         raise HTTPException(409, 'Un autre circuit est déjà actif sur cette rubrique')
     template.active = payload.active
     audit(db,user,'approval.template.toggle','approval_template',template.id, {'active':payload.active})
@@ -209,14 +219,14 @@ def get_approval_overview(launch_id: str, user: User = Depends(get_current_user)
         if not permitted(user,'document.read',folder.slug):
             continue
         for doc in folder.documents:
-            if not doc.versions or not document_accessible(db,user,doc):
+            if doc.launch_id not in (None, launch_id) or not doc.versions or not document_accessible(db,user,doc):
                 continue
             version = latest_version(doc)
             template = applicable_template(db, doc)
             runs = db.scalars(select(ApprovalRun).join(DocumentVersion,
                 ApprovalRun.document_version_id == DocumentVersion.id)
                 .where(DocumentVersion.document_id == doc.id).order_by(ApprovalRun.started_at.desc(),ApprovalRun.cycle.desc())).all()
-            active = next((r for r in runs if r.document_version_id == version.id), None)
+            active = next((r for r in runs if r.document_version_id == version.id and not r.obsolete and template and r.template_id == template.id), None)
             visible.append({'document_id': doc.id, 'document_title': doc.title, 'folder':folder.slug,
                 'version': version.number, 'template': {'id': template.id, 'name': template.name} if template else None,
                 'can_start': bool(template and not active and (permitted(user,'document.write',folder.slug)
@@ -237,12 +247,14 @@ def start_run(doc_id: str, user: User = Depends(get_current_user), db: Session =
     template = applicable_template(db,doc)
     if not template:
         raise HTTPException(422, 'Aucun circuit configuré pour ce type de document')
-    if db.scalar(select(ApprovalRun.id).where(ApprovalRun.document_version_id == version.id)):
+    if db.scalar(select(ApprovalRun.id).where(ApprovalRun.document_version_id == version.id, ApprovalRun.template_id == template.id, ApprovalRun.obsolete.is_(False))):
         raise HTTPException(409,'Un circuit existe déjà pour cette version')
     order = steps(db,template.id)
     if not order:
         raise HTTPException(422,'Aucune étape dans le circuit')
-    run = ApprovalRun(template_id=template.id, document_version_id=version.id, started_by=user.id)
+    from sqlalchemy import func
+    cycle = (db.scalar(select(func.max(ApprovalRun.cycle)).where(ApprovalRun.document_version_id==version.id)) or 0) + 1
+    run = ApprovalRun(cycle=cycle, template_id=template.id, document_version_id=version.id, started_by=user.id)
     db.add(run);db.flush()
     activate_stage(db,run,order[0])
     emit_to_role(db, role_id=order[0].reviewer_role_id, launch_id=doc.context_launch_id, order_id=document_order_id(db,doc),
@@ -270,6 +282,9 @@ def decide_stage(run_id: str, payload: StageDecisionInput,
     must(user,'document.review',doc.folder.slug)
     if version.id != latest_version(doc).id:
         raise HTTPException(409,'Une nouvelle version existe : le circuit antérieur est obsolète')
+    template = applicable_template(db,doc)
+    if run.obsolete or not template or run.template_id != template.id:
+        raise HTTPException(409, 'Circuit remplacé pour ce document')
     if run.status != 'pending':
         raise HTTPException(409,'Ce circuit ne peut plus recevoir de décision')
     if not can_decide(db,user,run,doc):
@@ -281,6 +296,8 @@ def decide_stage(run_id: str, payload: StageDecisionInput,
     db.add(ApprovalDecision(run_id=run.id, stage_id=stage.id, actor_id=user.id,
                             decision=payload.decision, comment=payload.comment.strip()))
     if payload.decision != 'approved':
+        db.add(DocumentReview(document_version_id=version.id, decision=payload.decision,
+                              comment=payload.comment.strip(), reviewed_by=user.id))
         run.status = payload.decision
         run.completed_at = utcnow()
     elif run.current_position == len(order):
@@ -324,7 +341,7 @@ class DelegationInput(BaseModel):
 def delegate_stage(run_id:str,payload:DelegationInput,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
     admin_only(user)
     run=locked_run(db,run_id);version=db.get(DocumentVersion,run.document_version_id);doc=version.document
-    if run.status!='pending' or latest_version(doc).id!=version.id:raise HTTPException(409,'Seule une étape courante en attente peut être déléguée')
+    if run.obsolete or run.status!='pending' or latest_version(doc).id!=version.id:raise HTTPException(409,'Seule une étape courante en attente peut être déléguée')
     stage=next(s for s in steps(db,run.template_id) if s.position==run.current_position)
     if payload.delegate_id:
         target=db.get(User,payload.delegate_id)
@@ -395,7 +412,7 @@ def reopen_run(run_id:str,payload:ReopenInput,user:User=Depends(get_current_user
     previous=locked_run(db,run_id)
     version=db.get(DocumentVersion,previous.document_version_id);doc=version.document
     if not document_accessible(db,user,doc):raise HTTPException(404,'Document introuvable')
-    if previous.status not in ('approved','rejected','changes_requested'):
+    if previous.obsolete or previous.status not in ('approved','rejected','changes_requested'):
         raise HTTPException(409,'Seul un circuit terminé peut être réouvert')
     if len(payload.reason.strip())<12:raise HTTPException(422,'Une motivation explicite est nécessaire')
     current=latest_version(doc)

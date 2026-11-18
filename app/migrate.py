@@ -28,7 +28,7 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
                         Column('version', String(80), primary_key=True),
                         Column('applied_at', String(50), nullable=False), extend_existing=True)
 
-REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_partners', '0005_partner_deliveries', '0006_partner_mail', '0007_partner_phase2', '0008_confirmed_sources', '0009_client_conversations', '0010_security_notifications', '0011_delivery_cancellations', '0012_orli_profiles', '0013_excel_policies', '0014_partner_administration', '0015_partner_default_roles', '0016_completeness_policies', '0017_order_registry', '0018_approval_assignments', '0019_partner_notice_center', '0020_audit_session_index', '0021_order_dossiers', '0022_approval_cycles', '0023_order_completeness', '0024_user_guide', '0025_order_acl', '0026_operations_state', '0027_partner_received_sources', '0028_document_catalog', '0029_requirement_scope', '0030_list_indexes')
+REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_partners', '0005_partner_deliveries', '0006_partner_mail', '0007_partner_phase2', '0008_confirmed_sources', '0009_client_conversations', '0010_security_notifications', '0011_delivery_cancellations', '0012_orli_profiles', '0013_excel_policies', '0014_partner_administration', '0015_partner_default_roles', '0016_completeness_policies', '0017_order_registry', '0018_approval_assignments', '0019_partner_notice_center', '0020_audit_session_index', '0021_order_dossiers', '0022_approval_cycles', '0023_order_completeness', '0024_user_guide', '0025_order_acl', '0026_operations_state', '0027_partner_received_sources', '0028_document_catalog', '0029_requirement_scope', '0030_list_indexes', '0031_audit_fixes')
 
 
 def _versions(conn):
@@ -91,6 +91,8 @@ def migrate():
                 if missing:
                     raise RuntimeError('Base antérieure incomplète : tables manquantes : ' + ', '.join(sorted(missing)))
             else:
+                if existing - {'schema_migrations'}:
+                    raise RuntimeError('Base existante non reconnue : initialisation refusée')
                 # A new installation initializes its full contemporary schema.
                 Base.metadata.create_all(bind=conn)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
@@ -117,7 +119,7 @@ def migrate():
                          {'v':'0003_pilot_reports','d':datetime.now(timezone.utc).isoformat()})
         if '0004_partners' not in done:
             for table in Base.metadata.sorted_tables:
-                if table.name not in {'partner_notices','partner_notice_reads','partner_administrative_documents','partner_client_order_events','partner_movement_cancellations','partner_event_reads','partner_client_orders','partner_threads','partner_messages','partner_attachments','partner_confirmed_datum_sources','partner_profiles','partner_roles','partner_role_assignments','partner_integrations'} and table.name.startswith('partner') and table.name not in ('partner_order_lines','partner_deliveries','partner_mail','partner_mail_preferences'):
+                if table.name not in {'partner_receipt_history','partner_notices','partner_notice_reads','partner_administrative_documents','partner_client_order_events','partner_movement_cancellations','partner_event_reads','partner_client_orders','partner_threads','partner_messages','partner_attachments','partner_confirmed_datum_sources','partner_profiles','partner_roles','partner_role_assignments','partner_integrations'} and table.name.startswith('partner') and table.name not in ('partner_order_lines','partner_deliveries','partner_mail','partner_mail_preferences'):
                     table.create(bind=conn, checkfirst=True)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0004_partners','d':datetime.now(timezone.utc).isoformat()})
@@ -271,6 +273,11 @@ def migrate():
             conn.exec_driver_sql('CREATE INDEX IF NOT EXISTS ix_orders_client_created ON business_orders(client_id,created_at,id)')
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0030_list_indexes','d':datetime.now(timezone.utc).isoformat()})
+        if '0031_audit_fixes' not in done:
+            from .audit_migration import upgrade as audit_upgrade
+            audit_upgrade(conn)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0031_audit_fixes','d':datetime.now(timezone.utc).isoformat()})
         if conn.exec_driver_sql('PRAGMA foreign_key_check').first():
             raise RuntimeError('Relations historiques invalides : migration annulée, corriger la copie de travail avant reprise')
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
@@ -278,6 +285,14 @@ def migrate():
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():
             raise RuntimeError('Schéma de portée incohérent')
     return REVISIONS
+
+
+def require_current_schema():
+    with engine.connect() as conn:
+        if 'schema_migrations' in inspect(conn).get_table_names():
+            if set(conn.exec_driver_sql('SELECT version FROM schema_migrations').scalars()) == set(REVISIONS):
+                return
+    raise RuntimeError('Migration explicite requise avant le démarrage en exploitation')
 
 
 def backup_sqlite():

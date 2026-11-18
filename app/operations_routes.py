@@ -3,7 +3,7 @@ import logging
 import os
 from pathlib import Path
 import re
-import shlex
+from .scanner_config import operational, scanner_command
 import shutil
 import subprocess
 import tempfile
@@ -21,6 +21,9 @@ router=APIRouter()
 def build_identity():
     commit=os.getenv('FRAMATEX_BUILD_COMMIT','')
     if not commit:
+        # git archive substitutes the SHA, including in packages without .git.
+        commit = '$Format:%H$'
+    if not re.fullmatch(r'[0-9a-fA-F]{7,40}', commit) and (ROOT / '.git').exists() and not os.getenv('FRAMATEX_BUILD_COMMIT'):
         try:
             commit=subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,capture_output=True,text=True,timeout=2,check=True).stdout.strip()
         except (OSError,subprocess.SubprocessError):commit='unknown'
@@ -30,12 +33,11 @@ def build_identity():
 
 def scanner_readiness():
     mode=os.getenv('FRAMATEX_UPLOAD_SCAN_MODE','disabled')
-    if mode=='disabled':return {'ready':os.getenv('FRAMATEX_MODE','DEVELOPMENT')!='OPERATIONAL','state':'disabled'}
+    if mode=='disabled':return {'ready':not operational(),'state':'disabled'}
     if mode!='required':return {'ready':False,'state':'invalid_configuration'}
     backend=os.getenv('FRAMATEX_SCANNER_BACKEND','command')
     if backend not in {'command','clamav'}:return {'ready':False,'state':'invalid_configuration'}
-    command=os.getenv('FRAMATEX_SCANNER_COMMAND','clamscan --no-summary --alert-encrypted=yes' if backend=='clamav' else '')
-    try:program=shlex.split(command)[0]
+    try:program=scanner_command(backend)[0]
     except (ValueError,IndexError):return {'ready':False,'state':'unconfigured'}
     if not shutil.which(program):return {'ready':False,'state':'unavailable'}
     if backend=='clamav':

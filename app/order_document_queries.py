@@ -12,7 +12,7 @@ router = APIRouter(tags=['Documents paginés'])
 
 @router.get('/api/orders/{oid}/document-page')
 def document_page(oid:str,folder:str=Query('jaune',pattern='^(jaune|rose|bleu|vert)$'),
-                  q:str=Query('',max_length=200),origin:str=Query('',max_length=36),
+                  document_id:str|None=None,q:str=Query('',max_length=200),origin:str=Query('',max_length=36),
                   offset:int=Query(0,ge=0),limit:int=Query(25,ge=1,le=100),
                   user=Depends(get_current_user),db:Session=Depends(get_db)):
     from .approval_models import ApprovalRun,ApprovalTemplate
@@ -23,28 +23,26 @@ def document_page(oid:str,folder:str=Query('jaune',pattern='^(jaune|rose|bleu|ve
     other=aliased(DocumentVersion)
     latest=select(func.max(other.number)).where(other.document_id==Document.id).scalar_subquery()
     query=select(Document,DocumentVersion).join(Folder).join(OrderDossier,Folder.dossier_id==OrderDossier.id).outerjoin(DocumentVersion,(DocumentVersion.document_id==Document.id)&(DocumentVersion.number==latest)).where(OrderDossier.order_id==oid,Folder.slug==folder,document_access_clause(user))
+    if document_id:query=query.where(Document.id==document_id)
     if q.strip():query=query.where((Document.title.ilike('%'+q.strip()+'%'))|(Document.doc_type.ilike('%'+q.strip()+'%')))
     if origin:query=query.where(Document.launch_id.is_(None) if origin=='unassigned' else Document.launch_id==origin)
     total=db.scalar(select(func.count()).select_from(query.subquery()))
     rows=db.execute(query.order_by(Document.created_at.desc(),Document.id).offset(offset).limit(limit)).all()
-    templates={}
-    types={doc.doc_type for doc,_version in rows}
-    if types:
-        for template in db.scalars(select(ApprovalTemplate).where(ApprovalTemplate.active.is_(True),ApprovalTemplate.folder_slug==folder,ApprovalTemplate.document_type.in_(types))):
-            if template.document_type in templates:
-                from fastapi import HTTPException
-                raise HTTPException(409,'Plusieurs circuits actifs pour ce type de document')
-            templates[template.document_type]=template
+    from .approval_routes import active_templates
+    from .document_types import DocumentTypeAssignment, type_key, classification_out
+    templates = active_templates(db, folder)
+    assignments = {a.document_id:a for a in db.scalars(select(DocumentTypeAssignment).where(
+        DocumentTypeAssignment.document_id.in_([doc.id for doc,_ in rows])))}
     version_ids=[version.id for _doc,version in rows if version]
     runs={}
     if version_ids:
-        for run in db.scalars(select(ApprovalRun).where(ApprovalRun.document_version_id.in_(version_ids)).order_by(ApprovalRun.cycle.desc(),ApprovalRun.started_at.desc(),ApprovalRun.id)):
-            runs.setdefault(run.document_version_id,run)
+        for run in db.scalars(select(ApprovalRun).where(ApprovalRun.document_version_id.in_(version_ids), ApprovalRun.obsolete.is_(False)).order_by(ApprovalRun.cycle.desc(),ApprovalRun.started_at.desc(),ApprovalRun.id)):
+            runs.setdefault((run.document_version_id,run.template_id),run)
     items=[];approvals=[]
     for doc,version in rows:
-        items.append({'id':doc.id,'title':doc.title,'doc_type':doc.doc_type,'folder':folder,'launch_id':doc.launch_id,'order_id':oid,'created_at':doc.created_at.isoformat(),'latest':version_out(version) if version else None})
-        run=runs.get(version.id) if version else None
-        template=templates.get(doc.doc_type)
+        items.append({'classification':classification_out(doc,assignments.get(doc.id),folder),'id':doc.id,'title':doc.title,'doc_type':doc.doc_type,'folder':folder,'launch_id':doc.launch_id,'order_id':oid,'created_at':doc.created_at.isoformat(),'latest':version_out(version) if version else None})
+        template=templates.get(type_key(doc.doc_type))
+        run=runs.get((version.id,template.id)) if version and template else None
         approvals.append({'document_id':doc.id,'can_start':bool(version and template and not run and (permitted(user,'document.write',folder) or permitted(user,'document.review',folder))),'run':run_out(db,run,user,doc) if run else None})
     return {'items':items,'approvals':approvals,'total':total,'offset':offset,'limit':limit}
 

@@ -60,6 +60,8 @@ jobs:
         id: orders-browser
         if: ${{ !cancelled() }}
         run: python tools/check_phase3_browser.py
+      - name: Recherche parmi plus de cent lancements
+        run: PYTHONPATH=. python tools/check_launch_selectors_browser.py
       - name: Parcours Framatex Guide et IA simulée
         id: guide-browser
         if: ${{ !cancelled() }}
@@ -69,6 +71,7 @@ jobs:
         with:
           name: browser-evidence
           path: |
+            artifacts/consolidation-selectors-browser.json
             artifacts/guide-browser.json
             artifacts/guide-evaluation*.json
             artifacts/guide-*.png

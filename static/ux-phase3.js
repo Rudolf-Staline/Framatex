@@ -28,15 +28,22 @@ function repairAccessibility(){
    region.tabIndex=0;region.setAttribute('role','region');region.setAttribute('aria-label','Tableau défilant au clavier');
   }
  });
+ manageDialogFocus();
+}
+function manageDialogFocus(){
  const dialog=document.querySelector('[role=dialog]');
  if(dialog&&!dialog.dataset.focusManaged){
-  dialog.dataset.focusManaged='1';returnFocus=document.activeElement;
+  dialog.dataset.focusManaged='1';
+  if(!returnFocus?.isConnected)returnFocus=document.activeElement;
   dialog.addEventListener('keydown',event=>{
    if(event.key!=='Tab')return;
    const nodes=[...dialog.querySelectorAll('button,input,select,textarea,a[href],[tabindex="0"]')].filter(n=>!n.disabled&&n.getClientRects().length);
    if(!nodes.length)return;
-   if(event.shiftKey&&document.activeElement===nodes[0]){event.preventDefault();nodes[nodes.length-1].focus()}
-   else if(!event.shiftKey&&document.activeElement===nodes[nodes.length-1]){event.preventDefault();nodes[0].focus()}
+   if(event.defaultPrevented)return;
+   const current=nodes.indexOf(document.activeElement);
+   const next=event.shiftKey?(current<=0?nodes.length-1:current-1):(current+1)%nodes.length;
+   event.preventDefault();
+   nodes[next].focus();
   });
   (dialog.querySelector('input,select,textarea')||dialog.querySelector('button'))?.focus();
  }else if(!dialog&&returnFocus){const target=returnFocus;returnFocus=null;if(target.isConnected)target.focus()}

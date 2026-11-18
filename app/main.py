@@ -14,7 +14,11 @@ from .core import ROOT
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from .migrate import migrate
-    migrate()
+    if os.getenv('FRAMATEX_MODE', '').upper() == 'OPERATIONAL':
+        from .migrate import require_current_schema
+        require_current_schema()
+    else:
+        migrate()
     yield
 
 app = FastAPI(title="Framatex · Dossier jaune", version=os.getenv("FRAMATEX_BUILD_VERSION","consolidation-2026.11"), lifespan=lifespan)

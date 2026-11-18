@@ -20,22 +20,19 @@ async function ordersPage(view='orders'){
  };
  let queryTimer;
  app.querySelector('#order-query').oninput=()=>{clearTimeout(queryTimer);queryTimer=setTimeout(()=>{page=0;render()},200)};app.querySelector('#order-sort').onchange=()=>{page=0;render()};
- app.querySelector('#order-prev').onclick=()=>{page--;render()};app.querySelector('#order-next').onclick=()=>{page++;render()};await render();
+ app.querySelector('#order-prev').onclick=()=>{page--;render()};app.querySelector('#order-next').onclick=()=>{page++;render()};
  app.querySelector('#order-create')?.addEventListener('click',async()=>{try{
-  const clients=(await api('/api/order-clients')).items;
-  modal('Créer une commande',`<form id="canonical-order-create"><label for="canonical-client-query">Rechercher un client actif</label><input id="canonical-client-query" type="search" maxlength="150"><label for="canonical-client">Client</label><select id="canonical-client" required>${clients.map(c=>`<option value="${e(c.id)}">${e(c.name)}</option>`).join('')}</select><label for="canonical-reference">Référence de commande</label><input id="canonical-reference" required maxlength="100"><p>Un Dossier Jaune unique et ses quatre rubriques seront créés pour cette commande.</p><button class="primary">Créer la commande et son dossier</button></form>`);
-  let clientTimer,clientRequest=0;
-  overlay.querySelector('#canonical-client-query').oninput=()=>{clearTimeout(clientTimer);clientTimer=setTimeout(async()=>{
-   const request=++clientRequest;try{const result=await api('/api/order-clients?'+new URLSearchParams({q:orderValue('canonical-client-query')}));if(request!==clientRequest||!overlay.querySelector('#canonical-client'))return;overlay.querySelector('#canonical-client').innerHTML=result.items.map(c=>`<option value="${e(c.id)}">${e(c.name)}</option>`).join('')}catch(err){showErr(err)}
-  },200)};
+  modal('Créer une commande',`<form id="canonical-order-create"><label for="canonical-client">Client</label><select id="canonical-client" required></select><label for="canonical-reference">Référence de commande</label><input id="canonical-reference" required maxlength="100"><p>Un Dossier Jaune unique et ses quatre rubriques seront créés pour cette commande.</p><button class="primary">Créer la commande et son dossier</button></form>`);
+  pagedSelect(overlay.querySelector('#canonical-client'),'/api/order-clients','Choisir un client',c=>`${c.name} · ${c.id}`);
   overlay.querySelector('form').onsubmit=async event=>{event.preventDefault();await orderSubmit(event.target,async()=>{const row=await api('/api/orders',{method:'POST',body:JSON.stringify({client_id:orderValue('canonical-client'),reference:orderValue('canonical-reference')})});closeModal();await orderDossierPage(row.id);toast('Commande et dossier créés')})};
  }catch(err){showErr(err)}});
+ await render();
 }
 async function orderSubmit(form,action){
  if(form.dataset.busy)return;form.dataset.busy='1';form.setAttribute('aria-busy','true');const buttons=[...form.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);
  try{await action()}catch(err){showErr(err)}finally{delete form.dataset.busy;form.removeAttribute('aria-busy');buttons.forEach(b=>b.disabled=false)}
 }
-async function orderDossierPage(id,section='jaune'){
+async function orderDossierPage(id,section='jaune',focusDocument=null){
  const navigation=++dossierNavigation;const appNavigation=++navigationVersion;
  const [root,order,approvalReport,coverage]=await Promise.all([api(`/api/orders/${encodeURIComponent(id)}/dossier?summary=true`),api(`/api/orders/${encodeURIComponent(id)}?summary=true`),Promise.resolve({items:[]}),api(`/api/orders/${encodeURIComponent(id)}/completeness`)]);
  if(navigation!==dossierNavigation||navigationVersion!==appNavigation)return;
@@ -48,10 +45,12 @@ async function orderDossierPage(id,section='jaune'){
  async function renderDocuments(){
   const s=root.sections.find(s=>s.slug===current);const origin=orderValue('order-origin'),term=orderValue('order-document-query').toLocaleLowerCase('fr');
   const request=++documentRequest;
+  const destination = current;
+  app.querySelector('#order-upload').replaceChildren();
   app.querySelector('#order-documents').textContent='Chargement…';
   let result;
-  try{result=await api(`/api/orders/${id}/document-page?`+new URLSearchParams({folder:current,origin,q:term,offset:String(documentOffset),limit:'25'}))}
-  catch(err){if(request===documentRequest)app.querySelector('#order-documents').textContent=err.message||'Chargement impossible. Modifiez un filtre pour réessayer.';return}
+  try{result=await api(`/api/orders/${id}/document-page?`+new URLSearchParams({folder:current,origin,q:term,offset:String(documentOffset),limit:'25',...(focusDocument?{document_id:focusDocument}:{})}))}
+  catch(err){if(request===documentRequest && state.orderDossier===root && navigationVersion===appNavigation)app.querySelector('#order-documents').textContent=err.message||'Chargement impossible. Modifiez un filtre pour réessayer.';return}
   if(request!==documentRequest||state.orderDossier!==root||navigationVersion!==appNavigation)return;
   const docs=result.items;approvalReport.items=result.approvals;
   app.querySelector('#document-count').textContent=`${result.total} document(s) · Page ${Math.floor(documentOffset/25)+1}`;
@@ -69,10 +68,10 @@ async function orderDossierPage(id,section='jaune'){
   app.querySelectorAll('[data-order-reopen]').forEach(b=>b.onclick=()=>decisionDialog(b.dataset.orderReopen,true));
   app.querySelectorAll('[data-order-history]').forEach(b=>b.onclick=async()=>{try{
    const d=docs.find(d=>d.id===b.dataset.orderHistory);
-   modal(`Historique · ${d.title}`,'<p role="status">Chargement de l’historique…</p>');const pendingDialog=overlay.firstElementChild;
+   modal(`Historique · ${d.title}`,'<p role="status">Chargement de l’historique…</p>',true);const pendingDialog=overlay.firstElementChild;
    const history=await api(`/api/documents/${d.id}/history?limit=25`);if(!pendingDialog?.isConnected||state.orderDossier!==root)return;d.versions=history.items;
    const historyHtml=versions=>versions.map(v=>`<p>Version ${v.number} · ${niceDate(v.created_at)} · <a href="/api/documents/${e(d.id)}/versions/${v.number}/download">Télécharger ${e(v.original_name)}</a><small class="hash">SHA-256 : ${e(v.sha256)}</small><button class="link" data-document-comments="${e(v.id)}">Commentaires de la version ${v.number}</button></p>`).join('');
-   modal(`Historique · ${d.title}`,`<p>Commande ${e(root.reference)} · ${e(s.label)}</p><div id="order-history-items">${historyHtml(d.versions)}</div>${history.total>25?'<button id="order-history-more" class="secondary">Versions précédentes</button>':''}${s.can_write?'<button class="secondary" id="document-classify">Classer le document</button><form id="order-version-form"><label for="order-version-file">Nouvelle version</label><input id="order-version-file" type="file" required><p>Les anciennes versions seront conservées. Une ancienne approbation ne valide pas cette version.</p><button class="primary">Enregistrer la nouvelle version</button></form>':''}`,true);
+   pendingDialog.querySelector('.modal-body').innerHTML=`<p>Commande ${e(root.reference)} · ${e(s.label)}</p><div id="order-history-items">${historyHtml(d.versions)}</div>${history.total>25?'<button id="order-history-more" class="secondary">Versions précédentes</button>':''}${s.can_write?'<button class="secondary" id="document-classify">Classer le document</button><form id="order-version-form"><label for="order-version-file">Nouvelle version</label><input id="order-version-file" type="file" required><p>Les anciennes versions seront conservées. Une ancienne approbation ne valide pas cette version.</p><button class="primary">Enregistrer la nouvelle version</button></form>':''}`;
    const bindComments=()=>overlay.querySelectorAll('[data-document-comments]').forEach(button=>button.onclick=()=>documentCommentDialog(d,d.versions.find(v=>v.id===button.dataset.documentComments)).catch(showErr));
    bindComments();
    overlay.querySelector('#document-classify')?.addEventListener('click',()=>documentClassificationDialog(d,s.slug).catch(showErr));
@@ -86,11 +85,11 @@ async function orderDossierPage(id,section='jaune'){
   }catch(err){showErr(err)}});
   app.querySelector('#order-upload').innerHTML=s.can_write?`<details><summary>Déposer un document dans ${e(root.reference)} · ${e(s.label)}</summary><form id="order-document-form"><label for="order-document-title">Titre</label><input id="order-document-title" name="title" maxlength="220" required><label for="order-document-type">Type documentaire</label><input id="order-document-type" name="doc_type" maxlength="100" required><label for="order-document-origin">Lancement d’origine (facultatif)</label><select id="order-document-origin" name="launch_id"><option value="">Pièce de commande</option>${order.launches.map(l=>`<option value="${e(l.id)}">${e(l.name)}</option>`).join('')}</select><label for="order-document-file">Fichier privé (20 Mo maximum)</label><input id="order-document-file" name="file" type="file" accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg,.txt,.eml" required><button class="primary">Déposer dans cette rubrique</button></form></details>`:'';
   decorateOrderUpload(app.querySelector('#order-document-form'),current);
-  app.querySelector('#order-document-form')?.addEventListener('submit',event=>{event.preventDefault();orderSubmit(event.target,async()=>{const body=new FormData(event.target);body.append('folder',current);if(!body.get('launch_id'))body.delete('launch_id');await api(`/api/orders/${id}/documents`,{method:'POST',body});await orderDossierPage(id,current);toast('Document déposé et conservé')})});
+  app.querySelector('#order-document-form')?.addEventListener('submit',event=>{event.preventDefault();orderSubmit(event.target,async()=>{const body=new FormData(event.target);body.append('folder',destination);if(!body.get('launch_id'))body.delete('launch_id');await api(`/api/orders/${id}/documents`,{method:'POST',body});await orderDossierPage(id,current);toast('Document déposé et conservé')})});
  }
- app.querySelectorAll('[data-order-section]').forEach(b=>b.onclick=()=>{current=b.dataset.orderSection;documentOffset=0;renderDocuments()});
+ app.querySelectorAll('[data-order-section]').forEach(b=>b.onclick=()=>{focusDocument=null;current=b.dataset.orderSection;documentOffset=0;renderDocuments()});
  app.querySelector('#document-prev').onclick=()=>{documentOffset=Math.max(0,documentOffset-25);renderDocuments()};app.querySelector('#document-next').onclick=()=>{documentOffset+=25;renderDocuments()};
- let documentTimer;app.querySelector('#order-origin').onchange=()=>{documentOffset=0;renderDocuments()};app.querySelector('#order-document-query').oninput=()=>{clearTimeout(documentTimer);documentTimer=setTimeout(()=>{documentOffset=0;renderDocuments()},200)};await renderDocuments();
+ let documentTimer;app.querySelector('#order-origin').onchange=()=>{documentOffset=0;renderDocuments()};app.querySelector('#order-document-query').oninput=()=>{focusDocument=null;clearTimeout(documentTimer);documentTimer=setTimeout(()=>{documentOffset=0;renderDocuments()},200)};
  app.querySelectorAll('[data-order-waiver]').forEach(button=>button.addEventListener('click',()=>{
   const active=button.dataset.waiverActive!=='true';
   modal(active?'Justifier une dérogation':'Retirer la dérogation',`<form><p>La dérogation concerne uniquement cette obligation et ne crée aucun document. Elle reste historisée.</p>${active?'<label>Justification <textarea id="order-waiver-reason" required minlength="12" maxlength="2000"></textarea></label>':'<p>Cette obligation sera réévaluée avec les pièces et décisions actuelles.</p>'}<button class="primary">${active?'Enregistrer la dérogation':'Retirer la dérogation'}</button></form>`,true);
@@ -102,8 +101,16 @@ async function orderDossierPage(id,section='jaune'){
   overlay.querySelector('form').onsubmit=event=>{event.preventDefault();orderSubmit(event.target,async()=>{await api(`/api/orders/${id}/completeness/context`,{method:'PUT',body:JSON.stringify({profile_id:orderValue('order-profile')||null,phase:orderValue('order-phase'),order_type:orderValue('order-type')})});closeModal();await orderDossierPage(id,current)})};
  }catch(err){showErr(err)}});
  app.querySelector('#order-member-grant')?.addEventListener('click',async()=>{try{
-  const users=await api('/api/admin/users');
-  modal('Habiliter un collaborateur',`<form><label for="order-member">Collaborateur</label><select id="order-member">${users.filter(u=>u.active).map(u=>`<option value="${e(u.id)}">${e(u.name)}</option>`).join('')}</select><label for="order-member-reason">Motif de l’habilitation</label><textarea id="order-member-reason" required minlength="12" maxlength="1500"></textarea><p>Cette habilitation permet la consultation des commandes sans lancement, selon les droits de rubrique du collaborateur. Pour une commande avec lancements, les restrictions historiques de chaque lancement restent obligatoires.</p><button class="primary">Confirmer cette habilitation</button></form>`,true);
+  const [users,members]=await Promise.all([api('/api/admin/users'),api(`/api/orders/${id}/members`)]);
+  const permissions=members.map(member=>`<li>${e(member.name)} · ${e(member.email)} ${member.independent_access?'(accès propre conservé)':''} <button type="button" data-revoke-member="${e(member.id)}">Retirer l’habilitation</button></li>`).join('');
+  modal('Habiliter un collaborateur',`<h3>Habilitations explicites</h3><ul>${permissions||'<li>Aucune</li>'}</ul><form><label for="order-member">Collaborateur</label><select id="order-member">${users.filter(u=>u.active).map(u=>`<option value="${e(u.id)}">${e(u.name)}</option>`).join('')}</select><label for="order-member-reason">Motif de l’habilitation</label><textarea id="order-member-reason" required minlength="12" maxlength="1500"></textarea><p>Cette habilitation permet la consultation des commandes sans lancement, selon les droits de rubrique du collaborateur. Pour une commande avec lancements, les restrictions historiques de chaque lancement restent obligatoires.</p><button class="primary">Confirmer cette habilitation</button></form>`,true);
+  overlay.querySelectorAll('[data-revoke-member]').forEach(button=>button.onclick=async()=>{
+   if(!confirm('Retirer cette habilitation explicite ?'))return;
+   button.disabled=true;
+   try{const result=await api(`/api/orders/${id}/members/${button.dataset.revokeMember}`,{method:'DELETE'});
+       closeModal();toast(result.effective_access?'Habilitation retirée. Accès propre conservé.':'Habilitation retirée');}
+   catch(error){button.disabled=false;showErr(error)}
+  });
   overlay.querySelector('form').onsubmit=event=>{event.preventDefault();orderSubmit(event.target,async()=>{await api(`/api/orders/${id}/members`,{method:'POST',body:JSON.stringify({user_id:orderValue('order-member'),reason:orderValue('order-member-reason')})});closeModal();toast('Habilitation enregistrée')})};
  }catch(err){showErr(err)}});
  app.querySelector('#order-launch-create')?.addEventListener('click',()=>{
@@ -122,6 +129,7 @@ async function orderDossierPage(id,section='jaune'){
   form.onsubmit=event=>{event.preventDefault();orderSubmit(event.target,async()=>{await api(`/api/orders/${id}/launches`,{method:'POST',body:JSON.stringify({launch_id:select.value})});closeModal();await orderDossierPage(id,current)})};
   await load();
  }catch(err){showErr(err)}});
+ await renderDocuments();
 }
 
 async function directoryPage(kind){
@@ -150,5 +158,17 @@ async function validationsPage(offset=0){
  const report=await api(`/api/validation-queue?limit=25&offset=${offset}`);state.view='validations';
  mount(`<div class="page-heading"><h1>Validations</h1><p>${report.pending} circuit(s) en attente parmi vos documents autorisés.</p></div><section class="panel order-panel">${report.items.length?`<div class="table-scroll"><table><caption>Circuits des versions courantes</caption><thead><tr><th>Document</th><th>Rubrique</th><th>Version</th><th>État</th><th>Action</th></tr></thead><tbody>${report.items.map(r=>`<tr><td>${e(r.document_title)}</td><td>${e(r.folder)}</td><td class="numeric">v${r.version} · séquence ${r.cycle}</td><td>${e(APPROVAL_STATUSES[r.status]||r.status)}</td><td><button class="secondary" data-validation-index="${e(r.id)}">${r.can_decide?'Examiner et décider':'Consulter le circuit'}</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">Aucun circuit de validation accessible.</p>'}<p>${report.total} circuit(s) autorisé(s)</p><button id="validations-prev" ${offset?'':'disabled'}>Précédents</button><button id="validations-next" ${offset+report.items.length<report.total?'':'disabled'}>Suivants</button></section>`,'Validations');
  app.querySelector('#validations-prev').onclick=()=>validationsPage(Math.max(0,offset-25)).catch(showErr);app.querySelector('#validations-next').onclick=()=>validationsPage(offset+25).catch(showErr);
- app.querySelectorAll('[data-validation-index]').forEach(b=>b.onclick=()=>{const r=report.items.find(r=>r.id===b.dataset.validationIndex);(r.order_id?orderDossierPage(r.order_id,r.folder):openLaunch(r.launch_id,r.folder)).catch(showErr)});
+ app.querySelectorAll('[data-validation-index]').forEach(b=>b.onclick=async()=>{
+  const row=report.items.find(item=>item.id===b.dataset.validationIndex);
+  try{
+   if(row.order_id){
+    await orderDossierPage(row.order_id,row.folder,row.document_id);
+    app.querySelector(`[data-order-decide="${CSS.escape(row.document_id)}"]`)?.focus();
+   }else{
+    await openLaunch(row.launch_id,row.folder);
+    const item=app.querySelector(`[data-approval-run="${CSS.escape(row.id)}"]`);
+    if(item){item.scrollIntoView({block:'center'});item.focus()}
+   }
+  }catch(error){showErr(error)}
+ });
 }

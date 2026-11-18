@@ -22,4 +22,8 @@ def test_historical_differences_survive_later_returns_and_cancellations():
         last=cancelled['discrepancy_history'][-1]
         assert last['operation']=='cancelled' and last['remaining']=='60.000' and last['source_id']==version['id']
         assert supplier.get('/api/partner/order-lines').json()[0]['discrepancy_history']==cancelled['discrepancy_history']
+        first_page=staff.get(base+'/history?offset=0&limit=2').json()
+        second_page=staff.get(base+'/history?offset=2&limit=2').json()
+        assert first_page['total']==second_page['total']==4
+        assert first_page['items']+second_page['items']==cancelled['discrepancy_history']
         assert other.get('/api/partner/order-lines').json()==[]

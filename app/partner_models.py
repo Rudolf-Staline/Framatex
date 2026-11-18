@@ -84,7 +84,7 @@ from sqlalchemy import Numeric
 
 class PartnerOrderLine(Base):
     __tablename__ = 'partner_order_lines'
-    __table_args__ = (UniqueConstraint('partner_id', 'order_ref', 'material_ref'),)
+    __table_args__ = (UniqueConstraint('partner_id', 'launch_id', 'order_ref', 'material_ref'),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     partner_id: Mapped[str] = mapped_column(ForeignKey('partners.id'), index=True)
     launch_id: Mapped[str] = mapped_column(ForeignKey('launches.id'))
@@ -95,6 +95,13 @@ class PartnerOrderLine(Base):
     expected_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_by: Mapped[str] = mapped_column(ForeignKey('users.id'))
     revision: Mapped[int] = mapped_column(Integer, default=0)
+
+class PartnerReceiptHistory(Base):
+    __tablename__ = 'partner_receipt_history'
+    line_id: Mapped[str] = mapped_column(ForeignKey('partner_order_lines.id'), primary_key=True)
+    position: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_json: Mapped[str] = mapped_column(Text)
+
 
 class PartnerDelivery(Base):
     __tablename__ = 'partner_deliveries'

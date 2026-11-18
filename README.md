@@ -29,7 +29,7 @@ ci-dessus et dans le guide intégré actualisé.
 
 > **Version 0.16 – stabilisation et recette du pilote local.** Sécurité HTTP, limitation locale des tentatives de connexion, navigation par rubriques, déconnexion mobile et suppression du débordement horizontal. Détails : [VERSION_0.16.md](VERSION_0.16.md) et [RECETTE_PILOTE.md](RECETTE_PILOTE.md).
 
-**À lancer après sauvegarde du répertoire `data/` et arrêt des écritures :** `python -m app.migrate upgrade`, puis `python -m uvicorn app.main:app --host 127.0.0.1 --port 8000`. N'ouvrez pas ce prototype sur Internet et ne chargez pas de données réelles sans autorisation de Framatex.
+**À lancer après sauvegarde du répertoire `data/` et arrêt des écritures :** `python -m app.migrate upgrade`, puis `python -m uvicorn app.main:app --no-access-log --host 127.0.0.1 --port 8000`. N'ouvrez pas ce prototype sur Internet et ne chargez pas de données réelles sans autorisation de Framatex.
 
 ---
 
@@ -85,7 +85,7 @@ python -m app.seed_demo                 # facultatif : 3 lancements fictifs
 python -m app.seed_completeness_demo    # facultatif : après seed_demo
 python -m app.seed_workflow_demo        # facultatif : après seed_demo
 python -m app.seed_quality_demo         # facultatif : après seed_demo
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --no-access-log --host 127.0.0.1 --port 8000
 ```
 
 Sous **Windows PowerShell** :
@@ -99,7 +99,7 @@ python -m app.seed_demo
 python -m app.seed_completeness_demo
 python -m app.seed_workflow_demo
 python -m app.seed_quality_demo
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --no-access-log --host 127.0.0.1 --port 8000
 ```
 
 Si l'activation PowerShell échoue, utilisez directement `.venv\Scripts\python.exe` à la place de `python` pour les commandes suivantes. Le programme demande un mot de passe de 12 caractères minimum pour le premier administrateur : **aucun mot de passe par défaut n'est fourni**.
@@ -269,7 +269,7 @@ La mise à niveau 0.15 introduit un **migrateur SQLite versionné** et un périm
 ```bash
 python -m app.migrate upgrade
 python -m app.migrate status
-uvicorn app.main:app --host 127.0.0.1 --port 8000
+uvicorn app.main:app --no-access-log --host 127.0.0.1 --port 8000
 ```
 
 Le système crée aussi une sauvegarde automatique datée avant d'ajouter des colonnes à une base SQLite 0.14. Les bases PostgreSQL **ne sont pas couvertes** par ce migrateur. La migration n'est pas un substitut à une politique de sauvegarde et de restauration éprouvée.

@@ -86,7 +86,7 @@ def review_out(db: Session, review: DocumentReview, *, document: Document | None
 def list_reviews(launch_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, 'launch.read')
     get_launch(db, launch_id)
-    documents = db.scalars(select(Document).join(Folder).where(Folder.id.in_(folder_ids(db, launch_id)))).all()
+    documents = db.scalars(select(Document).join(Folder).where((Document.launch_id.is_(None) | (Document.launch_id == launch_id)), Folder.id.in_(folder_ids(db, launch_id)))).all()
     results = []
     for doc in documents:
         if not document_accessible(db,user,doc) or not permitted(user, 'document.read', doc.folder.slug) or not doc.versions:
@@ -122,7 +122,7 @@ def decide_document(doc_id: str, payload: ReviewPayload, user: User = Depends(ge
     version = max(doc.versions, key=lambda v: v.number)
     from .approval_models import ApprovalRun
     if applicable_template(db, doc) or db.scalar(select(ApprovalRun.id).where(
-            ApprovalRun.document_version_id == version.id)):
+            ApprovalRun.document_version_id == version.id, ApprovalRun.obsolete.is_(False))):
         raise HTTPException(409, 'Ce document relève d’un circuit de validation configuré')
     review = DocumentReview(document_version_id=version.id, decision=payload.decision,
                             comment=payload.comment.strip(), reviewed_by=user.id)

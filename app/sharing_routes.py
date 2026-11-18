@@ -60,7 +60,7 @@ def is_approved(db: Session, v: DocumentVersion, doc: Document) -> bool:
         return False
     template = applicable_template(db, doc)
     if template:
-        run=db.scalar(select(ApprovalRun).where(ApprovalRun.document_version_id==v.id).order_by(ApprovalRun.cycle.desc(),ApprovalRun.started_at.desc()).limit(1))
+        run=db.scalar(select(ApprovalRun).where(ApprovalRun.document_version_id==v.id,ApprovalRun.template_id==template.id,ApprovalRun.obsolete.is_(False)).order_by(ApprovalRun.cycle.desc(),ApprovalRun.started_at.desc()).limit(1))
         return bool(run and run.status=='approved')
     review = latest_review(db, v.id)
     return bool(review and review.decision == 'approved')

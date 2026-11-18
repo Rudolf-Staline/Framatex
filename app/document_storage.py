@@ -5,7 +5,7 @@ blob paths and the isolated app.file_validation worker protocol are unchanged.
 """
 import hashlib
 import logging
-import shlex
+from .scanner_config import operational, scanner_command
 import subprocess
 import time
 import json
@@ -25,20 +25,23 @@ MIMES = {".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-off
 
 def scan(path):
     mode=os.getenv('FRAMATEX_UPLOAD_SCAN_MODE','disabled')
-    if os.getenv('FRAMATEX_MODE','DEVELOPMENT').upper()=='OPERATIONAL' and mode!='required':
+    if operational() and mode!='required':
         raise HTTPException(503,'En exploitation, le scan antivirus obligatoire doit être configuré')
     if mode=='disabled':return 'not_scanned'
     if mode!='required':raise HTTPException(503,'Politique antivirus invalide')
     backend=os.getenv('FRAMATEX_SCANNER_BACKEND','command')
     if backend not in {'command','clamav'}:raise HTTPException(503,'Adaptateur antivirus invalide')
-    command=os.getenv('FRAMATEX_SCANNER_COMMAND','clamscan --no-summary --alert-encrypted=yes' if backend=='clamav' else '')
+    try:
+        command = scanner_command(backend)
+    except ValueError:
+        raise HTTPException(503, "Commande antivirus invalide")
     if not command:raise HTTPException(503,'Scanner obligatoire indisponible : dépôt refusé')
     started=time.monotonic()
     log=logging.getLogger('framat.upload_scan')
     try:
         timeout=int(os.getenv('FRAMATEX_SCANNER_TIMEOUT_SECONDS','30'))
         if not 1<=timeout<=120:raise ValueError('timeout')
-        result=subprocess.run([*shlex.split(command),str(path)],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=timeout,check=False)
+        result=subprocess.run([*command,str(path)],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=timeout,check=False)
     except (OSError,subprocess.TimeoutExpired,ValueError):
         log.warning('upload_scan result=unavailable')
         raise HTTPException(503,'Scanner indisponible : dépôt refusé')

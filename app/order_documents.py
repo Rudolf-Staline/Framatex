@@ -146,7 +146,7 @@ def document_order_id(db, doc):
 def document_in_launch(db, doc, launch_id):
     from .models import Launch
     launch=db.get(Launch,launch_id)
-    return bool(launch and doc and doc.folder_id in {f.id for f in launch.folders})
+    return bool(launch and doc and doc.launch_id in (None, launch_id) and doc.folder_id in {f.id for f in launch.folders})
 
 
 def folder_ids(db, launch_id):

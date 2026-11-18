@@ -88,7 +88,7 @@ def approvals(oid:str,user=Depends(get_current_user),db:Session=Depends(get_db))
         if not document_accessible(db,user,doc) or not permitted(user,'document.read',doc.folder.slug) or not doc.versions:continue
         version=latest_version(doc);template=applicable_template(db,doc)
         runs=list(db.scalars(select(ApprovalRun).join(DocumentVersion).where(DocumentVersion.document_id==doc.id).order_by(ApprovalRun.started_at.desc(),ApprovalRun.cycle.desc())))
-        run=next((r for r in runs if r.document_version_id==version.id),None)
+        run=next((r for r in runs if r.document_version_id==version.id and not r.obsolete and template and r.template_id==template.id),None)
         result.append({'document_id':doc.id,'can_start':bool(template and not run and (permitted(user,'document.write',doc.folder.slug) or permitted(user,'document.review',doc.folder.slug))),
             'run':run_out(db,run,user,doc) if run else None,'previous':[run_out(db,r,user,doc) for r in runs if not run or r.id!=run.id]})
     return {'order_id':oid,'items':result}
@@ -99,6 +99,19 @@ class MemberInput(BaseModel):
     model_config=ConfigDict(extra="forbid")
     user_id:str=Field(min_length=36,max_length=36)
     reason:str=Field(min_length=12,max_length=1500)
+
+@router.get('/api/orders/{oid}/members')
+def members(oid:str,user=Depends(get_current_user),db:Session=Depends(get_db)):
+    from .access import admin_only, is_admin
+    from .models import User
+    from .order_documents import OrderMember
+    admin_only(user)
+    order=must_order(db,user,oid)
+    rows=db.scalars(select(User).join(OrderMember,OrderMember.user_id==User.id)
+                    .where(OrderMember.order_id==oid).order_by(User.name,User.id))
+    return [{'id':u.id,'name':u.name,'email':u.email,
+             'independent_access':u.active and (u.id==order.created_by or is_admin(u))} for u in rows]
+
 
 @router.post('/api/orders/{oid}/members',status_code=201)
 def add_member(oid:str,payload:MemberInput,user=Depends(get_current_user),db:Session=Depends(get_db)):

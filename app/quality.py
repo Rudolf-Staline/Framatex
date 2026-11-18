@@ -31,7 +31,7 @@ MAX_FINDINGS = 200
 
 def latest_document_versions(db: Session, launch_id: str, doc_type: str, folder: str, user=None):
     docs = db.scalars(select(Document).join(Folder).where(
-        Folder.id.in_(folder_ids(db, launch_id)), Folder.slug == folder, Document.doc_type == doc_type
+        (Document.launch_id.is_(None) | (Document.launch_id == launch_id)), Folder.id.in_(folder_ids(db, launch_id)), Folder.slug == folder, Document.doc_type == doc_type
     )).all()
     from .partner_integration_routes import business_available
     from .order_documents import document_accessible
@@ -101,7 +101,7 @@ def _read_cells(path: Path):
                     if v is None: continue
                     is_formula = cell.data_type == 'f' or (isinstance(v,str) and v.startswith('='))
                     if is_formula: formula_count+=1
-                    data[(sheet.title,cell.coordinate)] = (is_formula, str(v)[:400] if is_formula else str(v)[:120])
+                    data[(sheet.title,cell.coordinate)] = (is_formula, str(v))
     finally:
         book.close()
         stream.close()

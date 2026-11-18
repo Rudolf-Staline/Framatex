@@ -7,8 +7,8 @@ from .launches import get_launch, launch_out, FOLDERS, STATUSES
 from .order_documents import doc_out
 import os
 from fastapi import Depends, HTTPException, Query, Response
-from pydantic import BaseModel, Field
-from sqlalchemy import select,func,or_
+from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import case, select,func,or_
 from sqlalchemy.orm import Session
 from .core import get_current_user, get_db
 from .models import Document, Folder, Launch, User
@@ -18,6 +18,7 @@ from .orli_models import OrliLink
 router = APIRouter()
 
 class LaunchPayload(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
     name: str = Field(min_length=2, max_length=180)
     client_name: str | None = Field(default=None, max_length=150)
     order_ref: str | None = Field(default=None, max_length=100)
@@ -26,6 +27,7 @@ class LaunchPayload(BaseModel):
 
 
 class LaunchPatch(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
     name: str | None = Field(default=None, min_length=2, max_length=180)
     client_name: str | None = Field(default=None, max_length=150)
     order_ref: str | None = Field(default=None, max_length=100)
@@ -37,30 +39,40 @@ class LaunchPatch(BaseModel):
 def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.read")
     from .access import launch_access_clause
-    launches = list(db.scalars(select(Launch).where(launch_access_clause(user,Launch.id))))
+    from .partner_phase2_models import BusinessOrder, BusinessOrderLaunch
+    from .completeness_models import LaunchCompleteness
+    linked_launches = db.execute(select(Launch, BusinessOrderLaunch.order_id, LaunchCompleteness.profile_id)
+        .outerjoin(BusinessOrderLaunch, BusinessOrderLaunch.launch_id == Launch.id)
+        .outerjoin(LaunchCompleteness, LaunchCompleteness.launch_id == Launch.id).where(launch_access_clause(user, Launch.id))
+        .order_by(Launch.created_at.desc(), Launch.id)).all()
+    launches = [launch for launch, _, _ in linked_launches]
     from .order_documents import document_access_clause
     from .models import DocumentVersion
     folders=[slug for slug,_label in FOLDERS if permitted(user,'document.read',slug)]
     visible_docs=select(Document.id).join(Folder).where(Folder.slug.in_(folders),document_access_clause(user))
     document_count=db.scalar(select(func.count()).select_from(visible_docs.subquery()))
     version_count=db.scalar(select(func.count()).select_from(DocumentVersion).where(DocumentVersion.document_id.in_(visible_docs)))
-    from .partner_phase2_models import BusinessOrder, BusinessOrderLaunch
-    from .order_documents import order_access_clause
+    from .order_documents import OrderCompleteness, order_access_clause
     from .order_completeness import evaluate as evaluate_order
-    orders = list(db.scalars(select(BusinessOrder).where(order_access_clause(user))))
-    completion = [evaluate_order(db, order, user, permitted) for order in orders]
-    completion.extend(evaluate(db, launch, user, permitted) for launch in launches
-                      if not db.get(BusinessOrderLaunch, launch.id))
+    orders = db.execute(select(BusinessOrder, OrderCompleteness.profile_id)
+        .outerjoin(OrderCompleteness).where(order_access_clause(user))).all()
+    inherited_profiles = {order_id for _, order_id, profile in linked_launches if order_id and profile}
+    completion = [evaluate_order(db, order, user, permitted) for order, profile in orders
+                  if profile or order.id in inherited_profiles]
+    standalone = [(launch, profile) for launch, order_id, profile in linked_launches if order_id is None]
+    completion.extend(evaluate(db, launch, user, permitted) for launch, profile in standalone if profile)
     obligations = {r['obligation_key']: r for report in completion for r in report['rows']}
     open_ids = {l.id for l in launches if l.status != 'Clôturé'}
-    closed_orders = {order.id for order in orders if (linked := list(db.scalars(select(Launch).join(
-        BusinessOrderLaunch).where(BusinessOrderLaunch.order_id == order.id)))) and all(l.status == 'Clôturé' for l in linked)}
+    closed_orders = set(db.scalars(select(BusinessOrderLaunch.order_id).join(Launch)
+        .where(BusinessOrderLaunch.order_id.in_(select(BusinessOrder.id).where(order_access_clause(user))))
+        .group_by(BusinessOrderLaunch.order_id)
+        .having(func.min(case((Launch.status == 'Clôturé', 1), else_=0)) == 1)))
     return {"launches": len(launches), "incomplete": sum(l.status == "À compléter" for l in launches),
             "documents": document_count, "versions": version_count,
             "completeness_actions": sum(r['due'] and r['status'] in ('missing','pending_validation','pending_publication')
                 and (not r.get('launch_id') or r['launch_id'] in open_ids) and r.get('order_id') not in closed_orders for r in obligations.values()),
-            "completeness_unconfigured": sum(not c["configured"] for c in completion),
-            "recent": [launch_out(l) for l in sorted(launches, key=lambda l: l.created_at, reverse=True)[:5]]}
+            "completeness_unconfigured": len(orders) + len(standalone) - sum(c["configured"] for c in completion),
+            "recent": [launch_out(launch, order_id) for launch, order_id, _ in linked_launches[:5]]}
 
 
 @router.get("/api/launches")
@@ -114,7 +126,7 @@ def launch_detail(launch_id: str, user: User = Depends(get_current_user), db: Se
     folders = []
     for slug, label in FOLDERS:
         folder = next((f for f in l.folders if f.slug == slug), None)
-        docs = [] if not folder or not permitted(user, "document.read", slug) else [doc_out(d) for d in folder.documents if document_accessible(db,user,d)]
+        docs = [] if not folder or not permitted(user, "document.read", slug) else [doc_out(d) for d in folder.documents if d.launch_id in (None, launch_id) and document_accessible(db,user,d)]
         folders.append({"slug": slug, "label": label, "can_read": permitted(user, "document.read", slug), "can_write": permitted(user, "document.write", slug), "documents": docs})
     return {**launch_out(l), "folders": folders, "can_update": permitted(user, "launch.update"), "can_manage_access": is_admin(user)}
 
@@ -124,6 +136,8 @@ def update_launch(launch_id: str, payload: LaunchPatch, user: User = Depends(get
     must(user, "launch.update")
     l = get_launch(db, launch_id)
     changes = payload.model_dump(exclude_unset=True)
+    if "name" in changes and changes["name"] is None:
+        raise HTTPException(422, "Nom du lancement requis")
     if "status" in changes and changes["status"] not in STATUSES:
         raise HTTPException(422, "Statut inconnu")
     from .partner_phase2_models import BusinessOrderLaunch, BusinessOrder

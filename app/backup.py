@@ -27,6 +27,9 @@ def validate(database, files):
         if db.execute('PRAGMA foreign_key_check').fetchone():
             raise ValueError('Relations invalides')
         tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        required_tables = {'users', 'roles', 'launches', 'folders', 'documents', 'document_versions'}
+        if not required_tables.issubset(tables):
+            raise ValueError('Schéma Framatex incomplet ou base étrangère')
         for table in ('document_versions','partner_submissions','partner_attachments','partner_administrative_documents'):
             if table not in tables:continue
             for name, expected in db.execute(f'SELECT disk_name, sha256 FROM {table}'):
@@ -110,6 +113,10 @@ def restore(archive: Path, destination: Path):
         validate(stage/'framat.db',stage/'files')
         # The restored installation starts with no active external sessions.
         with sqlite3.connect(stage/'framat.db') as db:
+            if db.execute("SELECT 1 FROM sqlite_master WHERE name='partner_mail'").fetchone():
+                db.execute("UPDATE partner_mail SET status='uncertain', last_error='RestoredQueueNeedsReconciliation' WHERE status IN ('pending','processing','failed')")
+                if db.execute("SELECT 1 FROM sqlite_master WHERE name='partner_mail_leases'").fetchone():
+                    db.execute('DELETE FROM partner_mail_leases')
             if db.execute("SELECT name FROM sqlite_master WHERE name='partner_tokens'").fetchone():
                 db.execute('UPDATE partner_tokens SET consumed=1')
             if db.execute("SELECT name FROM sqlite_master WHERE name='audit_events'").fetchone():

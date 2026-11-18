@@ -20,9 +20,8 @@ pas du service HTTP.
 
 ## Installation reproductible
 
-`requirements.txt` utilise les contraintes de `requirements-test-lock.txt` afin
-que les versions transitives de l'installation et de la CI soient identiques.
-Conserver ces deux fichiers ensemble. L'accès au dépôt de paquets ou à un miroir
+`requirements.txt` fixe les dépendances directes et transitives du service Linux Python 3.12.
+La CI installe ces mêmes versions avec ses outils de test supplémentaires. L'accès au dépôt de paquets ou à un miroir
 interne est nécessaire à l'installation ; aucun accès Internet général n'est
 requis pour la gestion documentaire locale. L'IA du guide est facultative et
 désactivée par défaut.
@@ -40,11 +39,12 @@ export FRAMATEX_SCANNER_BACKEND=clamav
 .venv/bin/python -m app.migrate preflight
 .venv/bin/python -m app.migrate upgrade
 .venv/bin/python -m app.bootstrap_admin --email administrateur@example.local
-.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+.venv/bin/python -m uvicorn app.main:app --no-access-log --host 127.0.0.1 --port 8000
 ```
 
-Avec un paquet livré sans `.git`, fournir `FRAMATEX_BUILD_COMMIT` avec le SHA
-vérifié du code installé. `FRAMATEX_BUILD_VERSION` identifie la livraison (défaut
+Une archive produite par `git archive` contient le SHA de la livraison. Pour
+une copie réalisée autrement et dépourvue de `.git`, fournir le SHA vérifié
+dans `FRAMATEX_BUILD_COMMIT`. `FRAMATEX_BUILD_VERSION` identifie la livraison (défaut
 `consolidation-2026.11`), également utilisé par la documentation OpenAPI. `/api/health` indique processus vivant et commit ;
 `/api/ready` retourne 503 tant que les révisions, l'espace de stockage ou les
 prérequis du scanner ne sont pas prêts. Aucun secret ni chemin privé n'y figure.
@@ -70,6 +70,16 @@ les révisions inconnues et les relations historiques invalides.
   hors portail ; 0028 ajoute identification, types et commentaires sans écraser
   les originaux ; 0029 rend explicites portée et événement d'échéance ; 0030
   ajoute les index de liste.
+- 0031 conserve les anciens circuits de validation, invalide les décisions
+  antérieures à un changement de type, rétablit les rubriques des lancements
+  déjà détachés et indexe l’historique des réceptions.
+  Une même référence matière peut désormais servir deux lancements distincts
+  chez le même fournisseur.
+
+En mode opérationnel, le serveur vérifie la révision au démarrage. Exécuter
+`python -m app.migrate upgrade` avant de le relancer. Après restauration,
+les courriels en attente, en échec ou en cours passent à l’état `uncertain`.
+Vérifier leur acceptation auprès du serveur SMTP avant de décider d’un renvoi.
 
 Les nouvelles permissions métiers doivent être attribuées explicitement par
 l'administration, selon les responsabilités approuvées. Aucune politique de
@@ -144,6 +154,10 @@ versions, décisions, contrôles d'accès, puis migration explicite. La réussit
 d'un test synthétique ne garantit pas le temps de reprise d'une base réelle.
 
 ## Emails et reprise après interruption
+
+À la restauration, les envois qui étaient en attente, en traitement ou en échec temporaire
+passent à l’état `uncertain`. Avant toute reprise SMTP, rapprocher chaque identifiant des
+traces du relais et décider de son sort avec la commande de réconciliation ci-dessous.
 
 Le worker est séparé de HTTP. SMTP reste désactivé tant que
 `FRAMATEX_EMAIL_ENABLED=1` et une configuration explicitement approuvée ne sont

@@ -5,10 +5,9 @@ const PILOT_SEVERITY = {bloquant:'Bloquant',majeur:'Majeur',mineur:'Mineur',sugg
 
 async function pilotPage(){
   const rows=await api('/api/pilot/reports');
-  const launches=await api('/api/launches').catch(()=>[]);
   state.view='pilot';
   state.pilotReports=rows;
-  state.pilotLaunches=launches;
+
   const counts={ouvert:0,en_cours:0,resolu:0,ecarte:0};
   rows.forEach(r=>{if(counts[r.status]!==undefined)counts[r.status]++});
   const items=rows.length?rows.map(r=>`<article class="pilot-card panel">
@@ -24,18 +23,19 @@ async function pilotPage(){
 }
 
 function openPilotReport(){
-  const launches=state.pilotLaunches||[];
+
   modal('Signaler un problème de recette', `<p class="modal-desc">Décrivez un comportement observé, pas une hypothèse. Ne joignez aucune donnée confidentielle.</p>
     <form id="pilot-report-form">
       <div class="two-fields"><div class="field"><label for="pilot-module">Fonctionnalité testée *</label><select id="pilot-module" required><option>Création de dossier</option><option>Documents et versions</option><option>Autorisations</option><option>OCR et classement</option><option>Validations et notifications</option><option>ORLI et matières</option><option>Navigation mobile</option><option>Autre fonctionnalité</option></select></div>
       <div class="field"><label for="pilot-severity">Impact constaté *</label><select id="pilot-severity"><option value="mineur">Mineur</option><option value="majeur">Majeur</option><option value="bloquant">Bloquant</option><option value="suggestion">Suggestion</option></select></div></div>
-      <div class="field"><label for="pilot-launch">Lancement concerné (facultatif)</label><select id="pilot-launch"><option value="">Aucun / problème général</option>${launches.map(l=>`<option value="${e(l.id)}">${e(l.name)}</option>`).join('')}</select></div>
+      <div class="field"><label for="pilot-launch">Lancement concerné (facultatif)</label><select id="pilot-launch"><option value="">Aucun / problème général</option></select></div>
       <div class="field"><label for="pilot-title">Problème observé *</label><input id="pilot-title" maxlength="180" minlength="6" required placeholder="Ex. La nouvelle version n’apparaît pas après dépôt"></div>
       <div class="field"><label for="pilot-steps">Étapes précises pour reproduire *</label><textarea id="pilot-steps" rows="4" minlength="12" maxlength="4000" required placeholder="1. Ouvrir un lancement fictif... 2. Déposer un fichier... 3. Cliquer..."></textarea></div>
       <div class="field"><label for="pilot-expected">Comportement attendu *</label><textarea id="pilot-expected" rows="2" minlength="5" maxlength="2000" required></textarea></div>
       <div class="field"><label for="pilot-observed">Résultat réellement constaté *</label><textarea id="pilot-observed" rows="2" minlength="5" maxlength="2000" required></textarea></div>
       <div class="modal-actions"><button type="button" class="secondary" id="cancel-pilot">Annuler</button><button class="primary" type="submit">${icon('check')} Enregistrer le signalement</button></div>
     </form>`,true);
+  pagedSelect(overlay.querySelector('#pilot-launch'),'/api/launches','Aucun / problème général',l=>l.name);
   overlay.querySelector('#cancel-pilot').onclick=closeModal;
   overlay.querySelector('#pilot-report-form').onsubmit=async ev=>{
     ev.preventDefault();const button=overlay.querySelector('button[type=submit]');button.disabled=true;

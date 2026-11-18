@@ -19,6 +19,7 @@ def test_seed_entrypoints_guard_idempotence_and_real_partner_data(tmp_path):
     before=snapshot();second=run('-m','app.seed_phase2_demo');assert second.returncode==0,second.stderr
     assert snapshot()==before
     assert before['partners']==4 and before['partner_accounts']==4 and before['partner_deliveries']==8
+    assert before['partner_receipt_history'] == before['partner_deliveries']
     assert before['quality_decisions']==0 and before['cross_document_rules']>=1 and before['document_reviews']>=3
     with sqlite3.connect(tmp_path/'framat.db') as db:
         assert db.execute('PRAGMA foreign_key_check').fetchall()==[]

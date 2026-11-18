@@ -39,6 +39,11 @@ def resolve_type(value):
     candidates=[t for t in CATALOGUE if normalize(value) in {normalize(v) for v in [t['id'],t['label'],*t['aliases']]}]
     return candidates[0] if len(candidates)==1 else None
 
+def type_key(value):
+    known = resolve_type(value)
+    return known['id'] if known else value.strip()
+
+
 def equivalent_types(value):
     row=resolve_type(value)
     return [row['id'],row['label'],*row['aliases']] if row else [value]
@@ -65,8 +70,12 @@ def register_type(db, doc):
 
 def type_out(db,doc):
     assignment=db.get(DocumentTypeAssignment,doc.id)
+    return classification_out(doc, assignment, doc.folder.slug)
+
+
+def classification_out(doc, assignment, folder):
     row=resolve_type(assignment.type_id if assignment else doc.doc_type)
-    if not row or doc.folder.slug not in row['folders']:row=resolve_type('unclassified')
+    if not row or folder not in row['folders']:row=resolve_type('unclassified')
     return {'id':row['id'],'label':row['label'],'original_label':assignment.original_label if assignment else doc.doc_type,
             'needs_classification':row['id']=='unclassified'}
 
@@ -105,7 +114,21 @@ def classify(doc_id:str,payload:ClassificationInput,user=Depends(get_current_use
     row=resolve_type(payload.type_id)
     if not row or row['id']!=payload.type_id or doc.folder.slug not in row['folders']:
         raise HTTPException(422,'Type documentaire incompatible avec cette rubrique')
-    assignment=register_type(db,doc);assignment.type_id=row['id'];assignment.assigned_by=user.id;assignment.assigned_at=utcnow()
+    assignment=register_type(db,doc);old_type = assignment.type_id
+    if old_type != row['id'] or (old_type == 'unclassified' and doc.doc_type != row['label']):
+        from .approval_models import ApprovalRun
+        from .models import DocumentVersion
+        from .workflow_models import DocumentReview
+        from .sharing_models import ClientPublication
+        versions = select(DocumentVersion.id).where(DocumentVersion.document_id == doc.id)
+        db.execute(update(ApprovalRun).where(ApprovalRun.document_version_id.in_(versions)).values(obsolete=True))
+        for version_id in db.scalars(versions):
+            db.add(DocumentReview(document_version_id=version_id, decision='to_review',
+                                  comment='Reclassement du document', reviewed_by=user.id))
+        db.execute(update(ClientPublication).where(ClientPublication.document_version_id.in_(versions),
+                   ClientPublication.status=='published').values(status='revoked', revoked_by=user.id,
+                   revoked_at=utcnow(), revoked_reason='Reclassement du document'))
+    assignment.type_id=row['id'];assignment.assigned_by=user.id;assignment.assigned_at=utcnow()
     # Existing rule equality remains compatible; the original is retained in assignment and audit.
     previous=doc.doc_type;doc.doc_type=row['label']
     audit(db,user,'document.classify','document',doc.id,{'previous':previous,'type_id':row['id']})

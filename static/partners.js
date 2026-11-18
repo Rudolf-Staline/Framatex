@@ -120,8 +120,16 @@ async function openRequest(id){
 api('/api/partner/home').then(()=>run(refresh)).catch(()=>{});
 
 form('order-line',async data=>{if(!data.expected_date)data.expected_date=null;await api('/api/partners/order-lines','POST',data);$('order-line').reset();await refresh();});
-async function renderDeliveries(){
- const base=internal?'/api/partners':'/api/partner';const rows=await api(`${base}/order-lines`);$('deliveries').replaceChildren();
+function pageLinks(container,offset,count,load){
+ const nav=node('nav');nav.setAttribute('aria-label','Pagination');
+ if(offset)nav.append(button('Précédents',()=>load(offset-50)));
+ nav.append(node('span',`Page ${Math.floor(offset/50)+1}`));
+ if(count>50)nav.append(button('Suivants',()=>load(offset+50)));
+ container.append(nav);
+}
+async function renderDeliveries(offset=0){
+ const base=internal?'/api/partners':'/api/partner';const page=await api(`${base}/order-lines?offset=${offset}&limit=51`);const rows=page.slice(0,50);$('deliveries').replaceChildren();
+ pageLinks($('deliveries'),offset,page.length,renderDeliveries);
  if(!rows.length)$('deliveries').append(node('p','Aucune commande matière accessible.'));
  for(const r of rows){const a=node('article');a.append(node('h4',`${r.order_ref} · ${r.material_ref}`),node('p',`Prévu : ${r.planned||"non renseigné"} · Annoncé : ${r.announced} · Retourné : ${r.returned} · Commandé : ${r.ordered} ${r.unit} · Déclaré : ${r.declared} · Réceptionné net : ${r.received} · Restant : ${r.remaining}`));
  const differences=node('details');differences.append(node('summary','Historique des écarts et situations successives'),node('p','Les écarts sont des différences de quantités à examiner. Une réception partielle reste normale.'));
@@ -199,8 +207,8 @@ form('rule-policy',async data=>{await api(`/api/admin/completeness/rules/${data.
 form('order-context',async data=>{await api(`/api/launches/${data.launch_id}/order-context`,'PUT',{order_type:data.order_type});});
 
 form('business-order',async data=>{await api('/api/orders','POST',data);$('business-order').reset();await renderOrderRegistry();});
-async function renderOrderRegistry(){
- const rows=await api('/api/orders'),launches=await api('/api/partners/launch-options');$('business-orders').replaceChildren();
+async function renderOrderRegistry(offset=0){
+ const page=await api('/api/orders?offset='+offset+'&limit=51'),rows=page.slice(0,50),launches=await api('/api/partners/launch-options');$('business-orders').replaceChildren();pageLinks($('business-orders'),offset,page.length,renderOrderRegistry);
  for(const order of rows){const card=node('article');card.append(node('h4',`${order.reference} · ${order.client_name}`));
  for(const launch of order.launches){const line=node('p',`${launch.name} · ${launch.status} · ORLI ${launch.orli_ref||'non renseigné'}`),reason=node('input');reason.setAttribute('aria-label','Motif de retrait du rattachement');line.append(reason,button('Détacher ce lancement',async()=>{if(!confirm(`Détacher ${launch.name} de ${order.reference} ? Le serveur refusera si des documents sont rattachés. Le motif sera conservé dans l’audit.`))return;await api(`/api/orders/${order.id}/launches/${launch.id}`,'DELETE',{reason:reason.value});await renderOrderRegistry();}));card.append(line);}
  const label=node('label','Lancement à rattacher'),select=node('select');for(const launch of launches){const option=node('option',launch.label);option.value=launch.id;select.append(option);}label.append(select);card.append(label,button('Rattacher à cette commande',async()=>{await api(`/api/orders/${order.id}/launches`,'POST',{launch_id:select.value});await renderOrderRegistry();}));installLaunchSearch(select,launches);
@@ -209,9 +217,9 @@ async function renderOrderRegistry(){
 }
 
 $('refresh-deadlines').onclick=()=>run(async()=>{await api('/api/partners/notifications/refresh-deadlines','POST');$('notice').textContent='Rappels internes actualisés. Aucun email envoyé.';});
-async function renderNoticeCenter(){
+async function renderNoticeCenter(offset=0){
  const box=$('notice-center');box.replaceChildren();if(internal)return;
- const rows=await api('/api/partner/notice-center');
+ const page=await api('/api/partner/notice-center?offset='+offset+'&limit=51');const rows=page.slice(0,50);pageLinks(box,offset,page.length,renderNoticeCenter);
  for(const n of rows){const card=node('article');card.append(node('p',`${n.read?'Lu':'Nouveau'} · ${n.message}`));
  if(n.scope==='request')card.append(button('Consulter la demande',()=>openRequest(n.target_id)));
  if(n.scope==='order')card.append(button('Consulter les commandes',async()=>{await renderClientOrders();$('client-orders').scrollIntoView({behavior:'smooth'});}));
@@ -223,7 +231,7 @@ async function refreshDaily(){
  const home=await api('/api/partners/staff-home');staffPermissions=home.permissions;
  $('identity').textContent=`Espace métier · ${home.name}`;$('auth').hidden=true;$('workspace').hidden=false;$('admin').hidden=true;$('detail').replaceChildren();
  let daily=$('daily-staff');if(!daily){daily=node('section');daily.id='daily-staff';$('workspace').insertBefore(daily,$('admin'));}
- for(const [id,allowed] of [['request',staffCan('supplier.request')],['order-line',staffCan('receipt.write')]]){const form=$(id);daily.append(form);form.hidden=!allowed;}
+ for(const [id,allowed] of [['request',staffCan('supplier.request')],['order-line',home.can_create_order_line]]){const form=$(id);daily.append(form);form.hidden=!allowed;}
  for(const id of ['supplier-options','order-supplier-options']){$(id).replaceChildren();for(const row of home.suppliers){const option=node('option',row.name);option.value=row.id;$(id).append(option);}}
  for(const select of document.querySelectorAll('.launch-options'))installLaunchSearch(select,home.launches);
  $('mail-state').replaceChildren(node('p','Les opérations disponibles dépendent des habilitations attribuées par l’administration.'));

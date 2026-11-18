@@ -47,4 +47,5 @@ class GuideEvent(Base):
 class GuideBudget(Base):
     __tablename__='guide_budgets'
     key:Mapped[str]=mapped_column(String(150),primary_key=True)
+    expires_at:Mapped[int]=mapped_column(Integer,index=True,default=0,server_default='0')
     used:Mapped[int]=mapped_column(Integer,default=0)

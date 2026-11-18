@@ -7,7 +7,7 @@ from .employees import user_out
 from .launches import SLUGS
 from .access import ACTIONS
 import json
-from fastapi import Depends, HTTPException
+from fastapi import Depends, Query, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -92,7 +92,7 @@ def create_user(payload: UserPayload, user: User = Depends(get_current_user), db
 
 
 @router.get("/api/admin/audit")
-def list_audit(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def list_audit(offset:int=Query(0,ge=0),limit:int=Query(100,ge=1,le=100),user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     admin_only(user)
-    rows = db.scalars(select(AuditEvent).order_by(AuditEvent.occurred_at.desc()).limit(100)).all()
+    rows = db.scalars(select(AuditEvent).order_by(AuditEvent.occurred_at.desc(),AuditEvent.id.desc()).offset(offset).limit(limit)).all()
     return [{"id": x.id, "action": x.action, "actor_id": x.actor_id, "target_type": x.target_type, "target_id": x.target_id, "detail": json.loads(x.detail), "occurred_at": x.occurred_at.isoformat()} for x in rows]

@@ -13,7 +13,7 @@ export FRAMATEX_DATA_DIR=/chemin/local/dedie
 # Fournir FRAMATEX_SECRET_KEY (au moins 32 caractères) par l'environnement.
 .venv/bin/python -m app.migrate upgrade
 .venv/bin/python -m app.bootstrap_admin --email admin@example.local
-.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+.venv/bin/uvicorn app.main:app --no-access-log --host 127.0.0.1 --port 8000
 ```
 
 Espaces : `/` interne, `/partners` partenaires, `/search` recherche documentaire, `/docs` API. Le migrateur prend en charge SQLite uniquement. Voir `docs/MIGRATIONS_PARTENAIRES.md` avant toute mise à niveau. Extraction bornée prévue pour Linux ; OCR selon disponibilité de Tesseract et des langues fra/eng. Les limites et indisponibilités sont affichées.
@@ -37,7 +37,7 @@ export FRAMATEX_DATA_DIR=/chemin/local/demo-framat-phase2
 export FRAMATEX_MODE=DEMO
 # Définir FRAMATEX_DEMO_PASSWORD dans l'environnement (12–256 caractères).
 .venv/bin/python -m app.seed_phase2_demo
-.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+.venv/bin/uvicorn app.main:app --no-access-log --host 127.0.0.1 --port 8000
 ```
 
 Le script réutilise `seed_demo`, `seed_completeness_demo`, `seed_workflow_demo`, `seed_quality_demo` et ajoute les partenaires. Comptes : `demo-admin@example.local`, `demo-client-a@example.local`, `demo-client-b@example.local`, `demo-supplier-a@example.local`, `demo-supplier-b@example.local`. Tous utilisent le mot de passe fourni ; aucune valeur de mot de passe n'est imprimée. Une relance ne réécrit pas les comptes ni les données. Les règles et validations de démonstration sont fictives.

@@ -203,7 +203,7 @@ def auto_inspect_excel(db:Session,version:DocumentVersion, user_id:str):
 @router.get('/api/launches/{launch_id}/excel-inspections')
 def list_excel_inspections(launch_id:str,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
     must(user,'launch.read');get_launch(db,launch_id)
-    docs=db.scalars(select(Document).join(Folder).where(Folder.id.in_(folder_ids(db, launch_id)))).all()
+    docs=db.scalars(select(Document).join(Folder).where((Document.launch_id.is_(None) | (Document.launch_id == launch_id)), Folder.id.in_(folder_ids(db, launch_id)))).all()
     rows=[]
     for doc in docs:
         if not document_accessible(db,user,doc) or not permitted(user,'document.read',doc.folder.slug):continue

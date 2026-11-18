@@ -195,9 +195,13 @@ def reserve(key,limit,window):
     import time
     from sqlalchemy.dialects.sqlite import insert
     from .guide_models import GuideBudget
-    key=f'{key}:{int(time.time())//window}'
+    from sqlalchemy import delete
+    now = int(time.time())
+    bucket = now // window
+    key=f'{key}:{bucket}'
     with SessionLocal() as db:
-        db.execute(insert(GuideBudget).values(key=key,used=0).on_conflict_do_nothing(index_elements=['key']))
+        db.execute(delete(GuideBudget).where(GuideBudget.expires_at <= now))
+        db.execute(insert(GuideBudget).values(key=key,used=0,expires_at=(bucket+1)*window).on_conflict_do_nothing(index_elements=['key']))
         n=db.execute(update(GuideBudget).where(GuideBudget.key==key,GuideBudget.used<limit).values(used=GuideBudget.used+1)).rowcount
         db.commit();return n==1
 

@@ -171,6 +171,7 @@ def staff_home(user=Depends(get_current_user),db:Session=Depends(get_db)):
     must(user,'launch.read');must(user,'document.read','jaune')
     from .access import launch_access_clause
     return {'admin':is_admin(user),'name':user.name,'permissions':allowed,
+        'can_create_order_line': 'supplier.request' in allowed and permitted(user,'document.read','rose'),
         'suppliers':[{'id':p.id,'name':p.name} for p in db.scalars(select(Partner).where(Partner.kind=='supplier',Partner.active.is_(True)).order_by(Partner.name))] if is_admin(user) or any(a in allowed for a in ('supplier.request','receipt.write')) else [],
         'launches':[{'id':l.id,'label':f'{l.order_ref or l.name} · {l.client_name or "Client non renseigné"}'} for l in db.scalars(select(Launch).where(launch_access_clause(user,Launch.id)).order_by(Launch.created_at.desc(),Launch.id).limit(100))]}
 

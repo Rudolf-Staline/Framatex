@@ -66,8 +66,20 @@ def test_heterogeneous_sources_are_filtered_without_hiding_common_dossier():
         grant(admin,oid,uid)
         common=doc(admin,oid,'Commune');open_doc=doc(admin,oid,'Ouverte',first);secret=doc(admin,oid,'Titre confidentiel',second)
         post(admin,f'/api/documents/{secret["id"]}/reviews',{'decision':'approved'})
-        post(admin,f'/api/launches/{first}/values',{'key':'quantite_lancement','value':'12','unit':'pièce','source_version_id':secret['latest']['id']})
-        post(admin,f'/api/launches/{first}/requirements',{'source_version_id':secret['latest']['id'],'title':'Exigence source cachée','description':'Exigence synthétique confidentielle'})
+        value={'key':'quantite_lancement','value':'12','unit':'pièce','source_version_id':secret['latest']['id']}
+        requirement={'source_version_id':secret['latest']['id'],'title':'Exigence source cachée','description':'Exigence synthétique confidentielle'}
+        post(admin,f'/api/launches/{first}/values',value,422)
+        post(admin,f'/api/launches/{first}/requirements',requirement,404)
+        post(admin,f'/api/launches/{second}/values',value)
+        post(admin,f'/api/launches/{second}/requirements',requirement)
+        # Retain coverage for cross-launch references already present before the repair.
+        from sqlalchemy import update
+        from app.workflow_models import BusinessValueRevision
+        from app.spec_models import ClientRequirement
+        with SessionLocal() as db:
+            for model in (BusinessValueRevision, ClientRequirement):
+                db.execute(update(model).where(model.source_version_id==secret['latest']['id']).values(launch_id=first))
+            db.commit()
         admin.put(f'/api/launches/{second}/access',json={'restricted':True},headers=H)
         post(limited,'/api/auth/login',{'email':'consolidation-reader@sample.local','password':PWD},200)
         payload=limited.get(f'/api/orders/{oid}/dossier').json()

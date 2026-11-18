@@ -107,6 +107,23 @@ def output(db,row,include_history=True,include_context=True):
     return result
 
 
+def save_history_event(db, line, movement, cancellation=None):
+    import json
+    from .partner_models import PartnerReceiptHistory
+    totals = summaries(db,[line])[0]
+    planned = totals['planned']
+    ordered,declared,received = (Decimal(totals[k]) for k in ('ordered','declared','received'))
+    event = {k:totals[k] for k in ('ordered','planned','declared','received','remaining')}
+    event.update(date=(cancellation or movement).created_at.replace(tzinfo=None).isoformat(),
+                 movement_id=movement.id, operation='cancelled' if cancellation else movement.kind,
+                 source_id=movement.source_id, reason=cancellation.reason if cancellation else movement.note,
+                 ordered_minus_planned=format(ordered-Decimal(planned),'.3f') if planned is not None else None,
+                 declared_minus_received=format(declared-received,'.3f'),
+                 received_minus_ordered=format(received-ordered,'.3f'))
+    last = db.scalar(select(func.max(PartnerReceiptHistory.position)).where(PartnerReceiptHistory.line_id==line.id))
+    db.add(PartnerReceiptHistory(line_id=line.id,position=(last or 0)+1,event_json=json.dumps(event)))
+
+
 def summaries(db,rows):
     """Fixed SQL budget for a receipt page; histories stay on their own endpoint."""
     from .partner_phase2_models import PartnerMovementCancellation, BusinessOrderLaunch
@@ -170,6 +187,7 @@ def record(db,row,payload,kind,actor,user=None):
     try:db.flush()
     except IntegrityError:
         db.rollback();raise HTTPException(409,'Opération concurrente : actualiser')
+    save_history_event(db,row,movement)
     audit(db,user,'partner.delivery.'+kind,'partner_delivery',movement.id,{'actor':actor})
     db.commit();return output(db,row,include_context=not actor.startswith('partner:'))
 
@@ -201,7 +219,9 @@ def cancel(db,lid,mid,payload,actor,account=None,user=None):
     if changed.rowcount!=1:raise HTTPException(409,'Ligne modifiée : actualiser')
     if db.get(PartnerMovementCancellation,mid):raise HTTPException(409,'Mouvement déjà annulé')
     if movement.kind=='received' and Decimal(output(db,line)['received'])<movement.quantity:raise HTTPException(409,'Annuler les retours associés avant cette réception')
-    db.add(PartnerMovementCancellation(movement_id=mid,actor=actor,reason=payload.reason))
+    cancellation = PartnerMovementCancellation(movement_id=mid,actor=actor,reason=payload.reason)
+    db.add(cancellation);db.flush()
+    save_history_event(db,line,movement,cancellation)
     audit(db,user,'partner.delivery.cancel','partner_delivery',mid,{'actor':actor,'reason':payload.reason});db.commit();return output(db,line,include_context=not actor.startswith('partner:'))
 
 @router.post('/api/partner/order-lines/{lid}/movements/{mid}/cancel')
@@ -217,8 +237,13 @@ def staff_cancel(lid:str,mid:str,payload:CancellationInput,user=Depends(receipt_
 @router.get('/api/partners/order-lines/{lid}/history')
 def staff_history(lid:str,user=Depends(receipt_reader),db:Session=Depends(get_db),offset:int=Query(0,ge=0),limit:int=Query(50,ge=1,le=100)):
     row=receipt_scope(db,user,get_line(db,lid))
-    history=output(db,row)['discrepancy_history']
-    return {'total':len(history),'offset':offset,'limit':limit,'items':history[offset:offset+limit]}
+    import json
+    from .partner_models import PartnerReceiptHistory
+    where=PartnerReceiptHistory.line_id==row.id
+    total=db.scalar(select(func.count()).select_from(PartnerReceiptHistory).where(where))
+    page=db.scalars(select(PartnerReceiptHistory.event_json).where(where)
+                    .order_by(PartnerReceiptHistory.position).offset(offset).limit(limit))
+    return {'total':total,'offset':offset,'limit':limit,'items':[json.loads(raw) for raw in page]}
 
 @router.get('/api/partners/order-lines/{lid}')
 def staff_line_detail(lid:str,user=Depends(receipt_reader),db:Session=Depends(get_db)):

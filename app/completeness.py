@@ -104,26 +104,22 @@ def _validated(db, rule, candidates, kind, target):
     from .approval_models import ApprovalTemplate, ApprovalRun
     from .workflow_models import DocumentReview
     from fastapi import HTTPException
-    templates = {}
-    for template in db.scalars(select(ApprovalTemplate).where(ApprovalTemplate.active.is_(True),
-            ApprovalTemplate.folder_slug == rule.folder_slug,
-            ApprovalTemplate.document_type.in_({d.doc_type for d, _ in candidates}))):
-        if template.document_type in templates:
-            raise HTTPException(409, 'Plusieurs circuits actifs pour ce type de document')
-        templates[template.document_type] = template
+    from .approval_routes import active_templates
+    from .document_types import type_key
+    templates = active_templates(db,rule.folder_slug)
     reviews = select(DocumentReview.document_version_id.label('version_id'), DocumentReview.decision,
         func.row_number().over(partition_by=DocumentReview.document_version_id,
             order_by=(DocumentReview.reviewed_at.desc(), DocumentReview.id.desc())).label('position')).where(
         DocumentReview.document_version_id.in_(version_ids)).subquery()
     decisions = dict(db.execute(select(reviews.c.version_id, reviews.c.decision).where(reviews.c.position == 1)).all())
-    runs = select(ApprovalRun.document_version_id.label('version_id'), ApprovalRun.status,
-        func.row_number().over(partition_by=ApprovalRun.document_version_id,
+    runs = select(ApprovalRun.document_version_id.label('version_id'), ApprovalRun.template_id, ApprovalRun.status,
+        func.row_number().over(partition_by=(ApprovalRun.document_version_id, ApprovalRun.template_id),
             order_by=(ApprovalRun.cycle.desc(), ApprovalRun.started_at.desc())).label('position')).where(
-        ApprovalRun.document_version_id.in_(version_ids)).subquery()
-    approvals = dict(db.execute(select(runs.c.version_id, runs.c.status).where(runs.c.position == 1)).all()) if templates else {}
+        ApprovalRun.document_version_id.in_(version_ids), ApprovalRun.obsolete.is_(False)).subquery()
+    approvals = {(v,t):s for v,t,s in db.execute(select(runs.c.version_id, runs.c.template_id,runs.c.status).where(runs.c.position == 1))} if templates else {}
     for doc, version in candidates:
-        if doc.doc_type in templates:
-            if approvals.get(version.id) == 'approved': validated.add(version.id)
+        if template := templates.get(type_key(doc.doc_type)):
+            if approvals.get((version.id,template.id)) == 'approved': validated.add(version.id)
             else: validated.discard(version.id)
         elif version.id in decisions:
             if decisions[version.id] == 'approved': validated.add(version.id)
@@ -160,9 +156,17 @@ def _row(db, rule, policy, kind, target, phase, order_type, user, permitted, sou
         from .completeness_models import OrderRequirementException
         exception = db.get(OrderRequirementException, (target.id, rule.id))
         if exception and not exception.active: exception = None
+    waiting_for_launch = False
+    if kind == 'order' and target and policy and policy.requires_client_publication:
+        from .partner_phase2_models import BusinessOrderLaunch
+        waiting_for_launch = not db.scalar(select(BusinessOrderLaunch.launch_id)
+                                           .where(BusinessOrderLaunch.order_id == target.id).limit(1))
+        if waiting_for_launch:
+            due = False
     if not applicable: status = 'not_applicable'
     elif accepted and published: status = 'present'
     elif exception: status = 'exception'
+    elif waiting_for_launch: status = 'not_due'
     elif accepted: status = 'pending_publication'
     elif candidates: status = 'pending_validation'
     elif optional: status = 'optional'
@@ -185,7 +189,7 @@ def _row(db, rule, policy, kind, target, phase, order_type, user, permitted, sou
         'guidance': rule.guidance, 'due': due, 'status': status, 'optional': optional,
         'applicable': applicable, 'due_date': deadline.isoformat() if deadline else None,
         'deadline_reference': reference, 'deadline_reference_date': reference_date.isoformat() if reference_date else None,
-        'deadline_reference_missing': reference_missing, 'explanation': EXPLANATIONS[status],
+        'deadline_reference_missing': reference_missing, 'explanation': ('Publication possible après rattachement du premier lancement' if waiting_for_launch and status=='not_due' else EXPLANATIONS[status]),
         'exception_reason': exception.reason if exception and status == 'exception' else None,
         'exception_recorded_by': exception.recorded_by if exception and status == 'exception' else None,
         'exception_updated_at': exception.updated_at.isoformat() if exception and status == 'exception' else None,
