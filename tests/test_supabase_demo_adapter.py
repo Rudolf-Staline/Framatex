@@ -7,7 +7,7 @@ import pytest
 from fastapi import HTTPException
 
 from app import blob_backend
-from app.core_pg_config import data_dir, database_configuration, PG_SCHEMA_DEFAULT
+from app.core_pg_config import data_dir, database_configuration, PG_SCHEMA_DEFAULT, install_postgresql_search_path
 
 
 def test_serverless_writes_only_under_tmp(monkeypatch, tmp_path):
@@ -115,3 +115,18 @@ def test_remote_download_enforces_size(monkeypatch, tmp_path):
         blob_backend.download(tmp_path / 'cache', 'ef' * 24, maximum_size=5)
     assert exc.value.status_code == 503
     assert not list((tmp_path / 'cache').glob('*'))
+
+
+def test_sql_text_is_isolated_with_transaction_local_search_path():
+    """A BEGIN listener is required: schema_translate_map doesn't rewrite text()."""
+    from sqlalchemy import create_engine, event
+    from sqlalchemy.pool import StaticPool
+    engine = create_engine('sqlite://', poolclass=StaticPool)
+    install_postgresql_search_path(engine, 'framatex_demo_v2')
+    with pytest.raises(Exception, match='SET|syntax|near'):
+        # SQLite cannot execute SET LOCAL; the attempted statement proves
+        # the hook precedes application SQL on the connection.
+        with engine.connect() as connection:
+            connection.exec_driver_sql('SELECT 1')
+    with pytest.raises(RuntimeError, match='privé'):
+        install_postgresql_search_path(engine, 'public')
