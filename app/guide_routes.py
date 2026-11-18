@@ -57,8 +57,8 @@ def detail(pid:str,who=Depends(identity),db:Session=Depends(get_db)):
 @router.post('/api/guide/procedures/{pid}/visit')
 def visit(pid:str,who=Depends(identity),db:Session=Depends(get_db)):
     procedure(pid,who)
-    from sqlalchemy.dialects.sqlite import insert
-    stmt=insert(GuideVisit).values(owner=who.owner,procedure_id=pid,views=1,updated_at=utcnow())
+    from .sql_upsert import insert_for
+    stmt=insert_for(db, GuideVisit).values(owner=who.owner,procedure_id=pid,views=1,updated_at=utcnow())
     db.execute(stmt.on_conflict_do_update(index_elements=['owner','procedure_id'],set_={'views':GuideVisit.views+1,'updated_at':utcnow()}));db.commit()
     return {'recorded':True}
 
@@ -125,9 +125,9 @@ def save_progress(payload:ProgressInput,who=Depends(identity),db:Session=Depends
     t=tour(payload.tour_id,who)
     if payload.version!=t['version'] or payload.step>=len(t['steps']):raise HTTPException(409,'La visite a changé : rechargez ses étapes')
     if payload.status=='finished' and payload.step!=len(t['steps'])-1:raise HTTPException(422,'La visite doit atteindre sa dernière étape')
-    from sqlalchemy.dialects.sqlite import insert
+    from .sql_upsert import insert_for
     values={'owner':who.owner,**payload.model_dump(),'updated_at':utcnow()}
-    stmt=insert(GuideProgress).values(**values)
+    stmt=insert_for(db, GuideProgress).values(**values)
     db.execute(stmt.on_conflict_do_update(index_elements=['owner','tour_id','version'],set_={k:v for k,v in values.items() if k not in ('owner','tour_id','version')}))
     event(db,who,'tour_'+payload.status,payload.tour_id);db.commit();return {'saved':True}
 
@@ -137,8 +137,8 @@ class PreferenceInput(BaseModel):
 
 @router.put('/api/guide/preferences')
 def preferences(payload:PreferenceInput,who=Depends(identity),db:Session=Depends(get_db)):
-    from sqlalchemy.dialects.sqlite import insert
-    stmt=insert(GuidePreference).values(owner=who.owner,automatic=payload.automatic,updated_at=utcnow())
+    from .sql_upsert import insert_for
+    stmt=insert_for(db, GuidePreference).values(owner=who.owner,automatic=payload.automatic,updated_at=utcnow())
     db.execute(stmt.on_conflict_do_update(index_elements=['owner'],set_={'automatic':payload.automatic,'updated_at':utcnow()}));db.commit();return {'saved':True}
 
 class FeedbackInput(BaseModel):

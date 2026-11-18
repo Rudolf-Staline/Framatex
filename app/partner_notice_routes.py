@@ -2,7 +2,7 @@
 from datetime import date,timedelta
 from fastapi import APIRouter,Depends,HTTPException,Query
 from sqlalchemy import select
-from sqlalchemy.dialects.sqlite import insert
+from .sql_upsert import insert_for
 from sqlalchemy.orm import Session
 from .core import get_db,utcnow
 from .models import uid,User,Role
@@ -14,7 +14,7 @@ from .partner_client_routes import order_get
 router=APIRouter(tags=['Notifications partenaires'])
 
 def emit(db,org,scope,target,kind,key,message):
-    db.execute(insert(PartnerNotice).values(id=uid(),partner_id=org,scope=scope,target_id=target,
+    db.execute(insert_for(db, PartnerNotice).values(id=uid(),partner_id=org,scope=scope,target_id=target,
         kind=kind,event_key=key,message=message,created_at=utcnow()).on_conflict_do_nothing(index_elements=['partner_id','event_key']))
 
 def visible(db,row,account):
@@ -50,7 +50,7 @@ def notices(account=Depends(partner),db:Session=Depends(get_db),offset:int=Query
 def read(nid:str,account=Depends(partner),db:Session=Depends(get_db)):
     row=db.get(PartnerNotice,nid)
     if not visible(db,row,account):raise HTTPException(404,'Notification introuvable')
-    db.execute(insert(PartnerNoticeRead).values(account_id=account.id,notice_id=nid,read_at=utcnow()).on_conflict_do_nothing())
+    db.execute(insert_for(db, PartnerNoticeRead).values(account_id=account.id,notice_id=nid,read_at=utcnow()).on_conflict_do_nothing())
     db.commit();return {'read':True}
 
 def incoming_client(db,order,message):

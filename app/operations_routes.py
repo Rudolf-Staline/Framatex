@@ -61,7 +61,14 @@ def readiness():
         with engine.connect() as db:
             done={r[0] for r in db.execute(text('SELECT version FROM schema_migrations'))}
             db.execute(text('SELECT 1'))
-            checks['database']=done==set(REVISIONS)
+            if engine.dialect.name == 'postgresql':
+                from .postgres_schema import REVISION as PG_REVISION
+                # PostgreSQL demos use their own versioned private schema.
+                # A successful connection alone would not detect an outdated schema.
+                db.execute(text('SELECT 1 FROM users LIMIT 1'))
+                checks['database'] = done == {PG_REVISION}
+            else:
+                checks['database'] = done == set(REVISIONS)
     except Exception:checks['database']=False
     try:
         minimum=int(os.getenv('FRAMATEX_MIN_FREE_BYTES',str(100*1024*1024)))

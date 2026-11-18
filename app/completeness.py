@@ -58,7 +58,7 @@ def publication_available(db, version_ids):
             if publication:
                 from .models import DocumentVersion
                 version = db.get(DocumentVersion, publication.document_version_id)
-                if version and (document_storage.STORAGE / version.disk_name).is_file():
+                if version and (document_storage.blob_path(version.disk_name)).is_file():
                     return True
     return False
 

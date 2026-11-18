@@ -18,7 +18,11 @@ def main():
     if password != confirmation:
         p.error("Les mots de passe ne correspondent pas")
     digest = hash_password(password)
-    Base.metadata.create_all(engine)
+    if engine.dialect.name == "postgresql":
+        from .migrate import require_current_schema
+        require_current_schema()
+    else:
+        Base.metadata.create_all(engine)
     with SessionLocal() as db:
         if db.scalar(select(User).where(User.email == args.email.lower())):
             p.error("Cet email possède déjà un compte")

@@ -437,9 +437,9 @@ def staff_message(rid: str, payload: MessageInput, user=Depends(supplier_writer)
 def download(db, rid, vid, account=None):
     req_get(db, rid, account)
     version = db.get(PartnerSubmission, vid)
-    if not version or version.request_id != rid or not (document_storage.STORAGE / version.disk_name).is_file():
+    if not version or version.request_id != rid or not (document_storage.blob_path(version.disk_name)).is_file():
         raise HTTPException(404, 'Pièce introuvable')
-    return FileResponse(document_storage.STORAGE / version.disk_name, filename=version.original_name, media_type=version.content_type)
+    return FileResponse(document_storage.blob_path(version.disk_name), filename=version.original_name, media_type=version.content_type)
 
 @router.get('/api/partner/requests/{rid}/versions/{vid}/download')
 def supplier_download(rid: str, vid: str, account=Depends(partner), db: Session = Depends(get_db)):
@@ -511,7 +511,7 @@ def client_download(pid: str, account=Depends(partner), db: Session = Depends(ge
     if not publication:
         raise HTTPException(404, 'Publication introuvable')
     version = db.get(DocumentVersion, publication.document_version_id)
-    path = document_storage.STORAGE / version.disk_name
+    path = document_storage.blob_path(version.disk_name)
     if not path.is_file():
         raise HTTPException(404, 'Fichier indisponible')
     audit(db, None, 'partner.download', 'partner_publication', pid, {'account_id':account.id})
