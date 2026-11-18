@@ -9,6 +9,7 @@ import os
 import re
 from pathlib import Path
 
+from sqlalchemy import event
 from sqlalchemy.engine import make_url
 from sqlalchemy.pool import NullPool
 
@@ -52,3 +53,20 @@ def database_configuration(root: Path, data: Path):
         'execution_options': {'schema_translate_map': {None: schema}},
     }
     return url_str, kwargs, schema
+
+
+def install_postgresql_search_path(engine, schema: str) -> None:
+    """Pin every transaction to the private schema, including raw SQL text().
+
+    SQLAlchemy's schema_translate_map only affects compiled Table objects.
+    Most existing Framatex queries use unqualified SQL text; without this
+    hook they would otherwise resolve against Supabase's historical public
+    schema. SET LOCAL is transaction-scoped and safe with a transaction pooler.
+    """
+    if not schema or not _IDENT.fullmatch(schema) or schema in ('public', 'auth', 'storage', 'pg_catalog'):
+        raise RuntimeError('Schéma PostgreSQL privé invalide')
+
+    @event.listens_for(engine, 'begin')
+    def _select_schema(connection):
+        # schema is restricted to a-z, 0-9 and _ before interpolation.
+        connection.exec_driver_sql(f'SET LOCAL search_path TO "{schema}", pg_catalog')
