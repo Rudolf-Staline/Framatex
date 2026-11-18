@@ -36,7 +36,7 @@ async def intake_preview(launch_id:str,file:UploadFile=File(...),user:User=Depen
     from . import document_storage
     from starlette.concurrency import run_in_threadpool
     name,disk_name,_size,_sha,_mime=await document_storage.store_upload(file)
-    path=document_storage.STORAGE/disk_name
+    path=document_storage.blob_path(disk_name)
     try:
         result=await run_in_threadpool(preview,path,name)
         result['classification']['suggestions']=[x for x in result['classification']['suggestions'] if permitted(user,'document.write',x['folder'])]
@@ -50,7 +50,7 @@ def version_intake(version_id:str,user:User=Depends(get_current_user),db:Session
     doc=get_doc(db,v.document_id)
     must(user,'launch.read')
     must(user,'document.read',doc.folder.slug)
-    path=document_storage.STORAGE/v.disk_name
+    path=document_storage.blob_path(v.disk_name)
     if not path.exists(): raise HTTPException(503,'Fichier indisponible')
     # Analyse demandée explicitement par l'utilisateur. Aucune extraction poussée vers l'ERP.
     result=preview(path,v.original_name)

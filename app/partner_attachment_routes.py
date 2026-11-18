@@ -72,13 +72,13 @@ def attachment_get(db,aid,account=None):
     if not row or (account and row.partner_id!=account.partner_id):raise HTTPException(404,'Pièce introuvable')
     if row.event_id:req_get(db,db.get(PartnerEvent,row.event_id).request_id,account)
     else:thread_get(db,db.get(PartnerMessage,row.message_id).thread_id,account)
-    if not (document_storage.STORAGE/row.disk_name).is_file():raise HTTPException(503,'Fichier indisponible')
+    if not (document_storage.blob_path(row.disk_name)).is_file():raise HTTPException(503,'Fichier indisponible')
     return row
 
 @router.get('/api/partner/attachments/{aid}/download')
 def download(aid:str,account=Depends(partner),db:Session=Depends(get_db)):
     row=attachment_get(db,aid,account)
-    return FileResponse(document_storage.STORAGE/row.disk_name,filename=row.original_name,media_type='application/octet-stream')
+    return FileResponse(document_storage.blob_path(row.disk_name),filename=row.original_name,media_type='application/octet-stream')
 
 @router.get('/api/partners/attachments/{aid}/download')
 def employee_download(aid:str,user=Depends(supplier_reader),db:Session=Depends(get_db)):
@@ -87,4 +87,4 @@ def employee_download(aid:str,user=Depends(supplier_reader),db:Session=Depends(g
     else:
         from .access import admin_only
         admin_only(user)
-    return FileResponse(document_storage.STORAGE/row.disk_name,filename=row.original_name,media_type='application/octet-stream')
+    return FileResponse(document_storage.blob_path(row.disk_name),filename=row.original_name,media_type='application/octet-stream')

@@ -70,8 +70,8 @@ def review(vid:str,payload:ReviewInput,user=Depends(staff),db:Session=Depends(ge
 def file_response(db,vid,account=None):
     row=db.get(PartnerAdministrativeDocument,vid)
     if not row or (account and row.partner_id!=account.partner_id):raise HTTPException(404,'Pièce absente')
-    if not (document_storage.STORAGE/row.disk_name).is_file():raise HTTPException(503,'Fichier indisponible')
-    return FileResponse(document_storage.STORAGE/row.disk_name,filename=row.original_name,media_type='application/octet-stream')
+    if not (document_storage.blob_path(row.disk_name)).is_file():raise HTTPException(503,'Fichier indisponible')
+    return FileResponse(document_storage.blob_path(row.disk_name),filename=row.original_name,media_type='application/octet-stream')
 
 @router.get('/api/partner/administrative-documents/{vid}/download')
 def own_download(vid:str,account=Depends(partner),db:Session=Depends(get_db)):

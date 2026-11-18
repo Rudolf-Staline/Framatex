@@ -193,7 +193,7 @@ def answer(procs,who,context,db,*,clarification=False,source='local',fallback=No
 def reserve(key,limit,window):
     """Atomic counters persist across workers and restarts; no question text stored."""
     import time
-    from sqlalchemy.dialects.sqlite import insert
+    from .sql_upsert import insert_for
     from .guide_models import GuideBudget
     from sqlalchemy import delete
     now = int(time.time())
@@ -201,7 +201,7 @@ def reserve(key,limit,window):
     key=f'{key}:{bucket}'
     with SessionLocal() as db:
         db.execute(delete(GuideBudget).where(GuideBudget.expires_at <= now))
-        db.execute(insert(GuideBudget).values(key=key,used=0,expires_at=(bucket+1)*window).on_conflict_do_nothing(index_elements=['key']))
+        db.execute(insert_for(db, GuideBudget).values(key=key,used=0,expires_at=(bucket+1)*window).on_conflict_do_nothing(index_elements=['key']))
         n=db.execute(update(GuideBudget).where(GuideBudget.key==key,GuideBudget.used<limit).values(used=GuideBudget.used+1)).rowcount
         db.commit();return n==1
 

@@ -8,13 +8,13 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import IntegrityError
 
-from .core import ROOT
+from .core import ROOT, engine
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from .migrate import migrate
-    if os.getenv('FRAMATEX_MODE', '').upper() == 'OPERATIONAL':
+    if engine.dialect.name == 'postgresql' or os.getenv('FRAMATEX_MODE', '').upper() == 'OPERATIONAL':
         from .migrate import require_current_schema
         require_current_schema()
     else:

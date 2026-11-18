@@ -48,7 +48,7 @@ def integrate(rid:str,payload:IntegrationInput,user=Depends(get_current_user),db
     if launch.order_ref and launch.order_ref!=request.order_ref:
         raise HTTPException(409,'Référence commande incompatible avec le lancement')
     if db.get(PartnerIntegration,source.id):raise HTTPException(409,'Cette version a déjà été intégrée')
-    if not (document_storage.STORAGE/source.disk_name).is_file():raise HTTPException(503,'Fichier source absent')
+    if not (document_storage.blob_path(source.disk_name)).is_file():raise HTTPException(503,'Fichier source absent')
     claim(db,request)
     if payload.document_id:
         document=db.get(Document,payload.document_id)

@@ -288,6 +288,11 @@ def migrate():
 
 
 def require_current_schema():
+    if engine.dialect.name == 'postgresql':
+        from .core import PG_SCHEMA
+        from .postgres_schema import verify_schema
+        verify_schema(engine, PG_SCHEMA)
+        return
     with engine.connect() as conn:
         if 'schema_migrations' in inspect(conn).get_table_names():
             if set(conn.exec_driver_sql('SELECT version FROM schema_migrations').scalars()) == set(REVISIONS):

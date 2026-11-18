@@ -193,7 +193,7 @@ def auto_inspect_excel(db:Session,version:DocumentVersion, user_id:str):
     baseline=prev if prev and Path(prev.original_name).suffix.lower()=='.xlsx' else None
     from .partner_phase2_models import DocumentExcelPolicy
     policy=db.get(DocumentExcelPolicy,doc.id)
-    result=analyze_workbook(document_storage.STORAGE/version.disk_name,document_storage.STORAGE/baseline.disk_name if baseline else None,json.loads(policy.cells_json) if policy else [])
+    result=analyze_workbook(document_storage.blob_path(version.disk_name),document_storage.blob_path(baseline.disk_name) if baseline else None,json.loads(policy.cells_json) if policy else [])
     item=ExcelInspection(document_version_id=version.id,baseline_version_id=baseline.id if baseline else None,
          status=result['status'],scanned_cells=result['scanned_cells'],formula_count=result['formula_count'],
          findings_json=json.dumps(result['findings'],ensure_ascii=False),inspected_by=user_id)

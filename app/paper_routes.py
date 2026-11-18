@@ -95,7 +95,7 @@ code{{word-break:break-all;font-size:12px}}p.note{{font-size:13px;color:#52625a}
 
 def _verify_file(version: DocumentVersion):
     from . import document_storage
-    path = document_storage.STORAGE / version.disk_name
+    path = document_storage.blob_path(version.disk_name)
     if not path.is_file():
         return {"status": "missing", "actual_sha256": None, "actual_size": None}
     digest = hashlib.sha256()

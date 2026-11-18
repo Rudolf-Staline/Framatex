@@ -113,7 +113,7 @@ def download(doc_id: str, number: int, user: User = Depends(get_current_user), d
     version = db.scalar(select(DocumentVersion).where(DocumentVersion.document_id==doc.id,DocumentVersion.number==number))
     if not version:
         raise HTTPException(404, "Version introuvable")
-    path = document_storage.STORAGE / version.disk_name
+    path = document_storage.blob_path(version.disk_name)
     if not path.is_file():
         raise HTTPException(503, "Fichier indisponible dans le stockage")
     audit(db, user, "document.download", "document", doc.id, {"version": number})

@@ -15,10 +15,21 @@ import secrets
 from fastapi import HTTPException, UploadFile
 from starlette.concurrency import run_in_threadpool
 from .core import DATA_DIR
+from . import blob_backend
 
 MAX_UPLOAD = 20 * 1024 * 1024
 STORAGE = DATA_DIR / "files"
 STORAGE.mkdir(parents=True, exist_ok=True)
+
+
+def blob_path(disk_name: str) -> Path:
+    """Return a local path, fetching into a private temporary cache if remote."""
+    if blob_backend.remote_enabled():
+        return blob_backend.download(DATA_DIR / ".blob-cache", disk_name)
+    if Path(disk_name).name != disk_name or disk_name in (".", ".."):
+        raise ValueError("Identifiant privé invalide")
+    return STORAGE / disk_name
+
 EXTS = {".pdf", ".docx", ".xlsx", ".png", ".jpg", ".jpeg", ".txt", ".eml"}
 MIMES = {".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".txt": "text/plain", ".eml": "message/rfc822"}
 
@@ -98,6 +109,13 @@ async def store_upload(file: UploadFile):
             await run_in_threadpool(reservation.reserve, total)
             await run_in_threadpool(scan, reservation.path)
             await run_in_threadpool(reservation.publish, total)
+            if blob_backend.remote_enabled():
+                try:
+                    await run_in_threadpool(blob_backend.upload, STORAGE / disk_name, disk_name, MIMES[suffix])
+                finally:
+                    # No filesystem cache is durable on Vercel. If upload failed,
+                    # the local reservation is still released rather than leaked.
+                    await run_in_threadpool(_remove_local_blob, disk_name)
             return original_name, disk_name, total, sha.hexdigest(), MIMES[suffix]
     except FileExistsError:
         raise HTTPException(409, "Conflit de stockage : aucun fichier existant n’a été modifié")
@@ -105,6 +123,14 @@ async def store_upload(file: UploadFile):
         await file.close()
 
 
-def remove_blob(disk_name):
+def _remove_local_blob(disk_name):
     from .storage_budget import remove_blob as release
     release(STORAGE, disk_name)
+
+
+def remove_blob(disk_name):
+    if blob_backend.remote_enabled():
+        blob_backend.delete(disk_name)
+        (DATA_DIR / ".blob-cache" / disk_name).unlink(missing_ok=True)
+    else:
+        _remove_local_blob(disk_name)

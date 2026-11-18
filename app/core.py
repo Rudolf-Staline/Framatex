@@ -13,12 +13,13 @@ from argon2.exceptions import VerifyMismatchError, VerificationError
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy import create_engine,event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from .core_pg_config import data_dir, database_configuration
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = Path(os.getenv("FRAMATEX_DATA_DIR", str(ROOT / "data"))).resolve()
+DATA_DIR = data_dir(ROOT)
 DATA_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / 'framat.db'}")
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}, pool_pre_ping=True)
+DATABASE_URL, _engine_config, PG_SCHEMA = database_configuration(ROOT, DATA_DIR)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, **_engine_config)
 if engine.dialect.name=='sqlite':
     @event.listens_for(engine,'connect')
     def sqlite_integrity(connection,_record):
@@ -43,6 +44,8 @@ def secret_key() -> str:
         if len(env) < 32:
             raise RuntimeError("FRAMATEX_SECRET_KEY doit contenir au moins 32 caractères")
         return env
+    if os.getenv("VERCEL"):
+        raise RuntimeError("FRAMATEX_SECRET_KEY est obligatoire sur Vercel")
     path = DATA_DIR / ".session_secret"
     if not path.exists():
         # Publish a fully written key atomically, including simultaneous workers.
