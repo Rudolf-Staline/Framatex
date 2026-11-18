@@ -7,6 +7,14 @@ const page = read('static/index.html');
 const css = read('static/design-026.css');
 const legacy = read('static/design-019.css');
 assert(source.includes('login-page login-rebalanced'), 'Original login layout must remain mounted');
+assert(source.includes('function renderSpaceChoice()'), 'Historical entry-space selector must exist');
+assert(source.includes('Choisissez votre espace'), 'Historical selection heading missing');
+assert(source.includes('data-space="internal"'), 'Internal space action missing');
+assert(source.includes('href="/partners?space=client"'), 'Client must use partner portal');
+assert(source.includes('href="/partners?space=supplier"'), 'Supplier must use partner portal');
+assert(source.includes("app.querySelector('#change-space').addEventListener('click',renderSpaceChoice)"), 'Return to selection must work');
+assert(source.includes('catch{renderSpaceChoice()}})();'), 'Visitor must land on selector, not login');
+assert(read('static/partners.js').includes("chosenPartnerSpace === 'supplier'"), 'Partner destination must recognize supplier context');
 for (const part of ['login-stage','login-visual-orbit','login-folder-back','login-folder-middle','login-folder-front','login-form-brand','login-title']) {
   assert(source.includes(part), 'Historic login part missing: '+part);
 }

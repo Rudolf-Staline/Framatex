@@ -44,7 +44,7 @@ async function api(path,options={}){
     if(options.body && !(options.body instanceof FormData))headers['Content-Type']='application/json';
     const res=await fetch(path,{...options,headers,credentials:'same-origin'});
     if(!res.ok){let data;try{data=await res.json()}catch{};
-      if(res.status===401 && !path.includes('/auth/login')){state.me=null;renderLogin()}
+      if(res.status===401 && !path.includes('/auth/login')){state.me=null;renderSpaceChoice()}
       throw new Error(typeof data?.detail==='string'?data.detail:`Opération refusée (HTTP ${res.status}). Vérifiez vos droits et les informations saisies.`);
     }
     const result=res.headers.get('content-type')?.includes('application/json')?await res.json():res;
@@ -79,11 +79,26 @@ function mount(html,label){
  app.querySelector('#top-profile')?.addEventListener('click',()=>app.querySelector('.sidebar-bottom')?.scrollIntoView({behavior:'smooth',block:'center'}));
  app.querySelector('#global-search')?.addEventListener('click',async()=>{await navigate('launches');app.querySelector('#launch-search')?.focus()});
  document.dispatchEvent(new Event('framat:guide-auth'));
- app.querySelector('#logout').addEventListener('click',async()=>{try{await api('/api/auth/logout',{method:'POST'})}catch{}state.me=null;state.detail=null;renderLogin()});
+ app.querySelector('#logout').addEventListener('click',async()=>{try{await api('/api/auth/logout',{method:'POST'})}catch{}state.me=null;state.detail=null;renderSpaceChoice()});
+}
+function renderSpaceChoice(){
+ overlay.innerHTML='';
+ app.innerHTML=`<div class="login-page login-rebalanced jauno-space-choice"><main class="login-stage">
+  <div class="login-visual" aria-hidden="true"><div class="login-visual-orbit"></div><div class="login-visual-floor"></div><div class="login-folder login-folder-back"></div><div class="login-folder login-folder-middle"></div><div class="login-folder login-folder-front"><span class="login-folder-stripe"></span><span class="login-folder-line"></span><span class="login-folder-line login-folder-line-small"></span><span class="login-folder-dot"></span></div></div>
+  <section class="login-form-wrap"><div class="login-auth-content">
+    <div class="login-form-brand"><span class="login-form-brand-icon">${icon('folder')}</span><strong>Framatex</strong></div>
+    <h1 id="space-title">Choisissez votre espace</h1>
+    <div class="login-form jauno-space-actions" role="group" aria-labelledby="space-title">
+      <button type="button" class="primary jauno-space-action" data-space="internal">Espace interne</button>
+      <a class="primary jauno-space-action" href="/partners?space=client">Espace client</a>
+      <a class="primary jauno-space-action" href="/partners?space=supplier">Espace fournisseur</a>
+    </div>
+  </div></section></main></div>`;
+ app.querySelector('[data-space="internal"]').addEventListener('click',renderLogin);
 }
 function renderLogin(){overlay.innerHTML='';app.innerHTML=`<div class="login-page login-rebalanced"><main class="login-stage">
   <div class="login-visual" aria-hidden="true"><div class="login-visual-orbit"></div><div class="login-visual-floor"></div><div class="login-folder login-folder-back"></div><div class="login-folder login-folder-middle"></div><div class="login-folder login-folder-front"><span class="login-folder-stripe"></span><span class="login-folder-line"></span><span class="login-folder-line login-folder-line-small"></span><span class="login-folder-dot"></span></div></div>
-  <section class="login-form-wrap"><div class="login-auth-content"><div class="login-form-brand"><span class="login-form-brand-icon">${icon('folder')}</span><strong>Framatex</strong></div>
+  <section class="login-form-wrap"><div class="login-auth-content"><button type="button" class="auth-return" id="change-space">← Changer d’espace</button><div class="login-form-brand"><span class="login-form-brand-icon">${icon('folder')}</span><strong>Framatex</strong></div>
     <h1 id="login-title">Connexion</h1>
     <form id="login-form" class="login-form" aria-labelledby="login-title">
       <div id="login-error" role="alert" aria-live="assertive"></div>
@@ -92,6 +107,7 @@ function renderLogin(){overlay.innerHTML='';app.innerHTML=`<div class="login-pag
       <button class="primary" type="submit">Se connecter</button>
     </form>
   </div></section></main></div>`;
+  app.querySelector('#change-space').addEventListener('click',renderSpaceChoice);
   app.querySelector('#login-form').addEventListener('submit',async evt=>{evt.preventDefault();const btn=evt.target.querySelector('button');btn.disabled=true;try{state.me=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:app.querySelector('#email').value,password:app.querySelector('#password').value})});state.me=await api('/api/auth/me');if(!(await paperOpenDeepLink()))await navigate('home')}catch(err){app.querySelector('#login-error').innerHTML=`<div class="error">${e(err.message)}</div>`}finally{btn.disabled=false}})
 }
 function tableLaunches(list){if(!list.length)return `<div class="empty"><div class="empty-icon">${icon('folder')}</div><strong>Aucun dossier pour l’instant</strong>Créez votre premier lancement de fabrication pour démarrer.</div>`;return `<div class="table-scroll"><table><thead><tr><th>Lancement</th><th>Client</th><th>Référence ORLI</th><th>Statut</th><th>Créé le</th><th></th></tr></thead><tbody>${list.map(l=>`<tr class="item-row" data-launch="${e(l.id)}"><td><button class="link" type="button" aria-label="Ouvrir le lancement ${e(l.name)}">${e(l.name)}</button><div class="row-sub">${e(l.order_ref||'Aucune référence de commande')}</div></td><td>${e(l.client_name||'—')}</td><td>${l.orli_ref?`<span class="tag">${e(l.orli_ref)}</span>`:'<span class="muted small">Non attribuée</span>'}</td><td>${statusTag(l.status)}</td><td class="small">${niceDate(l.created_at)}</td><td>${icon('arrow')}</td></tr>`).join('')}</tbody></table></div>`}
@@ -219,4 +235,4 @@ async function navigate(view){++navigationVersion;try{if(view==='home')await hom
 window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 // Partie intégrée dans app.js lors de la construction du MVP 0.2.
 // Defer startup until every feature script (including paper.js) is evaluated.
-(async function init(){await new Promise(resolve=>document.addEventListener('DOMContentLoaded',resolve,{once:true}));try{state.me=await api('/api/auth/me');if(!(await paperOpenDeepLink()))await navigate('home')}catch{renderLogin()}})();
+(async function init(){await new Promise(resolve=>document.addEventListener('DOMContentLoaded',resolve,{once:true}));try{state.me=await api('/api/auth/me');if(!(await paperOpenDeepLink()))await navigate('home')}catch{renderSpaceChoice()}})();
