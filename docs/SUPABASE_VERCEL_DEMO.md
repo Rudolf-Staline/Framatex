@@ -2,7 +2,7 @@
 
 ## Périmètre et limites
 
-Ce profil est **exclusivement destiné à des données fictives**. Les 55 tables
+Ce profil est **exclusivement destiné à des données fictives**. Les 51 tables
 historiques du schéma `public` de Supabase sont préservées : la version actuelle
 de Framatex utilise une nouvelle base logique dans le schéma PostgreSQL privé
 `framatex_demo_v2`, contenant 94 tables. Le stockage des documents s'effectue
@@ -54,6 +54,19 @@ dans le bucket privé existant `framat-documents`.
    du projet Supabase. Le serveur utilise psycopg avec requêtes préparées
    désactivées et des connexions de courte durée pour le mode serverless.
    Le schéma `public` reste inutilisé pour le stockage métier courant.
+   **Prévisualisation sécurisée :** les trois secrets `DATABASE_URL`,
+   `SUPABASE_SECRET_KEY` et `FRAMATEX_SECRET_KEY` doivent être configurés
+   pour **Preview**, idéalement limités à la branche
+   `feat/supabase-persistent-demo-20261118`, avec une connexion dédiée
+   uniquement au schéma `framatex_demo_v2`. Les secrets actuellement
+   définis pour **Production** ne sont pas automatiquement disponibles
+   pour Preview. Ne pas les exposer globalement à toutes les branches,
+   notamment aux pull requests non fiables. Les valeurs non sensibles
+   `FRAMATEX_MODE=DEMO`, `FRAMATEX_DB_SCHEMA=framatex_demo_v2`,
+   `FRAMATEX_EMAIL_ENABLED=0` et `FRAMATEX_GUIDE_AI_ENABLED=0`
+   sont déjà configurées sur la branche de recette. Redéployer après
+   toute modification des variables d'environnement.
+
 5. Après déploiement de la branche de recette, vérifier la réponse HTTP de
    `/api/health`, l'authentification, l'isolation des accès, la création des
    commandes, le dépôt/lecture/suppression des pièces, la reprise après un
