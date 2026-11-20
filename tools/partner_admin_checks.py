@@ -18,7 +18,7 @@ def open_internal_admin(page, base, evidence):
             route.continue_()
         page.unroute('**/assets/paper.js')
     page.wait_for_load_state('domcontentloaded')
-    expect(page.locator('[data-view=home]')).to_have_attribute('aria-current', 'page')
+    expect(page.locator('[data-view=dossiers]')).to_have_attribute('aria-current', 'page')
     before = evidence.checkpoint(page, 'before-first-admin')
     assert before['path'] == '/' and before['session_status'] == 200
     assert before['account']['email'] == 'admin@example.local' and before['account']['admin'] is True

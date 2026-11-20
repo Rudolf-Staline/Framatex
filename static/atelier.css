@@ -169,3 +169,92 @@ body:has(.app-shell) .entry-shortcuts { display: none; }
   .rail-brand-name { font-size: 21px; }
   .rail-shortcuts { margin-top: 6px; }
 }
+
+/* Atelier layout from the October demo, applied to the current dossier views. */
+.app-shell {
+  background: #fff;
+}
+.app-shell :is(.page-heading h1, .detail-head h1, .page-title) {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  letter-spacing: -.035em;
+}
+.app-shell .sidebar {
+  background: var(--folder-rail, var(--atelier-paper));
+  border-color: var(--folder-rail-border, var(--atelier-line));
+}
+.app-shell[data-folder-theme="jaune"] {
+  --folder-rail: #fff1ba;
+  --folder-rail-border: #e7ce77;
+}
+.app-shell[data-folder-theme="rose"] {
+  --folder-rail: #fce5ed;
+  --folder-rail-border: #e5a6be;
+}
+.app-shell[data-folder-theme="bleu"] {
+  --folder-rail: #e1edff;
+  --folder-rail-border: #9cbbe9;
+}
+.app-shell[data-folder-theme="vert"] {
+  --folder-rail: #dff3e5;
+  --folder-rail-border: #a1d7b4;
+}
+.sidebar .nav-btn.active {
+  background: #fff;
+  border-color: var(--folder-rail-border, var(--atelier-line));
+}
+.sidebar .nav-btn.active[data-view="dossiers"] {
+  background: var(--folder-rail, #ffeb9a);
+  border-color: var(--folder-rail-border, #d6a52b);
+}
+
+.app-shell .atelier-directory {
+  padding-inline: 0;
+  border: 0;
+  box-shadow: none;
+  background: #fff;
+}
+.atelier-directory-filters {
+  display: grid;
+  grid-template-columns: minmax(12rem, 2fr) minmax(8rem, 1fr);
+  grid-auto-flow: column;
+  grid-template-rows: auto auto;
+  gap: .4rem 1rem;
+  max-width: 40rem;
+  margin-bottom: 1rem;
+}
+.atelier-directory-filters :is(input, select) {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+.app-shell .atelier-dossier-heading {
+  position: relative;
+  isolation: isolate;
+  align-items: center;
+  min-height: 9rem;
+  overflow: hidden;
+  padding-right: clamp(10rem, 28%, 20rem);
+}
+.atelier-textile {
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 auto auto;
+  width: 28%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0 0 0 5rem;
+}
+@media (max-width: 760px) {
+  .atelier-directory-filters {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-auto-flow: row;
+  }
+  .app-shell .atelier-dossier-heading {
+    min-height: 0;
+    padding-right: 0;
+  }
+  .atelier-textile { display: none; }
+}
