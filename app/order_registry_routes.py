@@ -1,4 +1,6 @@
 """Additive order registry. Explicit links preserve all original launch data and ACLs."""
+import json
+
 from fastapi import APIRouter,Depends,HTTPException,Query,Response
 from pydantic import BaseModel,Field,ConfigDict
 from sqlalchemy import select,func,or_
@@ -42,7 +44,7 @@ def out(db,row,user):
 def list_orders(response:Response,q:str=Query('',max_length=200),
                 sort:str=Query('newest',pattern='^(newest|reference|client)$'),
                 launch_status:str=Query('',pattern='^(|En cours|À compléter|En validation|Clôturé)$'),
-                offset:int=Query(0,ge=0),limit:int=Query(100,ge=1,le=100),page:bool=False,
+                offset:int=Query(0,ge=0),limit:int=Query(100,ge=1,le=100),page:bool=False,atelier:bool=False,
                 user=Depends(get_current_user),db:Session=Depends(get_db)):
     """Bounded SQL page; legacy list consumers retain their item representation."""
     from .access import launch_access_clause
@@ -51,6 +53,16 @@ def list_orders(response:Response,q:str=Query('',max_length=200),
     if q.strip():
         term='%'+q.strip()+'%'
         query=query.where(or_(BusinessOrder.reference.ilike(term),Partner.name.ilike(term)))
+    counts={}
+    if atelier and page:
+        order_ids=query.with_only_columns(BusinessOrder.id).subquery()
+        counts=dict(db.execute(
+            select(Launch.status,func.count(func.distinct(BusinessOrderLaunch.order_id)))
+            .select_from(BusinessOrderLaunch).join(Launch)
+            .where(BusinessOrderLaunch.order_id.in_(select(order_ids.c.id)),launch_access_clause(user,Launch.id))
+            .group_by(Launch.status)
+        ).all())
+        counts['']=db.scalar(select(func.count()).select_from(order_ids))
     if launch_status:
         matching_launch=select(BusinessOrderLaunch.order_id).join(Launch).where(
             BusinessOrderLaunch.order_id==BusinessOrder.id, Launch.status==launch_status,
@@ -63,9 +75,18 @@ def list_orders(response:Response,q:str=Query('',max_length=200),
     if ids:
         for lid,lname,ref,orli,status,oid in db.execute(select(Launch.id,Launch.name,Launch.order_ref,Launch.orli_ref,Launch.status,BusinessOrderLaunch.order_id).join(BusinessOrderLaunch).where(BusinessOrderLaunch.order_id.in_(ids),launch_access_clause(user,Launch.id)).order_by(Launch.created_at,Launch.id)):
             launches[oid].append({'id':lid,'name':lname,'order_ref':ref,'orli_ref':orli,'status':status})
+    if atelier and page:
+        from .order_fields import LaunchIdentification
+        visible_launches={launch['id']:launch for group in launches.values() for launch in group}
+        if visible_launches:
+            for lid, fields in db.execute(
+                select(LaunchIdentification.launch_id,LaunchIdentification.fields_json)
+                .where(LaunchIdentification.launch_id.in_(visible_launches))
+            ):
+                visible_launches[lid]['workshop']=json.loads(fields).get('workshop')
     items=[{'id':r.id,'reference':r.reference,'client_id':r.client_id,'client_name':name,'created_at':r.created_at,'launches':launches[r.id]} for r,name in rows]
     response.headers['X-Total-Count']=str(total)
-    return {'items':items,'total':total,'offset':offset,'limit':limit} if page else items
+    return {'items':items,'total':total,'offset':offset,'limit':limit,**({'status_counts':counts} if atelier else {})} if page else items
 
 @router.post('/api/orders',status_code=201)
 def create(payload:OrderInput,user=Depends(get_current_user),db:Session=Depends(get_db)):
