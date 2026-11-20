@@ -8,18 +8,6 @@
   --atelier-soft: #fff8d9;
 }
 
-.entry-shortcuts {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: .4rem 1.25rem;
-  padding: .6rem 1rem;
-  background: var(--atelier-paper);
-  border-bottom: 1px solid var(--atelier-line);
-}
-.entry-shortcuts a { color: var(--atelier-gold); }
-body:has(.app-shell) .entry-shortcuts { display: none; }
-
 .app-shell {
   --green: var(--atelier-gold);
   --green-dark: #604109;
@@ -499,3 +487,239 @@ body:has(.app-shell) .entry-shortcuts { display: none; }
   gap: .6rem;
 }
 #order-experience { margin-bottom: 1rem; }
+
+/* L’identité et le choix des espaces du Dossier Jaune d’octobre. */
+.login-page .jauno-brand-mark{display:block;width:24px;height:24px;object-fit:contain}
+.login-rebalanced .login-form-brand strong{letter-spacing:.055em;font-weight:800}
+.app-shell .rail-brand-mark{width:36px;height:42px;object-fit:contain}
+.app-shell .rail-brand-name{font-weight:800;letter-spacing:.035em}
+.app-shell .rail-brand-name small{font-weight:500;letter-spacing:0}
+.login-rebalanced.jauno-space-choice .jauno-space-actions{
+ display:grid;
+ grid-template-columns:1fr;
+ gap:12px;
+ width:100%;
+ max-width:100%;
+ padding:0;
+ margin:0;
+}
+.login-rebalanced.jauno-space-choice .login-form .jauno-space-action{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ width:100%;
+ min-height:49px;
+ height:49px;
+ margin:0;
+ padding:0 16px;
+ background:#e5b43a;
+ border:1px solid #d6a52b;
+ border-radius:10px;
+ color:#fff;
+ font-size:13px;
+ font-weight:800;
+ line-height:1.2;
+ text-align:center;
+ box-shadow:0 4px 12px rgba(168,113,0,.12);
+ cursor:pointer;
+ transition:background .16s ease,box-shadow .16s ease;
+}
+.login-rebalanced.jauno-space-choice .login-form .jauno-space-action:hover{
+ background:#d3a024;
+ border-color:#c09322;
+ color:#fff;
+ box-shadow:0 6px 16px rgba(168,113,0,.18);
+}
+.login-rebalanced.jauno-space-choice .login-form .jauno-space-action:focus-visible{
+ outline:3px solid rgba(172,120,0,.42);
+ outline-offset:3px;
+}
+@media(prefers-reduced-motion:reduce){
+ .login-rebalanced.jauno-space-choice .login-form .jauno-space-action{transition:none}
+}
+
+/* Cadre Atelier d’octobre partagé par les écrans métier actuels. */
+.app-shell {
+  grid-template-columns: 224px minmax(0, 1fr);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.app-shell :is(.page-heading h1, .detail-head h1, .page-title) {
+  font-family: inherit;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+}
+
+.app-shell .sidebar.sidebar-rail {
+  padding: 32px 18px 18px;
+  background: var(--folder-rail, #fff);
+  border-color: var(--folder-rail-border, #e5e8e2);
+  box-shadow: none;
+}
+.app-shell[data-folder-theme] .sidebar.sidebar-rail {
+  box-shadow: 3px 0 18px #20242a12;
+}
+
+.sidebar-rail .rail-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px 32px;
+}
+
+.rail-navigation-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.sidebar-rail .sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: visible;
+}
+
+.sidebar-rail .nav-btn {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 13px;
+  color: #525c53;
+  font-weight: 400;
+}
+.sidebar-rail .nav-btn.active {
+  color: #413818;
+  background: var(--folder-active, #fff8d9);
+  border-color: transparent;
+  box-shadow: none;
+  font-weight: 600;
+}
+.app-shell[data-folder-theme] .sidebar-rail { --folder-active: #fff; }
+.sidebar-rail .nav-btn .nav-current {
+  margin-left: auto;
+  width: auto;
+  height: auto;
+  background: none;
+  box-shadow: none;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.sidebar-rail .rail-management {
+  margin-top: 16px;
+  border: 0;
+}
+.sidebar-rail .rail-management:first-of-type { margin-top: 28px; }
+.rail-management summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 13px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 12px;
+  color: #525c53;
+}
+.rail-management summary::-webkit-details-marker { display: none; }
+.rail-management summary svg,
+.rail-notifications svg { width: 17px; height: 17px; }
+.rail-chevron { margin-left: auto; }
+.rail-management[open] .rail-chevron { transform: rotate(180deg); }
+.sidebar-rail .rail-account {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding: 16px 0 0;
+  border-top: 1px solid #e5e8e2;
+}
+.sidebar-rail .user { flex: 1; min-width: 0; margin: 0; }
+.sidebar-rail .user-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-rail .logout,
+.october-topbar .rail-notifications {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+.mobile-navigation-toggle { display: none; }
+
+.app-shell .october-topbar {
+  height: 76px;
+  padding-inline: 40px;
+  background: #fff;
+  border-bottom-color: #e5e8e2;
+}
+.october-topbar .lc-global-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 390px);
+  padding: 10px 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-size: 12px;
+  color: #59645b;
+}
+.october-topbar .lc-global-search svg { width: 18px; height: 18px; flex: none; }
+.october-topbar .lc-user-avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #e2e2db;
+  background: #edece6;
+  color: #525849;
+  font-size: 10px;
+  font-weight: 700;
+}
+.october-topbar .lc-top-username { font-size: 12px; }
+.app-shell .content { padding: 40px 42px 90px; }
+.login-rebalanced .login-form-brand strong { font-size: 19px; letter-spacing: -.45px; }
+
+@media (max-width: 760px) {
+  .app-shell { display: block; }
+  .app-shell .sidebar.sidebar-rail {
+    position: relative;
+    height: auto;
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e8e2;
+  }
+  .sidebar-rail .rail-brand { padding: 0; }
+  .sidebar-rail .rail-navigation-content { grid-column: 1 / -1; margin-top: 16px; }
+  .sidebar-rail:not(.is-mobile-open) .rail-navigation-content { display: none; }
+  .sidebar-rail .mobile-navigation-toggle { display: inline-flex; align-items: center; gap: 8px; }
+  .mobile-navigation-toggle svg { width: 18px; height: 18px; }
+  .app-shell .october-topbar { height: 62px; padding-inline: 20px; }
+  .october-topbar .lc-top-username { display: none; }
+  .app-shell .content { padding: 24px 20px 70px; }
+}
+
+.app-shell .atelier-ledger {
+  padding: 0;
+  border-color: #e5e8e2;
+  border-radius: 13px;
+  box-shadow: 0 3px 12px #24321f03;
+}
+.atelier-ledger .atelier-status-tabs { padding-inline: 24px; gap: 25px; }
+.atelier-ledger .atelier-status-tabs button { padding-inline: 0; min-height: 52px; }
+.atelier-ledger .atelier-directory-filters { padding: 20px 24px; }
+.atelier-ledger .atelier-directory-filters input::placeholder { color: #626e57; opacity: 1; }
+.atelier-ledger table th { background: #fafbf8; }
+.atelier-ledger :is(td, th) { padding-inline: 20px; }
+.atelier-ledger .atelier-folder-icon { width: 40px; height: 43px; }
+.atelier-ledger .atelier-folder-icon svg { width: 22px; height: 22px; }
+.atelier-ledger .order-pagination { border-top: 1px solid #e5e8e2; padding: 16px 24px; }
+
+@media (max-width: 760px) {
+  .atelier-ledger .atelier-status-tabs,
+  .atelier-ledger .atelier-directory-filters,
+  .atelier-ledger .order-pagination { padding-inline: 14px; }
+}
