@@ -43,7 +43,10 @@ def main():
                     with sync_playwright() as p:
                         browser=p.chromium.launch(executable_path=os.getenv('FRAMATEX_BROWSER_EXECUTABLE'),headless=True,args=['--no-sandbox'])
                         admin_context=browser.new_context();admin_context.add_cookies([{'name':c.name,'value':c.value,'url':base} for c in admin.cookies.jar]);page=admin_context.new_page();page.on('pageerror',lambda error:errors.append(str(error)))
-                        page.goto(base+'/');page.get_by_role('button',name='Commandes',exact=True).first.click();page.get_by_role('button',name='Ouvrir le Dossier Jaune de CMD-TARGET',exact=True).click()
+                        page.goto(base+'/')
+                        page.locator('.sidebar [data-rail-group="workspace"]:not([open]) summary').click()
+                        page.locator('.sidebar [data-view="orders"]').click()
+                        page.get_by_role('button',name='Ouvrir le Dossier Jaune de CMD-TARGET',exact=True).click()
                         page.get_by_role('button',name='Contrôles et outils',exact=True).click()
                         page.get_by_role('button',name='Rattacher un lancement historique',exact=True).click()
                         page.get_by_label('Rechercher un lancement historique',exact=True).fill('A_RECHERCHER ancienne')
