@@ -10,6 +10,7 @@ import socket
 import httpx
 from playwright.sync_api import sync_playwright, expect
 from browser_evidence import BrowserEvidence
+from browser_navigation import select_sidebar_view
 from partner_admin_checks import open_internal_admin, admin_during_refresh
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -179,7 +180,7 @@ def main():
                             internal_page.locator('.approval-stage-name').fill('Validation technique');internal_page.locator('.approval-stage-role').select_option(role['id'])
                             internal_page.locator('.approval-stage-days').fill('2');internal_page.locator('#approval-template-form button[type=submit]').click()
                             expect(internal_page.locator('#approval-template-form')).to_have_count(0)
-                            internal_page.locator('[data-view=launches]').click();internal_page.locator(f'[data-launch="{lid}"]').click()
+                            select_sidebar_view(internal_page, 'launches');internal_page.locator(f'[data-launch="{lid}"]').click()
                             internal_page.locator('[data-approval-start]').click();internal_page.get_by_text('Échéance :',exact=False).wait_for()
                             internal_page.get_by_role('button',name='Déléguer l’étape').click()
                             internal_page.locator('#delegation-user').select_option(deputy['id'])
@@ -192,7 +193,7 @@ def main():
                             with httpx.Client(base_url=base,headers=H) as deputy_api:
                                 deputy_api.post('/api/auth/login',json={'email':'deputy@example.local','password':PWD}).raise_for_status()
                                 deputy_api.post(f'/api/approval-runs/{approved_run}/decisions',json={'decision':'approved','comment':'Contrôle navigateur par le suppléant habilité'}).raise_for_status()
-                            internal_page.locator('[data-view=launches]').click();internal_page.locator(f'[data-launch="{lid}"]').click()
+                            select_sidebar_view(internal_page, 'launches');internal_page.locator(f'[data-launch="{lid}"]').click()
                             internal_page.get_by_role('button',name='Réouvrir la validation',exact=True).click()
                             internal_page.get_by_label('Motif de réouverture',exact=True).fill('Nouvel examen demandé lors de la recette navigateur')
                             internal_page.get_by_role('button',name='Confirmer la réouverture',exact=True).click()

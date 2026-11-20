@@ -1,5 +1,6 @@
 """Deterministic administration races, using only synthetic acceptance data."""
 from playwright.sync_api import expect
+from browser_navigation import select_sidebar_view
 
 
 def open_internal_admin(page, base, evidence):
@@ -22,7 +23,7 @@ def open_internal_admin(page, base, evidence):
     before = evidence.checkpoint(page, 'before-first-admin')
     assert before['path'] == '/' and before['session_status'] == 200
     assert before['account']['email'] == 'admin@example.local' and before['account']['admin'] is True
-    page.locator('[data-view=admin]').click()
+    select_sidebar_view(page, 'admin')
     expect(page.get_by_role('heading', name='Collaborateurs', exact=True)).to_be_visible()
     expect(page.locator('[data-view=admin]')).to_have_attribute('aria-current', 'page')
     evidence.checkpoint(page, 'first-admin-loaded')
@@ -46,7 +47,7 @@ def admin_during_refresh(page, base, launch_id, deputy_id, evidence):
         before = evidence.checkpoint(page, 'before-employee-admin')
         assert before['path'] == '/' and before['view'] == 'detail'
         assert before['session_status'] == 200 and before['account']['admin'] is True
-        page.locator('[data-view=admin]').click()
+        select_sidebar_view(page, 'admin')
         target = page.locator(f'[data-user-access="{deputy_id}"]')
         expect(target).to_be_visible()
         expect(target.locator('xpath=ancestor::tr')).to_contain_text('deputy@example.local')

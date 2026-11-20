@@ -66,7 +66,6 @@ form('request',async data=>{if(!data.due_date)data.due_date=null;await api('/api
 form('publication',async data=>{if(!confirm(`Publier la pièce sélectionnée pour ${$('client-options').selectedOptions[0]?.textContent||'ce client'} ? Ses contacts habilités pourront télécharger cette version jusqu’à révocation.`))return;await api('/api/partners/publications','POST',data);$('publication').reset();});
 function setClientWorkspace(active){
  document.body.classList.toggle('client-atelier',active);
- document.querySelector('.client-atelier-mark').hidden=!active;
  $('client-atelier-nav').hidden=!active;
  document.querySelector('header h1').textContent=active?'Espace client':
   chosenPartnerSpace==='client'?'Espace client':chosenPartnerSpace==='supplier'?'Espace fournisseur':'Espace partenaires';
@@ -189,7 +188,7 @@ async function renderClientOrders(){
   return;
  }
  $('client-orders').append(node('h3',document.body.classList.contains('client-atelier')?'Mes dossiers':'Commandes client autorisées'));
- for(const order of rows){const card=node('article');card.dataset.guideOrder=order.id;card.append(node('h4',order.reference),node('p',`${order.status} · Échéance confirmée : ${order.confirmed_due||'non renseignée'} · Avancement chiffré non renseigné`));
+ for(const order of rows){const card=node('article');card.dataset.guideOrder=order.id;card.append(node('h4',order.reference),node('p',`${order.status} · Échéance confirmée : ${order.confirmed_due||'non renseignée'}`));
  if(internal){const label=node('label','Mettre à jour le statut'),status=node('select');for(const value of ['Non renseigné','Confirmée','En préparation','En fabrication','Expédiée','Terminée']){const option=node('option',value);option.value=value;option.selected=value===order.status;status.append(option);}label.append(status);card.append(label,button('Confirmer ce statut',async()=>{await api(`${base}/client-orders/${order.id}`,'PUT',{partner_id:order.partner_id,launch_id:order.launch_id,reference:order.reference,status:status.value,confirmed_due:order.confirmed_due,active:order.active});await renderClientOrders();}),button(order.active?'Retirer l’accès commande':'Rétablir l’accès commande',async()=>{if(!confirm('Confirmer le changement d’accès ?'))return;await api(`${base}/client-orders/${order.id}`,'PUT',{partner_id:order.partner_id,launch_id:order.launch_id,reference:order.reference,status:order.status,confirmed_due:order.confirmed_due,active:!order.active});await renderClientOrders();}));}
  for(const event of await api(`${base}/client-orders/${order.id}/events`))card.append(node('p',`${event.created_at} · ${event.message}`));
  const threads=await api(`${base}/client-orders/${order.id}/threads`);

@@ -10,23 +10,11 @@ import time
 import fitz
 import httpx
 from playwright.sync_api import sync_playwright,expect
+from browser_navigation import select_sidebar_view
 
 ROOT=Path(__file__).resolve().parents[1]
 H={'X-Framatex-Request':'1'}
 PWD='BrowserTestPassword2026!'
-
-
-def select_sidebar_view(page, view):
-    sidebar = page.locator('.sidebar')
-    sidebar.wait_for()
-    mobile_toggle = sidebar.get_by_role('button', name='Menu', exact=True)
-    if mobile_toggle.is_visible() and mobile_toggle.get_attribute('aria-expanded') == 'false':
-        mobile_toggle.click()
-    item = sidebar.locator(f'[data-view="{view}"]')
-    group = item.locator('xpath=ancestor::details[1]')
-    if group.count() and group.get_attribute('open') is None:
-        group.locator('summary').click()
-    item.click()
 
 
 def main():

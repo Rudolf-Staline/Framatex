@@ -10,6 +10,7 @@ import time
 
 import httpx
 from playwright.sync_api import sync_playwright,expect
+from browser_navigation import select_sidebar_view
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -44,8 +45,7 @@ def main():
                         browser=p.chromium.launch(executable_path=os.getenv('FRAMATEX_BROWSER_EXECUTABLE'),headless=True,args=['--no-sandbox'])
                         admin_context=browser.new_context();admin_context.add_cookies([{'name':c.name,'value':c.value,'url':base} for c in admin.cookies.jar]);page=admin_context.new_page();page.on('pageerror',lambda error:errors.append(str(error)))
                         page.goto(base+'/')
-                        page.locator('.sidebar [data-rail-group="workspace"]:not([open]) summary').click()
-                        page.locator('.sidebar [data-view="orders"]').click()
+                        select_sidebar_view(page, 'orders')
                         page.get_by_role('button',name='Ouvrir le Dossier Jaune de CMD-TARGET',exact=True).click()
                         page.get_by_role('button',name='Contrôles et outils',exact=True).click()
                         page.get_by_role('button',name='Rattacher un lancement historique',exact=True).click()
