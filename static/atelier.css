@@ -376,3 +376,91 @@ body:has(.app-shell) .entry-shortcuts { display: none; }
   letter-spacing: 0;
   text-transform: none;
 }
+
+/* Atelier's dossier counter, list/grid switch and folder tabs on the current screens. */
+.atelier-heading-group, .atelier-view-switch, .atelier-detail-tabs {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.atelier-count, .atelier-status-tabs small {
+  color: #4d421f;
+  background: #f6f2e6;
+  border-radius: .3rem;
+  font-size: .75rem;
+  padding: .12rem .35rem;
+}
+.atelier-status-tabs small { margin-inline-start: .35rem; }
+.atelier-status-tabs [aria-pressed="true"] small { background: #fff0b6; }
+.atelier-ledger .atelier-directory-filters {
+  grid-template-columns: minmax(8rem, 20rem) minmax(6rem, 10rem) auto;
+  grid-template-rows: auto auto;
+  justify-content: start;
+}
+.atelier-view-switch {
+  grid-row: 2;
+  grid-column: 3;
+}
+.atelier-view-switch button, .atelier-detail-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  min-height: 2.4rem;
+  padding: .35rem .65rem;
+  border: 1px solid transparent;
+  border-radius: .35rem;
+  background: #f6f5f8;
+  color: var(--atelier-ink);
+}
+.atelier-view-switch [aria-pressed="true"], .atelier-detail-tabs [aria-pressed="true"] {
+  border-color: #d6b65d;
+  background: #fff4ce;
+}
+.atelier-view-switch svg, .atelier-detail-tabs svg, .atelier-folder-tabs svg, .atelier-row-open svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+.atelier-client-mark {
+  display: inline-grid;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-inline-end: .4rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #f2f0ea;
+  color: #3f3d34;
+  font-size: .7rem;
+}
+.atelier-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: .8rem;
+  padding: 1rem;
+}
+.atelier-order-card {
+  display: grid;
+  align-content: start;
+  gap: .65rem;
+  padding: 1rem;
+  border: 1px solid #e7e6e1;
+  border-radius: .65rem;
+  background: #fff;
+}
+.atelier-dossier-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem 2rem;
+  margin: 1rem 0 0;
+}
+.atelier-dossier-facts dt { color: #56584e; font-size: .8rem; }
+.atelier-dossier-facts dd { margin: 0; font-weight: 600; }
+.atelier-detail-tabs { margin: 1rem 0; flex-wrap: wrap; }
+.atelier-folder-tabs .folder-card strong { display: flex; align-items: center; gap: .35rem; }
+@media (max-width: 760px) {
+  .atelier-ledger .atelier-directory-filters {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+  .atelier-view-switch { grid-column: 1; grid-row: auto; }
+}
