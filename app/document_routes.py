@@ -66,6 +66,10 @@ async def upload_document(launch_id: str, folder: str = Form(...), title: str = 
 
 @router.post("/api/documents/{doc_id}/versions", status_code=201)
 async def new_version(doc_id: str, file: UploadFile = File(...), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return await store_version(db, user, doc_id, file)
+
+
+async def store_version(db, user, doc_id, file, *, expected_version_id=None, annotation_count=None):
     must(user,"launch.read")
     d = get_doc(db, doc_id)
     must(user, "document.write", d.folder.slug)
@@ -84,7 +88,12 @@ async def new_version(doc_id: str, file: UploadFile = File(...), user: User = De
             raise HTTPException(404, "Document introuvable")
         must(user, "launch.read"); must(user, "document.write", d.folder.slug)
         db.refresh(d); db.expire(d, ["versions"])
-        next_number = max((v.number for v in d.versions), default=0) + 1
+        if expected_version_id:
+            must(user, "document.read", d.folder.slug)
+        latest = max(d.versions, key=lambda v: v.number, default=None)
+        if expected_version_id and (latest is None or latest.id != expected_version_id):
+            raise HTTPException(409, "Le PDF a changé depuis son ouverture. Vos annotations restent à l’écran.")
+        next_number = (latest.number if latest else 0) + 1
         version = DocumentVersion(document_id=d.id, number=next_number, original_name=original, disk_name=disk_name, size=size, sha256=sha, content_type=mime, uploaded_by=user.id)
         d.versions.append(version)
         db.flush()
@@ -92,6 +101,9 @@ async def new_version(doc_id: str, file: UploadFile = File(...), user: User = De
         from .quality_routes import auto_inspect_excel
         auto_inspect_excel(db, version, user.id)
         audit(db, user, "document.version.add", "document", d.id, {"version": next_number, "sha256": sha})
+        if annotation_count is not None:
+            audit(db, user, "document.pdf.annotate", "document", d.id,
+                  {"base_version_id": expected_version_id, "count": annotation_count, "version": next_number})
         result = doc_out(d)
         db.commit()
         return result

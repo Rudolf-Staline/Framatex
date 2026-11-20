@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import fitz
 import httpx
 from playwright.sync_api import sync_playwright,expect
 
@@ -131,6 +132,32 @@ def main():
                         expect(page.get_by_role('cell',name='Fiche technique',exact=True)).to_be_visible()
                         page.get_by_role('button',name='Versions et historique',exact=True).click()
                         expect(page.get_by_role('dialog')).to_be_visible();page.keyboard.press('Escape');expect(page.get_by_role('dialog')).to_have_count(0)
+                        with fitz.open() as source:
+                            source.new_page().insert_text((80,90),'Plan PDF navigateur')
+                            pdf=source.tobytes()
+                        response=api.post(f"/api/orders/{order['id']}/documents",data={'folder':'jaune','title':'Plan de fabrication','doc_type':'Dossier technique'},files={'file':('plan.pdf',pdf,'application/pdf')})
+                        response.raise_for_status()
+                        page.get_by_label('Filtrer par lancement').select_option(value='')
+                        page.locator('#order-document-query').fill('Plan de fabrication')
+                        page.get_by_role('button',name='Lire le PDF',exact=True).click()
+                        dialog=page.get_by_role('dialog')
+                        expect(dialog.get_by_role('img',name='Page 1 du PDF Plan de fabrication')).to_be_visible()
+                        dialog.get_by_role('button',name='Note de page').press('Enter')
+                        dialog.get_by_label('Texte de l’annotation').fill('Cote contrôlée')
+                        dialog.get_by_role('button',name='Ajouter le texte',exact=True).click()
+                        dialog.get_by_role('button',name='Enregistrer les annotations',exact=True).click()
+                        expect(dialog).to_have_count(0)
+                        expect(page.get_by_role('cell',name='v2',exact=True)).to_be_visible()
+                        page.get_by_role('button',name='Contrôles et outils',exact=True).click()
+                        page.get_by_role('button',name='Mémoire métier de cette commande').click()
+                        page.get_by_role('button',name='Nouveau retour').click()
+                        page.get_by_label('Titre',exact=True).fill('Écart de montage')
+                        page.get_by_label('Problème observé').fill('Le montage décale la première pièce.')
+                        page.get_by_role('button',name='Enregistrer le retour').click()
+                        expect(page.get_by_role('heading',name='Écart de montage')).to_be_visible()
+                        page.get_by_role('button',name='Dossier CMD-NAV-001',exact=True).click()
+                        page.locator('[data-dossier-panel="documents"]').click()
+                        expect(page.locator('#order-section-title')).to_contain_text('CMD-NAV-001')
                         results=[]
                         for width in (360,390,768,1440):
                             page.set_viewport_size({'width':width,'height':960})

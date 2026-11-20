@@ -1,2 +1,94 @@
 :root{font:16px system-ui;color:#242620;background:#fffaf0}body{margin:0}header,main{max-width:1000px;margin:auto;padding:24px}section,article,details{background:white;border:1px solid #e8d8aa;border-radius:8px;padding:20px;margin:16px 0}form{display:flex;flex-wrap:wrap;gap:16px;align-items:end;margin:16px 0}label{display:grid;gap:6px;flex:1 1 200px}input,select,textarea,button{font:inherit;padding:10px;border:1px solid #947e4b;border-radius:4px;max-width:100%;box-sizing:border-box}button{cursor:pointer;background:#f4cb21;color:#242620}button:disabled{opacity:.5;cursor:wait}a{color:#805b14}#notice{white-space:pre-wrap;overflow-wrap:anywhere}li{margin:12px 0}h1,h2,h3{line-height:1.2}pre{white-space:pre-wrap;overflow-wrap:anywhere}[hidden]{display:none!important}
 article,li,p{overflow-wrap:anywhere}input,textarea,select{min-width:0}*{box-sizing:border-box}
+
+body.client-atelier {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  min-height: 100dvh;
+  background: #fff;
+}
+.client-atelier > header {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  width: 100%;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 1.5rem 1rem;
+  border-right: 1px solid #e8d8aa;
+  background: #fbf6df;
+}
+.client-atelier > main {
+  width: min(100%, 78rem);
+  margin: 0 auto;
+  padding: 2rem clamp(1rem, 4vw, 3.25rem);
+}
+.client-atelier-mark {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  margin-bottom: 1.5rem;
+}
+.client-atelier-mark small {
+  display: block;
+  color: #625b45;
+}
+.client-atelier header h1 {
+  margin: 1.25rem 0 .5rem;
+  font-size: 1rem;
+}
+.client-atelier header p {
+  color: #625b45;
+  font-size: .875rem;
+}
+.client-atelier nav {
+  display: grid;
+  gap: .35rem;
+}
+.client-atelier nav a {
+  padding: .55rem .6rem;
+  border-radius: .4rem;
+  color: #403517;
+}
+.client-atelier nav a:hover,
+.client-atelier nav a:focus-visible {
+  background: #fff;
+}
+.client-atelier #workspace {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.client-atelier .partner-workspace-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .75rem;
+  border-bottom: 1px solid #e8d8aa;
+  margin-bottom: 1.25rem;
+  padding-bottom: .8rem;
+}
+.client-atelier #identity {
+  margin: 0;
+  font: 700 clamp(1.7rem, 4vw, 2.5rem)/1.15 Georgia, serif;
+}
+.client-atelier .partner-workspace-head button {
+  background: #fff8df;
+}
+.client-atelier #client-orders article {
+  border-color: #e8d8aa;
+  margin-block: .75rem;
+}
+@media (max-width: 720px) {
+  body.client-atelier { display: block; }
+  .client-atelier > header {
+    position: static;
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid #e8d8aa;
+  }
+  .client-atelier nav {
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  }
+}

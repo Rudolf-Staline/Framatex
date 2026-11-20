@@ -464,3 +464,38 @@ body:has(.app-shell) .entry-shortcuts { display: none; }
   }
   .atelier-view-switch { grid-column: 1; grid-row: auto; }
 }
+
+.atelier-experience-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.atelier-experience-search label {
+  display: grid;
+  gap: .3rem;
+}
+.atelier-experience-search label:first-child {
+  flex: 1 1 16rem;
+}
+.atelier-experience-list {
+  display: grid;
+  gap: 1rem;
+}
+.atelier-experience-card-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.atelier-experience-card h3 { margin-bottom: .35rem; }
+.atelier-experience-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.atelier-experience-editor {
+  display: grid;
+  gap: .6rem;
+}
+#order-experience { margin-bottom: 1rem; }

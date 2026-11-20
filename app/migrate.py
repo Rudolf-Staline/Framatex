@@ -19,7 +19,7 @@ from .core import Base, engine
 from . import models, completeness_models, workflow_models, quality_models, intake_models  # noqa: F401
 from . import spec_models, mail_models, impact_sim_models, orli_models, material_models # noqa: F401
 from . import partner_phase2_models
-from . import partner_models, order_documents, guide_models, operations_models
+from . import partner_models, order_documents, guide_models, operations_models, order_experience
 from . import approval_models, sharing_models, pilot_models # noqa: F401
 
 # Include the migration ledger in SQLAlchemy metadata so test databases that
@@ -28,7 +28,7 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
                         Column('version', String(80), primary_key=True),
                         Column('applied_at', String(50), nullable=False), extend_existing=True)
 
-REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_partners', '0005_partner_deliveries', '0006_partner_mail', '0007_partner_phase2', '0008_confirmed_sources', '0009_client_conversations', '0010_security_notifications', '0011_delivery_cancellations', '0012_orli_profiles', '0013_excel_policies', '0014_partner_administration', '0015_partner_default_roles', '0016_completeness_policies', '0017_order_registry', '0018_approval_assignments', '0019_partner_notice_center', '0020_audit_session_index', '0021_order_dossiers', '0022_approval_cycles', '0023_order_completeness', '0024_user_guide', '0025_order_acl', '0026_operations_state', '0027_partner_received_sources', '0028_document_catalog', '0029_requirement_scope', '0030_list_indexes', '0031_audit_fixes')
+REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_partners', '0005_partner_deliveries', '0006_partner_mail', '0007_partner_phase2', '0008_confirmed_sources', '0009_client_conversations', '0010_security_notifications', '0011_delivery_cancellations', '0012_orli_profiles', '0013_excel_policies', '0014_partner_administration', '0015_partner_default_roles', '0016_completeness_policies', '0017_order_registry', '0018_approval_assignments', '0019_partner_notice_center', '0020_audit_session_index', '0021_order_dossiers', '0022_approval_cycles', '0023_order_completeness', '0024_user_guide', '0025_order_acl', '0026_operations_state', '0027_partner_received_sources', '0028_document_catalog', '0029_requirement_scope', '0030_list_indexes', '0031_audit_fixes', '0032_order_experiences')
 
 
 def _versions(conn):
@@ -87,7 +87,7 @@ def migrate():
                 if not expected.issubset(existing):
                     raise RuntimeError('Schéma existant partiel : migration interrompue pour éviter une perte de données')
                 # Old 0.14 installations must contain the complete pre-0.15 schema.
-                missing = (set(Base.metadata.tables) - {'schema_migrations', 'launch_members', 'pilot_reports','security_login_buckets','orli_mapping_profiles','orli_refresh_decisions','document_excel_policies','requirement_policies','launch_order_contexts','business_orders','business_order_launches','approval_stage_policies','approval_stage_assignments','order_dossiers','order_members','order_completeness','session_generations','session_revocations','partner_mail_leases','order_identifications','launch_identifications','document_comments','document_type_assignments','order_requirement_exceptions'} - {t for t in Base.metadata.tables if t.startswith(('partner','guide_'))}) - existing
+                missing = (set(Base.metadata.tables) - {'schema_migrations', 'launch_members', 'pilot_reports','security_login_buckets','orli_mapping_profiles','orli_refresh_decisions','document_excel_policies','requirement_policies','launch_order_contexts','business_orders','business_order_launches','approval_stage_policies','approval_stage_assignments','order_dossiers','order_members','order_completeness','session_generations','session_revocations','partner_mail_leases','order_identifications','launch_identifications','document_comments','document_type_assignments','order_requirement_exceptions','order_experiences'} - {t for t in Base.metadata.tables if t.startswith(('partner','guide_'))}) - existing
                 if missing:
                     raise RuntimeError('Base antérieure incomplète : tables manquantes : ' + ', '.join(sorted(missing)))
             else:
@@ -278,6 +278,10 @@ def migrate():
             audit_upgrade(conn)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0031_audit_fixes','d':datetime.now(timezone.utc).isoformat()})
+        if '0032_order_experiences' not in done:
+            order_experience.OrderExperience.__table__.create(bind=conn, checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0032_order_experiences','d':datetime.now(timezone.utc).isoformat()})
         if conn.exec_driver_sql('PRAGMA foreign_key_check').first():
             raise RuntimeError('Relations historiques invalides : migration annulée, corriger la copie de travail avant reprise')
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
