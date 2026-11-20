@@ -63,32 +63,78 @@ function showErr(err){toast(err.message||String(err))}
 function can(action,folder=null){return !!state.me?.admin||state.me?.permissions?.some(p=>p.action===action&&(folder?p.folder===null||p.folder===folder:p.folder===null))}
 function statusTag(s){return `<span class="tag ${s==='À compléter'?'orange':s==='Clôturé'?'green':s==='En validation'?'blue':''}">${e(s)}</span>`}
 function topbar(label){
- return `<header class="topbar atelier-topbar" aria-label="${e(label)}"><button type="button" class="topbar-search" id="global-search" title="Rechercher un dossier">${icon('search')} <span>Rechercher un dossier…</span></button><div class="topbar-actions"><button type="button" class="topbar-icon" id="top-notifications" title="Notifications" aria-label="Voir les notifications">${icon('activity')}</button><button type="button" class="topbar-user" id="top-profile" title="Mon compte" aria-label="Voir mon compte">${e(state.me?.name?.slice(0,2).toUpperCase()||'FT')}</button><span class="atelier-account-name">${e(state.me?.name||'')}</span></div></header>`;
+ return `<header class="topbar october-topbar" aria-label="${e(label)}">
+   <button type="button" class="lc-global-search" id="global-search">${icon('search')}<span>Rechercher un dossier…</span></button>
+   <div class="topbar-actions">
+     <button type="button" class="rail-notifications" id="top-notifications" title="Notifications" aria-label="Voir les notifications">${icon('clock')}</button>
+     <button type="button" class="lc-user-avatar" id="top-profile" aria-label="Voir mon compte">${e(accountInitials())}</button>
+     <span class="lc-top-username">${e(state.me.name)}</span>
+   </div>
+ </header>`;
 }
+
+function accountInitials(){
+ return state.me.name.trim().split(/\s+/).slice(0,2).map(part=>part[0]).join('').toUpperCase();
+}
+
+const openRailGroups=new Set();
+
 function sidebar(){
  const primary=[['dossiers','folder','Dossiers Jaunes'],['clients','users','Clients'],['validations','check','Validations'],...(can('launch.read')?[['experience','file','Mémoire métier']]:[])];
  const workspace=[['orders','file','Commandes'],['home','grid','Vue d’ensemble'],['documents','search','Documents'],['suppliers','users','Fournisseurs'],['receipts','upload','Réceptions'],['launches','layers','Lancements'],['actions','activity','Mes actions'],['notifications','clock','Notifications'],['assistant','layers','Framatex Guide']];
- const tools=[['pilot','info','Recette pilote'],...(state.me.admin?[['orli','file','Imports ORLI'],['admin','users','Administration'],['audit','shield','Journal d’activité']]:[])];
- const items=(list)=>list.map(([view,ico,label])=>`<button class="nav-btn ${state.view===view||(state.view==='detail'&&view==='launches')?'active':''}" data-view="${view}" aria-current="${state.view===view?'page':'false'}">${icon(ico)}<span>${label}</span>${state.view===view?'<span class="nav-current"></span>':''}</button>`).join('');
- return `<aside class="sidebar"><div class="brand"><img class="rail-brand-mark" src="/assets/dossier-jaune-mark.svg" width="36" height="42" alt=""><span class="rail-brand-name">Dossier Jaune<small>par Framatex</small></span></div><nav class="sidebar-nav atelier-primary-nav" aria-label="Navigation principale">${items(primary)}</nav><div class="nav-label nav-label-tools">Gestion</div><nav class="sidebar-nav" aria-label="Gestion et contrôle">${items(tools)}</nav><div class="nav-label nav-label-tools">Espace de travail</div><nav class="sidebar-nav" aria-label="Espace de travail">${items(workspace)}</nav><nav class="sidebar-nav rail-shortcuts" aria-label="Accès rapides"><a class="nav-btn" href="/partners">${icon('users')}<span>Espace partenaires</span></a><a class="nav-btn" href="/search">${icon('search')}<span>Recherche documentaire avancée</span></a></nav><div class="sidebar-assistant ${state.view==='assistant'?'is-selected':''}"><div class="sidebar-assistant-icon">${icon('layers')}</div><strong>Framatex Guide</strong><p>Un raccourci vers les procédures et les bons écrans.</p><button type="button" class="sidebar-assistant-button" id="guide-open">Ouvrir le guide ${icon('arrow')}</button></div><div class="sidebar-bottom"><div class="user"><div class="avatar">${e(state.me.name.slice(0,2).toUpperCase())}</div><div><div class="user-name">${e(state.me.name)}</div><div class="user-role">${e(state.me.roles.join(', '))}</div></div></div><button class="logout" id="logout">${icon('out')} <span>Déconnexion</span></button></div></aside>`;
+ const tools=[['pilot','info','Aide & retours'],...(state.me.admin?[['orli','file','Imports ORLI'],['admin','users','Administration'],['audit','shield','Journal d’activité']]:[])];
+ const items=list=>list.map(([view,ico,label])=>{
+  const active=state.view===view||(state.view==='detail'&&view==='launches');
+  return `<button type="button" class="nav-btn ${active?'active':''}" data-view="${view}" aria-current="${active?'page':'false'}">${icon(ico)}<span>${label}</span>${active?'<span class="nav-current" aria-hidden="true">›</span>':''}</button>`;
+ }).join('');
+ const group=(key,label,ico,links)=>{
+  const open=openRailGroups.has(key)||links.some(([view])=>state.view===view);
+  return `<details class="rail-management" data-rail-group="${key}" ${open?'open':''}>
+    <summary>${icon(ico)}<span>${label}</span><span class="rail-chevron" aria-hidden="true">⌄</span></summary>
+    <nav class="sidebar-nav" aria-label="${label}">${items(links)}${key==='workspace'?'<a class="nav-btn" href="/partners">Espace partenaires</a>':''}</nav>
+  </details>`;
+ };
+ return `<aside class="sidebar sidebar-rail sidebar-light" aria-label="Navigation Dossier Jaune">
+   <div class="rail-brand"><img class="rail-brand-mark" src="/assets/dossier-jaune-mark.svg" width="34" height="42" alt=""><span class="rail-brand-name">Dossier Jaune<small>par Framatex</small></span></div>
+   <button type="button" class="mobile-navigation-toggle" aria-expanded="false" aria-controls="framat-navigation">${icon('grid')} Menu</button>
+   <div class="rail-navigation-content" id="framat-navigation">
+    <nav class="sidebar-nav rail-primary" aria-label="Navigation principale">${items(primary)}</nav>
+    ${group('tools','Gestion','layers',tools)}
+    ${group('workspace','Espace de travail','grid',workspace)}
+    <div class="sidebar-bottom rail-account">
+     <div class="user"><span class="avatar" aria-hidden="true">${e(accountInitials())}</span><span class="user-name" title="${e(state.me.name)}">${e(state.me.name)}</span></div>
+     <button type="button" class="logout" id="logout" title="Déconnexion" aria-label="Déconnexion">${icon('out')}</button>
+    </div>
+   </div>
+ </aside>`;
 }
 function mount(html,label,folderTheme=null){
  const theme=folderTheme||(state.view==='detail'?state.folder:null);
  app.innerHTML=`<div class="app-shell"${['jaune','rose','bleu','vert'].includes(theme)?` data-folder-theme="${theme}"`:''}>${sidebar()}<div class="main">${topbar(label)}<main class="content">${html}</main></div></div>`;
  app.querySelectorAll('[data-view]').forEach(n=>n.addEventListener('click',()=>navigate(n.dataset.view)));
- app.querySelector('#guide-open')?.addEventListener('click',openGuide);
+ app.querySelectorAll('[data-rail-group]').forEach(group=>group.addEventListener('toggle',()=>{
+  if(group.open)openRailGroups.add(group.dataset.railGroup);
+  else openRailGroups.delete(group.dataset.railGroup);
+ }));
+ app.querySelector('.mobile-navigation-toggle').addEventListener('click',event=>{
+  const button=event.currentTarget;
+  const open=button.getAttribute('aria-expanded')!=='true';
+  button.setAttribute('aria-expanded',String(open));
+  button.closest('.sidebar').classList.toggle('is-mobile-open',open);
+ });
  app.querySelector('#top-notifications')?.addEventListener('click',()=>navigate('notifications'));
  app.querySelector('#top-profile')?.addEventListener('click',()=>app.querySelector('.sidebar-bottom')?.scrollIntoView({behavior:'smooth',block:'center'}));
  app.querySelector('#global-search')?.addEventListener('click',async()=>{await navigate('dossiers');app.querySelector('#order-query')?.focus()});
  document.dispatchEvent(new Event('framat:guide-auth'));
- app.querySelector('#logout').addEventListener('click',async()=>{try{await api('/api/auth/logout',{method:'POST'})}catch{}state.me=null;state.detail=null;renderSpaceChoice()});
+ app.querySelector('#logout').addEventListener('click',async()=>{try{await api('/api/auth/logout',{method:'POST'})}catch{}state.me=null;state.detail=null;openRailGroups.clear();renderSpaceChoice()});
 }
 function renderSpaceChoice(){
- overlay.innerHTML='';
+ closeModal();
+ document.dispatchEvent(new Event('framat:guide-auth'));
  app.innerHTML=`<div class="login-page login-rebalanced jauno-space-choice"><main class="login-stage">
   <div class="login-visual" aria-hidden="true"><div class="login-visual-orbit"></div><div class="login-visual-floor"></div><div class="login-folder login-folder-back"></div><div class="login-folder login-folder-middle"></div><div class="login-folder login-folder-front"><span class="login-folder-stripe"></span><span class="login-folder-line"></span><span class="login-folder-line login-folder-line-small"></span><span class="login-folder-dot"></span></div></div>
   <section class="login-form-wrap"><div class="login-auth-content">
-    <div class="login-form-brand"><span class="login-form-brand-icon">${icon('folder')}</span><strong>Framatex</strong></div>
+    <div class="login-form-brand"><span class="login-form-brand-icon"><img class="jauno-brand-mark" src="/assets/dossier-jaune-mark.svg" alt=""></span><strong>Dossier Jaune</strong></div>
     <h1 id="space-title">Choisissez votre espace</h1>
     <div class="login-form jauno-space-actions" role="group" aria-labelledby="space-title">
       <button type="button" class="primary jauno-space-action" data-space="internal">Espace interne</button>
@@ -96,11 +142,11 @@ function renderSpaceChoice(){
       <a class="primary jauno-space-action" href="/partners?space=supplier">Espace fournisseur</a>
     </div>
   </div></section></main></div>`;
- app.querySelector('[data-space="internal"]').addEventListener('click',renderLogin);
+ app.querySelector('[data-space=internal]').addEventListener('click',renderLogin);
 }
 function renderLogin(){overlay.innerHTML='';app.innerHTML=`<div class="login-page login-rebalanced"><main class="login-stage">
   <div class="login-visual" aria-hidden="true"><div class="login-visual-orbit"></div><div class="login-visual-floor"></div><div class="login-folder login-folder-back"></div><div class="login-folder login-folder-middle"></div><div class="login-folder login-folder-front"><span class="login-folder-stripe"></span><span class="login-folder-line"></span><span class="login-folder-line login-folder-line-small"></span><span class="login-folder-dot"></span></div></div>
-  <section class="login-form-wrap"><div class="login-auth-content"><button type="button" class="auth-return" id="change-space">← Changer d’espace</button><div class="login-form-brand"><span class="login-form-brand-icon">${icon('folder')}</span><strong>Framatex</strong></div>
+  <section class="login-form-wrap"><div class="login-auth-content"><button type="button" class="auth-return" id="change-space">← Changer d’espace</button><div class="login-form-brand"><span class="login-form-brand-icon"><img class="jauno-brand-mark" src="/assets/dossier-jaune-mark.svg" alt=""></span><strong>Dossier Jaune</strong></div>
     <h1 id="login-title">Connexion</h1>
     <form id="login-form" class="login-form" aria-labelledby="login-title">
       <div id="login-error" role="alert" aria-live="assertive"></div>
