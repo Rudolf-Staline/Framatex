@@ -595,3 +595,7 @@ body:has(.app-shell) .guide-panel { bottom: 18px; }
   .login-rebalanced .login-stage { border-radius:13px; }
   .login-rebalanced .login-form-brand { margin-bottom:12px; }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .login-rebalanced .jauno-space-action { transition: none; }
+}
