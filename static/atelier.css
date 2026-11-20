@@ -258,3 +258,121 @@ body:has(.app-shell) .entry-shortcuts { display: none; }
   }
   .atelier-textile { display: none; }
 }
+
+.app-shell .atelier-topbar {
+  gap: 1rem;
+  background: #fff;
+}
+.atelier-topbar .topbar-search {
+  width: min(100%, 32rem);
+  justify-content: flex-start;
+  color: #3f4039;
+  background: #f7f7f9;
+  border-color: #e5e5e9;
+  text-align: left;
+}
+.atelier-account-name {
+  color: var(--atelier-ink);
+  font-size: .8rem;
+}
+.app-shell .sidebar {
+  --atelier-paper: #fbf6df;
+}
+.app-shell .atelier-ledger {
+  border: 1px solid #e7e6e1;
+  border-radius: .75rem;
+  overflow: hidden;
+  padding: 0;
+}
+.atelier-status-tabs {
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  padding-inline: .75rem;
+  border-bottom: 1px solid #e7e6e1;
+}
+.atelier-status-tabs button {
+  flex: none;
+  min-height: 2.75rem;
+  padding: .4rem .8rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #52534a;
+}
+.atelier-status-tabs button[aria-pressed="true"] {
+  border-bottom-color: #a27715;
+  color: #252620;
+  font-weight: 700;
+}
+.atelier-ledger .atelier-directory-filters {
+  max-width: none;
+  grid-template-columns: minmax(8rem, 22rem) minmax(6rem, 11rem);
+  justify-content: space-between;
+  align-items: end;
+  padding: .65rem 1rem;
+  margin: 0;
+}
+.atelier-ledger table th {
+  background: #f6f5f8;
+}
+.atelier-ledger :is(td, th) {
+  padding-inline: 1rem;
+}
+.atelier-dossier-link {
+  display: inline-flex;
+  gap: .7rem;
+  align-items: center;
+  padding: 0;
+  color: var(--atelier-ink);
+  background: none;
+  border: 0;
+  text-align: left;
+}
+.atelier-dossier-link:hover strong {
+  text-decoration: underline;
+}
+.atelier-dossier-link small {
+  display: block;
+  color: #595a52;
+}
+.atelier-folder-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  flex: none;
+  color: var(--atelier-gold);
+  background: var(--atelier-soft);
+  border-radius: .45rem;
+}
+.atelier-folder-icon svg {
+  width: 1rem;
+  height: 1rem;
+}
+.atelier-row-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+}
+.atelier-ledger .order-pagination {
+  padding: .65rem 1rem;
+}
+@media (max-width: 760px) {
+  .atelier-account-name { display: none; }
+  .atelier-ledger .atelier-directory-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.sidebar .atelier-primary-nav {
+  margin-top: 1.15rem;
+}
+.sidebar .nav-label-tools {
+  padding-top: .85rem;
+  margin-top: .85rem;
+  border-top: 1px solid var(--atelier-line);
+  letter-spacing: 0;
+  text-transform: none;
+}

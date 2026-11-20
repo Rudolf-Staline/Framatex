@@ -41,6 +41,7 @@ def out(db,row,user):
 @router.get('/api/orders')
 def list_orders(response:Response,q:str=Query('',max_length=200),
                 sort:str=Query('newest',pattern='^(newest|reference|client)$'),
+                launch_status:str=Query('',pattern='^(|En cours|À compléter|En validation|Clôturé)$'),
                 offset:int=Query(0,ge=0),limit:int=Query(100,ge=1,le=100),page:bool=False,
                 user=Depends(get_current_user),db:Session=Depends(get_db)):
     """Bounded SQL page; legacy list consumers retain their item representation."""
@@ -50,6 +51,11 @@ def list_orders(response:Response,q:str=Query('',max_length=200),
     if q.strip():
         term='%'+q.strip()+'%'
         query=query.where(or_(BusinessOrder.reference.ilike(term),Partner.name.ilike(term)))
+    if launch_status:
+        matching_launch=select(BusinessOrderLaunch.order_id).join(Launch).where(
+            BusinessOrderLaunch.order_id==BusinessOrder.id, Launch.status==launch_status,
+            launch_access_clause(user,Launch.id))
+        query=query.where(matching_launch.exists())
     total=db.scalar(select(func.count()).select_from(query.subquery()))
     ordering={'newest':BusinessOrder.created_at.desc(),'reference':BusinessOrder.reference.asc(),'client':Partner.name.asc()}[sort]
     rows=db.execute(query.order_by(ordering,BusinessOrder.id).offset(offset).limit(limit)).all()
