@@ -22,7 +22,7 @@ for (const element of ['id="login-form"','id="login-error"','id="email"','id="pa
   assert(source.includes(element), 'Auth form element missing: '+element);
 }
 assert(source.includes("await api('/api/auth/login'"), 'Login endpoint must stay unchanged');
-assert(source.includes("await navigate('home')"), 'Post-login routing must stay unchanged');
+assert(source.includes("await navigate('dossiers')"), 'Post-login opens the Dossiers Jaunes list');
 assert(page.includes('/assets/design-026.css'), 'Load historical login stylesheet');
 assert(page.indexOf('/assets/design-026.css') > page.indexOf('/assets/design-019.css'), 'Load after blue theme');
 assert(css.includes('/* Framatex 0.26 — Login équilibré'), 'Authentic original 0.26 design expected');

@@ -17,7 +17,7 @@ function context(){
   navigate=async view=>calls.push(view);`,ctx);
  assert.deepEqual(Array.from(ctx.calls),[]);
  events.DOMContentLoaded();await startup;
- assert.deepEqual(Array.from(ctx.calls),['/api/auth/me','paper','home']);
+ assert.deepEqual(Array.from(ctx.calls),['/api/auth/me','paper','dossiers']);
 
  for(const phase of ['detail','supplier-requests']){
   const {ctx}=context();const gate=deferred(),entered=deferred();
