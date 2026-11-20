@@ -71,6 +71,7 @@ body:has(.app-shell) .entry-shortcuts { display: none; }
 .rail-shortcuts { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--atelier-line); }
 .sidebar .sidebar-assistant { background: var(--atelier-soft); border-color: var(--atelier-line); }
 .sidebar .sidebar-assistant::after { border-color: #e8d8aa70; }
+.sidebar .sidebar-assistant > p { color: var(--atelier-ink); }
 
 .app-shell :is(.avatar, .topbar-user, .sidebar-assistant-icon, .sidebar-assistant-button) {
   color: var(--atelier-gold);
