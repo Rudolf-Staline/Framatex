@@ -92,7 +92,8 @@ function sidebar(){
  ];
  const workspace=[
   ['actions','activity','Mes actions'],['launches','layers','Lancements'],
-  ['validations','check','Validations'],['receipts','upload','Réceptions']
+  ['validations','check','Validations'],['receipts','upload','Réceptions'],
+  ['notifications','bell','Notifications']
  ];
  const directories=[
   ['clients','users','Clients'],['suppliers','users','Fournisseurs'],

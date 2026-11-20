@@ -60,7 +60,7 @@ def main():
                         expect(page.locator('#order-count')).to_have_text('1 commande(s) · Page 1')
                         page.get_by_role('button',name='Ouvrir le Dossier Jaune de CMD-NAV-001',exact=True).click()
                         expect(page.get_by_role('heading',name='CMD-NAV-001',exact=True)).to_be_visible()
-                        expect(page.locator('.atelier-textile')).to_be_visible()
+                        expect(page.locator('.atelier-dossier-facts')).to_be_visible()
                         shell = page.locator('.app-shell')
                         expect(shell).to_have_attribute('data-folder-theme', 'jaune')
                         page.locator('[data-order-section=bleu]').click()
