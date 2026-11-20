@@ -2,11 +2,6 @@
 'use strict';
 function openGuide(){return window.FramatexGuide.open()}
 function assistantPage(){return openGuide()}
-function bindInlineAssistant(){
- const form=app.querySelector('#rail-form');
- form?.addEventListener('submit',async event=>{event.preventDefault();await openGuide();await FramatexGuide.search(form.querySelector('input').value)});
- app.querySelectorAll('[data-rail-question]').forEach(b=>b.onclick=async()=>{await openGuide();await FramatexGuide.search(b.dataset.railQuestion)});
-}
 function guideMarkInternal(){
  const main=app.querySelector('main.content');if(!main)return;
  main.dataset.guideTarget=state.view+'-screen';

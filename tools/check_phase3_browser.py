@@ -10,23 +10,11 @@ import time
 import fitz
 import httpx
 from playwright.sync_api import sync_playwright,expect
+from browser_navigation import select_sidebar_view
 
 ROOT=Path(__file__).resolve().parents[1]
 H={'X-Framatex-Request':'1'}
 PWD='BrowserTestPassword2026!'
-
-
-def select_sidebar_view(page, view):
-    sidebar = page.locator('.sidebar')
-    sidebar.wait_for()
-    mobile_toggle = sidebar.get_by_role('button', name='Menu', exact=True)
-    if mobile_toggle.is_visible() and mobile_toggle.get_attribute('aria-expanded') == 'false':
-        mobile_toggle.click()
-    item = sidebar.locator(f'[data-view="{view}"]')
-    group = item.locator('xpath=ancestor::details[1]')
-    if group.count() and group.get_attribute('open') is None:
-        group.locator('summary').click()
-    item.click()
 
 
 def main():
@@ -58,21 +46,21 @@ def main():
                         page.goto(base+'/');expect(page.get_by_role('heading',name='Choisissez votre espace')).to_be_visible();page.get_by_role('button',name='Espace interne').click();page.get_by_role('button',name='Changer d’espace').click();page.get_by_role('button',name='Espace interne').click();page.get_by_label('Adresse email').fill('admin@example.local');page.get_by_label('Mot de passe',exact=True).fill(PWD);page.get_by_role('button',name='Se connecter').click()
                         ledger=page.locator('.atelier-ledger')
                         expect(ledger.get_by_role('button',name='Tous les dossiers')).to_have_attribute('aria-pressed','true')
-                        expect(ledger.locator('#order-count')).to_have_text('2 commande(s) · Page 1')
+                        expect(ledger.locator('#order-count')).to_have_text('2 dossiers · Page 1')
                         expect(ledger.locator('[data-order-status="À compléter"] small')).to_have_text('1')
                         expect(ledger.get_by_role('columnheader',name='Atelier')).to_be_visible()
                         ledger.get_by_role('button',name='Vue grille').click()
                         expect(ledger.locator('.atelier-order-card')).to_have_count(2)
                         ledger.get_by_role('button',name='Vue liste').click()
                         ledger.get_by_role('button',name='À compléter',exact=True).click()
-                        expect(ledger.locator('#order-count')).to_have_text('1 commande(s) · Page 1')
+                        expect(ledger.locator('#order-count')).to_have_text('1 dossier · Page 1')
                         expect(ledger.get_by_role('button',name='Ouvrir le Dossier Jaune de CMD-NAV-001')).to_be_visible()
                         select_sidebar_view(page, 'orders')
                         page.get_by_label('Rechercher une commande ou un client').fill('NAV-001')
-                        expect(page.locator('#order-count')).to_have_text('1 commande(s) · Page 1')
+                        expect(page.locator('#order-count')).to_have_text('1 commande · Page 1')
                         page.get_by_role('button',name='Ouvrir le Dossier Jaune de CMD-NAV-001',exact=True).click()
                         expect(page.get_by_role('heading',name='CMD-NAV-001',exact=True)).to_be_visible()
-                        expect(page.locator('.atelier-textile')).to_be_visible()
+                        expect(page.locator('.atelier-dossier-facts')).to_be_visible()
                         shell = page.locator('.app-shell')
                         expect(shell).to_have_attribute('data-folder-theme', 'jaune')
                         page.locator('[data-order-section=bleu]').click()
@@ -182,13 +170,13 @@ def main():
                         page.screenshot(path=str(ROOT/'artifacts/phase3-order-browser.png'),full_page=True)
                         page.set_viewport_size({'width':1440,'height':960});select_sidebar_view(page, 'orders')
                         page.get_by_role('button',name='Ouvrir le Dossier Jaune de CMD-NAV-002',exact=True).click()
-                        expect(page.get_by_text('Aucun document ne correspond à ces filtres.',exact=True)).to_be_visible()
+                        expect(page.get_by_text('Aucun document dans cette rubrique.',exact=True)).to_be_visible()
                         page.route('**/api/orders?*',lambda route:route.abort('failed'))
                         select_sidebar_view(page, 'orders')
                         expect(page.locator('#order-count')).to_contain_text('Connexion interrompue')
                         page.unroute('**/api/orders?*')
                         select_sidebar_view(page, 'orders')
-                        expect(page.locator('#order-count')).to_have_text('2 commande(s) · Page 1')
+                        expect(page.locator('#order-count')).to_have_text('2 commandes · Page 1')
                         select_sidebar_view(page, 'orli')
                         page.get_by_label('Correspondance des colonnes (JSON)').fill(json.dumps({key:key for key in ('orli_ref','order_ref','client_name','quantity')}))
                         page.get_by_label('Fichier CSV UTF-8 ou XLSX (3 Mo maximum)').set_input_files({'name':'orli-synthetic.csv','mimeType':'text/csv','buffer':b'orli_ref,order_ref,client_name,quantity\nLF-ORLI-001,CMD-NAV-001,Client navigateur,100\n'})
@@ -230,7 +218,7 @@ def main():
                             violations=page.evaluate("async()=>{const r=await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}});return r.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>n.target)}))}")
                             results.append({'screen':'launch-detail','width':width,'violations':violations})
                         page.goto(base+'/search');page.get_by_label('Commande',exact=True).fill('CMD-NAV-001');page.get_by_role('button',name='Rechercher',exact=True).click()
-                        expect(page.locator('#search-status')).to_have_text('2 version(s) autorisée(s) · Page 1')
+                        expect(page.locator('#search-status')).to_have_text('2 versions accessibles · Page 1')
                         for url in ('/search','/partners'):
                             page.goto(base+url)
                             for width in (360,390,768,1440):

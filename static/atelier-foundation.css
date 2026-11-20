@@ -1,0 +1,61 @@
+@font-face {
+  font-family: "DM Sans";
+  src: url("/assets/fonts/dm-sans-400.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DM Sans";
+  src: url("/assets/fonts/dm-sans-700.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+:root {
+  --atelier-font: "DM Sans", Arial, sans-serif;
+  --atelier-ink: #25251f;
+  --atelier-muted: #5f6057;
+  --atelier-canvas: #f7f6f2;
+  --atelier-white: #fff;
+  --atelier-line: #e3dfd5;
+  --atelier-field: #8c887c;
+  --atelier-gold: #f0c548;
+  --atelier-gold-hover: #e7b937;
+  --atelier-gold-ink: #684a0c;
+  --atelier-gold-line: #b28520;
+  --atelier-gold-soft: #fbf2d4;
+  --atelier-focus: #704a06;
+  --atelier-radius: 12px;
+  --atelier-shadow: 0 1px 2px #29271908, 0 4px 18px #29271905;
+  color-scheme: light;
+}
+
+body { font-family: var(--atelier-font); }
+:where(input, select, textarea, button) { font-family: inherit; }
+:where(.atelier-public, .app-shell, .login-rebalanced, #overlay-root, #framat-guide-root) :focus-visible {
+  outline: 2px solid var(--atelier-focus) !important;
+  outline-offset: 3px;
+}
+
+.atelier-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--atelier-ink);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -.045em;
+  text-decoration: none;
+}
+.atelier-brand img { flex: none; }
+.atelier-brand small {
+  display: block;
+  margin-top: 3px;
+  color: var(--atelier-muted);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
