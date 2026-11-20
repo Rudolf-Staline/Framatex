@@ -217,7 +217,7 @@ def main():
                             violations=page.evaluate("async()=>{const r=await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}});return r.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>n.target)}))}")
                             results.append({'screen':'launch-detail','width':width,'violations':violations})
                         page.goto(base+'/search');page.get_by_label('Commande',exact=True).fill('CMD-NAV-001');page.get_by_role('button',name='Rechercher',exact=True).click()
-                        expect(page.locator('#search-status')).to_have_text('1 version(s) autorisée(s) · Page 1')
+                        expect(page.locator('#search-status')).to_have_text('2 version(s) autorisée(s) · Page 1')
                         for url in ('/search','/partners'):
                             page.goto(base+url)
                             for width in (360,390,768,1440):
