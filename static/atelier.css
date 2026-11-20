@@ -201,6 +201,7 @@ body:has(.app-shell) .guide-panel { bottom: 18px; }
 .app-shell .page-lead { margin-block: 8px 0; color: var(--atelier-muted); font-size: 14px; }
 .app-shell :is(h2, h3) { color: var(--atelier-ink); font-family: var(--atelier-font); }
 .app-shell .page-kicker { margin-bottom: 8px; font-weight: 700; letter-spacing: .06em; }
+.app-shell :is(.priority-hint, .sharing-footnote) { color: var(--atelier-muted); }
 .app-shell .panel {
   min-width: 0;
   background: var(--atelier-white);
