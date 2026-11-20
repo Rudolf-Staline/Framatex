@@ -82,7 +82,7 @@ const openRailGroups=new Set();
 function sidebar(){
  const primary=[['dossiers','folder','Dossiers Jaunes'],['clients','users','Clients'],['validations','check','Validations'],...(can('launch.read')?[['experience','file','Mémoire métier']]:[])];
  const workspace=[['orders','file','Commandes'],['home','grid','Vue d’ensemble'],['documents','search','Documents'],['suppliers','users','Fournisseurs'],['receipts','upload','Réceptions'],['launches','layers','Lancements'],['actions','activity','Mes actions'],['notifications','clock','Notifications'],['assistant','layers','Framatex Guide']];
- const tools=[['pilot','info','Aide & retours'],...(state.me.admin?[['orli','file','Imports ORLI'],['admin','users','Administration'],['audit','shield','Journal d’activité']]:[])];
+ const tools=[['pilot','info','Recette pilote'],...(state.me.admin?[['orli','file','Imports ORLI'],['admin','users','Administration'],['audit','shield','Journal d’activité']]:[])];
  const items=list=>list.map(([view,ico,label])=>{
   const active=state.view===view||(state.view==='detail'&&view==='launches');
   return `<button type="button" class="nav-btn ${active?'active':''}" data-view="${view}" aria-current="${active?'page':'false'}">${icon(ico)}<span>${label}</span>${active?'<span class="nav-current" aria-hidden="true">›</span>':''}</button>`;
