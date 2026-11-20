@@ -3,20 +3,37 @@ function orderValue(id){return document.getElementById(id)?.value.trim()||''}
 let dossierNavigation=0;
 // Canonical navigation: order -> unique dossier -> section -> documents.
 async function ordersPage(view='orders'){
- ++dossierNavigation;const appNavigation=++navigationVersion;state.view=view;let page=0,requestSequence=0;const pageSize=20;
- mount(`<div class="page-heading"><div><h1>${view==='dossiers'?'Dossiers Jaunes':'Commandes'}</h1><p>Une commande, un Dossier Jaune unique, quatre rubriques et plusieurs lancements possibles.</p></div>${can('order.create')?'<button class="primary" id="order-create">Créer une commande</button>':''}</div><section class="panel order-panel atelier-directory"><div class="atelier-directory-filters"><label for="order-query">Rechercher une commande ou un client</label><input id="order-query" type="search" maxlength="200"><label for="order-sort">Trier</label><select id="order-sort"><option value="newest">Plus récentes</option><option value="reference">Référence</option><option value="client">Client</option></select></div><div id="order-results"></div><div class="order-pagination"><button id="order-prev">Précédent</button><p id="order-count" role="status"></p><button id="order-next">Suivant</button></div></section>`,view==='dossiers'?'Dossiers Jaunes':'Commandes');
+ ++dossierNavigation;const appNavigation=++navigationVersion;state.view=view;
+ let page=0,requestSequence=0,launchStatus='';const pageSize=20;
+ const dossierList=view==='dossiers';
+ const statuses=[['','Tous les dossiers'],['En cours','En cours'],['À compléter','À compléter'],['En validation','En validation'],['Clôturé','Clôturés']];
+ const statusBar=dossierList?`<nav class="atelier-status-tabs" aria-label="Filtrer par statut de lancement">${statuses.map(([value,label])=>`<button type="button" data-order-status="${value}" aria-pressed="${!value}">${label}</button>`).join('')}</nav>`:'';
+
+ mount(`<div class="page-heading atelier-list-heading"><div><h1>${dossierList?'Dossiers Jaunes':'Commandes'}</h1><p>${dossierList?'Vos dossiers de fabrication, au même endroit.':'Une commande, un Dossier Jaune unique, quatre rubriques et plusieurs lancements possibles.'}</p></div>${can('order.create')?'<button class="primary" id="order-create">Créer une commande</button>':''}</div><section class="panel order-panel atelier-directory ${dossierList?'atelier-ledger':''}">${statusBar}<div class="atelier-directory-filters"><label for="order-query">Rechercher une commande ou un client</label><input id="order-query" type="search" maxlength="200"><label for="order-sort">Trier</label><select id="order-sort"><option value="newest">Plus récentes</option><option value="reference">Référence</option><option value="client">Client</option></select></div><div id="order-results"></div><div class="order-pagination"><button id="order-prev">Précédent</button><p id="order-count" role="status"></p><button id="order-next">Suivant</button></div></section>`,view==='dossiers'?'Dossiers Jaunes':'Commandes');
  const render=async()=>{
   const request=++requestSequence;
   app.querySelector('#order-count').textContent='Chargement…';
   try{
-   const result=await api('/api/orders?'+new URLSearchParams({page:'true',q:orderValue('order-query'),sort:orderValue('order-sort'),offset:String(page*pageSize),limit:String(pageSize)}));
+   const result=await api('/api/orders?'+new URLSearchParams({page:'true',q:orderValue('order-query'),sort:orderValue('order-sort'),...(launchStatus?{launch_status:launchStatus}:{}),offset:String(page*pageSize),limit:String(pageSize)}));
    if(request!==requestSequence||state.view!==view||navigationVersion!==appNavigation)return;
    const subset=result.items;
-   app.querySelector('#order-results').innerHTML=subset.length?`<div class="table-scroll"><table><caption>Commandes autorisées et leur Dossier Jaune</caption><thead><tr><th>Commande</th><th>Client</th><th>Création</th><th class="numeric">Lancements</th><th>Action</th></tr></thead><tbody>${subset.map(r=>`<tr><td>${e(r.reference)}</td><td>${e(r.client_name)}</td><td>${niceDate(r.created_at)}</td><td class="numeric">${r.launches.length}</td><td><button class="secondary" data-order="${e(r.id)}">Ouvrir le Dossier Jaune de ${e(r.reference)}</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">Aucune commande autorisée ne correspond à la recherche.</p>';
+   const dossierRows=subset.map(r=>{
+    const title=r.launches.length===1?r.launches[0].name:r.reference;
+    const states=[...new Set(r.launches.map(l=>l.status).filter(Boolean))];
+    return `<tr><td><button type="button" class="atelier-dossier-link" data-order="${e(r.id)}" aria-label="Ouvrir le Dossier Jaune de ${e(r.reference)}"><span class="atelier-folder-icon">${icon('folder')}</span><span><strong>${e(title)}</strong>${title!==r.reference?`<small>${e(r.reference)}</small>`:''}</span></button></td><td>${e(r.client_name)}</td><td class="numeric">${r.launches.length}</td><td><div class="atelier-row-status">${states.map(statusTag).join('')||'—'}</div></td></tr>`;
+   }).join('');
+
+   app.querySelector('#order-results').innerHTML=subset.length?(dossierList?`<div class="table-scroll"><table><thead><tr><th scope="col">Commande / dossier</th><th scope="col">Client</th><th scope="col" class="numeric">Lancements</th><th scope="col">Statut des lancements</th></tr></thead><tbody>${dossierRows}</tbody></table></div>`:`<div class="table-scroll"><table><caption>Commandes autorisées et leur Dossier Jaune</caption><thead><tr><th>Commande</th><th>Client</th><th>Création</th><th class="numeric">Lancements</th><th>Action</th></tr></thead><tbody>${subset.map(r=>`<tr><td>${e(r.reference)}</td><td>${e(r.client_name)}</td><td>${niceDate(r.created_at)}</td><td class="numeric">${r.launches.length}</td><td><button class="secondary" data-order="${e(r.id)}">Ouvrir le Dossier Jaune de ${e(r.reference)}</button></td></tr>`).join('')}</tbody></table></div>`):'<p class="empty">Aucune commande autorisée ne correspond à la recherche.</p>';
    app.querySelector('#order-count').textContent=`${result.total} commande(s) · Page ${page+1}`;
    app.querySelector('#order-prev').disabled=page===0;app.querySelector('#order-next').disabled=(page+1)*pageSize>=result.total;
    app.querySelectorAll('[data-order]').forEach(b=>b.onclick=()=>orderDossierPage(b.dataset.order).catch(showErr));
   }catch(err){if(request===requestSequence&&state.view===view&&navigationVersion===appNavigation&&app.querySelector('#order-count'))app.querySelector('#order-count').textContent=err.message||'Chargement impossible. Relancez la recherche.'}
+ };
+ const tabs=[...app.querySelectorAll('[data-order-status]')];
+ for(const tab of tabs)tab.onclick=()=>{
+  launchStatus=tab.dataset.orderStatus;page=0;
+  for(const item of tabs)item.setAttribute('aria-pressed',String(item===tab));
+  render();
  };
  let queryTimer;
  app.querySelector('#order-query').oninput=()=>{clearTimeout(queryTimer);queryTimer=setTimeout(()=>{page=0;render()},200)};app.querySelector('#order-sort').onchange=()=>{page=0;render()};
