@@ -123,6 +123,8 @@ def main():
                         cp.locator('#activate button').click();cp.get_by_text('Compte activé. Vous pouvez vous connecter.').wait_for()
                         cp.locator('#login input[name=email]').fill('client@example.local');cp.locator('#login input[name=password]').fill(PWD);cp.locator('#login button').click()
                         cp.get_by_role('heading',name='Commande client navigateur',exact=True).wait_for()
+                        cp.get_by_role('navigation',name='Espace client').get_by_role('link',name='Mes dossiers').click()
+                        assert cp.locator('body').evaluate("(body)=>body.classList.contains('client-atelier')")
                         with cp.expect_download() as download_info:cp.get_by_role('link',name='Télécharger la version publiée').click()
                         download=download_info.value
                         assert Path(download.path()).read_bytes()==b'Publication client fictive'

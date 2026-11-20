@@ -26,6 +26,8 @@ def verify_schema(bind, schema):
             raise RuntimeError('Schéma PostgreSQL absent : initialisation explicite requise')
         current = set(inspector.get_table_names(schema=schema))
         expected = set(Base.metadata.tables)
+        # Allow the preceding schema during rollout of the additive experience table.
+        expected -= {'order_experiences'} - current
         if current != expected:
             raise RuntimeError(f'Schéma PostgreSQL incomplet : absentes={sorted(expected-current)}, inconnues={sorted(current-expected)}')
         revisions = set(conn.execute(text(f'SELECT version FROM "{schema}".schema_migrations')).scalars())
@@ -35,6 +37,8 @@ def verify_schema(bind, schema):
         # queries during cold start on Vercel.
         columns = inspector.get_multi_columns(schema=schema)
         for table in Base.metadata.sorted_tables:
+            if table.name not in expected:
+                continue
             actual = {c['name'] for c in columns.get((schema, table.name), [])}
             expected_columns = set(table.columns.keys())
             if not expected_columns.issubset(actual):
@@ -62,16 +66,30 @@ def bootstrap_schema(bind, schema):
     verify_schema(bind, schema)
 
 
+def upgrade_schema(bind, schema):
+    """Add the order experience table to an existing private schema."""
+    verify_schema(bind, schema)
+    from .order_experience import OrderExperience
+    with bind.begin() as conn:
+        if conn.scalar(text('SELECT current_schema()')) != schema:
+            raise RuntimeError('Le schéma actif ne correspond pas au schéma Framatex')
+        conn.execute(text('SELECT pg_advisory_xact_lock(hashtext(:name))'), {'name': 'framatex-upgrade-'+schema})
+        OrderExperience.__table__.create(conn, checkfirst=True)
+    verify_schema(bind, schema)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation', choices=('verify', 'bootstrap'))
+    parser.add_argument('operation', choices=('verify', 'bootstrap', 'upgrade'))
     args = parser.parse_args()
     if engine.dialect.name != 'postgresql':
         parser.error('DATABASE_URL PostgreSQL requis')
     if args.operation == 'verify':
         verify_schema(engine, PG_SCHEMA)
-    else:
+    elif args.operation == 'bootstrap':
         bootstrap_schema(engine, PG_SCHEMA)
+    else:
+        upgrade_schema(engine, PG_SCHEMA)
     print(f'{args.operation}: schéma {PG_SCHEMA} valide')
 
 

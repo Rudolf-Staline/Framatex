@@ -97,6 +97,8 @@ app.include_router(launch_router)
 
 from .document_routes import router as document_router
 app.include_router(document_router)
+from .pdf_routes import router as pdf_router
+app.include_router(pdf_router)
 
 
 from .employee_admin_routes import router as employee_admin_router
@@ -200,6 +202,8 @@ app.include_router(completeness_policy_router)
 
 from .order_registry_routes import router as order_registry_router
 app.include_router(order_registry_router)
+from .order_experience import router as experience_router
+app.include_router(experience_router)
 
 from .partner_notice_routes import router as partner_notice_router
 app.include_router(partner_notice_router)
