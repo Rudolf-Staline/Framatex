@@ -74,6 +74,7 @@ function topbar(){
    <span class="atelier-space-label">Espace interne</span>
    <div class="topbar-actions">
      <button type="button" class="atelier-global-search" id="global-search" aria-label="Rechercher un dossier">${icon('search')}<span>Rechercher un dossier</span></button>
+     <button type="button" class="atelier-icon-button atelier-guide-trigger" id="top-guide" title="Framatex Guide" aria-label="Ouvrir Framatex Guide" data-guide-target="guide-access">${icon('info')}<span>Guide</span></button>
      <button type="button" class="atelier-icon-button" id="top-notifications" title="Notifications" aria-label="Voir les notifications" aria-current="${state.view==='notifications'?'page':'false'}">${icon('bell')}</button>
    </div>
  </header>`;
@@ -151,6 +152,7 @@ function mount(html,label,folderTheme=null){
   button.setAttribute('aria-expanded',String(open));
   button.closest('.sidebar').classList.toggle('is-mobile-open',open);
  });
+ app.querySelector('#top-guide')?.addEventListener('click',openGuide);
  app.querySelector('#top-notifications')?.addEventListener('click',()=>navigate('notifications'));
  app.querySelector('#global-search')?.addEventListener('click',async()=>{await navigate('dossiers');app.querySelector('#order-query')?.focus()});
  document.dispatchEvent(new Event('framat:guide-auth'));

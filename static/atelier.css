@@ -168,6 +168,8 @@ body { background: var(--atelier-canvas); color: var(--atelier-ink); font: 14px/
 }
 .atelier-space-label { color: var(--atelier-muted); font-size: 13px; font-weight: 700; white-space: nowrap; }
 .atelier-topbar .topbar-actions { gap: 9px; min-width: 0; }
+body:has(.app-shell) #guide-access { display: none; }
+body:has(.app-shell) .guide-panel { bottom: 18px; }
 .atelier-global-search {
   display: inline-flex;
   gap: 8px;
@@ -565,7 +567,9 @@ body { background: var(--atelier-canvas); color: var(--atelier-ink); font: 14px/
   .sidebar-rail:not(.is-mobile-open) .rail-navigation-content { display:none; }
   .sidebar-rail .rail-account { margin-top:8px; }
   .app-shell .atelier-topbar { min-height:57px; padding:8px 16px !important; }
-  .app-shell .content { padding-bottom:78px !important; }
+  .app-shell .content { padding-bottom:40px !important; }
+  .app-shell .page-heading { align-items: flex-start; }
+  .atelier-guide-trigger span { display: none; }
   .atelier-directory-filters { padding:13px; }
   .atelier-status-tabs { gap:15px; padding-inline:13px; }
   .app-shell .atelier-directory :is(td,th) { padding-inline:11px; }
@@ -581,9 +585,9 @@ body { background: var(--atelier-canvas); color: var(--atelier-ink); font: 14px/
   .atelier-document-panel :is(.order-filters,h2,#order-upload) { padding-inline:13px; }
   .atelier-document-panel .order-filters > label { min-width:0; }
 }
-@media (max-width:390px) {
-  .atelier-global-search { max-width:125px; padding-inline:7px; }
-  .atelier-global-search span { overflow:hidden; text-overflow:ellipsis; }
+@media (max-width:430px) {
+  .atelier-global-search { justify-content: center; min-width: 40px; padding-inline: 8px; }
+  .atelier-global-search span { display: none; }
   .atelier-sort-field > span { position:absolute; width:1px; height:1px; clip-path:inset(50%); overflow:hidden; }
 }
 @media (max-width:620px) {

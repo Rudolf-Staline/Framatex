@@ -35,7 +35,7 @@ async function search(){
   const result=await response.json();
   if(request!==requestNumber)return;
   if(!response.ok)throw new Error(typeof result.detail==='string'?result.detail:'Filtres invalides');
-  status.textContent=`${result.total} version(s) autorisée(s) · Page ${Math.floor(pageOffset/25)+1}`;
+  status.textContent=`${result.total} ${result.total>1?'versions accessibles':'version accessible'} · Page ${Math.floor(pageOffset/25)+1}`;
   results.replaceChildren(...result.items.map(resultCard));
   if(!result.items.length){
    const empty=node('p','Aucun document ne correspond à ces critères.');
