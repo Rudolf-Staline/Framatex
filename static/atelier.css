@@ -422,6 +422,7 @@ body:has(.app-shell) .guide-panel { bottom: 18px; }
 .atelier-breadcrumb svg { width:14px; height:14px; vertical-align:middle; }
 .atelier-dossier-heading { display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:14px 26px; margin-bottom:24px; }
 .atelier-dossier-heading .atelier-file-mark { width:46px; height:46px; }
+.atelier-dossier-meta { display:flex; align-items:center; flex-wrap:wrap; gap:12px 24px; }
 .atelier-dossier-facts { display:flex; gap:14px 26px; flex-wrap:wrap; margin:0; }
 .atelier-dossier-facts dt { color:var(--atelier-muted); font-size:12px; }
 .atelier-dossier-facts dd { margin:1px 0 0; font-weight:700; overflow-wrap:anywhere; }

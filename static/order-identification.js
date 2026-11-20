@@ -19,9 +19,15 @@ async function identificationDialog(kind,id){
  };
 }
 function mountOrderIdentification(id,order){
- const heading=app.querySelector('.page-heading');if(!heading)return;
- const button=document.createElement('button');button.className='secondary';button.textContent='Fiche d’identification';
- button.onclick=()=>identificationDialog('order',id).catch(showErr);heading.append(button);
+ const actions=app.querySelector('#order-heading-actions');
+ if(actions){
+  const button=document.createElement('button');
+  button.type='button';
+  button.className='secondary';
+  button.textContent='Fiche d’identification';
+  button.onclick=()=>identificationDialog('order',id).catch(showErr);
+  actions.append(button);
+ }
  app.querySelectorAll('[data-linked-launch]').forEach(link=>{
   const button=document.createElement('button');button.className='link';button.textContent='Fiche du lancement';
   button.setAttribute('aria-label',`Fiche d’identification de ${order.launches.find(l=>l.id===link.dataset.linkedLaunch)?.name||'ce lancement'}`);
