@@ -1,0 +1,170 @@
+/* Dossier Jaune Atelier, from the October navigation rail (b86f321). */
+:root {
+  --atelier-paper: #fff2ce;
+  --atelier-line: #e8d8aa;
+  --atelier-ink: #242620;
+  --atelier-gold: #805b14;
+  --atelier-action: #f4cb21;
+  --atelier-soft: #fff8d9;
+}
+
+.entry-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .4rem 1.25rem;
+  padding: .6rem 1rem;
+  background: var(--atelier-paper);
+  border-bottom: 1px solid var(--atelier-line);
+}
+.entry-shortcuts a { color: var(--atelier-gold); }
+body:has(.app-shell) .entry-shortcuts { display: none; }
+
+.app-shell {
+  --green: var(--atelier-gold);
+  --green-dark: #604109;
+  --green-soft: var(--atelier-soft);
+  --blue: var(--atelier-gold);
+  --blue-light: var(--atelier-paper);
+  --blue-soft: var(--atelier-soft);
+  color: var(--atelier-ink);
+}
+
+.app-shell .sidebar {
+  background: var(--atelier-paper);
+  border-color: var(--atelier-line);
+  box-shadow: 3px 0 18px #20242a12;
+  min-height: 0;
+  height: 100dvh;
+  overscroll-behavior-y: contain;
+}
+
+.sidebar > * { flex-shrink: 0; }
+.sidebar .brand, .sidebar .sidebar-bottom { border-color: var(--atelier-line); }
+.rail-brand-mark { object-fit: contain; flex: none; }
+.rail-brand-name {
+  color: var(--atelier-ink);
+  font: 800 23px/1.12 Arial, Helvetica, sans-serif;
+  letter-spacing: -.65px;
+}
+
+.rail-brand-name small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.sidebar .nav-btn { color: var(--atelier-ink); text-decoration: none; }
+.sidebar .nav-btn:hover, .sidebar .logout:hover { background: #ffffff80; color: var(--atelier-ink); }
+.sidebar .nav-btn.active {
+  background: #fff;
+  color: var(--atelier-gold);
+  border-color: var(--atelier-line);
+  box-shadow: 0 2px 8px #20242a0e;
+}
+.sidebar .nav-current, .topbar .system-dot {
+  background: var(--atelier-gold);
+  box-shadow: 0 0 0 3px var(--atelier-paper);
+}
+.rail-shortcuts { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--atelier-line); }
+.sidebar .sidebar-assistant { background: var(--atelier-soft); border-color: var(--atelier-line); }
+.sidebar .sidebar-assistant::after { border-color: #e8d8aa70; }
+
+.app-shell :is(.avatar, .topbar-user, .sidebar-assistant-icon, .sidebar-assistant-button) {
+  color: var(--atelier-gold);
+  background: var(--atelier-paper);
+  border-color: var(--atelier-line);
+}
+.app-shell :is(.topbar-icon, .topbar-search, .secondary) {
+  background: #fff;
+  border-color: var(--atelier-line);
+}
+.app-shell :is(.sidebar-assistant-button, .topbar-icon, .topbar-search, .secondary):hover {
+  background: var(--atelier-soft);
+  color: var(--atelier-gold);
+}
+
+.app-shell :is(.page-title, .row-title, .user-name) { color: var(--atelier-ink); }
+.app-shell :is(.brand-accent, .command-hero h1 em, .link, .text-arrow) { color: var(--atelier-gold); }
+.app-shell :is(.primary, .hero-cta), #overlay-root .primary {
+  color: var(--atelier-ink);
+  background: var(--atelier-action);
+  border-color: #d6a52b;
+  box-shadow: 0 4px 12px #a871001f;
+}
+.app-shell :is(.primary, .hero-cta):hover, #overlay-root .primary:hover {
+  color: var(--atelier-ink);
+  background: #ebbb36;
+  border-color: #ac7800;
+}
+.app-shell :is(.stat-icon, .executive-card-top svg, .folder-card.selected) {
+  color: var(--atelier-gold);
+  border-color: var(--atelier-line);
+}
+/* Folder colors from Atelier, mapped onto the current launch and order cards. */
+.folder-card:is([data-folder="jaune"], [data-order-section="jaune"]) {
+  --folder-paper: #fff3c8; --folder-selected: #ffe4a1; --folder-border: #c9971c;
+}
+.folder-card:is([data-folder="rose"], [data-order-section="rose"]) {
+  --folder-paper: #fce4ee; --folder-selected: #f7ccdd; --folder-border: #b85c81;
+}
+.folder-card:is([data-folder="bleu"], [data-order-section="bleu"]) {
+  --folder-paper: #e5efff; --folder-selected: #cddfff; --folder-border: #4679bf;
+}
+.folder-card:is([data-folder="vert"], [data-order-section="vert"]) {
+  --folder-paper: #e2f3e7; --folder-selected: #c6e9d2; --folder-border: #347c54;
+}
+.app-shell .folder-card {
+  background: var(--folder-paper, #fff);
+  color: var(--atelier-ink);
+}
+.app-shell .folder-card.selected {
+  background: var(--folder-selected, var(--atelier-soft));
+  border-color: var(--folder-border, var(--atelier-line));
+  box-shadow: inset 0 0 0 1px var(--folder-border, var(--atelier-line));
+}
+
+.app-shell .command-hero {
+  background: #fffdf6;
+  border-color: var(--atelier-line);
+}
+.app-shell .art-document {
+  background: linear-gradient(153deg, #fff, var(--atelier-paper));
+  border-color: var(--atelier-line);
+  box-shadow: 24px 26px 36px #805b141c, 0 8px 0 var(--atelier-line), -14px 14px 0 #fff;
+}
+.app-shell :is(.art-document-icon, .art-point svg, .quiet-symbol) { color: var(--atelier-gold); }
+.app-shell .art-document-line { background: var(--atelier-line); }
+
+.app-shell .art-document-icon {
+  background: var(--atelier-action);
+  border-color: #d6a52b;
+  box-shadow: 0 9px 17px #a8710029;
+}
+.app-shell .art-orbit-outline { border-color: #c9971c; }
+.app-shell :is(.art-point, .executive-card, .executive-card-foot, .home-assistant-rail) {
+  border-color: var(--atelier-line);
+}
+.app-shell :is(.executive-card-foot > span, .premium-table .item-row svg, .completion-dashboard-banner svg) {
+  color: var(--atelier-gold);
+}
+.app-shell :is(.assistant-mark, .assistant-context-brand) {
+  background: var(--atelier-paper);
+  color: var(--atelier-gold);
+}
+.app-shell .chat-online {
+  background: var(--atelier-gold);
+  box-shadow: 0 0 0 3px var(--atelier-paper);
+}
+
+
+@media (max-width: 768px) {
+  .app-shell .sidebar { height: auto; max-height: none; }
+  .sidebar .nav-label { display: block; margin: 8px 0 4px; }
+  .sidebar .sidebar-nav { display: flex; overflow-x: auto; }
+  .sidebar .nav-btn { flex: none; }
+  .rail-brand-name { font-size: 21px; }
+  .rail-shortcuts { margin-top: 6px; }
+}
