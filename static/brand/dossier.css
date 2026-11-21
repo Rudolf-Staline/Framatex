@@ -386,7 +386,8 @@
   .dj-folders { gap: 8px; }
   .dj .dj-folder { padding: 12px; }
   .dj .dj-docs { padding: 12px; }
-  .dj .dj-drop { display: none; }
+  .dj .dj-drop { width: 100%; padding: 0; }
+  .dj .dj-drop .primary { width: 100%; }
   .dj-table-wrap { overflow: visible; }
   .dj-checklist thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .dj-checklist, .dj-checklist tbody, .dj-checklist tr, .dj-checklist td { display: block; width: 100%; }
