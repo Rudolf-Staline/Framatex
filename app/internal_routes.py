@@ -158,12 +158,22 @@ def review_duplicate(launch_id: str, payload: DuplicateReviewPayload,
 
 @router.get("/api/workspace/dashboard")
 def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return dashboard_report(user, db)
+
+
+@router.get('/api/launches/{launch_id}/dashboard')
+def order_dashboard(launch_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from .access import must_access
+    return dashboard_report(user, db, must_access(db, user, launch_id))
+
+
+def dashboard_report(user, db, launch=None):
     must, _, _, _ = guards()
     must(user, "launch.read")
-    from .workspace_routes import priorities
-    launches = visible_launches(db, user)
+    from .workspace_routes import build_priorities
+    launches = [launch] if launch else visible_launches(db, user)
     summaries = [launch_summary(db, user, launch) for launch in launches]
-    active = [row for row in summaries if row["status"] != "Clôturé"]
+    active = summaries if launch else [row for row in summaries if row["status"] != "Clôturé"]
     pending = sum(f.get("pending_validation", 0) for row in active for f in row["folders"])
     missing = [{"launch_id": row["id"], "launch_name": row["name"], "order_ref": row["order_ref"],
                 "client_name": row["client_name"], "article": row["article"],
@@ -179,10 +189,10 @@ def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_
                      if requirement["status"] == "pending_validation"]
     from .duplicates import duplicate_groups
     duplicate_items = []
-    for launch, row in zip(launches, summaries):
-        if row["status"] == "Clôturé":
+    for dossier, row in zip(launches, summaries):
+        if not launch and row["status"] == "Clôturé":
             continue
-        for group in duplicate_groups(db, user, launch):
+        for group in duplicate_groups(db, user, dossier):
             if group["reviewed"]:
                 continue
             latest = group["documents"][-1]
@@ -191,7 +201,12 @@ def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_
                                     "folder": latest["folder"], "title": latest["title"],
                                     "document_id": latest["document_id"], "sha256": group["sha256"],
                                     "status": "duplicate", "documents": group["documents"]})
-    priority_report = priorities(user, db)
+    priority_report = build_priorities(user, db, launch)
+    identification_items = [{'launch_id': row['id'], 'launch_name': row['name'], 'order_ref': row['order_ref'],
+                             'client_name': row['client_name'], 'article': row['article'],
+                             **requirement}
+                            for row in active for folder in row['folders'] for requirement in folder.get('requirements', [])
+                            if requirement['status'] in {'to_verify', 'incompatible'}]
     return {"kpis": {"active_launches": len(active),
                      "complete_launches": sum(r["completion"]["state"] == "complete" for r in active),
                      "incomplete_launches": sum(r["completion"]["state"] == "incomplete" for r in active),
@@ -200,11 +215,14 @@ def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_
                      "inconsistencies": sum(len(r["inconsistencies"]) for r in active),
                      "unacknowledged_changes": sum(r["unacknowledged_changes"] for r in active),
                      "duplicate_documents": len(duplicate_items),
+                     'identification_documents': len(identification_items),
+                     'deposited_documents': sum(f.get('documents', 0) for row in active for f in row['folders']),
                      "unconfigured_launches": sum(r["completion"]["state"] == "unconfigured" for r in active),
                      "partial_launches": sum(r["completion"]["state"] == "partial" for r in active)},
             "launches": summaries, "missing_documents": missing, "priorities": priority_report,
             "pending_validation_documents": pending_items, "duplicate_documents": duplicate_items,
-            "activity": activity(db, user, limit=12)["items"]}
+            'identification_documents': identification_items,
+            "activity": activity(db, user, launch_id=launch.id if launch else None, limit=12)["items"]}
 
 
 def readable_version(db, user, version_id):

@@ -57,6 +57,10 @@ def _add(out: list, launch: Launch, *, kind: str, title: str, description: str, 
 
 @router.get("/api/workspace/priorities")
 def priorities(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return build_priorities(user, db)
+
+
+def build_priorities(user, db, launch=None):
     """Liste consolidée, seulement des éléments dont les sources sont lisibles.
 
     Priorités déterministes : 0 échéance dépassée, 1 anomalie/action à traiter,
@@ -67,17 +71,19 @@ def priorities(user: User = Depends(get_current_user), db: Session = Depends(get
     today = datetime.now(ZoneInfo("Africa/Casablanca")).date()
     horizon = today + timedelta(days=7)
     from .access import visible
-    launches = visible(db, user, db.scalars(select(Launch).order_by(Launch.created_at.desc())).all())
+    launches = [launch] if launch else visible(db, user, db.scalars(select(Launch).order_by(Launch.created_at.desc())).all())
     items = []
-    visible_launches = [l for l in launches if l.status != "Clôturé"]
+    visible_launches = launches if launch else [l for l in launches if l.status != "Clôturé"]
     for launch in visible_launches:
         report = evaluate(db, launch, user, permitted)
         for row in report.get("rows", []):
-            if row["status"] not in ("missing", "pending_validation"):
+            labels = {'missing': ('missing', 'Pièce manquante'), 'pending_validation': ('validation', 'Validation à obtenir'),
+                      'to_verify': ('identification', 'Type à vérifier'), 'incompatible': ('identification', 'Type incompatible')}
+            if row['status'] not in labels:
                 continue
-            kind = "missing" if row["status"] == "missing" else "validation"
+            kind, label = labels[row['status']]
             _add(items, launch, kind=kind,
-                 title=("Pièce manquante : " if kind == "missing" else "Validation à obtenir : ") + row["title"],
+                 title=f'{label} : {row["title"]}',
                  description=f"Sous-dossier {row['folder'].capitalize()} · {row['document_type']}",
                  rank=1, area="documents", action="open_launch", item_id=row["id"],
                  folder=row["folder"], document_id=row["documents"][0]["id"] if row["documents"] else None)

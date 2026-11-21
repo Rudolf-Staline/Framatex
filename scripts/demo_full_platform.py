@@ -168,7 +168,7 @@ def full_journey(qa, browser, base, admin_password, captures):
             assert 'REF-DEMO-UI' in summary and '720 pièces' in summary, summary
             # Profil standard appliqué automatiquement, étape Préparation, 4 checklists.
             assert 'Préparation' in summary, summary
-            assert adm.locator('.dj-checklist .dj-row').count() == 10
+            assert adm.locator('#dj-panel-documents .dj-checklist').count() == 0
             order = next(r for r in admin.context.request.get(base + '/api/admin/client-order-requests').json() if r['article'] == 'Chemise démonstration Envoyée')
             once = admin.context.request.post(base + f'/api/admin/client-order-requests/{order["id"]}/launch', headers=recette.H)
             assert once.status == 200
@@ -191,28 +191,31 @@ def full_journey(qa, browser, base, admin_password, captures):
             # Toute la checklist est visible dès la création : 22 lignes sur les 4 sous-dossiers,
             # chaque pièce obligatoire absente est « Manquant », quelle que soit l'étape.
             total = 0
+            adm.click('.dj-folder[data-folder="jaune"]')
             for slug in ('jaune', 'rose', 'bleu', 'vert'):
-                adm.click(f'.dj-folder[data-folder="{slug}"]')
-                adm.wait_for_selector(f'.dj-folder.selected[data-folder="{slug}"]')
+                adm.click(f'[data-dj-folder="{slug}"]')
+                adm.wait_for_selector(f'[data-folder-panel="{slug}"]')
                 total += adm.locator('.dj-checklist:not(.dj-other-table) .dj-row').count()
             assert total == 22, total
             stage_words = adm.locator('.dj').inner_text()
             assert 'Exigible dès' not in stage_words, 'mention d’étape encore affichée'
-            adm.click('.dj-folder[data-folder="jaune"]')
+            adm.click('[data-dj-folder="jaune"]')
             # C. Calcul du besoin absent → Manquant ; D. Test tissu absent → Manquant dès la création.
             assert state_of('Calcul du besoin') == 'Manquant', state_of('Calcul du besoin')
             assert state_of('Test tissu') == 'Manquant', state_of('Test tissu')
             # L'étape de la commande reste un suivi modifiable dans l'interface.
+            adm.click('#dj-folders-back')
             adm.click('#dj-edit-phase')
             adm.select_option('#c-phase', 'approvisionnement')
             adm.locator('#context-form button[type=submit]').click()
-            adm.wait_for_selector('#ops-launch-summary:has-text("Approvisionnement")')
+            adm.wait_for_selector('#ops-launch-summary')
+            assert admin.context.request.get(base + f'/api/launches/{launch_id}/completeness').json()['phase'] == 'approvisionnement'
             # A. Tableau de bord → Documents manquants → Réception → Bon de livraison → bonne ligne.
             nav(adm, 'home')
             adm.click('[data-dash-filter="rose"]')
             line = adm.locator('#ops-missing tr', has_text='Bon de livraison').filter(has=adm.locator(f'[data-ops-target*="{launch_id}"]'))
             line.locator('[data-ops-target]').click()
-            adm.wait_for_selector('.dj-folder.selected[data-folder="rose"]')
+            adm.wait_for_selector('[data-folder-panel="rose"]')
             adm.wait_for_selector('.dj-row:has-text("Bon de livraison") button:focus')
             assert state_of('Bon de livraison') == 'Manquant'
             admin.check_page('parcours-tableau-de-bord-vers-bon-de-livraison')
@@ -238,7 +241,7 @@ def full_journey(qa, browser, base, admin_password, captures):
             delivery = next(r for r in report['rows'] if r['title'] == 'Bon de livraison')
             assert delivery['status'] == 'present' and len(delivery['documents']) == 1 and delivery['documents'][0]['version'] == 2
             # E. Fiche de prix déposée → En validation → validée dans l'interface → Présent.
-            adm.click('.dj-folder[data-folder="jaune"]')
+            adm.click('[data-dj-folder="jaune"]')
             row('Fiche de prix').locator('[data-dj-upload]').click()
             adm.locator('#ops-file').set_input_files({'name': 'prix.txt', 'mimeType': 'text/plain', 'buffer': b'Fiche de prix'})
             adm.locator('#ops-upload-form button[type=submit]').click()
@@ -257,7 +260,7 @@ def full_journey(qa, browser, base, admin_password, captures):
             # puis décision motivée → la ligne redevient « Présent » (la complétude n'est jamais faussée).
             launch_id = adm.evaluate('state.detail.id')
             row = lambda title: adm.locator('.dj-row', has_text=title).first
-            adm.click('.dj-folder[data-folder="rose"]')
+            adm.click('[data-dj-folder="rose"]')
             blob = b'Email logistique identique ' + secrets.token_bytes(8)
             for name in ('arrivee-lot.txt', 'arrivee-lot-copie.txt'):
                 adm.click('#upload-doc')
@@ -266,15 +269,17 @@ def full_journey(qa, browser, base, admin_password, captures):
                 if adm.locator('#dj-separate').count():
                     adm.check('#dj-separate')
                 adm.locator('#ops-file').set_input_files({'name': name, 'mimeType': 'text/plain', 'buffer': blob})
+                adm.locator('#du-justification').fill('Courriel logistique lu et vérifié pendant la recette.')
                 adm.locator('#ops-upload-form button[type=submit]').click()
                 adm.wait_for_selector('#ops-upload-form', state='detached')
             adm.wait_for_selector('.dj-row:has-text("Emails réception / logistique") .dj-state:has-text("Doublon détecté")')
+            adm.click('#dj-folders-back')
             assert adm.locator('.dj-folder[data-folder="rose"] .is-duplicate').count()
             nav(adm, 'home')
             adm.click('[data-dash-state="duplicate"]')
             line = adm.locator('#ops-missing tr', has_text='Doublon détecté').filter(has=adm.locator(f'[data-ops-target*="{launch_id}"]'))
             line.first.locator('[data-ops-target]').click()
-            adm.wait_for_selector('.dj-folder.selected[data-folder="rose"]')
+            adm.wait_for_selector('[data-folder-panel="rose"]')
             adm.wait_for_selector('.dj-row[data-state="duplicate"] button:focus')
             admin.check_page('parcours-doublon-detecte')
             adm.locator('.dj-row[data-state="duplicate"] [data-dj-duplicate]').first.click()
@@ -348,9 +353,10 @@ def width_tour(qa, browser, base, admin_password, client_email, client_pw, captu
             page.wait_for_selector('#ops-launch-summary')
             assert page.locator('.folder-card').count() == 4
             view.check_page('framatex-dossier-jaune')
+            page.click('.folder-card[data-folder="jaune"]')
             for folder in ('rose', 'bleu', 'vert'):
-                page.click(f'.folder-card[data-folder="{folder}"]')
-                page.wait_for_selector(f'.folder-card.selected[data-folder="{folder}"]')
+                page.click(f'[data-dj-folder="{folder}"]')
+                page.wait_for_selector(f'[data-folder-panel="{folder}"]')
                 view.check_page(f'framatex-sous-dossier-{folder}')
         qa.run('Navigateur', f'{width} px : landing et entrée Client sans défilement horizontal', public)
         qa.run('Navigateur', f'{width} px : Espace Client (demandes, documents demandés et transmis, Mes documents, compte)', client_pages)

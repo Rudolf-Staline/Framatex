@@ -128,7 +128,7 @@ def extra_actions(db, user, launches):
         for row in quality_report(launch.id, user, db)["rows"]:
             if row["status"] not in {"difference", "unit_mismatch", "ambiguous"}:
                 continue
-            if row.get("decision", {}).get("status") == "justified":
+            if (row.get("decision") or {}).get("status") == "justified":
                 continue
             pair = row["pair"][0] if row["pair"] else {}
             items.append(action(launch, "quality:" + row["rule_id"], "Incohérence : " + row["name"],

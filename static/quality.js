@@ -2,6 +2,12 @@
 // Incrément 0.4 — deux contrôles complémentaires, sans décision automatique.
 function qualityStatus(s){return ({consistent:'Cohérent',difference:'Écart à examiner',unavailable:'À renseigner',ambiguous:'Source ambiguë',unit_mismatch:'Unités à vérifier'})[s]||s}
 function qualityTag(s){return `<span class="tag ${s==='consistent'?'green':s==='difference'||s==='unit_mismatch'?'orange':'blue'}">${e(qualityStatus(s))}</span>`}
+function qualitySource(source) {
+  return `<div><button class="link" data-quality-source="${e(source.document_id)}" data-quality-version="${e(source.version_id)}">${e(source.document_title)} · V${source.version}</button>
+    <strong>${source.value === null ? 'Valeur absente' : `${e(source.value)} ${e(source.unit)}`}</strong>
+    ${source.provenance ? `<span>${e(source.provenance)}</span>` : ''}
+    ${source.source_excerpt ? `<small>${e(source.source_excerpt)}</small>` : ''}</div>`;
+}
 function renderQuality(){
  const results=state.qualityReport?.rows||[], inspections=state.excelInspections||[];
  const differences=results.filter(r=>r.status==='difference'&&r.decision?.status!=='justified').length;
@@ -13,7 +19,7 @@ function renderQuality(){
   <div class="quality-grid"><div class="panel quality-card">
     <div class="section-heading workflow-subheading"><h3>Cohérence entre documents</h3>${docs.length?`<button id="quality-add-data" class="secondary tiny">${icon('plus')} Relever une valeur</button>`:''}</div>
     <p class="workflow-help">Compare deux types de pièces d’un même lancement. Les valeurs doivent être relevées depuis les versions exactes.</p>
-    ${results.length?results.map(r=>`<div class="quality-item"><div class="quality-row"><strong>${e(r.name)}</strong>${qualityTag(r.status)}</div><div class="workflow-meta">${e(r.left_doc_type)} · ${e(r.right_doc_type)} · tolérance ${e(r.tolerance)}</div>${r.pair.length?`<div class="quality-pair">${r.pair.map(p=>`<div><span>${e(p.document_title)} · v${p.version}</span><strong>${p.value!==null?`${e(p.value)} ${e(p.unit)}`:'Valeur absente'}</strong></div>`).join('')}</div>`:''}<p class="workflow-help">${e(r.reason)}</p>${r.decision?`<div class="workflow-note">${e(r.decision.status==='justified'?'Écart justifié':'Correction demandée')} : ${e(r.decision.note)}</div>`:''}${r.status==='difference'&&r.can_review?`<button class="secondary tiny" data-quality-decision="${e(r.rule_id)}">Consigner la vérification</button>`:''}</div>`).join(''):`<div class="workflow-empty">Aucune comparaison définie ou visible. ${state.me?.admin?'Configurez une règle pour démarrer.':''}</div>`}
+    ${results.length?results.map(r=>`<div class="quality-item"><div class="quality-row"><strong>${e(r.name)}</strong>${qualityTag(r.status)}</div><div class="workflow-meta">${e(r.left_doc_type)} · ${e(r.right_doc_type)} · tolérance ${e(r.tolerance)}</div>${r.pair.length?`<div class="quality-pair">${r.pair.map(qualitySource).join('')}</div>`:''}<p class="workflow-help">${e(r.reason)}${r.delta != null && r.status === 'difference' ? ' · écart de ' + e(r.delta) + ' ' + e(r.pair[0].unit) : ''}</p>${r.decision?`<div class="workflow-note">${e(r.decision.status==='justified'?'Écart justifié':'Correction demandée')} : ${e(r.decision.note)}</div>`:''}${r.status==='difference'&&r.can_review?`<button class="secondary tiny" data-quality-decision="${e(r.rule_id)}">Consigner la vérification</button>`:''}</div>`).join(''):`<div class="workflow-empty">Aucune comparaison définie ou visible. ${state.me?.admin?'Configurez une règle pour démarrer.':''}</div>`}
     ${state.me?.admin?`<button class="link" id="quality-new-rule" style="margin-top:12px">${icon('plus')} Configurer une comparaison</button>`:''}
   </div><div class="panel quality-card"><div class="section-heading workflow-subheading"><h3>Système immunitaire Excel</h3><span class="tag">Analyse statique</span></div>
   <p class="workflow-help">Inspection lors du dépôt d’un .xlsx ; comparaison des formules entre deux versions du même document. Aucun calcul Excel n’est exécuté.</p>
@@ -21,21 +27,22 @@ function renderQuality(){
   </div></div><p class="workflow-foot">Les divergences et signaux Excel demandent une vérification humaine. Ils ne prouvent pas à eux seuls une erreur métier.</p></section>`;
 }
 function bindQuality(){
- app.querySelector('#quality-add-data')?.addEventListener('click',qualityRecordData);
- app.querySelector('#quality-new-rule')?.addEventListener('click',qualityNewRule);
+ app.querySelectorAll('[data-quality-source]').forEach(button=>button.addEventListener('click',()=>operationsDocument(button.dataset.qualitySource,button.dataset.qualityVersion).catch(showErr)));
+ app.querySelector('#quality-add-data')?.addEventListener('click',()=>qualityRecordData().catch(showErr));
+ app.querySelector('#quality-new-rule')?.addEventListener('click',()=>qualityNewRule().catch(showErr));
  app.querySelectorAll('[data-quality-decision]').forEach(el=>el.addEventListener('click',()=>qualityDecision(el.dataset.qualityDecision)));
 }
-function qualityRecordData(){
+async function qualityRecordData(){
  const docs=(state.detail?.folders||[]).filter(f=>f.can_read&&f.can_write).flatMap(f=>f.documents).filter(d=>d.latest);
- const fields=state.workflowFields||[];
+ const fields=await api('/api/quality/fields');
  modal('Relever une valeur documentaire',`<p class="modal-desc">Une valeur est conservée sur la version courante du document. Elle ne peut pas être écrasée : une révision nécessite une nouvelle version documentaire.</p><form id="quality-data-form"><div class="field"><label>Document · version</label><select id="qd-version">${docs.map(d=>`<option value="${e(d.latest.id)}">${e(d.title)} · ${e(d.doc_type)} · v${d.latest.number}</option>`).join('')}</select></div><div class="field"><label>Champ à comparer</label><select id="qd-field">${fields.map(f=>`<option value="${e(f.key)}">${e(f.label)}</option>`).join('')}</select></div><div class="two-fields"><div class="field"><label>Valeur</label><input id="qd-value" required inputmode="decimal" placeholder="Ex. 1450"></div><div class="field"><label>Unité</label><input id="qd-unit" required maxlength="30" placeholder="pièce"></div></div><div class="modal-actions"><button type="button" class="secondary" id="qd-cancel">Annuler</button><button type="submit" class="primary">Enregistrer la valeur</button></div></form>`,true);
  overlay.querySelector('#qd-cancel').onclick=closeModal;
  const field=overlay.querySelector('#qd-field');const unit=overlay.querySelector('#qd-unit');
  const unitFromField=()=>{unit.value=fields.find(f=>f.key===field.value)?.suggested_unit||''};field.onchange=unitFromField;unitFromField();
  overlay.querySelector('#quality-data-form').onsubmit=async ev=>{ev.preventDefault();try{await api('/api/document-versions/'+val('qd-version')+'/data',{method:'POST',body:JSON.stringify({field_key:val('qd-field'),value:val('qd-value'),unit:val('qd-unit')})});closeModal();toast('Valeur documentaire enregistrée');await openLaunch(state.detail.id,state.folder)}catch(err){showErr(err)}};
 }
-function qualityNewRule(){
- const fields=state.workflowFields||[];
+async function qualityNewRule(){
+ const fields=await api('/api/quality/fields');
  modal('Configurer une comparaison inter-documents',`<p class="modal-desc">Choisissez deux types documentaires distincts et la valeur à comparer. Les documents doivent appartenir au même lancement.</p><form id="quality-rule-form"><div class="field"><label>Nom de la règle</label><input id="qr-name" required minlength="3" maxlength="140" placeholder="Ex. Quantité : lancement provisoire / définitif"></div><div class="field"><label>Champ métier</label><select id="qr-field">${fields.map(f=>`<option value="${e(f.key)}">${e(f.label)}</option>`).join('')}</select></div><div class="two-fields"><div class="field"><label>Document A : type exact</label><input id="qr-left-type" required maxlength="100" placeholder="Lancement provisoire"></div><div class="field"><label>Document B : type exact</label><input id="qr-right-type" required maxlength="100" placeholder="Lancement définitif"></div></div><div class="two-fields"><div class="field"><label>Rubrique A</label><select id="qr-left-folder">${['jaune','rose','bleu','vert'].map(x=>`<option value="${x}">${x}</option>`).join('')}</select></div><div class="field"><label>Rubrique B</label><select id="qr-right-folder">${['jaune','rose','bleu','vert'].map(x=>`<option value="${x}">${x}</option>`).join('')}</select></div></div><div class="field"><label>Tolérance absolue</label><input id="qr-tolerance" inputmode="decimal" required value="0"></div><div class="modal-actions"><button type="button" class="secondary" id="qr-cancel">Annuler</button><button class="primary" type="submit">Créer la règle</button></div></form>`,true);
  overlay.querySelector('#qr-cancel').onclick=closeModal;
  overlay.querySelector('#quality-rule-form').onsubmit=async ev=>{ev.preventDefault();try{await api('/api/admin/quality-rules',{method:'POST',body:JSON.stringify({name:val('qr-name'),field_key:val('qr-field'),left_doc_type:val('qr-left-type'),right_doc_type:val('qr-right-type'),left_folder:val('qr-left-folder'),right_folder:val('qr-right-folder'),tolerance:val('qr-tolerance')})});closeModal();toast('Comparaison créée');await openLaunch(state.detail.id,state.folder)}catch(err){showErr(err)}};

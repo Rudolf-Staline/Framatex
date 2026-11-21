@@ -13,8 +13,9 @@ const DJ_FOLDERS = {
 // États affichés d'une ligne. « Doublon détecté » se superpose à l'état du moteur de
 // complétude (la pièce reste présente) tant que le doublon n'est pas examiné.
 const DJ_STATES = {
-  present: ['Présent', 'ok'], missing: ['Manquant', 'missing'], pending_validation: ['En validation', 'pending'],
-  exception: ['Exception', 'exception'], duplicate: ['Doublon détecté', 'duplicate'], not_due: ['Non applicable', 'idle'],
+  present: ['Présent et conforme', 'ok'], missing: ['Manquant', 'missing'], pending_validation: ['En validation métier', 'pending'],
+  to_verify: ['Déposé — à vérifier', 'pending'], incompatible: ['Type documentaire incompatible', 'missing'],
+  exception: ['Exception justifiée', 'exception'], duplicate: ['Doublon détecté', 'duplicate'], not_due: ['Non applicable', 'idle'],
 };
 const DJ_TABS = [['documents', 'Documents'], ['controles', 'Contrôles'], ['communication', 'Communication'], ['historique', 'Historique']];
 const DJ_MODULES = {
@@ -58,7 +59,7 @@ const DJ_ORDER = ['Dossier technique client', 'Commande client', 'Lancement prov
   'Document transport', 'Justificatif de dédouanement', 'Facture FRAMATEX', 'Pièce de facturation associée', 'Avoir / correction de facture'];
 
 function djInitialUi() {
-  return {tab: 'documents', module: {controles: 'completude', communication: 'demande', historique: 'activite'}, highlight: null};
+  return {folderView: false, tab: 'documents', module: {controles: 'completude', communication: 'demande', historique: 'activite'}, highlight: null};
 }
 state.dj = djInitialUi();
 
@@ -79,19 +80,22 @@ async function djLoadExtras(id) {
 }
 
 const djOriginalOpenLaunch = openLaunch;
-openLaunch = async function(id, folder = state.folder, target = null) {
+openLaunch = async function(id, folder = null, target = null) {
   const sameDossier = state.detail?.id === id;
+  const loadToken = Symbol();
+  state.djLoadToken = loadToken;
   state.djSuspend = true;
   let extras;
   try {
-    const pending = djLoadExtras(id);
-    await djOriginalOpenLaunch(id, folder || 'jaune');
-    extras = await pending;
+    [, extras] = await Promise.all([djOriginalOpenLaunch(id, folder || 'jaune', loadToken), djLoadExtras(id)]);
   } finally {
-    state.djSuspend = false;
+    if (state.djLoadToken === loadToken) state.djSuspend = false;
   }
+  if (state.djLoadToken !== loadToken) return;
   Object.assign(state, extras);
   if (!sameDossier) state.dj = djInitialUi();
+  state.dj.folderView = Boolean(folder);
+  if (!folder) state.dj.tab = 'documents';
   state.dj.highlight = null;
   if (target) djApplyTarget(target);
   renderDetail();
@@ -110,12 +114,13 @@ function djApplyTarget(target) {
     || rows.find(r => target.title && r.folder === state.folder && r.title === target.title);
   if (rule) {
     state.folder = rule.folder;
+    state.dj.folderView = true;
     state.dj.tab = 'documents';
     state.dj.highlight = rule.id;
   } else if (target.row_document) {
     // Pièce hors checklist : ligne « Autres pièces » de son sous-dossier.
     const folder = state.detail.folders.find(f => (f.documents || []).some(doc => doc.id === target.row_document));
-    if (folder) { state.folder = folder.slug; state.dj.tab = 'documents'; state.dj.highlight = 'doc:' + target.row_document; }
+    if (folder) { state.folder = folder.slug; state.dj.folderView = true; state.dj.tab = 'documents'; state.dj.highlight = 'doc:' + target.row_document; }
   }
 }
 
@@ -144,6 +149,7 @@ function djFolderStats(slug) {
     present: due.filter(r => r.status === 'present').length,
     missing: due.filter(r => r.status === 'missing').length,
     pending: rows.filter(r => r.status === 'pending_validation').length,
+    verification: rows.filter(r => ['to_verify', 'incompatible'].includes(r.status)).length,
     duplicates: (state.djDuplicates || []).filter(g => !g.reviewed && g.documents.some(d => d.folder === slug)).length,
     upcoming: rows.filter(r => r.required !== false && !r.due).length,
   };
@@ -174,10 +180,10 @@ function djHeader() {
   const facts = [
     djFact('Commande', e(d.order_ref || '—')),
     djFact('Client', e(d.client_name || '—')),
-    djFact('Modèle / article', e(s.article || '—')),
-    djFact('Quantité', s.quantity ? `${e(s.quantity)} pièces` : '—'),
+    ...(s.article ? [djFact('Modèle / article', e(s.article))] : []),
+    ...(s.quantity ? [djFact('Quantité', `${e(s.quantity)} pièces`)] : []),
     djFact(request ? 'Date souhaitée' : 'Ouvert le', e(date)),
-    djFact('Référence client', e(request?.reference_client || '—')),
+    ...(request?.reference_client ? [djFact('Référence client', e(request.reference_client))] : []),
     ...(d.orli_ref ? [djFact('Référence ORLI', e(d.orli_ref))] : []),
     djFact('État', statusTag(d.status)),
     ...(c.configured ? [djFact('Étape de la commande', `${e(phaseLabel(c.phase))}${c.can_change_context ? ' <button class="link dj-fact-link" id="dj-edit-phase">Changer</button>' : ''}`)] : []),
@@ -193,49 +199,50 @@ function djHeader() {
       </div>`
     : `<div class="dj-progress dj-progress-empty"><span class="dj-label">Complétude</span><span>Aucune checklist associée pour l’instant.</span>
         ${c.can_change_context ? `<button class="secondary tiny" id="dj-apply-standard">Appliquer la checklist standard</button>` : ''}</div>`;
-  const anyWritable = d.folders.some(f => f.can_write);
+  const selected = state.dj.folderView && DJ_FOLDERS[state.folder];
   return `<div class="page-heading dj-head">
       <div class="dj-head-main">
-        <button class="link dj-back" id="back-launches">${icon('back')} Commandes</button>
-        <p class="dj-eyebrow">Dossier Jaune</p>
-        <h1 class="page-title dj-title">${e(d.name)}</h1>
+        <nav class="dj-crumb" aria-label="Fil d’Ariane"><button class="link" id="back-launches">Commandes et lancements</button>
+          <span aria-hidden="true">›</span>${selected ? `<button class="link" id="dj-return-order">${e(d.order_ref || d.name)}</button><span aria-hidden="true">›</span><span aria-current="page">${djFolderTitle(state.folder)}</span>` : `<span aria-current="page">${e(d.order_ref || d.name)}</span>`}</nav>
+        <h1 class="page-title dj-title" tabindex="-1">${selected ? djFolderTitle(state.folder) : e(d.order_ref || d.name)}</h1>
+        ${selected ? `<p class="dj-subtitle">${e(selected.name)} · ${e(d.order_ref || d.name)}</p>` : d.order_ref && d.name !== d.order_ref ? `<p class="dj-subtitle">${e(d.name)}</p>` : ''}
       </div>
       <div class="dj-head-actions">
-        ${anyWritable ? `<button class="primary" id="upload-doc">${icon('upload')} Déposer un document</button>` : ''}
-        ${d.can_update ? `<button class="secondary" id="ops-edit">Suivi de la commande</button><button class="secondary" id="edit-launch">${icon('pencil')} Modifier</button>` : ''}
+        ${selected ? `<button class="secondary" id="dj-folders-back">${icon('back')} Tous les sous-dossiers</button>` : `<button class="primary" id="dj-order-dashboard">${icon('grid')} Tableau de bord de la commande</button>`}
+        ${!selected && d.can_update ? `<button class="secondary" id="ops-edit">Suivi</button><button class="secondary" id="edit-launch">${icon('pencil')} Modifier</button>` : ''}
       </div>
     </div>
     <section id="ops-launch-summary" class="dj-summary" aria-label="Commande">
-      <dl class="dj-facts">${facts}</dl>
-      ${request ? `<p class="dj-origin ops-client-origin">Ouvert depuis la demande Client <strong>${e(request.request_number)}</strong> de ${e(request.client)} · <button class="link" data-dj-goto="communication:demande">Voir la demande</button></p>` : ''}
-      ${progress}
+      ${selected ? `<p class="dj-folder-context">${[d.order_ref || d.name, d.client_name, s.article, s.quantity ? `${s.quantity} pièces` : '', d.status].filter(Boolean).map(e).join(' · ')}</p>` : `<dl class="dj-facts">${facts}</dl>
+        ${request ? `<p class="dj-origin ops-client-origin">Ouvert depuis la demande Client <strong>${e(request.request_number)}</strong> de ${e(request.client)} · <button class="link" data-dj-goto="communication:demande">Voir la demande</button></p>` : ''}
+        ${progress}`}
     </section>`;
 }
+
+function djFolderTitle(slug) { return `Sous-dossier ${DJ_FOLDERS[slug].color}`; }
 
 function djFolderCards() {
   return `<div class="dj-folders" aria-label="Sous-dossiers">${state.detail.folders.map(folder => {
     const meta = DJ_FOLDERS[folder.slug];
-    const selected = folder.slug === state.folder;
+    const heading = `<span class="dj-folder-top"><span class="dj-folder-icon">${icon('folder')}</span><span><strong class="dj-folder-name">${djFolderTitle(folder.slug)}</strong><span class="dj-folder-function">${e(meta.name)}</span></span></span>`;
     if (!folder.can_read) {
-      return `<button class="folder-card dj-folder is-locked ${selected ? 'selected' : ''}" data-folder="${folder.slug}" aria-pressed="${selected}">
-        <span class="dj-folder-top"><span class="dj-folder-name">${e(meta.name)}</span><span class="dj-folder-code">${meta.color} · ${meta.order}</span></span>
-        <span class="dj-folder-meta">${icon('lock')} Accès restreint</span></button>`;
+      return `<article class="folder-card dj-folder is-locked" data-folder="${folder.slug}">${heading}<span class="dj-folder-meta">${icon('lock')} Accès restreint</span></article>`;
     }
     const st = djFolderStats(folder.slug);
     const ratio = st.due ? Math.round(100 * st.present / st.due) : 0;
     const count = st.due
       ? `<strong class="dj-folder-count">${st.present} / ${st.due}</strong><span class="dj-folder-unit">documents présents</span>`
       : `<strong class="dj-folder-count dj-folder-count-idle">${(folder.documents || []).length}</strong><span class="dj-folder-unit">${(folder.documents || []).length > 1 ? 'documents déposés' : 'document déposé'} · rien d’exigible</span>`;
-    const notes = [st.missing ? `<span class="is-missing">${st.missing} manquant${st.missing > 1 ? 's' : ''}</span>` : '',
+    const notes = [st.due ? `<span class="${st.missing ? 'is-missing' : ''}">${st.missing} ${st.missing > 1 ? 'pièces manquantes' : 'pièce manquante'}</span>` : '',
       st.pending ? `<span class="is-pending">${st.pending} en validation</span>` : '',
+      st.verification ? `<span class="is-pending">${st.verification} type${st.verification > 1 ? 's' : ''} à vérifier</span>` : '',
       st.duplicates ? `<span class="is-duplicate">${st.duplicates} doublon${st.duplicates > 1 ? 's' : ''}</span>` : '',
-      !st.missing && !st.pending && !st.duplicates && st.due ? '<span class="is-ok">Complet</span>' : '',
+      st.due && st.present === st.due ? '<span class="is-ok">Complet</span>' : '',
       !st.due && st.upcoming ? `<span>${st.upcoming} à venir</span>` : ''].filter(Boolean).join('');
-    return `<button class="folder-card dj-folder ${selected ? 'selected' : ''}" data-folder="${folder.slug}" aria-pressed="${selected}">
-      <span class="dj-folder-top"><span class="dj-folder-name">${e(meta.name)}</span><span class="dj-folder-code">${meta.color} · ${meta.order}</span></span>
+    return `<button class="folder-card dj-folder" type="button" data-folder="${folder.slug}">${heading}
       <span class="dj-folder-body"><span class="dj-folder-figure">${count}</span>${djRing(ratio)}</span>
       <span class="dj-bar dj-folder-bar"><span style="width:${ratio}%"></span></span>
-      <span class="dj-folder-meta">${notes || '<span>&nbsp;</span>'}</span></button>`;
+      <span class="dj-folder-meta">${notes}</span><span class="dj-folder-open">Ouvrir le sous-dossier ${icon('arrow')}</span></button>`;
   }).join('')}</div>`;
 }
 
@@ -255,6 +262,7 @@ function djRow(rule, docs, folder, duplicates = djDuplicateIndex()) {
   else if (rule.documents.length > 1) subs.push(`+ ${rule.documents.length - 1} autre(s) pièce(s) de ce type`);
   if (rule.status === 'not_due') subs.push(rule.required === false ? 'Facultatif · à déposer si besoin' : 'Non exigée par le profil de ce dossier');
   if (status === 'pending_validation') subs.push('Validation requise');
+  if (group && ['incompatible', 'to_verify'].includes(rule.status)) subs.push(e(DJ_STATES[rule.status][0]));
   if (rule.status === 'exception') subs.push(`Exception : ${e(rule.exception_reason || 'justifiée')}`);
   let action = '<span class="dj-none" aria-hidden="true">—</span>';
   if (group) {
@@ -267,6 +275,10 @@ function djRow(rule, docs, folder, duplicates = djDuplicateIndex()) {
     action = `<button class="secondary tiny" data-history="${e(doc.id)}">Ouvrir</button>`;
   } else if (rule.status === 'not_due' && folder.can_write) {
     action = `<button class="link" data-dj-upload="${e(rule.id)}">Déposer</button>`;
+  }
+  if (doc && ['incompatible', 'to_verify'].includes(rule.status)) {
+    action += `${folder.can_write ? `<button class="secondary tiny" data-intake-version="${e(latest?.id)}">Vérifier le type</button>
+      <button class="link" data-dj-upload="${e(rule.id)}">Déposer une version</button>` : ''}`;
   }
   const tone = DJ_STATES[status]?.[1] || 'idle';
   return `<tr class="dj-row is-${tone}" data-rule="${e(rule.id)}" data-state="${status}">
@@ -295,14 +307,14 @@ function djRing(ratio) {
 // Synthèse du dossier : un compteur par état, lisible d'un coup d'œil.
 function djDossierTally() {
   const rows = state.completeness?.rows || [];
-  const duplicates = djDuplicateIndex();
-  const counts = {present: 0, missing: 0, pending_validation: 0, duplicate: 0, exception: 0};
-  for (const rule of rows) { const {status} = djRowState(rule, duplicates); if (status in counts) counts[status] += 1; }
+  const counts = {present: 0, missing: 0, pending_validation: 0, to_verify: 0, incompatible: 0, duplicate: 0, exception: 0};
+  for (const rule of rows) if (rule.status in counts) counts[rule.status] += 1;
   const groups = (state.djDuplicates || []).filter(g => !g.reviewed).length;
   counts.duplicate = groups;
   const items = [['present', 'présent', 'présents'], ['missing', 'manquant', 'manquants'], ['pending_validation', 'en validation', 'en validation'],
+    ['to_verify', 'type à vérifier', 'types à vérifier'], ['incompatible', 'type incompatible', 'types incompatibles'],
     ['duplicate', 'doublon', 'doublons'], ['exception', 'exception', 'exceptions']]
-    .filter(([key]) => key !== 'exception' || counts.exception)
+    .filter(([key]) => !['exception', 'to_verify', 'incompatible'].includes(key) || counts[key])
     .map(([key, one, many]) => `<li class="dj-tally-item is-${DJ_STATES[key][1]}${counts[key] ? '' : ' is-zero'}"><strong>${counts[key]}</strong> ${counts[key] > 1 ? many : one}</li>`).join('');
   return `<ul class="dj-tally" aria-label="Synthèse des pièces">${items}</ul>`;
 }
@@ -337,10 +349,13 @@ function djDocumentsPanel() {
     : '';
   const expected = rows.filter(r => r.required !== false).length;
   const phase = rows.length ? ` · ${expected} pièce${expected > 1 ? 's' : ''} obligatoire${expected > 1 ? 's' : ''}${rows.length > expected ? `, ${rows.length - expected} facultative${rows.length - expected > 1 ? 's' : ''}` : ''}` : '';
+  const stats = djFolderStats(folder.slug);
   return `<div class="detail-layout dj-docs" data-folder-panel="${folder.slug}">
-      <div class="dj-docs-head"><div><h2><span class="dj-dot is-${folder.slug}" aria-hidden="true"></span>${e(meta.name)}</h2>
+      <div class="dj-docs-head"><div><h2><span class="dj-dot is-${folder.slug}" aria-hidden="true"></span>Documents · ${e(meta.name)}</h2>
+        <p>${stats.present} / ${stats.due} pièces obligatoires présentes · ${stats.missing} manquante(s) · ${stats.pending} en validation · ${stats.verification} type(s) à vérifier</p>
+        <progress aria-label="Complétude du sous-dossier" max="${stats.due || 1}" value="${stats.present}"></progress>
         <p>Checklist documentaire${phase}</p></div>
-        ${folder.can_write ? `<div class="ops-dropzone dj-drop" id="ops-folder-drop">Glissez un fichier ici pour le déposer dans ${e(meta.name)}</div>` : ''}</div>
+        ${folder.can_write ? `<div id="ops-folder-drop" class="dj-drop"><button type="button" class="primary" id="upload-doc">${icon('upload')} Déposer des documents</button></div>` : ''}</div>
       ${checklist}${otherTable}</div>`;
 }
 
@@ -412,7 +427,7 @@ function djPanels() {
     `<button role="tab" id="dj-tab-${id}" class="dj-tab" aria-selected="${ui.tab === id}" aria-controls="dj-panel-${id}" tabindex="${ui.tab === id ? 0 : -1}" data-dj-tab="${id}">${e(label)}${djTabBadge(id)}</button>`).join('')}</div>`;
   const panels = DJ_TABS.map(([id]) => {
     let body;
-    if (id === 'documents') body = djDocumentsPanel();
+    if (id === 'documents') body = ui.folderView ? djDocumentsPanel() : djFolderCards();
     else {
       const modules = DJ_MODULES[id].map(([key, label, render]) => [key, label, render()]).filter(([, , html]) => html && String(html).trim());
       if (!modules.some(([key]) => key === ui.module[id]) && modules.length) ui.module[id] = modules[0][0];
@@ -430,7 +445,8 @@ renderDetail = function() {
   if (state.djSuspend || !state.detail) return;
   const d = state.detail;
   if (!d.folders.some(f => f.slug === state.folder)) state.folder = d.folders[0]?.slug || 'jaune';
-  mount(`<div class="dj">${djHeader()}${djFolderCards()}${djPanels()}</div>`, 'Dossiers jaunes / ' + d.name);
+  const switcher = state.dj.folderView ? `<nav class="dj-folder-switch" aria-label="Changer de sous-dossier">${d.folders.filter(f => f.can_read).map(f => `<button class="secondary tiny" data-dj-folder="${f.slug}" ${f.slug === state.folder ? 'aria-current="page"' : ''}>${djFolderTitle(f.slug)}</button>`).join('')}</nav>` : '';
+  mount(`<div class="dj">${djHeader()}${switcher}${djPanels()}</div>`, 'Dossiers jaunes / ' + d.name);
   djBind();
 };
 
@@ -476,15 +492,21 @@ djAccessObserver.observe(app, {childList: true, subtree: true});
 
 function djBind() {
   const d = state.detail;
+  const showHeading = () => { window.scrollTo({top: 0, behavior: 'instant'}); app.querySelector('h1')?.focus({preventScroll: true}); };
   app.querySelector('#back-launches').onclick = () => navigate('launches');
+  const overview = () => { state.dj.folderView = false; state.dj.tab = 'documents'; state.dj.highlight = null; renderDetail(); showHeading(); };
+  app.querySelector('#dj-return-order')?.addEventListener('click', overview);
+  app.querySelector('#dj-folders-back')?.addEventListener('click', overview);
+  app.querySelector('#dj-order-dashboard')?.addEventListener('click', () => orderDashboard(d.id).catch(showErr));
   app.querySelector('#edit-launch')?.addEventListener('click', openEditLaunch);
   app.querySelector('#ops-edit')?.addEventListener('click', () => operationsEditLaunch().catch(showErr));
   app.querySelector('#upload-doc')?.addEventListener('click', () => dossierUpload({folder: state.folder}).catch(showErr));
   app.querySelector('#dj-edit-phase')?.addEventListener('click', editCompletenessContext);
   ['#dj-apply-standard', '#dj-apply-standard-inline', '#dj-apply-standard-controls'].forEach(id => app.querySelector(id)?.addEventListener('click', djApplyStandard));
-  app.querySelectorAll('.dj-folder[data-folder]').forEach(card => card.addEventListener('click', () => {
-    state.folder = card.dataset.folder; state.dj.tab = 'documents'; state.dj.highlight = null; renderDetail();
-    app.querySelector('.dj-tabs')?.scrollIntoView?.({block: 'nearest'});
+  app.querySelectorAll('button.dj-folder[data-folder], [data-dj-folder]').forEach(card => card.addEventListener('click', () => {
+    state.folder = card.dataset.folder || card.dataset.djFolder; state.dj.folderView = true;
+    state.dj.tab = 'documents'; state.dj.highlight = null; renderDetail();
+    showHeading();
   }));
   const tabs = [...app.querySelectorAll('[data-dj-tab]')];
   tabs.forEach((button, index) => {
@@ -582,7 +604,7 @@ function djDuplicateModal(digest) {
   const group = (state.djDuplicates || []).find(g => g.sha256 === digest);
   if (!group) return;
   const canReview = [...new Set(group.documents.map(d => d.folder))].every(folder => can('document.review', folder));
-  modal('Doublon détecté', `<p class="modal-desc">Ces ${group.documents.length} pièces ont exactement le même contenu (empreinte SHA-256 identique). La complétude n’est pas modifiée : la pièce reste comptée présente.</p>
+  modal('Doublon détecté', `<p class="modal-desc">Ces ${group.documents.length} pièces ont la même empreinte SHA-256. La complétude dépend du type et de la validation de chaque pièce.</p>
     <ul class="dj-dup-list">${group.documents.map(d => `<li>
       <span class="dj-dup-folder"><span class="dj-dot is-${e(d.folder)}" aria-hidden="true"></span>${e(DJ_FOLDERS[d.folder]?.name || d.folder)}</span>
       <span class="dj-dup-main"><strong>${e(d.title)}</strong><small>${e(d.doc_type)} · V${d.version} · ${e(d.original_name)} · ${niceDate(d.created_at)}</small></span>
@@ -614,7 +636,7 @@ function djDuplicateModal(digest) {
 
 opsTargetData = function(item) {
   // Lignes de complétude (tableau de bord) ou actions « pièce manquante / validation » : aller à la ligne.
-  const rule = item.rule_id || (/^(missing|validation):/.test(item.id || '') ? item.id.split(':')[1] : (item.due !== undefined ? item.id : undefined));
+  const rule = item.rule_id || (/^(missing|validation|identification):/.test(item.id || '') ? item.id.split(':')[1] : (item.due !== undefined ? item.id : undefined));
   return e(JSON.stringify({launch_id: item.launch_id, folder: item.folder, document_id: item.document_id, version_id: item.version_id, area: item.area, rule_id: rule,
     row_document: item.row_document}));
 };
@@ -625,6 +647,7 @@ opsOpenTarget = async function(target) {
     await openLaunch(target.launch_id, target.folder || 'jaune', {rule_id: target.rule_id, row_document: target.row_document, folder: target.folder});
     return;
   }
+  if (!target.folder && !target.area && !target.document_id && !target.version_id) return openLaunch(target.launch_id);
   return djOriginalOpenTarget(target);
 };
 
@@ -632,110 +655,7 @@ opsOpenTarget = async function(target) {
 async function dossierUpload(options = {}) {
   if (options instanceof Event) options = {};
   if (options instanceof File) options = {file: options};
-  const d = state.detail;
-  const folders = d.folders.filter(f => f.can_write);
-  if (!folders.length) { toast('Votre rôle ne permet pas de déposer dans ce dossier.'); return; }
-  const catalog = await api('/api/workspace/document-types');
-  const start = folders.some(f => f.slug === options.folder) ? options.folder : folders.some(f => f.slug === state.folder) ? state.folder : folders[0].slug;
-  modal('Déposer un document', `<form id="ops-upload-form" class="dj-upload" novalidate>
-      <div class="two-fields">
-        <div class="field"><label for="ops-folder">Sous-dossier</label><select id="ops-folder">${folders.map(f => `<option value="${f.slug}" ${f.slug === start ? 'selected' : ''}>${e(DJ_FOLDERS[f.slug].name)}</option>`).join('')}</select></div>
-        <div class="field"><label for="ops-type">Type documentaire</label><input id="ops-type" list="ops-types" maxlength="100" required autocomplete="off" value="${e(options.type || '')}" placeholder="Choisir un type"><datalist id="ops-types"></datalist></div>
-      </div>
-      <div class="ops-dropzone" id="ops-upload-drop"><input id="ops-file" aria-label="Fichier à déposer" type="file" accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg,.txt,.eml,.csv"><p id="ops-file-name">${e(options.file?.name || 'Glissez le fichier ici ou choisissez-le · PDF, Word, Excel, image, TXT, EML, CSV · 20 Mo maximum')}</p></div>
-      <div class="dj-version-note" id="dj-version-note" aria-live="polite" hidden></div>
-      <div class="two-fields">
-        <div class="field"><label for="ops-title">Titre affiché</label><input id="ops-title" maxlength="220" value="${e(options.title || options.type || '')}"></div>
-        <div class="field"><label for="ops-upload-comment">Commentaire <span class="dj-optional">(facultatif)</span></label><input id="ops-upload-comment" maxlength="2000"></div>
-      </div>
-      <button class="link dj-ocr" type="button" id="ops-analyze">Proposer le type à partir du fichier</button>
-      <div id="ops-analysis" aria-live="polite"></div>
-      <div class="modal-actions"><button class="secondary" type="button" id="cancel-modal">Annuler</button><button class="primary" type="submit">${icon('upload')} Déposer</button></div>
-    </form>`);
-  const form = overlay.querySelector('#ops-upload-form');
-  const folderInput = overlay.querySelector('#ops-folder'), typeInput = overlay.querySelector('#ops-type');
-  const titleInput = overlay.querySelector('#ops-title'), note = overlay.querySelector('#dj-version-note');
-  let selected = options.file || null, titleEdited = Boolean(options.title && options.title !== options.type);
-  const rulesFor = slug => (state.completeness?.rows || []).filter(r => r.folder === slug);
-  const existingDoc = () => (d.folders.find(f => f.slug === folderInput.value)?.documents || [])
-    .filter(doc => doc.doc_type === typeInput.value.trim()).sort((a, b) => b.latest.created_at.localeCompare(a.latest.created_at))[0];
-  const drawTypes = () => {
-    const rules = rulesFor(folderInput.value);
-    const labelled = new Map(rules.map(r => [r.document_type, r.title]));
-    const types = [...new Set([...rules.map(r => r.document_type), ...(catalog[folderInput.value]?.types || ['Autre'])])];
-    overlay.querySelector('#ops-types').innerHTML = types.map(t => `<option value="${e(t)}"${labelled.get(t) && labelled.get(t) !== t ? ` label="${e(labelled.get(t))}"` : ''}></option>`).join('');
-  };
-  const drawNote = () => {
-    const doc = existingDoc();
-    note.hidden = !doc;
-    note.innerHTML = doc ? `<p>« ${e(doc.title)} » existe déjà (V${doc.latest.number}). Ce fichier sera enregistré comme <strong>V${doc.latest.number + 1}</strong> sur la même ligne.</p>
-      <label class="checkbox-line"><input type="checkbox" id="dj-separate"> Déposer plutôt comme un document distinct</label>` : '';
-  };
-  const choose = file => {
-    selected = file;
-    overlay.querySelector('#ops-file-name').textContent = file.name;
-    if (!titleInput.value) titleInput.value = typeInput.value || file.name.replace(/\.[^.]+$/, '');
-  };
-  overlay.querySelector('#cancel-modal').onclick = closeModal;
-  overlay.querySelector('#ops-file').onchange = event => event.target.files[0] && choose(event.target.files[0]);
-  opsBindDrop(overlay.querySelector('#ops-upload-drop'), choose);
-  folderInput.onchange = () => { drawTypes(); drawNote(); };
-  typeInput.addEventListener('input', () => {
-    if (!titleEdited) titleInput.value = rulesFor(folderInput.value).find(r => r.document_type === typeInput.value.trim())?.title || typeInput.value;
-    drawNote();
-  });
-  titleInput.addEventListener('input', () => { titleEdited = true; });
-  drawTypes(); drawNote();
-  if (selected) choose(selected);
-  overlay.querySelector('#ops-analyze').onclick = async () => {
-    if (!selected) { toast('Choisissez d’abord un fichier.'); return; }
-    const fd = new FormData(); fd.append('file', selected);
-    try {
-      const result = await api(`/api/launches/${d.id}/intake/preview`, {method: 'POST', body: fd});
-      const zone = overlay.querySelector('#ops-analysis');
-      zone.innerHTML = result.classification.suggestions.length
-        ? `<p class="dj-muted">Types proposés (à confirmer) :</p>${result.classification.suggestions.map((s, i) => `<button class="secondary tiny" type="button" data-ops-suggestion="${i}">${e(s.doc_type)} · ${e(DJ_FOLDERS[s.folder]?.name || s.folder)}</button>`).join(' ')}`
-        : '<p class="dj-muted">Aucun type reconnu dans ce fichier.</p>';
-      zone.querySelectorAll('[data-ops-suggestion]').forEach(button => button.onclick = () => {
-        const proposal = result.classification.suggestions[Number(button.dataset.opsSuggestion)];
-        if ([...folderInput.options].some(o => o.value === proposal.folder)) folderInput.value = proposal.folder;
-        typeInput.value = proposal.doc_type; drawTypes(); typeInput.dispatchEvent(new Event('input'));
-      });
-    } catch (error) { showErr(error); }
-  };
-  form.onsubmit = async event => {
-    event.preventDefault();
-    const type = typeInput.value.trim();
-    if (!selected) { toast('Choisissez le fichier à déposer.'); return; }
-    if (!type) { toast('Indiquez le type documentaire.'); typeInput.focus(); return; }
-    if (selected.size > 20 * 1024 * 1024) { toast('Fichier supérieur à 20 Mo : dépôt impossible.'); return; }
-    const submit = event.submitter || form.querySelector('[type=submit]');
-    const label = submit.innerHTML;
-    submit.disabled = true; submit.setAttribute('aria-busy', 'true'); submit.textContent = 'Dépôt en cours…';
-    const folder = folderInput.value, existing = existingDoc(), separate = overlay.querySelector('#dj-separate')?.checked;
-    const fd = new FormData();
-    fd.append('file', selected);
-    fd.append('comment', val('ops-upload-comment'));
-    try {
-      let result;
-      if (existing && !separate) {
-        result = await api(`/api/documents/${existing.id}/versions`, {method: 'POST', body: fd});
-      } else {
-        fd.append('folder', folder); fd.append('title', titleInput.value.trim() || type); fd.append('doc_type', type);
-        result = await api(`/api/launches/${d.id}/documents`, {method: 'POST', body: fd});
-      }
-      closeModal();
-      const rule = rulesFor(folder).find(r => r.document_type === type);
-      await openLaunch(d.id, folder, rule ? {rule_id: rule.id} : {folder});
-      const updated = rule && state.completeness.rows.find(r => r.id === rule.id);
-      const status = updated ? DJ_STATES[updated.status]?.[0] : null;
-      toast(`${rule ? rule.title : (result.title || 'Document')} déposé${existing && !separate ? ` · V${result.latest?.number || ''}` : ''}${status ? ` · ${status}` : ''}${result.duplicates?.length ? ' · contenu identique déjà présent' : ''}`);
-    } catch (error) {
-      showErr(error);
-    } finally {
-      if (submit.isConnected) { submit.disabled = false; submit.removeAttribute('aria-busy'); submit.innerHTML = label; }
-    }
-  };
+  return documentUploadDialog(options);
 }
 operationsUpload = dossierUpload;
 openUpload = function(file) { dossierUpload(file instanceof File ? {file} : {}).catch(showErr); };
@@ -756,7 +676,7 @@ openNewLaunch = function() {
       const created = await api('/api/launches', {method: 'POST', body: JSON.stringify({name: val('l-name'), client_name: val('l-client') || null,
         order_ref: val('l-order') || null, orli_ref: val('l-orli') || null, standard_profile: true})});
       closeModal(); toast('Dossier Jaune créé avec sa checklist');
-      await openLaunch(created.id, 'jaune');
+      await openLaunch(created.id);
     } catch (error) { showErr(error); }
   };
 };

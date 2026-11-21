@@ -6,7 +6,7 @@
 const DASH_FOLDERS = ['jaune', 'rose', 'bleu', 'vert'];
 const DASH_KPIS = {
   dossiers: [['active_launches', 'Dossiers actifs'], ['complete_launches', 'Dossiers complets'], ['incomplete_launches', 'Dossiers incomplets']],
-  todo: [['missing_documents', 'Documents manquants'], ['pending_documents', 'Documents à valider'], ['duplicate_documents', 'Doublons à examiner'],
+  todo: [['missing_documents', 'Documents manquants'], ['pending_documents', 'Documents à valider'], ['identification_documents', 'Types à vérifier'], ['duplicate_documents', 'Doublons à examiner'],
     ['alerts', 'Alertes à traiter'], ['inconsistencies', 'Incohérences détectées'], ['unacknowledged_changes', 'Modifications à examiner']],
 };
 const DASH_PAGE = 8;
@@ -21,6 +21,7 @@ function dashKpi([key, label], k, attention) {
 const DASH_STATES = [
   ['missing', 'Manquants', 'missing_documents', 'missing'],
   ['pending', 'En validation', 'pending_validation_documents', 'pending_validation'],
+  ['identification', 'Types à vérifier', 'identification_documents', 'to_verify'],
   ['duplicate', 'Doublons', 'duplicate_documents', 'duplicate'],
 ];
 
@@ -42,6 +43,7 @@ function dashRowDetail(row, key) {
     return `${row.documents?.length || 2} pièces identiques${others[0] ? ` · avec « ${e(others[0].title)} »${others[0].folder !== row.folder ? ` (${e(DJ_FOLDERS[others[0].folder]?.name || others[0].folder)})` : ''}` : ''}`;
   }
   if (key === 'pending') return `Déposée · validation requise${row.documents?.[0] ? ` · V${row.documents[0].version}` : ''}`;
+  if (key === 'identification') return `Fichier déposé${row.documents?.[0] ? ` · V${row.documents[0].version}` : ''}`;
   return row.required === false ? 'Pièce facultative' : 'Pièce obligatoire absente';
 }
 
@@ -51,19 +53,20 @@ function dashMissingTable(report) {
   const {rows, shown} = dashMissingRows(report);
   if (!rows.length) {
     const any = dashList(report).length;
-    const empty = {missing: 'Aucune pièce obligatoire manquante.', pending: 'Aucune pièce en attente de validation.', duplicate: 'Aucun doublon à examiner.'}[key];
+    const empty = {missing: 'Aucune pièce obligatoire manquante.', pending: 'Aucune pièce en attente de validation.', duplicate: 'Aucun doublon à examiner.', identification: 'Aucun type documentaire à vérifier.'}[key];
     return opsEmpty(any ? 'Rien à traiter dans ce sous-dossier.' : empty);
   }
   const body = shown.map(row => {
+    const rowStatus = key === 'identification' ? row.status : status;
     const meta = DJ_FOLDERS[row.folder] || {name: row.folder};
     const target = key === 'duplicate' ? {...row, row_document: row.document_id, document_id: undefined} : row;
-    const tone = DJ_STATES[status][1];
-    return `<tr class="dj-row is-${tone} dash-row" data-dash-row data-state="${status}">
-      <td data-label="Sous-dossier"><span class="dash-folder"><span class="dj-dot is-${e(row.folder)}" aria-hidden="true"></span>${e(meta.name)}</span></td>
+    const tone = DJ_STATES[rowStatus][1];
+    return `<tr class="dj-row is-${tone} dash-row" data-dash-row data-state="${rowStatus}">
+      <td data-label="Sous-dossier"><span class="dash-folder"><span class="dj-dot is-${e(row.folder)}" aria-hidden="true"></span>${DJ_FOLDERS[row.folder] ? djFolderTitle(row.folder) : e(meta.name)}</span></td>
       <td data-label="Document"><strong>${e(row.title)}</strong><small>${dashRowDetail(row, key)}</small></td>
       <td data-label="Commande / dossier"><strong class="dash-ref">${e(row.order_ref || row.launch_name)}</strong><small>${e(row.article || row.launch_name)}</small></td>
       <td data-label="Client">${e(row.client_name || '—')}</td>
-      <td data-label="État">${djStatePill(status)}</td>
+      <td data-label="État">${djStatePill(rowStatus)}</td>
       <td class="dj-action" data-label="Action"><span class="dj-action-group"><button class="secondary tiny" data-ops-target="${opsTargetData(target)}" aria-label="Ouvrir ${e(row.title)} · ${e(row.order_ref || row.launch_name)}">${key === 'duplicate' ? 'Examiner' : 'Ouvrir'} ${icon('arrow')}</button></span></td></tr>`;
   }).join('');
   const more = rows.length > shown.length
@@ -83,7 +86,7 @@ function dashFilters(report) {
     .map(([key, label, n]) => `<button class="dj-chip" aria-pressed="${filter === key}" data-dash-filter="${key}">${key !== 'all' ? `<span class="dj-dot is-${key}" aria-hidden="true"></span>` : ''}${e(label)}<span class="dj-badge ${n ? 'is-' + DJ_STATES[tone][1] : ''}">${n}</span></button>`).join('');
 }
 
-function dashMissingPanel(report) {
+function dashMissingPanel(report, scoped = false) {
   const key = state.dashState || 'missing';
   const segments = DASH_STATES.map(([k, label, field, status]) => {
     const n = (report[field] || []).length;
@@ -92,7 +95,7 @@ function dashMissingPanel(report) {
   }).join('');
   return `<section class="ops-panel dash-panel ops-missing" id="ops-missing" aria-labelledby="dash-missing-title">
       <div class="dash-panel-head"><div><h2 id="dash-missing-title">Documents à traiter</h2>
-        <p>Toutes les pièces attendues des dossiers actifs, visibles dès la création du dossier. Cliquez pour ouvrir la ligne de checklist.</p></div></div>
+        <p>${scoped ? 'Pièces de cette commande. Ouvrez une ligne pour accéder à sa checklist.' : 'Pièces des dossiers actifs. Ouvrez une ligne pour accéder à sa checklist.'}</p></div></div>
       <div class="dash-states" role="tablist" aria-label="État des documents">${segments}</div>
       <div class="dj-subnav dash-filters" role="group" aria-label="Filtrer par sous-dossier" id="dash-filters">${dashFilters(report)}</div>
       <div id="dash-missing-body">${dashMissingTable(report)}</div>
@@ -157,6 +160,7 @@ async function dashboardHome() {
   mount(`<div class="dj dj-dash">
     ${opsHeading('Tableau de bord', `${today.charAt(0).toUpperCase() + today.slice(1)} · ${k.active_launches} dossier${k.active_launches > 1 ? 's' : ''} actif${k.active_launches > 1 ? 's' : ''}`,
       can('launch.create') ? `<button class="primary" id="ops-create">${icon('plus')} Nouveau dossier</button>` : '')}
+    ${report.launches.length ? `<form id="dash-select-order" class="ops-panel dj-order-select"><div class="field"><label for="dash-order">Tableau de bord par commande</label><select id="dash-order" required><option value="">Sélectionnez une commande</option>${report.launches.map(row => `<option value="${e(row.id)}">${e(row.order_ref || row.name)}${row.client_name ? ' · ' + e(row.client_name) : ''}</option>`).join('')}</select></div><button type="submit" class="primary">Afficher</button></form>` : ''}
     <section class="dash-kpis" aria-label="Indicateurs">
       <div class="dash-kpi-group"><p class="dj-label">Dossiers</p><div class="dash-kpi-row">${DASH_KPIS.dossiers.map(m => dashKpi(m, k, false)).join('')}</div></div>
       <div class="dash-kpi-group is-todo"><p class="dj-label">À traiter</p><div class="dash-kpi-row">${DASH_KPIS.todo.map(m => dashKpi(m, k, true)).join('')}</div></div>
@@ -184,6 +188,36 @@ async function dashboardHome() {
       </section>
     </div></div>`, 'Tableau de bord');
   dashBind(report);
+  app.querySelector('#dash-select-order')?.addEventListener('submit', event => {
+    event.preventDefault();
+    orderDashboard(app.querySelector('#dash-order').value).catch(showErr);
+  });
+}
+
+async function orderDashboard(id) {
+  const report = await api(`/api/launches/${encodeURIComponent(id)}/dashboard`);
+  const order = report.launches[0];
+  state.view = 'detail';
+  state.dashState = 'missing'; state.dashFilter = 'all'; state.dashShowAll = false;
+  const metrics = [['deposited_documents', 'Documents déposés'], ...DASH_KPIS.todo];
+  const rows = report.priorities.items;
+  const alerts = rows.filter(item => !['missing', 'validation', 'identification'].includes(item.kind));
+  const targetActivity = report.activity.map(item => `<li><time datetime="${e(item.occurred_at)}">${niceDate(item.occurred_at)}</time><div>${item.document_id ? `<button class="link" data-ops-target="${opsTargetData(item)}">${e(opsAuditLabel(item.action))} · ${e(item.document_title)}</button>` : `<strong>${e(opsAuditLabel(item.action))}</strong>`}<span>${e(item.actor)}</span></div></li>`).join('');
+  mount(`<div class="dj dj-dash">
+    <nav class="dj-crumb" aria-label="Fil d’Ariane"><button class="link" data-view="home">Tableau de bord général</button><span aria-hidden="true">›</span><span aria-current="page">${e(order.order_ref || order.name)}</span></nav>
+    ${opsHeading('Tableau de bord de la commande', order.order_ref || order.name, '<button class="primary" id="dj-dashboard-folders">Ouvrir les sous-dossiers</button>')}
+    <section class="dj-summary" aria-label="Commande sélectionnée"><dl class="dj-facts">
+      ${djFact('Commande', e(order.order_ref || order.name))}${djFact('Client', e(order.client_name || '—'))}
+      ${djFact('Article / modèle', e(order.article || '—'))}${djFact('Quantité', order.quantity ? `${e(order.quantity)} pièces` : '—')}${djFact('État', statusTag(order.status))}
+      ${djFact('Complétude', opsCompletion(order.completion))}</dl></section>
+    <div class="dash-kpi-row dj-order-metrics" aria-label="Indicateurs de cette commande">${metrics.map(metric => dashKpi(metric, report.kpis, false)).join('')}</div>
+    ${dashMissingPanel(report, true)}
+    <section class="ops-panel" id="dj-dashboard-documents"><h2>Documents déposés par sous-dossier</h2>${order.folders.filter(folder => folder.can_read).map(folder => `<button class="ops-link-row" data-ops-target="${opsTargetData({launch_id: id, folder: folder.slug, area: 'documents'})}"><strong>${djFolderTitle(folder.slug)}</strong><span>${folder.documents} document(s)</span>${icon('arrow')}</button>`).join('')}</section>
+    <div class="dash-grid"><section class="ops-panel" id="ops-concerns"><h2>Alertes et modifications</h2>${alerts.map(opsAction).join('') || opsEmpty('Aucune alerte ouverte.')}</section>
+    <section class="ops-panel"><h2>Modifications récentes</h2>${targetActivity ? `<ol class="dash-activity">${targetActivity}</ol>` : opsEmpty('Aucune activité visible.')}</section></div>
+  </div>`, 'Tableau de bord / ' + (order.order_ref || order.name));
+  dashBind(report);
+  app.querySelector('#dj-dashboard-folders').onclick = () => openLaunch(id).catch(showErr);
 }
 
 function dashBindRows(root) {
@@ -233,10 +267,11 @@ function dashBind(report) {
     });
   });
   const scroll = selector => app.querySelector(selector)?.scrollIntoView({block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
-  const panels = {missing_documents: 'missing', pending_documents: 'pending', duplicate_documents: 'duplicate'};
+  const panels = {missing_documents: 'missing', pending_documents: 'pending', duplicate_documents: 'duplicate', identification_documents: 'identification'};
   app.querySelectorAll('[data-ops-kpi]').forEach(button => button.onclick = () => {
     const key = button.dataset.opsKpi;
     if (panels[key]) { selectState(panels[key]); scroll('#ops-missing'); }
+    else if (key === 'deposited_documents') scroll('#dj-dashboard-documents');
     else if (['alerts', 'inconsistencies', 'unacknowledged_changes'].includes(key)) scroll('#ops-concerns');
     else { state.opsCompletionFilter = key === 'complete_launches' ? 'complete' : key === 'incomplete_launches' ? 'incomplete' : ''; navigate('launches'); }
   });

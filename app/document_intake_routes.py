@@ -1,0 +1,180 @@
+"""Preview a single transfer and publish the same bytes after confirmation."""
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
+from pydantic import BaseModel, Field
+from sqlalchemy import delete
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
+
+from .core import get_current_user, get_db
+from .document_intake import ALIASES, identification_status, normalized, read_safely
+from .document_intake_models import DocumentIdentification, PendingDocumentUpload
+from .main import (SLUGS, STORAGE, audit, get_doc, get_launch, must, permitted, persist_document,
+                   persist_version, require_active_launch_rule, store_upload)
+from .models import Document, DocumentVersion, User
+from .upload_limits import limits_mib
+
+router = APIRouter()
+EXPIRY = timedelta(hours=2)
+
+
+class PublishUpload(BaseModel):
+    folder: str
+    doc_type: str = Field(min_length=1, max_length=100)
+    title: str = Field(min_length=1, max_length=220)
+    comment: str = Field(default='', max_length=2000)
+    justification: str = Field(default='', max_length=1800)
+    rule_id: str | None = None
+    document_id: str | None = None
+
+
+class VerifyType(BaseModel):
+    justification: str = Field(min_length=12, max_length=1800)
+
+
+def now():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def clean_expired(db):
+    expired = list(db.scalars(delete(PendingDocumentUpload).where(PendingDocumentUpload.expires_at <= now())
+                              .returning(PendingDocumentUpload.disk_name)))
+    db.commit()
+    for name in expired:
+        (STORAGE / name).unlink(missing_ok=True)
+
+
+def destination(db, user, launch_id, folder):
+    if folder not in SLUGS:
+        raise HTTPException(422, 'Sous-dossier invalide')
+    for action in ('launch.read', 'document.read', 'document.write'):
+        must(user, action, None if action == 'launch.read' else folder)
+    entity = next((item for item in get_launch(db, launch_id).folders if item.slug == folder), None)
+    if not entity:
+        raise HTTPException(404, 'Sous-dossier introuvable')
+    return entity
+
+
+@router.get('/api/workspace/upload-limits')
+def upload_limits(user: User = Depends(get_current_user)):
+    must(user, 'launch.read')
+    return {'mib': limits_mib()}
+
+
+@router.post('/api/launches/{launch_id}/document-uploads', status_code=201)
+async def stage_document(launch_id: str, folder: str = Form(...), file: UploadFile = File(...),
+                         user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    destination(db, user, launch_id, folder)
+    clean_expired(db)
+    original, disk_name, size, sha, mime = await store_upload(file)
+    try:
+        analysis = await run_in_threadpool(read_safely, STORAGE / disk_name, original)
+        staged = PendingDocumentUpload(launch_id=launch_id, user_id=user.id, folder=folder,
+                                        original_name=original, disk_name=disk_name, size=size, sha256=sha,
+                                        content_type=mime, analysis=analysis, expires_at=now() + EXPIRY)
+        db.add(staged)
+        db.commit()
+    except BaseException:
+        db.rollback()
+        (STORAGE / disk_name).unlink(missing_ok=True)
+        raise
+    return {'id': staged.id, 'analysis': public_analysis(user, analysis), 'size': size, 'sha256': sha}
+
+
+def public_analysis(user, analysis):
+    classification = analysis['classification']
+    suggestions = [{**item, 'canonical_type': ALIASES.get(normalized(item['doc_type']), item['doc_type'])}
+                   for item in classification['suggestions']
+                   if permitted(user, 'document.read', item['folder']) and permitted(user, 'document.write', item['folder'])]
+    return {**analysis, 'classification': {**classification, 'suggestions': suggestions,
+            'decisive': classification['decisive'] and bool(suggestions)
+            and suggestions[0]['doc_type'] == classification['suggestions'][0]['doc_type']}}
+
+
+def staged_upload(db, user, launch_id, upload_id):
+    must(user, 'launch.read')
+    staged = db.get(PendingDocumentUpload, upload_id)
+    if not staged or staged.user_id != user.id or staged.launch_id != launch_id or staged.expires_at <= now():
+        raise HTTPException(404, 'Transfert introuvable ou expiré')
+    return staged
+
+
+def claim(db, staged):
+    deleted = db.execute(delete(PendingDocumentUpload).where(PendingDocumentUpload.id == staged.id,
+                         PendingDocumentUpload.expires_at > now()))
+    if deleted.rowcount != 1:
+        raise HTTPException(409, 'Ce transfert a déjà été traité ou a expiré')
+
+
+@router.delete('/api/launches/{launch_id}/document-uploads/{upload_id}', status_code=204)
+def cancel_document(launch_id: str, upload_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    staged = staged_upload(db, user, launch_id, upload_id)
+    path = STORAGE / staged.disk_name
+    claim(db, staged)
+    db.commit()
+    path.unlink(missing_ok=True)
+    return Response(status_code=204)
+
+
+@router.post('/api/launches/{launch_id}/document-uploads/{upload_id}/publish', status_code=201)
+def publish_document(launch_id: str, upload_id: str, payload: PublishUpload,
+                     user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    staged = staged_upload(db, user, launch_id, upload_id)
+    destination(db, user, launch_id, staged.folder)
+    entity = destination(db, user, launch_id, payload.folder)
+    title, doc_type = payload.title.strip(), payload.doc_type.strip()
+    if not title or not doc_type:
+        raise HTTPException(422, 'Titre et type documentaire obligatoires')
+    if payload.rule_id:
+        _, rule = require_active_launch_rule(db, launch_id, payload.rule_id)
+        if (rule.folder_slug, rule.document_type) != (payload.folder, doc_type):
+            raise HTTPException(422, 'Le classement doit correspondre à la pièce attendue')
+    document = db.get(Document, payload.document_id) if payload.document_id else None
+    if payload.document_id and (not document or document.folder_id != entity.id or document.doc_type != doc_type):
+        raise HTTPException(404, 'Document introuvable pour ce type et ce sous-dossier')
+    if not (STORAGE / staged.disk_name).is_file():
+        raise HTTPException(503, 'Fichier temporaire indisponible')
+    analysis = staged.analysis
+    status = identification_status(analysis, entity.slug, doc_type)
+    justification = payload.justification.strip()
+    if justification and len(justification) < 12:
+        raise HTTPException(422, 'Décrivez votre vérification en au moins 12 caractères')
+    identified = {'analysis': analysis, 'status': 'confirmed' if justification else status,
+                  'justification': justification or None, 'reviewed_by': user.id if justification else None}
+    stored = (staged.original_name, staged.disk_name, staged.size, staged.sha256, staged.content_type)
+    claim(db, staged)
+    try:
+        result = (persist_version(db, user, stored, document, payload.comment, identified) if document else
+                  persist_document(db, user, stored, entity, title, doc_type, payload.comment, identified))
+        audit(db, user, 'intake.classification.publish', 'document_version', result['latest']['id'],
+              {'status': identified['status'], 'justification': justification})
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(409, 'Conflit de dépôt ou de version. Réessayez.') from exc
+    return {**result, 'identification': identified['status']}
+
+
+@router.post('/api/document-versions/{version_id}/identification/confirm')
+def verify_type(version_id: str, payload: VerifyType, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    version = db.get(DocumentVersion, version_id)
+    if not version:
+        raise HTTPException(404, 'Version introuvable')
+    document = get_doc(db, version.document_id)
+    must(user, 'launch.read')
+    must(user, 'document.read', document.folder.slug)
+    must(user, 'document.write', document.folder.slug)
+    if version.number != max(v.number for v in document.versions):
+        raise HTTPException(409, 'Vérifiez la version courante du document')
+    item = db.get(DocumentIdentification, version_id)
+    if not item or item.status not in {'to_verify', 'incompatible'}:
+        raise HTTPException(409, 'Aucune vérification de type en attente pour cette version')
+    justification = payload.justification.strip()
+    if len(justification) < 12:
+        raise HTTPException(422, 'Décrivez votre vérification en au moins 12 caractères')
+    item.status, item.justification, item.reviewed_by = 'confirmed', justification, user.id
+    audit(db, user, 'intake.classification.confirm', 'document_version', version_id, {'justification': justification})
+    db.commit()
+    return {'status': item.status}

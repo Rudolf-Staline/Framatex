@@ -20,6 +20,7 @@ from . import approval_models, sharing_models, pilot_models # noqa: F401
 from . import client_models # noqa: F401
 from . import internal_models # noqa: F401
 from . import client_workflow_models # noqa: F401
+from . import document_intake_models # noqa: F401
 
 # Include the migration ledger in SQLAlchemy metadata so test databases that
 # reset Base.metadata also reset this ledger; production upgrades remain explicit.
@@ -29,7 +30,7 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
 
 REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_client_space',
              '0005_internal_operations', '0006_client_workflow', '0007_client_order_launch',
-             '0008_optional_rules', '0009_visible_checklist_duplicates')
+             '0008_optional_rules', '0009_visible_checklist_duplicates', '0010_document_intake')
 
 
 def _versions(conn):
@@ -69,7 +70,8 @@ def migrate():
                                 'client_order_documents', 'client_order_document_versions',
                                 'launch_operations', 'internal_document_comments', 'internal_experience_notes',
                                 'client_document_requests', 'client_document_request_events', 'client_shared_documents',
-                                'client_order_launches', 'document_duplicate_reviews'}
+                                'client_order_launches', 'document_duplicate_reviews',
+                                'pending_document_uploads', 'document_identifications'}
                 missing = (set(Base.metadata.tables) - later_tables) - existing
                 if missing:
                     raise RuntimeError('Base antérieure incomplète : tables manquantes : ' + ', '.join(sorted(missing)))
@@ -136,6 +138,11 @@ def migrate():
                               "(SELECT id FROM completeness_profiles WHERE name = 'Dossier Jaune FRAMATEX standard')"))
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0009_visible_checklist_duplicates','d':datetime.now(timezone.utc).isoformat()})
+        if '0010_document_intake' not in done:
+            for name in ('pending_document_uploads', 'document_identifications'):
+                Base.metadata.tables[name].create(bind=conn, checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0010_document_intake','d':datetime.now(timezone.utc).isoformat()})
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
         cols = {c['name'] for c in inspect(conn).get_columns('launches')}
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():

@@ -1,18 +1,19 @@
 """0.5 : aperçu OCR et classement, vérification humaine avant dépôt/exploitation."""
 from __future__ import annotations
-import secrets
-from pathlib import Path
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from .core import get_db, get_current_user
 from .models import DocumentVersion, Document, User
 from .intake_models import ConfirmedField
-from .intake import PATTERNS, preview
-from .main import STORAGE, MAX_UPLOAD, SLUGS, audit, get_doc, get_launch, must, permitted, verify_file, EXTS
+from .intake import PATTERNS
+from .document_intake import read_safely
+from .document_intake_models import DocumentIdentification
+from .main import STORAGE, SLUGS, audit, get_doc, get_launch, must, permitted, store_upload
 
 router=APIRouter()
 
@@ -29,26 +30,17 @@ async def intake_preview(launch_id:str,file:UploadFile=File(...),user:User=Depen
     # On n'effectue aucune analyse si le collaborateur n'a le droit de déposer dans aucune rubrique.
     if not any(permitted(user,'document.write',f) for f in SLUGS):
         raise HTTPException(403,'Dépôt interdit')
-    name=Path((file.filename or '').replace('\\','/')).name[:240]
-    suffix=Path(name).suffix.lower()
-    if suffix not in EXTS: raise HTTPException(422,'Format interdit')
-    # Aperçu isolé, jamais conservé comme pièce du dossier. Refuser les uploads trop volumineux.
-    path=STORAGE/("preview-"+secrets.token_hex(18))
+    name, disk_name, *_ = await store_upload(file)
+    path = STORAGE / disk_name
     try:
-        total=0
-        with path.open('xb') as dest:
-            while chunk:=await file.read(1024*1024):
-                total+=len(chunk)
-                if total>MAX_UPLOAD: raise HTTPException(413,'Fichier supérieur à 20 Mo')
-                dest.write(chunk)
-        if not total:raise HTTPException(422,'Fichier vide')
-        verify_file(path,suffix)
-        result=preview(path,name)
+        result = await run_in_threadpool(read_safely, path, name)
+        original = result['classification']['suggestions']
         # Ne jamais révéler une rubrique suggérée que le collaborateur n'a pas le droit d'utiliser.
-        result['classification']['suggestions']=[x for x in result['classification']['suggestions'] if permitted(user,'document.write',x['folder'])]
+        filtered = [x for x in original if permitted(user, 'document.write', x['folder'])]
+        result['classification']['suggestions'] = filtered
+        result['classification']['decisive'] = bool(filtered) and original[0] == filtered[0] and result['classification']['decisive']
         return result
     finally:
-        await file.close()
         path.unlink(missing_ok=True)
 
 @router.get('/api/document-versions/{version_id}/intake')
@@ -61,7 +53,9 @@ def version_intake(version_id:str,user:User=Depends(get_current_user),db:Session
     path=STORAGE/v.disk_name
     if not path.exists(): raise HTTPException(503,'Fichier indisponible')
     # Analyse demandée explicitement par l'utilisateur. Aucune extraction poussée vers l'ERP.
-    result=preview(path,v.original_name)
+    identification = db.get(DocumentIdentification, v.id)
+    result = dict(identification.analysis) if identification and identification.analysis['method'] not in {'busy', 'analysis_failed', 'ocr_unavailable', 'pdf_unreadable'} else read_safely(path, v.original_name)
+    result['identification'] = {'status': identification.status, 'justification': identification.justification} if identification else None
     result['version_id']=v.id
     result['confirmed']=[{'key':x.field_key,'value':x.value,'unit':x.unit,'confirmed_at':x.confirmed_at.isoformat()} for x in db.scalars(select(ConfirmedField).where(ConfirmedField.document_version_id==v.id)).all()]
     return result

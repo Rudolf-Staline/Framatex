@@ -38,12 +38,13 @@ from .material_models import MaterialLine, MaterialPlanRevision, MaterialMovemen
 from .approval_models import ApprovalTemplate, ApprovalStage, ApprovalRun, ApprovalDecision, InternalNotification
 from .sharing_models import ClientPublication, SupplierDocumentRequest
 from .workflow import emit_document_impacts, latest_review
+from .document_intake_models import DocumentIdentification
+from .upload_limits import InternalUploadBodyLimit, MIB, upload_limit, limits_mib
 
 FOLDERS = [("jaune", "Technique"), ("rose", "Réception"), ("bleu", "Douane"), ("vert", "Facturation")]
 SLUGS = {slug for slug, _ in FOLDERS}
 ACTIONS = {"launch.read", "launch.create", "launch.update", "document.read", "document.write", "audit.read", "completeness.review", "document.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"}
 STATUSES = {"À compléter", "En cours", "En validation", "Clôturé"}
-MAX_UPLOAD = 20 * 1024 * 1024
 STORAGE = DATA_DIR / "files"
 STORAGE.mkdir(parents=True, exist_ok=True)
 EXTS = {".pdf", ".docx", ".xlsx", ".png", ".jpg", ".jpeg", ".txt", ".eml", ".csv"}
@@ -52,10 +53,16 @@ MIMES = {".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-off
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from .migrate import migrate
+    limits_mib()
     migrate()
+    from .core import SessionLocal
+    from .document_intake_routes import clean_expired
+    with SessionLocal() as db:
+        clean_expired(db)
     yield
 
 app = FastAPI(title="Framatex · Dossier jaune", version="0.17.0", lifespan=lifespan)
+app.add_middleware(InternalUploadBodyLimit)
 
 # Sous Windows, mimetypes lit le registre, qui déclare souvent .js (parfois .css)
 # en text/plain. Avec X-Content-Type-Options: nosniff, le navigateur refuserait
@@ -360,11 +367,15 @@ def verify_file(file_path: Path, extension: str):
         try:
             with zipfile.ZipFile(file_path) as z:
                 infos = z.infolist()
-                if len(infos) > 5000 or sum(info.file_size for info in infos) > 100 * 1024 * 1024 or any(info.file_size > 60 * 1024 * 1024 for info in infos):
+                if (len(infos) > 5000 or sum(info.file_size for info in infos) > 220 * MIB
+                        or any(info.file_size > 120 * MIB or
+                               (info.file_size > 4 * MIB and info.file_size > 1000 * max(1, info.compress_size))
+                               for info in infos)):
                     raise ValueError("archive trop volumineuse après décompression")
                 names = set(z.namelist())
                 expected = "word/document.xml" if extension == ".docx" else "xl/workbook.xml"
-                if "[Content_Types].xml" not in names or expected not in names or z.testzip() is not None:
+                if ("[Content_Types].xml" not in names or expected not in names or
+                        any(name.lower().endswith('vbaproject.bin') for name in names) or z.testzip() is not None):
                     raise ValueError("structure invalide")
         except (zipfile.BadZipFile, ValueError, RuntimeError, OSError):
             raise HTTPException(422, f"Structure {extension} invalide")
@@ -374,7 +385,9 @@ async def store_upload(file: UploadFile):
     original_name = Path((file.filename or "").replace("\\", "/")).name[:240]
     suffix = Path(original_name).suffix.lower()
     if not original_name or suffix not in EXTS:
+        await file.close()
         raise HTTPException(422, "Format non autorisé (PDF, DOCX, XLSX, PNG, JPEG, TXT, EML ou CSV)")
+    maximum = upload_limit(original_name)
     disk_name = secrets.token_hex(24)
     target = STORAGE / disk_name
     sha = hashlib.sha256()
@@ -383,15 +396,15 @@ async def store_upload(file: UploadFile):
         with target.open("xb") as out:
             while chunk := await file.read(1024 * 1024):
                 total += len(chunk)
-                if total > MAX_UPLOAD:
-                    raise HTTPException(413, "Fichier trop volumineux (20 Mo maximum)")
+                if total > maximum:
+                    raise HTTPException(413, f"Fichier trop volumineux ({maximum // MIB} Mo maximum pour ce format)")
                 sha.update(chunk)
-                out.write(chunk)
+                await run_in_threadpool(out.write, chunk)
         if total == 0:
             raise HTTPException(422, "Fichier vide")
-        verify_file(target, suffix)
+        await run_in_threadpool(verify_file, target, suffix)
         return original_name, disk_name, total, sha.hexdigest(), MIMES[suffix]
-    except Exception:
+    except BaseException:
         target.unlink(missing_ok=True)
         raise
     finally:
@@ -408,60 +421,70 @@ async def upload_document(launch_id: str, folder: str = Form(...), title: str = 
     entity = next((f for f in launch.folders if f.slug == folder), None)
     if entity is None or not title.strip() or len(title) > 220 or len(doc_type) > 100:
         raise HTTPException(422, "Métadonnées invalides")
-    original, disk_name, size, sha, mime = await store_upload(file)
+    stored = await store_upload(file)
+    return await save_direct_upload(db, user, stored, entity, title, doc_type, comment)
+
+
+def persist_document(db, user, stored, entity, title, doc_type, comment, identification=None):
+    original, disk_name, size, sha, mime = stored
+    launch = entity.launch
+    doc = Document(folder_id=entity.id, title=title.strip(), doc_type=doc_type.strip() or "Autre", created_by=user.id)
+    db.add(doc)
+    db.flush()
+    result = persist_version(db, user, stored, doc, comment, identification)
+    from .internal_uploads import duplicates
+    matches = duplicates(db, user, launch.id, entity.slug, sha, exclude_id=doc.id)
+    audit(db, user, "document.upload", "document", doc.id,
+          {"launch": launch.id, "folder": entity.slug, "sha256": sha, "duplicate_count": len(matches)})
+    return {**result, "duplicates": matches}
+
+
+async def save_direct_upload(db, user, stored, entity, title, doc_type, comment, document=None):
+    from .document_intake import assess_direct
     try:
-        doc = Document(folder_id=entity.id, title=title.strip(), doc_type=doc_type.strip() or "Autre", created_by=user.id)
-        db.add(doc)
-        db.flush()
-        version = DocumentVersion(document_id=doc.id, number=1, original_name=original, disk_name=disk_name, size=size, sha256=sha, content_type=mime, uploaded_by=user.id)
-        db.add(version)
-        db.flush()
-        if comment.strip():
-            from .internal_routes import append_comment
-            append_comment(db, user, version, comment)
-        from .internal_uploads import duplicates
-        matches = duplicates(db, user, launch_id, folder, sha, exclude_id=doc.id)
-        launch.updated_at = utcnow()
-        from .quality_routes import auto_inspect_excel
-        auto_inspect_excel(db, version, user.id)
-        audit(db, user, "document.upload", "document", doc.id, {"launch": launch_id, "folder": folder, "sha256": sha, "duplicate_count": len(matches)})
+        previous = max(document.versions, key=lambda item: item.number, default=None) if document else None
+        strict = bool(previous and db.get(DocumentIdentification, previous.id))
+        identification = await run_in_threadpool(assess_direct, STORAGE / stored[1], stored[0], entity.slug, doc_type, strict)
+        result = (persist_version(db, user, stored, document, comment, identification) if document else
+                  persist_document(db, user, stored, entity, title, doc_type, comment, identification))
         db.commit()
-        return {**doc_out(doc), "duplicates": matches}
-    except Exception:
+        return result
+    except BaseException as exc:
         db.rollback()
-        (STORAGE / disk_name).unlink(missing_ok=True)
+        (STORAGE / stored[1]).unlink(missing_ok=True)
+        if isinstance(exc, IntegrityError):
+            raise HTTPException(409, "Conflit de version, recommencez le dépôt") from exc
         raise
 
 @app.post("/api/documents/{doc_id}/versions", status_code=201)
 async def new_version(doc_id: str, file: UploadFile = File(...), comment: str = Form("", max_length=2000), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     d = get_doc(db, doc_id)
     must(user, "document.write", d.folder.slug)
-    original, disk_name, size, sha, mime = await store_upload(file)
-    try:
-        if any(v.sha256 == sha for v in d.versions):
-            raise HTTPException(409, "Ce fichier est déjà conservé dans les versions de ce document")
-        next_number = max((v.number for v in d.versions), default=0) + 1
-        version = DocumentVersion(document_id=d.id, number=next_number, original_name=original, disk_name=disk_name, size=size, sha256=sha, content_type=mime, uploaded_by=user.id)
-        d.versions.append(version)
-        db.flush()
-        if comment.strip():
-            from .internal_routes import append_comment
-            append_comment(db, user, version, comment)
-        d.folder.launch.updated_at = utcnow()
-        emit_document_impacts(db, d, version)
-        from .quality_routes import auto_inspect_excel
-        auto_inspect_excel(db, version, user.id)
-        audit(db, user, "document.version.add", "document", d.id, {"version": next_number, "sha256": sha})
-        db.commit()
-        return doc_out(d)
-    except IntegrityError:
-        db.rollback()
-        (STORAGE / disk_name).unlink(missing_ok=True)
-        raise HTTPException(409, "Conflit de version, recommencez le dépôt")
-    except Exception:
-        db.rollback()
-        (STORAGE / disk_name).unlink(missing_ok=True)
-        raise
+    stored = await store_upload(file)
+    return await save_direct_upload(db, user, stored, d.folder, d.title, d.doc_type, comment, d)
+
+
+def persist_version(db, user, stored, doc, comment, identification=None):
+    original, disk_name, size, sha, mime = stored
+    if any(v.sha256 == sha for v in doc.versions):
+        raise HTTPException(409, "Ce fichier est déjà conservé dans les versions de ce document")
+    number = max((v.number for v in doc.versions), default=0) + 1
+    version = DocumentVersion(number=number, original_name=original, disk_name=disk_name, size=size,
+                              sha256=sha, content_type=mime, uploaded_by=user.id)
+    doc.versions.append(version)
+    db.flush()
+    if identification:
+        db.add(DocumentIdentification(version_id=version.id, **identification))
+    if comment.strip():
+        from .internal_routes import append_comment
+        append_comment(db, user, version, comment)
+    doc.folder.launch.updated_at = utcnow()
+    if number > 1:
+        emit_document_impacts(db, doc, version)
+        audit(db, user, "document.version.add", "document", doc.id, {"version": number, "sha256": sha})
+    from .quality_routes import auto_inspect_excel
+    auto_inspect_excel(db, version, user.id)
+    return doc_out(doc)
 
 @app.get("/api/documents/{doc_id}/versions/{number}/download")
 def download(doc_id: str, number: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -717,6 +740,9 @@ def validate_requirement(launch_id: str, rule_id: str, payload: ValidationPayloa
     if not doc.versions:
         raise HTTPException(422, "Document sans version")
     version = max(doc.versions, key=lambda v: v.number)
+    identification = db.get(DocumentIdentification, version.id)
+    if identification and identification.status not in {'matched', 'confirmed'}:
+        raise HTTPException(409, 'Vérifiez le type documentaire avant la validation métier')
     # Une exigence de complétude ne remplace pas le circuit métier configuré.
     from .approval_routes import applicable_template
     if applicable_template(db, doc):
@@ -831,6 +857,9 @@ app.include_router(internal_router)
 
 from .client_workflow_routes import router as client_workflow_router
 app.include_router(client_workflow_router)
+
+from .document_intake_routes import router as document_intake_router
+app.include_router(document_intake_router)
 
 # Le contrôle global de portée est effectué dans request_header_guard, avant
 # le dispatch FastAPI. Aucun routeur historique ne peut l'éviter.

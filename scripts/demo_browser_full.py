@@ -56,6 +56,7 @@ def internal_journey(qa, browser, base, password, ids, captures):
         page.locator('#ops-launch-results tr', has_text=ref).locator('[data-ops-target]').click()
         expect(page.locator('#ops-launch-summary')).to_contain_text(ref)
         expect(page.locator('.folder-card')).to_have_count(4)
+        page.locator('.folder-card[data-folder="jaune"]').click()
 
     def upload(name, blob, title, kind, analyze=False):
         page.locator('#upload-doc').click()
@@ -66,8 +67,9 @@ def internal_journey(qa, browser, base, password, ids, captures):
         if page.locator('#dj-separate').count():
             page.check('#dj-separate')
         if analyze:
-            page.locator('#ops-analyze').click()
             expect(page.locator('#ops-analysis')).to_contain_text('Calcul du besoin', timeout=20000)
+        if kind == 'Calcul du besoin' and name.endswith('.xlsx'):
+            page.locator('#du-justification').fill('Classeur de calcul du besoin examiné pendant la recette.')
         page.locator('#ops-upload-form button[type=submit]').click()
         expect(page.locator('.detail-layout')).to_contain_text(title, timeout=15000)
         row = page.locator('.detail-layout tbody tr', has_text=title)
@@ -95,26 +97,27 @@ def internal_journey(qa, browser, base, password, ids, captures):
                 button.click()
                 expect(page.locator('#ops-launch-summary')).to_contain_text(expected['order_ref'], timeout=15000)
                 if target.get('folder'):
-                    expect(page.locator(f'.folder-card.selected[data-folder="{target["folder"]}"]')).to_be_visible()
+                    expect(page.locator(f'[data-dj-folder="{target["folder"]}"][aria-current="page"]')).to_be_visible()
                 page.locator('#close-modal').click() if page.locator('#close-modal').count() else None
         for key in ('active_launches', 'complete_launches', 'incomplete_launches', 'pending_documents'):
             nav(page, 'home'); page.locator(f'[data-ops-kpi="{key}"]').click()
             expect(page.locator('main')).not_to_contain_text('Chargement de l’espace documentaire')
         open_folder(ids['B'])
         for slug in ('jaune', 'rose', 'bleu', 'vert', 'jaune'):
-            page.locator(f'.folder-card[data-folder="{slug}"]').click()
-            expect(page.locator(f'.folder-card.selected[data-folder="{slug}"]')).to_be_visible()
+            page.locator(f'[data-dj-folder="{slug}"]').click()
+            expect(page.locator(f'[data-folder-panel="{slug}"]')).to_be_visible()
         view.check_page('recette-dashboard-et-dossiers')
     run('KPI réels, actions prioritaires/manquants/alertes cliquables et quatre sous-dossiers', dashboard)
 
     title = 'Fiche emploi navigateur ' + secrets.token_hex(3)
     def document_versions():
         open_folder(ids['B'])
-        upload('fiche-v1.txt', b'Fiche emploi navigateur version 1', title, 'Fiche d’emploi')
+        upload('fiche-v1.txt', 'Fiche d’emploi\nVersion 1'.encode(), title, 'Fiche d’emploi')
         for number in (2, 3):
-            page.locator('#ops-new-version').set_input_files({'name': f'fiche-v{number}.txt', 'mimeType': 'text/plain', 'buffer': f'Fiche emploi navigateur version {number}'.encode()})
-            page.fill('#ops-version-comment', f'Commentaire de révision V{number}')
-            page.locator('#ops-version-form button[type=submit]').click()
+            page.locator('#ops-version-upload').click()
+            page.locator('#ops-file').set_input_files({'name': f'fiche-v{number}.txt', 'mimeType': 'text/plain', 'buffer': f'Fiche d’emploi\nVersion {number}'.encode()})
+            page.fill('#ops-upload-comment', f'Commentaire de révision V{number}')
+            page.locator('#ops-upload-form button[type=submit]').click()
             expect(page.locator('.modal')).to_contain_text(f'Commentaires internes · V{number}')
         page.fill('#ops-comment', 'Note privée finale de la recette navigateur.')
         page.locator('#ops-comment-form button[type=submit]').click()
@@ -124,7 +127,7 @@ def internal_journey(qa, browser, base, password, ids, captures):
         expect(page.locator('.modal')).to_contain_text('Commentaires internes · V1')
         with page.expect_download() as event:
             page.locator('#ops-doc-download').click()
-        assert Path(event.value.path()).read_bytes() == b'Fiche emploi navigateur version 1'
+        assert Path(event.value.path()).read_bytes() == 'Fiche d’emploi\nVersion 1'.encode()
         page.locator('#close-modal').click()
         # Décisions et impacts : onglet « Contrôles » du Dossier Jaune.
         page.evaluate("focusWorkspaceArea('workflow')")
@@ -151,9 +154,10 @@ def internal_journey(qa, browser, base, password, ids, captures):
         rule = next(row for row in report['rows'] if row['pair'])
         source = rule['pair'][0]
         page.locator(f'.detail-layout [data-history="{source["document_id"]}"]').click()
-        page.locator('#ops-new-version').set_input_files({'name': 'provisoire-comparable.txt', 'mimeType': 'text/plain', 'buffer': b'Quantite : 1800 pieces, releve navigateur'})
-        with page.expect_response(lambda response: response.request.method == 'POST' and '/versions' in response.url) as updated:
-            page.locator('#ops-version-form button[type=submit]').click()
+        page.locator('#ops-version-upload').click()
+        page.locator('#ops-file').set_input_files({'name': 'provisoire-comparable.txt', 'mimeType': 'text/plain', 'buffer': b'Lancement provisoire\nQuantite : 1800 pieces, releve navigateur'})
+        with page.expect_response(lambda response: response.request.method == 'POST' and response.url.endswith('/publish')) as updated:
+            page.locator('#ops-upload-form button[type=submit]').click()
         version = updated.value.json()['latest']
         expect(page.locator('.modal')).to_contain_text(f'Commentaires internes · V{version["number"]}')
         page.locator('#close-modal').click()
@@ -170,12 +174,16 @@ def internal_journey(qa, browser, base, password, ids, captures):
         expect(page.locator('.quality-root')).to_contain_text('Correction demandée')
         title = 'Calcul Excel navigateur'
         cells = {'A1': 10, 'B1': '=A1*2', 'B2': '=SUM(B1:B1)'}
+        page.locator('#dj-tab-documents').click()
         upload('besoin.xlsx', files.xlsx_bytes(cells), title, 'Calcul du besoin')
         for number, values in enumerate(({**cells, 'B1': '=A1*3'}, {**cells, 'B1': 30}, {**cells, 'B2': '=SUM(#REF!)'}), 2):
-            page.locator('#ops-new-version').set_input_files({'name': 'besoin.xlsx', 'mimeType': 'application/octet-stream', 'buffer': files.xlsx_bytes(values)})
-            page.locator('#ops-version-form button[type=submit]').click()
+            page.locator('#ops-version-upload').click()
+            page.locator('#ops-file').set_input_files({'name': 'besoin.xlsx', 'mimeType': 'application/octet-stream', 'buffer': files.xlsx_bytes(values)})
+            page.locator('#du-justification').fill('Version du calcul du besoin vérifiée pour la recette.')
+            page.locator('#ops-upload-form button[type=submit]').click()
             expect(page.locator('.modal')).to_contain_text(f'Commentaires internes · V{number}')
         page.locator('#close-modal').click()
+        page.locator('#dj-tab-controles').click()
         expect(page.locator('.quality-root')).to_contain_text('#REF!')
         view.check_page('recette-coherence-excel')
     run('Cohérence : décision humaine ; Excel initial, formule changée, constante et #REF! déposés via interface', quality_excel)
@@ -186,21 +194,23 @@ def internal_journey(qa, browser, base, password, ids, captures):
         before = view.context.request.get(base + f'/api/launches/{ids["B"]}').json()
         page.evaluate("focusWorkspaceArea('intake')")
         page.locator('#intake-open').click()
-        page.locator('#intake-file').set_input_files({'name': 'calcul.png', 'mimeType': 'image/png', 'buffer': image})
-        page.locator('#intake-file-form button[type=submit]').click()
-        expect(page.locator('#intake-result')).to_contain_text('image_ocr', timeout=20000)
-        expect(page.locator('#intake-result')).to_contain_text('1800')
+        page.locator('#ops-file').set_input_files({'name': 'calcul.png', 'mimeType': 'image/png', 'buffer': image})
+        expect(page.locator('#ops-analysis')).to_contain_text('OCR de l’image', timeout=20000)
+        expect(page.locator('#ops-analysis details')).to_contain_text('1800')
         after = view.context.request.get(base + f'/api/launches/{ids["B"]}').json()
         assert sum(len(f['documents']) for f in before['folders']) == sum(len(f['documents']) for f in after['folders'])
-        page.fill('#intake-title', 'Calcul OCR confirmé par le navigateur')
-        page.locator('#intake-confirm-form button[type=submit]').click()
+        page.locator('#du-correct').click()
+        page.fill('#ops-title', 'Calcul OCR confirmé par le navigateur')
+        if page.locator('#dj-separate').count():
+            page.check('#dj-separate')
+        page.locator('#ops-upload-form button[type=submit]').click()
         expect(page.locator('.detail-layout')).to_contain_text('Calcul OCR confirmé par le navigateur')
         page.evaluate("focusWorkspaceArea('documents')")
         page.locator('.detail-layout tr', has_text='Calcul OCR confirmé par le navigateur').locator('[data-history]').click()
         page.locator('#ops-doc-intake').click()
         expect(page.locator('[data-intake-confirm="quantite"]')).to_be_visible(timeout=20000)
         page.locator('[data-intake-confirm="quantite"]').click()
-        expect(page.locator('.modal')).to_contain_text('quantite : 1800')
+        expect(page.locator('.modal')).to_contain_text('Quantité · 1800')
         page.locator('#close-modal').click()
         page.evaluate("focusWorkspaceArea('mail')")
         page.locator('#mail-import').click()

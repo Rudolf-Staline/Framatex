@@ -105,9 +105,9 @@ def run_browser(output, base_url, email, password, ids):
         page.locator('#password').fill(password)
         page.locator('#login-form button[type=submit]').click()
         expect(page.locator('.ops-heading h1')).to_have_text('Tableau de bord')
-        assert page.locator('.ops-kpi').count() == 9
+        assert page.locator('.ops-kpi').count() == 10
         expect(page.locator('#ops-missing')).to_contain_text('Calcul du besoin')
-        results['checks'].append('Connexion interne existante et 9 KPI réels')
+        results['checks'].append('Connexion interne existante et 10 KPI réels')
 
         def ready():
             page.wait_for_load_state('networkidle')
@@ -133,12 +133,13 @@ def run_browser(output, base_url, email, password, ids):
             page.evaluate("navigate('launches')")
             expect(page.locator('#ops-launch-results')).to_contain_text('FR-DEMO-2026-0142')
             capture('commandes', width)
-            page.evaluate('(id)=>openLaunch(id,"jaune")', ids['B'])
+            page.evaluate('(id)=>openLaunch(id)', ids['B'])
             expect(page.locator('#ops-launch-summary')).to_be_visible()
             capture('dossier-jaune', width)
+            page.locator('.dj-folder[data-folder="jaune"]').click()
             for slug in ('jaune', 'rose', 'bleu', 'vert'):
-                page.locator(f'[data-folder="{slug}"]').click()
-                expect(page.locator('#ops-launch-summary')).to_be_visible()
+                page.locator(f'[data-dj-folder="{slug}"]').click()
+                expect(page.locator(f'[data-folder-panel="{slug}"]')).to_be_visible()
                 capture(slug, width, '.detail-layout')
             page.evaluate('(id)=>openLaunch(id,"jaune")', ids['E'])
             expect(page.locator('#ops-launch-summary')).to_be_visible()
@@ -181,15 +182,15 @@ def run_browser(output, base_url, email, password, ids):
         page.locator('#ops-upload-comment').fill('Commentaire interne de la recette navigateur')
         if page.locator('#dj-separate').count():
             page.check('#dj-separate')
-        page.locator('#ops-analyze').click()
         expect(page.locator('#ops-analysis')).to_contain_text('Calcul du besoin')
         page.locator('#ops-upload-form button[type=submit]').click()
         expect(page.locator('.detail-layout')).to_contain_text('Calcul du besoin recette navigateur')
         row = page.locator('.detail-layout tbody tr').filter(has_text='Calcul du besoin recette navigateur')
         row.locator('[data-history]').click()
         expect(page.locator('.modal')).to_contain_text('Commentaire interne de la recette navigateur')
-        page.locator('#ops-new-version').set_input_files({'name': 'besoin-v2.txt', 'mimeType': 'text/plain', 'buffer': b'Calcul du besoin revise 3500 metres'})
-        page.locator('#ops-version-form button[type=submit]').click()
+        page.locator('#ops-version-upload').click()
+        page.locator('#ops-file').set_input_files({'name': 'besoin-v2.txt', 'mimeType': 'text/plain', 'buffer': b'Calcul du besoin revise 3500 metres'})
+        page.locator('#ops-upload-form button[type=submit]').click()
         expect(page.locator('.modal')).to_contain_text('Commentaires internes · V2')
         page.locator('#close-modal').click()
         results['checks'].append('Dépôt via interface, OCR/classement proposé, commentaire, SHA-256, nouvelle version')
@@ -229,8 +230,8 @@ def run_browser(output, base_url, email, password, ids):
 
         # Les anciens liens QR restent utilisables depuis la racine existante.
         page.goto('/#/launch/' + ids['B'])
-        expect(page.locator('.page-title')).to_contain_text('Démo B')
-        expect(page.locator('#ops-launch-summary')).to_be_visible()
+        expect(page.locator('.page-title')).to_have_text('Sous-dossier Jaune')
+        expect(page.locator('#ops-launch-summary')).to_contain_text('FR-DEMO-2026-0142')
         for path in ('/', '/espace-framatex', '/espace-client', '/api/health'):
             assert context.request.get(path).ok
         results['checks'].append('Routes principales et lien QR historique')

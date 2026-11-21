@@ -1,7 +1,5 @@
 /* =============================================================================
-   Dossier Jaune — checklist d'abord, contrôles avancés dans des onglets.
-   Construit sur tokens.css. Les couleurs des sous-dossiers restent des repères
-   discrets (filet, point) ; le bleu nuit porte la hiérarchie.
+   Dossier Jaune — vue commande, sous-dossiers colorés et checklist dédiée.
    ============================================================================= */
 
 .dj { display: grid; gap: 18px; min-width: 0; }
@@ -14,6 +12,13 @@
 .dj .dj-eyebrow { margin: 6px 0 0; font: 700 11px/1 var(--fx-font); letter-spacing: .14em; text-transform: uppercase; color: var(--fx-cyan-ink); }
 .dj .dj-title { margin: 0; font: 800 clamp(24px, 2.4vw, 32px)/1.15 var(--fx-font-display); color: var(--fx-ink); letter-spacing: -.01em; text-wrap: balance; overflow-wrap: anywhere; }
 .dj .dj-head-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.dj-crumb { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 10px; color: var(--fx-muted); font-size: 13px; margin: 0 0 8px; }
+.dj-crumb .link { padding: 0; text-align: left; }
+.dj-crumb [aria-current] { color: var(--fx-ink); font-weight: 700; overflow-wrap: anywhere; }
+.dj-subtitle, .dj-folder-context { margin: 0; color: var(--fx-muted); overflow-wrap: anywhere; }
+.dj-folder-switch { display: flex; flex-wrap: wrap; gap: 8px; }
+.dj-folder-switch [aria-current] { background: var(--fx-navy); color: white; }
+.dj .dj-docs-head progress { display: block; width: min(280px, 100%); height: 8px; margin: 8px 0; accent-color: var(--fx-blue); }
 
 .dj-summary { background: var(--fx-white); border: 1px solid var(--fx-line); border-radius: var(--fx-radius); padding: 14px 18px; display: grid; gap: 12px; }
 .dj-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 18px; margin: 0; }
@@ -63,6 +68,47 @@
 .dj-folder-meta .is-pending { color: var(--fx-info); font-weight: 600; }
 .dj-folder-meta .is-ok { color: var(--fx-success); font-weight: 600; }
 .dj-folder-meta .is-duplicate { color: var(--fx-danger); font-weight: 600; }
+.dj .dj-folder { grid-template-rows: auto auto auto 1fr auto; min-height: 225px; gap: 12px; border-top: 1px solid var(--fx-line); }
+.dj .dj-folder[data-folder="jaune"] { --folder-bg: #ffe49a; --folder-ink: #453304; }
+.dj .dj-folder[data-folder="rose"] { --folder-bg: #ffd2e0; --folder-ink: #622542; }
+.dj .dj-folder[data-folder="bleu"] { --folder-bg: #c7e4ff; --folder-ink: #173c64; }
+.dj .dj-folder[data-folder="vert"] { --folder-bg: #c7edd4; --folder-ink: #184731; }
+.dj-folder-top { justify-content: flex-start; align-items: center; gap: 12px; min-height: 74px; padding: 12px; border-radius: 10px; background: var(--folder-bg); color: var(--folder-ink); }
+.dj-folder-top .dj-folder-name { display: block; color: inherit; font-size: clamp(14px, 1.24vw, 19px); }
+.dj-folder-function { display: block; color: inherit; margin-top: 3px; font-size: 12px; }
+.dj-folder-icon { flex: 0 0 auto; }
+.dj-folder-icon svg { width: 32px; height: 32px; }
+.dj-folder-open { display: flex; align-items: center; justify-content: space-between; color: var(--fx-navy); font-size: 12px; font-weight: 700; }
+.dj-folder-open svg { width: 16px; height: 16px; }
+.dj .dj-folder.is-locked { cursor: default; }
+.dj .dj-folder.is-locked:hover { transform: none; box-shadow: none; }
+.dj-order-select { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; }
+.dj-order-select .field { flex: 1 1 280px; min-width: 0; margin: 0; }
+.dj-order-select select { width: 100%; }
+.dj .dj-order-metrics { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); grid-auto-flow: row; }
+.du-context { color: var(--fx-muted); margin-top: 0; overflow-wrap: anywhere; }
+.du-drop { display: grid; justify-items: center; text-align: center; align-content: center; gap: 8px; min-height: 155px; border: 2px dashed var(--fx-line-strong); border-radius: 12px; background: #f3f8fd; padding: 14px; }
+.du-drop.is-dragging { border-color: var(--fx-blue); background: #e0efff; }
+.du-drop > svg { width: 29px; height: 29px; color: var(--fx-blue); }
+.du-drop small, .du-files small { color: var(--fx-muted); }
+.du-files { display: grid; gap: 6px; margin: 12px 0; padding: 0; list-style: none; }
+.du-files li { display: flex; align-items: center; gap: 10px; border: 1px solid var(--fx-line); border-radius: 8px; padding: 8px; overflow-wrap: anywhere; }
+.du-files small, .du-analysis li small { display: block; }
+.du-format { flex: 0 0 45px; text-align: center; padding: 4px; color: var(--fx-navy); background: #e4effa; border-radius: 6px; font-size: 11px; font-weight: 800; }
+#du-status { margin: 8px 0; overflow-wrap: anywhere; }
+#du-progress { display: block; width: 100%; accent-color: var(--fx-blue); margin: 5px 0 10px; }
+.du-analysis { background: #f2f7fc; border: 1px solid #c7d9ef; padding: 12px; border-radius: 10px; margin-bottom: 10px; overflow-wrap: anywhere; }
+.du-analysis.is-conflict { background: #fff3dc; border-color: #e0ae60; color: #543704; }
+.du-analysis p, .du-analysis ul { margin: 4px 0 8px; }
+.du-analysis ul { padding-left: 20px; }
+.du-error { color: #912026; font-weight: 700; }
+.dj-upload [hidden] { display: none !important; }
+.dj-upload .modal-actions { position: sticky; bottom: 0; z-index: 1; padding: 8px 0; background: var(--fx-white); flex-wrap: wrap; }
+@media (max-width: 640px) { .dj .dj-order-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 540px) {
+  .dj .dj-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+  .dj .dj-tab { width: 100%; }
+}
 /* Anneau de progression à la couleur du sous-dossier. */
 .dj-folder-body { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .dj-ring { width: 40px; height: 40px; flex: none; transform: rotate(-90deg); }
@@ -187,7 +233,7 @@
 .dj-dup-form textarea { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--fx-line-strong); border-radius: var(--fx-radius-sm); font: inherit; resize: vertical; }
 
 /* Tableau de bord : onglets d'état avec compteurs */
-.dash-states { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.dash-states { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .dj-dash .dash-state-tab { position: relative; display: flex; align-items: baseline; gap: 10px; padding: 12px 16px; border: 1px solid var(--fx-line); border-radius: var(--fx-radius); background: var(--fx-white); text-align: left; cursor: pointer; color: var(--fx-text); box-shadow: none; transition: border-color .18s var(--fx-ease), box-shadow .18s var(--fx-ease), transform .18s var(--fx-ease); }
 .dj-dash .dash-state-tab strong { font: 800 26px/1 var(--fx-font-display); font-variant-numeric: tabular-nums; color: var(--fx-navy); }
 .dj-dash .dash-state-tab span { font-weight: 600; font-size: 13.5px; }
@@ -309,7 +355,7 @@
 }
 @media (max-width: 760px) {
   .dj { gap: 14px; }
-  .dash-states { gap: 6px; }
+  .dash-states { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .dj-dash .dash-state-tab { flex-direction: column; gap: 4px; padding: 10px 12px; }
   .dj-dash .dash-state-tab strong { font-size: 22px; }
   .dj-tally { justify-content: flex-start; }

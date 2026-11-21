@@ -5,6 +5,8 @@ Les constats sont des pistes de vérification, jamais des non-conformités autom
 from __future__ import annotations
 import hashlib
 import json
+import re
+import zipfile
 from decimal import Decimal
 from pathlib import Path
 from openpyxl import load_workbook
@@ -12,10 +14,54 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from .models import Document, DocumentVersion, Folder
 from .quality_models import DocumentDatum, CrossDocumentRule, QualityDecision
+from .document_intake_models import DocumentIdentification
+from .intake_models import ConfirmedField
+from .intake import normalized
 
 MAX_XLSX_BYTES = 5 * 1024 * 1024
 MAX_CELLS = 40000
 MAX_FINDINGS = 200
+QUALITY_FIELDS_EXTRA = {'reference_commande': ('Référence de commande', 'référence'),
+                        'reference_article': ('Référence article', 'référence'),
+                        'prix_total': ('Prix total hors taxes', 'MAD')}
+REFERENCE_KEYS = {'reference_commande', 'reference_article'}
+EXTRACTED_KEYS = {'quantite_lancement': 'quantite', 'besoin_matiere_total': 'besoin_matiere'}
+
+
+def source_unit(unit):
+    key = normalized(unit).replace(' ', '')
+    return {'pieces': 'pièce', 'piece': 'pièce', 'pcs': 'pièce', 'pc': 'pièce',
+            'metres': 'm', 'metre': 'm', 'm/piece': 'm/pièce', 'm/pc': 'm/pièce',
+            'kg/piece': 'kg/pièce', 'kg/pc': 'kg/pièce', 'dh': 'mad',
+            'dh/piece': 'mad/pièce', 'mad/piece': 'mad/pièce', 'eur/piece': 'eur/pièce',
+            'usd/piece': 'usd/pièce', '€/piece': 'eur/pièce', '€': 'eur'}.get(key, key)
+
+
+def extracted_value(db, version, doc, key):
+    mapped = EXTRACTED_KEYS.get(key, key)
+    field = db.scalar(select(ConfirmedField).where(ConfirmedField.document_version_id == version.id,
+                                                   ConfirmedField.field_key == mapped))
+    if not field or not field.value.strip():
+        return None
+    if key in REFERENCE_KEYS:
+        return field.value.strip(), 'référence', field.source_excerpt
+    unit = source_unit(field.unit)
+    if not unit:
+        return None
+    # A generic quantity in a delivery note can be a delivered amount, not an
+    # order quantity. Only reuse the extracted field for these production pieces.
+    if key == 'quantite_lancement' and (unit != 'pièce' or doc.folder.slug != 'jaune' or doc.doc_type not in
+            {'Commande client', 'Fiche d’emploi', 'Lancement provisoire', 'Lancement définitif'}):
+        return None
+    if key == 'prix_unitaire' and not unit.endswith('/pièce'):
+        return None
+    raw = field.value.strip().replace('\u202f', ' ').replace('\xa0', ' ')
+    if not re.fullmatch(r'[+-]?(?:\d+|\d{1,3}(?: \d{3})+)(?:[.,]\d+)?', raw):
+        return None
+    value = Decimal(raw.replace(' ', '').replace(',', '.'))
+    if abs(value) > Decimal('1e15'):
+        return None
+    return format(value, 'f'), unit, field.source_excerpt
 
 
 def latest_document_versions(db: Session, launch_id: str, doc_type: str, folder: str):
@@ -29,23 +75,36 @@ def comparison(db: Session, launch_id: str, rule: CrossDocumentRule):
     """Do not guess when several documents could be the expected source."""
     left = latest_document_versions(db, launch_id, rule.left_doc_type, rule.left_folder)
     right = latest_document_versions(db, launch_id, rule.right_doc_type, rule.right_folder)
-    status = 'unavailable'; reason = 'Pièce manquante'; pair = []
+    status = 'unavailable'; reason = 'Pièce manquante'; pair = []; delta = None
     if not left or not right:
         reason = 'Pièce requise absente' if not left or not right else reason
     elif len(left) != 1 or len(right) != 1 or left[0][0].id == right[0][0].id:
         status = 'ambiguous'; reason = 'Plusieurs documents candidats : sélectionner une source métier précise'
     else:
         for d, v in [left[0], right[0]]:
+            identification = db.get(DocumentIdentification, v.id)
             datum = db.scalar(select(DocumentDatum).where(
                 DocumentDatum.document_version_id == v.id, DocumentDatum.field_key == rule.field_key
             ))
+            value, unit, excerpt, provenance = None, None, '', None
+            if not identification or identification.status in {'matched', 'confirmed'}:
+                if datum:
+                    value, unit, provenance = datum.value_text, datum.unit, 'Relevé manuel'
+                elif extracted := extracted_value(db, v, d, rule.field_key):
+                    value, unit, excerpt = extracted
+                    provenance = 'Lecture documentaire confirmée'
+            else:
+                provenance = 'Type documentaire à vérifier'
             pair.append({'document_id': d.id, 'document_title': d.title, 'version_id': v.id,
-                         'version': v.number, 'folder': d.folder.slug, 'value': datum.value_text if datum else None,
-                         'unit': datum.unit if datum else None})
+                         'version': v.number, 'folder': d.folder.slug, 'value': value, 'unit': unit,
+                         'provenance': provenance, 'source_excerpt': excerpt})
         if not all(x['value'] is not None for x in pair):
             status = 'unavailable'; reason = 'Valeur non relevée sur une ou plusieurs versions courantes'
-        elif pair[0]['unit'] != pair[1]['unit']:
+        elif source_unit(pair[0]['unit']) != source_unit(pair[1]['unit']):
             status = 'unit_mismatch'; reason = 'Unités incompatibles : conversion manuelle requise'
+        elif rule.field_key in REFERENCE_KEYS:
+            status = 'consistent' if pair[0]['value'].casefold() == pair[1]['value'].casefold() else 'difference'
+            reason = 'Références identiques' if status == 'consistent' else 'Références différentes à examiner'
         else:
             delta = abs(Decimal(pair[0]['value'])-Decimal(pair[1]['value']))
             status = 'consistent' if delta <= Decimal(rule.tolerance_text) else 'difference'
@@ -55,12 +114,16 @@ def comparison(db: Session, launch_id: str, rule: CrossDocumentRule):
     return {'rule_id':rule.id,'name':rule.name, 'field_key':rule.field_key,
             'left_doc_type':rule.left_doc_type, 'right_doc_type':rule.right_doc_type,
             'folders':[rule.left_folder,rule.right_folder], 'tolerance':rule.tolerance_text,
-            'status':status,'reason':reason,'pair':pair,'signature':signature}
+            'status':status,'reason':reason,'pair':pair,'signature':signature,
+            'delta':format(delta, 'f') if delta is not None else None}
 
 
 def _read_cells(path: Path):
     if path.stat().st_size > MAX_XLSX_BYTES:
         raise ValueError('Analyse limitée aux classeurs de 5 Mo maximum')
+    with zipfile.ZipFile(path) as archive:
+        if sum(entry.file_size for entry in archive.infolist()) > 24 * 1024 * 1024:
+            raise ValueError('Classeur trop volumineux après décompression')
     # Les fichiers sont conservés sous un nom opaque, sans extension : fournir un flux.
     stream = path.open("rb")
     try:

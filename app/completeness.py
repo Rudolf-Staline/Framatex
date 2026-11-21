@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from .models import Document, Folder, Launch
 from .workflow import latest_review
+from .document_intake_models import DocumentIdentification
 from .completeness_models import (CompletenessProfile, LaunchCompleteness,
     RequirementRule, RequirementValidation, RequirementException)
 
@@ -40,6 +41,9 @@ def evaluate(db: Session, launch: Launch, user, permitted):
                 version = max(document.versions, key=lambda v: v.number)
                 candidates.append((document, version))
         # Une validation d'une version ancienne ne valide jamais la version courante.
+        identifications = {version.id: db.get(DocumentIdentification, version.id) for _, version in candidates}
+        conforming = [(doc, version) for doc, version in candidates
+                      if not identifications[version.id] or identifications[version.id].status in {'matched', 'confirmed'}]
         validated = set()
         if candidates and rule.requires_validation:
             version_ids = [version.id for _, version in candidates]
@@ -63,10 +67,16 @@ def evaluate(db: Session, launch: Launch, user, permitted):
             RequirementException.active.is_(True)
         ))
         due = rule.required and PHASE_RANK[phase] >= PHASE_RANK[rule.due_phase]
-        if candidates and (not rule.requires_validation or any(v.id in validated for _, v in candidates)):
+        if conforming and (not rule.requires_validation or any(v.id in validated for _, v in conforming)):
             status = "present"
-        elif candidates:
+        elif conforming:
             status = "pending_validation"
+        elif exception and due:
+            status = "exception"
+        elif any(item and item.status == 'to_verify' for item in identifications.values()):
+            status = 'to_verify'
+        elif candidates:
+            status = 'incompatible'
         elif not due:
             status = "not_due"
         elif exception:
@@ -80,14 +90,17 @@ def evaluate(db: Session, launch: Launch, user, permitted):
             "guidance": rule.guidance,
             "due": due, "status": status,
             "exception_reason": exception.reason if exception and status == "exception" else None,
-            "documents": [{"id": doc.id, "title": doc.title, "version": version.number,
+            "documents": [{"id": doc.id, "title": doc.title, "version": version.number, 'version_id': version.id,
+                           'identification': identifications[version.id].status if identifications[version.id] else None,
                            "validated": version.id in validated if rule.requires_validation else None}
-                          for doc, version in candidates],
+                          for doc, version in sorted(candidates, key=lambda item: (
+                              item[1].id in validated, not identifications[item[1].id] or
+                              identifications[item[1].id].status in {'matched', 'confirmed'}), reverse=True)],
             "can_review": permitted(user, "completeness.review", rule.folder_slug)
                            and permitted(user, "document.read", rule.folder_slug),
         })
     counts = {code: sum(row["status"] == code for row in rows)
-              for code in ("present", "pending_validation", "missing", "not_due", "exception")}
+              for code in ("present", "pending_validation", "missing", "not_due", "exception", 'to_verify', 'incompatible')}
     # Un total nul n'est pas une complétude à 100 %. Une dérogation ne vaut pas présence.
     exigible = sum(row["due"] for row in rows)
     return {

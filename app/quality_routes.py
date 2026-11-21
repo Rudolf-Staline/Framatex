@@ -11,11 +11,12 @@ from sqlalchemy.orm import Session
 from .core import get_current_user, get_db, utcnow
 from .models import Document, DocumentVersion, Folder, User
 from .quality_models import DocumentDatum, CrossDocumentRule, QualityDecision, ExcelInspection
-from .quality import comparison, analyze_workbook
+from .quality import QUALITY_FIELDS_EXTRA, REFERENCE_KEYS, comparison, analyze_workbook
 from .workflow import VALUE_FIELDS
 from .main import must, permitted, admin_only, get_doc, get_launch, audit, STORAGE, SLUGS
 
 router=APIRouter()
+QUALITY_FIELDS = {**VALUE_FIELDS, **QUALITY_FIELDS_EXTRA}
 
 
 class DatumIn(BaseModel):
@@ -66,7 +67,7 @@ def rule_out(r):
 @router.get('/api/quality/fields')
 def fields(user:User=Depends(get_current_user)):
     must(user,'launch.read')
-    return [{'key':k,'label':label,'suggested_unit':unit} for k,(label,unit) in VALUE_FIELDS.items()]
+    return [{'key':k,'label':label,'suggested_unit':unit} for k,(label,unit) in QUALITY_FIELDS.items()]
 
 
 @router.post('/api/document-versions/{version_id}/data',status_code=201)
@@ -75,15 +76,17 @@ def save_datum(version_id:str,payload:DatumIn,user:User=Depends(get_current_user
     must(user,'launch.read')
     must(user,'document.read',doc.folder.slug)
     must(user,'document.write',doc.folder.slug)
-    if payload.field_key not in VALUE_FIELDS: raise HTTPException(422,'Champ métier inconnu')
+    if payload.field_key not in QUALITY_FIELDS: raise HTTPException(422,'Champ métier inconnu')
     if version.number != max(v.number for v in doc.versions):
         raise HTTPException(409,'La valeur doit être saisie sur la version courante')
     if db.scalar(select(DocumentDatum).where(DocumentDatum.document_version_id==version.id,
                                            DocumentDatum.field_key==payload.field_key)):
         raise HTTPException(409,'Valeur déjà consignée : utiliser une nouvelle version documentaire')
-    num=normalized_decimal(payload.value)
+    num=payload.value.strip() if payload.field_key in REFERENCE_KEYS else normalized_decimal(payload.value)
+    if not num:
+        raise HTTPException(422, 'Référence obligatoire')
     item=DocumentDatum(document_version_id=version.id, field_key=payload.field_key,
-                       value_text=num,unit=payload.unit.strip(),recorded_by=user.id)
+                       value_text=num,unit='référence' if payload.field_key in REFERENCE_KEYS else payload.unit.strip(),recorded_by=user.id)
     db.add(item);db.flush()
     audit(db,user,'quality.datum.record','document_version',version.id,
           {'field_key':payload.field_key,'datum':item.id})
@@ -141,7 +144,7 @@ def get_rules(user:User=Depends(get_current_user),db:Session=Depends(get_db)):
 @router.post('/api/admin/quality-rules',status_code=201)
 def add_rule(payload:RuleIn,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
     admin_only(user)
-    if payload.field_key not in VALUE_FIELDS or payload.left_folder not in SLUGS or payload.right_folder not in SLUGS:
+    if payload.field_key not in QUALITY_FIELDS or payload.left_folder not in SLUGS or payload.right_folder not in SLUGS:
         raise HTTPException(422,'Configuration de règle incorrecte')
     if payload.left_doc_type.strip()==payload.right_doc_type.strip() and payload.left_folder==payload.right_folder:
         raise HTTPException(422,'Deux sources documentaires distinctes sont nécessaires')

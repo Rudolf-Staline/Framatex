@@ -13,34 +13,63 @@ function renderCandidates(items){
  if(!items?.length)return `<p class="workflow-help">Aucun champ structuré détecté.</p>`;
  return `<div class="intake-candidates">${items.map((x,i)=>`<div class="intake-candidate"><strong>${e(x.key.replaceAll('_',' '))}</strong><span>${e(x.value)} ${e(x.unit||'')}</span><small>${e(x.source_excerpt||'')}</small></div>`).join('')}</div>`;
 }
-function intakeOpen(){
- const d=state.detail;
- modal('Analyser avant le dépôt',`<p class="modal-desc">Le fichier est lu localement. Confirmez le sous-dossier et le type proposés avant l'enregistrement.</p><form id="intake-file-form"><div class="field"><label>Document à analyser *</label><input id="intake-file" type="file" accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg,.txt,.eml" required /></div><div class="modal-actions"><button type="button" class="secondary" id="intake-cancel">Annuler</button><button class="primary" type="submit">Analyser</button></div></form><div id="intake-result"></div>`,true);
- overlay.querySelector('#intake-cancel').onclick=closeModal;
- overlay.querySelector('#intake-file-form').onsubmit=async ev=>{
-  ev.preventDefault();const file=overlay.querySelector('#intake-file').files[0];if(!file)return;
-  const fd=new FormData();fd.append('file',file);
-  const zone=overlay.querySelector('#intake-result');zone.textContent='Analyse en cours…';
-  try{
-   const result=await api('/api/launches/'+d.id+'/intake/preview',{method:'POST',body:fd});
-   const folders=d.folders.filter(x=>x.can_write);const top=result.classification.suggestions[0];const recommended=folders.some(f=>f.slug===top?.folder)?top?.folder:folders[0]?.slug;
-   const types=['Autre',...new Set([...result.classification.suggestions.map(x=>x.doc_type),'Fiche d’emploi','Dossier technique','Bon de livraison','Facture'])];
-   zone.innerHTML=`<div class="intake-analysis"><h3>Propositions à vérifier</h3><p class="workflow-help">Méthode : ${e(result.method)}. ${e(result.warnings.join(' · '))}</p><p class="workflow-help">${e(result.classification.suggestions.map(x=>x.doc_type+' : '+x.reason).join(' · ')||'Classement incertain : choisissez vous-même.')}</p><form id="intake-confirm-form"><div class="two-fields"><div class="field"><label>Sous-dossier confirmé *</label><select id="intake-folder">${folders.map(f=>`<option value="${e(f.slug)}" ${recommended===f.slug?'selected':''}>${e(f.label)}</option>`).join('')}</select></div><div class="field"><label>Type confirmé *</label><select id="intake-type">${types.map(t=>`<option value="${e(t)}" ${top?.doc_type===t?'selected':''}>${e(t)}</option>`).join('')}</select></div></div><div class="field"><label>Titre du document *</label><input id="intake-title" maxlength="220" required value="${e(file.name.replace(/\.[^.]+$/,''))}"></div><h3>Champs proposés (non encore validés)</h3>${renderCandidates(result.fields)}<div class="field"><label>Extrait détecté</label><textarea rows="4" readonly>${e(result.text_excerpt||'Aucun texte détecté')}</textarea></div><div class="modal-actions"><button type="button" class="secondary" id="intake-stop">Ne pas enregistrer</button><button type="submit" class="primary">Confirmer le classement et déposer</button></div></form></div>`;
-   zone.querySelector('#intake-stop').onclick=closeModal;
-   zone.querySelector('#intake-confirm-form').onsubmit=async event=>{event.preventDefault();try{const up=new FormData();up.append('folder',zone.querySelector('#intake-folder').value);up.append('doc_type',zone.querySelector('#intake-type').value);up.append('title',zone.querySelector('#intake-title').value.trim());up.append('file',file);const doc=await api('/api/launches/'+d.id+'/documents',{method:'POST',body:up});closeModal();toast('Dépôt confirmé · vous pouvez vérifier les champs extraits depuis le document');await openLaunch(d.id,doc.folder)}catch(err){showErr(err)}};
-  }catch(err){zone.textContent='';showErr(err)}
- };
+function intakeOpen() {
+  return dossierUpload({folder: state.folder}).catch(showErr);
 }
-async function intakeExisting(versionId){
- try{
- const data=await api('/api/document-versions/'+encodeURIComponent(versionId)+'/intake');
- const pending=(data.fields||[]).filter(x=>!(data.confirmed||[]).some(y=>y.key===x.key));
- modal('Extraire et confirmer les champs',`<p class="modal-desc">Lecture ${e(data.method)}. Les champs extraits sont des propositions et ne modifient ni ORLI ni les valeurs métier déjà enregistrées.</p>${data.warnings?.length?`<p class="permission-lock">${e(data.warnings.join(' · '))}</p>`:''}<div class="field"><label>Extrait du document</label><textarea readonly rows="4">${e(data.text_excerpt)}</textarea></div><h3>Champs non encore confirmés</h3>${pending.length?pending.map(x=>`<div class="intake-field-row"><div class="workflow-meta">${e(x.key)} · ${e(x.source_excerpt)}</div><input aria-label="Valeur corrigée pour ${e(x.key)}" id="if-${e(x.key)}" value="${e(x.value)}" maxlength="140"/><button class="secondary tiny" data-intake-confirm="${e(x.key)}">Valider la valeur</button></div>`).join(''):'<p>Aucun nouveau champ proposé.</p>'}<h3>Champs confirmés</h3>${(data.confirmed||[]).map(x=>`<p class="workflow-meta">${e(x.key)} : ${e(x.value)} ${e(x.unit||'')}</p>`).join('')||'<p class="workflow-help">Aucun.</p>'}`,true);
- overlay.querySelectorAll('[data-intake-confirm]').forEach(el=>el.addEventListener('click',async()=>{
-  const key=el.dataset.intakeConfirm;const candidate=pending.find(x=>x.key===key);if(!candidate)return;
-  const value=overlay.querySelector('#if-'+key).value.trim();
-  if(!value){toast('Saisir une valeur à confirmer');return}
-  try{await api('/api/document-versions/'+encodeURIComponent(versionId)+'/intake/confirm',{method:'POST',body:JSON.stringify({field_key:key,value,unit:candidate.unit||'',source_excerpt:candidate.source_excerpt||''})});toast('Champ confirmé sur la version documentaire');await intakeExisting(versionId)}catch(err){showErr(err)}
- }));
- }catch(err){showErr(err)}
+async function intakeExisting(versionId) {
+  try {
+    const launchId = state.detail.id;
+    const folder = state.folder;
+    const endpoint = '/api/document-versions/' + encodeURIComponent(versionId);
+    const data = await api(endpoint + '/intake');
+    const doc = state.detail.folders.flatMap(item => item.documents || []).find(item => item.versions.some(v => v.id === versionId));
+    const editable = doc && doc.latest.id === versionId && can('document.write', doc.folder);
+    const review = editable && ['to_verify', 'incompatible'].includes(data.identification?.status);
+    const pending = data.fields.filter(field => !data.confirmed.some(item => item.key === field.key));
+    const reached = data.classification.suggestions;
+    const labels = {quantite: 'Quantité', reference_commande: 'Référence de commande', reference_article: 'Référence article',
+      consommation_matiere: 'Consommation matière', besoin_matiere: 'Besoin matière', prix_unitaire: 'Prix unitaire', prix_total: 'Prix total hors taxes'};
+    const label = key => labels[key] || key.replaceAll('_', ' ');
+    modal('Identification et valeurs documentaires', `<p class="modal-desc">${e(DOCUMENT_METHODS[data.method] || 'Vérification manuelle')}. Les valeurs explicitement confirmées peuvent alimenter les comparaisons sur cette version.</p>
+      ${data.warnings.length ? `<p class="permission-lock">${e(data.warnings.join(' · '))}</p>` : ''}
+      ${data.identification ? `<p><strong>${e(({matched: 'Type reconnu', confirmed: 'Type confirmé', incompatible: 'Type documentaire incompatible', to_verify: 'Déposé — à vérifier'})[data.identification.status])}</strong>${data.identification.justification ? ' · ' + e(data.identification.justification) : ''}</p>` : ''}
+      ${reached.length ? `<ul>${reached.map(item => `<li><strong>${e(item.doc_type)}</strong> · ${e(item.reason)}</li>`).join('')}</ul>` : ''}
+      ${review ? '<form id="du-review-type"><div class="field"><label for="du-review-note">Justifier le type après lecture du document</label><textarea id="du-review-note" required minlength="12" maxlength="1800" rows="2"></textarea></div><button class="primary tiny" type="submit">Confirmer le type</button></form>' : ''}
+      <div class="field"><label for="du-source-text">Extrait du document</label><textarea id="du-source-text" readonly rows="4">${e(data.text_excerpt)}</textarea></div>
+      <h3>Champs à vérifier</h3>
+      ${pending.map(x => `<div class="intake-field-row"><div class="workflow-meta"><strong>${e(label(x.key))}</strong> · ${e(x.source_excerpt)}${x.status === 'ambiguous' ? '<br>Plusieurs valeurs trouvées. Relevez la valeur dans la source.' : ''}</div>
+        ${editable ? `<input aria-label="Valeur de ${e(label(x.key))}" id="if-${e(x.key)}" value="${x.status === 'ambiguous' ? '' : e(x.value)}" maxlength="140">
+        <input aria-label="Unité de ${e(label(x.key))}" id="iu-${e(x.key)}" value="${x.status === 'ambiguous' ? '' : e(x.unit)}" maxlength="30" placeholder="Unité">
+        <button class="secondary tiny" data-intake-confirm="${e(x.key)}">Valider la valeur</button>` : `<span>${e(x.value)} ${e(x.unit)}</span>`}</div>`).join('') || '<p>Aucun champ proposé.</p>'}
+      <h3>Champs confirmés</h3>${data.confirmed.map(x => `<p class="workflow-meta" data-confirmed-field="${e(x.key)}">${e(label(x.key))} · ${e(x.value)} ${e(x.unit)}</p>`).join('') || '<p>Aucun champ confirmé.</p>'}`, true);
+    const currentDialog = overlay.querySelector('.modal');
+    async function refresh() {
+      if (!currentDialog.isConnected || state.detail?.id !== launchId) return;
+      await openLaunch(launchId, folder);
+      if (currentDialog.isConnected) await intakeExisting(versionId);
+    }
+    overlay.querySelector('#du-review-type')?.addEventListener('submit', async event => {
+      event.preventDefault();
+      try {
+        await api(endpoint + '/identification/confirm', {method: 'POST', body: JSON.stringify({justification: val('du-review-note')})});
+        toast('Type documentaire confirmé');
+        await refresh();
+      } catch (error) { showErr(error); }
+    });
+    overlay.querySelectorAll('[data-intake-confirm]').forEach(button => button.addEventListener('click', async () => {
+      const key = button.dataset.intakeConfirm;
+      const candidate = pending.find(item => item.key === key);
+      const value = val('if-' + key).trim();
+      if (!value) { toast('Saisissez la valeur à confirmer.'); return; }
+      button.disabled = true;
+      try {
+        await api(endpoint + '/intake/confirm', {method: 'POST', body: JSON.stringify({
+          field_key: key, value, unit: val('iu-' + key), source_excerpt: candidate.source_excerpt,
+        })});
+        toast('Valeur confirmée sur cette version');
+        await refresh();
+      } catch (error) { showErr(error); }
+      finally { button.disabled = false; }
+    }));
+  } catch (error) { showErr(error); }
 }
