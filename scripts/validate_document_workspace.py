@@ -122,6 +122,7 @@ def workspace(qa, browser, server, captures, ocr_available):
                 capture(f'sous-dossier-{folder}')
                 if width == 390 and folder == 'jaune':
                     page.locator('#upload-doc').click()
+                    expect(page.get_by_role('dialog', name='Déposer des documents')).to_be_visible()
                     capture('depot')
                     page.locator('#close-modal').click()
                 page.locator('#dj-return-order' if folder == 'rose' else '#dj-folders-back').click()
@@ -134,6 +135,7 @@ def workspace(qa, browser, server, captures, ocr_available):
     def uploads():
         open_yellow()
         line('Fiche de prix').get_by_role('button', name='Déposer').click()
+        expect(page.get_by_role('dialog', name='Déposer des documents')).to_be_visible()
         capture('depot')
         select_file('fiche-de-prix.pdf', native_pdf('BON DE LIVRAISON\nReference commande : CMD-RECETTE-01'))
         expect(page.locator('#ops-analysis')).to_contain_text('Bon de livraison, alors que la pièce attendue')
@@ -196,6 +198,7 @@ def workspace(qa, browser, server, captures, ocr_available):
         match = page.locator('.quality-item', has_text='Quantité commande et fiche d’emploi')
         expect(match).to_contain_text('écart de 500 pièce')
         expect(match).to_contain_text('Lecture documentaire confirmée')
+        match.scroll_into_view_if_needed()
         capture('coherence')
         match.locator('[data-quality-source]').first.click()
         expect(page.locator('.modal')).to_contain_text('Commande client')
