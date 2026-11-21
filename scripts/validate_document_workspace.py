@@ -120,6 +120,10 @@ def workspace(qa, browser, server, captures, ocr_available):
                 expect(page.locator('[data-folder-panel]')).to_have_count(1)
                 expect(page.locator('[aria-label="Fil d’Ariane"]')).to_contain_text('CMD-RECETTE-01')
                 capture(f'sous-dossier-{folder}')
+                if width == 390 and folder == 'jaune':
+                    page.locator('#upload-doc').click()
+                    capture('depot')
+                    page.locator('#close-modal').click()
                 page.locator('#dj-return-order' if folder == 'rose' else '#dj-folders-back').click()
                 expect(page.locator('.dj-folder')).to_have_count(4)
         page.set_viewport_size({'width': 1440, 'height': 960})
