@@ -144,7 +144,7 @@ def build_priorities(user, db, launch=None):
                          description=f"Engagement {('en retard' if overdue else 'à suivre')} · {commitment.responsible[:100]}",
                          rank=0 if overdue else 2, area="mail", action="open_launch",
                          item_id=commitment.id, deadline=commitment.due_date)
-        from .internal_service import extra_actions
+    from .internal_service import extra_actions
     items.extend(extra_actions(db, user, visible_launches))
     items.sort(key=lambda row: (row["rank"], row["deadline"] or "9999-12-31",
                                 row["launch_name"].casefold(),row["id"]))
