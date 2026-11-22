@@ -94,8 +94,9 @@ def build_priorities(user, db, launch=None):
                                                           ImpactAlert.status.in_(["to_review", "action_required"]))).all()
             for alert in alerts:
                 rule = db.get(ImpactRule, alert.rule_id)
-                if not rule or not (permitted(user,"document.read",rule.source_folder)
-                                    and permitted(user,"document.read",rule.target_folder)):
+                if not rule or not all(permitted(user, action, folder)
+                                       for folder in (rule.source_folder, rule.target_folder)
+                                       for action in ("document.read", "controls.read")):
                     continue
                 _add(items, launch, kind="impact", title="Modification à examiner : " + rule.name,
                      description=rule.instruction[:210], rank=1, area="workflow",

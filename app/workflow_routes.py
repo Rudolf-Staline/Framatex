@@ -265,7 +265,9 @@ def toggle_impact_rule(rule_id: str, payload: RulePatch, user: User = Depends(ge
 
 def alert_visible(user: User, rule: ImpactRule):
     # Une alerte peut contenir des références sensibles provenant du dossier source.
-    return permitted(user, 'document.read', rule.source_folder) and permitted(user, 'document.read', rule.target_folder)
+    return all(permitted(user, action, folder)
+               for folder in (rule.source_folder, rule.target_folder)
+               for action in ('document.read', 'controls.read'))
 
 
 def alert_out(alert: ImpactAlert, rule: ImpactRule, user: User):

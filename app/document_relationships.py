@@ -100,7 +100,10 @@ def propose_relationships(db, user, launch, sha256: str, analysis: dict) -> list
 
     proposals = []
     for folder in launch.folders:
-        if not permitted(user, 'document.read', folder.slug):
+        # Un rapprochement révèle l'existence et des caractéristiques d'autres
+        # pièces : il relève explicitement de « Consulter les contrôles ».
+        if not (permitted(user, 'document.read', folder.slug)
+                and permitted(user, 'controls.read', folder.slug)):
             continue
         for document in folder.documents:
             if not document.versions:

@@ -43,7 +43,10 @@ from .upload_limits import InternalUploadBodyLimit, MIB, upload_limit, limits_mi
 
 FOLDERS = [("jaune", "Technique"), ("rose", "Réception"), ("bleu", "Douane"), ("vert", "Facturation")]
 SLUGS = {slug for slug, _ in FOLDERS}
-ACTIONS = {"launch.read", "launch.create", "launch.update", "document.read", "document.write", "audit.read", "completeness.review", "document.review", "value.write", "impact.review", "quality.review", "requirement.review", "ambiguity.review", "commitment.review"}
+ACTIONS = {"launch.read", "launch.create", "launch.update", "document.read", "document.download",
+           "document.write", "document.version", "document.comment", "controls.read", "audit.read",
+           "completeness.review", "document.review", "value.write", "impact.review", "quality.review",
+           "requirement.review", "ambiguity.review", "commitment.review"}
 STATUSES = {"À compléter", "En cours", "En validation", "Clôturé"}
 STORAGE = DATA_DIR / "files"
 STORAGE.mkdir(parents=True, exist_ok=True)
@@ -336,7 +339,9 @@ def launch_detail(launch_id: str, user: User = Depends(get_current_user), db: Se
         docs = [] if not folder or not permitted(user, "document.read", slug) else [doc_out(d) for d in folder.documents]
         folders.append({"slug": slug, "label": label, "can_read": permitted(user, "document.read", slug), "can_write": permitted(user, "document.write", slug),
                         "can_version": permitted(user, "document.version", slug), "can_download": permitted(user, "document.download", slug),
-                        "can_comment": permitted(user, "document.comment", slug), "can_review": permitted(user, "document.review", slug),
+                        "can_comment": permitted(user, "document.comment", slug), "can_controls": permitted(user, "controls.read", slug),
+                        "can_value": permitted(user, "value.write", slug), "can_quality": permitted(user, "quality.review", slug),
+                        "can_review": permitted(user, "document.review", slug),
                         "documents": docs})
     return {**launch_out(l), "folders": folders, "can_update": permitted(user, "launch.update"), "can_manage_access": is_admin(user)}
 

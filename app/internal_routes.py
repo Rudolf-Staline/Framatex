@@ -150,6 +150,7 @@ def review_duplicate(launch_id: str, payload: DuplicateReviewPayload,
     if not group:
         raise HTTPException(404, "Aucun doublon pour cette empreinte dans ce dossier")
     for folder in {d["folder"] for d in group["documents"]}:
+        must(user, "controls.read", folder)
         must(user, "document.review", folder)
     db.add(DuplicateReview(launch_id=launch.id, sha256=payload.sha256, reason=payload.reason.strip(),
                            version_ids=json.dumps([d["version_id"] for d in group["documents"]]), decided_by=user.id))

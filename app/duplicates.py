@@ -20,7 +20,8 @@ def duplicate_groups(db, user, launch):
     from .main import permitted
     by_digest = defaultdict(list)
     for folder in launch.folders:
-        if not permitted(user, "document.read", folder.slug):
+        if not (permitted(user, "document.read", folder.slug)
+                and permitted(user, "controls.read", folder.slug)):
             continue
         for document in folder.documents:
             if document.versions:

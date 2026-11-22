@@ -75,7 +75,7 @@ def save_datum(version_id:str,payload:DatumIn,user:User=Depends(get_current_user
     version,doc=version_doc(db,version_id)
     must(user,'launch.read')
     must(user,'document.read',doc.folder.slug)
-    must(user,'document.write',doc.folder.slug)
+    must(user,'value.write',doc.folder.slug)
     if payload.field_key not in QUALITY_FIELDS: raise HTTPException(422,'Champ métier inconnu')
     if version.number != max(v.number for v in doc.versions):
         raise HTTPException(409,'La valeur doit être saisie sur la version courante')

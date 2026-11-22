@@ -171,7 +171,8 @@ def set_assignments(db: Session, actor: User, target: User, launch: Launch,
 def notify_new_assignment(db: Session, target: User, launch: Launch, folders: dict):
     """Notification interne « nouvelle affectation », selon les préférences du collaborateur."""
     from .approval_models import InternalNotification
-    if not prefs_of(db.get(CollaboratorProfile, target.id)).get("new_assignments", True):
+    prefs = prefs_of(db.get(CollaboratorProfile, target.id))
+    if not prefs.get("internal", True) or not prefs.get("new_assignments", True):
         return
     names = ", ".join(FOLDER_NAMES[s] for s in FOLDERS if s in folders)
     db.add(InternalNotification(recipient_id=target.id, event_key=f"assignment:{launch.id}:{secrets.token_hex(4)}",

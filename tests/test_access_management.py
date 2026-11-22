@@ -254,6 +254,79 @@ def test_controls_require_controls_read_on_both_folders(env):
     assert d.get(f"/api/launches/{L['001']}/excel-inspections").status_code == 200
 
 
+def test_document_intelligence_actions_are_separated_and_scoped(env):
+    """Intégration Codex/Claude : version, valeurs, contrôles et FTS restent indépendants."""
+    chef, launch_id, tag = env['chef'], env['launches']['001'], env['tag']
+    rule = chef.post('/api/admin/impact-rules', headers=H, json={
+        'name': f'Impact intégré {tag}', 'source_kind': 'document', 'source_key': 'Autre',
+        'source_folder': 'jaune', 'target_folder': 'jaune',
+        'instruction': 'Revérifier les pièces techniques concernées après cette nouvelle version.'})
+    assert rule.status_code == 201, rule.text
+    first = chef.post(f'/api/launches/{launch_id}/documents', headers=H,
+        data={'folder': 'jaune', 'title': f'Document intégré {tag}', 'doc_type': 'Autre'},
+        files={'file': ('integre-v1.txt', f'Quantité : 100 pièces intégration {tag}'.encode(), 'text/plain')})
+    assert first.status_code == 201, first.text
+    doc = first.json()
+    second = chef.post(f"/api/documents/{doc['id']}/versions", headers=H,
+        files={'file': ('integre-v2.txt', f'Quantité : 110 pièces intégration {tag}'.encode(), 'text/plain')})
+    assert second.status_code == 201, second.text
+    version_id = second.json()['latest']['id']
+
+    # Lecture seule : ni comparaison, ni alerte, ni téléchargement.
+    assign(env, 'd', '001', {'jaune': ['document.read']})
+    d = login(env, 'd')
+    assert d.get(f'/api/document-versions/{version_id}/compare-previous').status_code == 403
+    assert not any(row['rule_id'] == rule.json()['id'] for row in d.get(f'/api/launches/{launch_id}/impacts').json())
+    assert d.get(f"/api/documents/{doc['id']}/versions/2/download").status_code == 403
+
+    # Dépôt + contrôles, sans document.version ni value.write.
+    assign(env, 'd', '001', {'jaune': ['document.read', 'document.write', 'controls.read']})
+    d = login(env, 'd')
+    folder = next(row for row in d.get(f'/api/launches/{launch_id}').json()['folders'] if row['slug'] == 'jaune')
+    assert folder['can_write'] and folder['can_controls']
+    assert not folder['can_version'] and not folder['can_value'] and not folder['can_download']
+    assert d.get(f'/api/document-versions/{version_id}/compare-previous').status_code == 200
+    assert any(row['rule_id'] == rule.json()['id'] for row in d.get(f'/api/launches/{launch_id}/impacts').json())
+    created = d.post(f'/api/launches/{launch_id}/documents', headers=H,
+        data={'folder': 'jaune', 'title': f'Nouveau dépôt {tag}', 'doc_type': 'Autre'},
+        files={'file': ('nouveau.txt', b'Quantite : 25 pieces', 'text/plain')})
+    assert created.status_code == 201, created.text
+    assert d.post(f"/api/documents/{created.json()['id']}/versions", headers=H,
+                  files={'file': ('nouveau-v2.txt', b'Quantite : 26 pieces', 'text/plain')}).status_code == 403
+    staged = d.post(f'/api/launches/{launch_id}/document-uploads', headers=H,
+        data={'folder': 'jaune'}, files={'file': ('guide.txt', b'Quantite : 27 pieces', 'text/plain')})
+    assert staged.status_code == 201, staged.text
+    guided = d.post(f"/api/launches/{launch_id}/document-uploads/{staged.json()['id']}/publish", headers=H,
+        json={'folder': 'jaune', 'title': f'Nouveau dépôt {tag}', 'doc_type': 'Autre',
+              'document_id': created.json()['id']})
+    assert guided.status_code == 403
+    value_path = f"/api/document-versions/{created.json()['latest']['id']}/intake/confirm"
+    value_payload = {'field_key': 'quantite', 'value': '25', 'unit': 'pièces', 'source_excerpt': 'Quantité : 25 pièces'}
+    assert d.post(value_path, headers=H, json=value_payload).status_code == 403
+
+    # value.write autorise la confirmation sans accorder le dépôt ou la création de version.
+    assign(env, 'd', '001', {'jaune': ['document.read', 'controls.read', 'value.write']})
+    d = login(env, 'd')
+    folder = next(row for row in d.get(f'/api/launches/{launch_id}').json()['folders'] if row['slug'] == 'jaune')
+    assert folder['can_value'] and not folder['can_write'] and not folder['can_version']
+    assert d.post(value_path, headers=H, json=value_payload).status_code == 201
+
+    # Une expression présente uniquement dans un document Bleu analysé ne fuit pas via FTS.
+    secret = f'phrase confidentielle fts {tag}'
+    hidden_stage = chef.post(f'/api/launches/{launch_id}/document-uploads', headers=H,
+        data={'folder': 'bleu'},
+        files={'file': ('archive.txt', f'Déclaration douanière\n{secret}'.encode(), 'text/plain')})
+    assert hidden_stage.status_code == 201, hidden_stage.text
+    hidden = chef.post(f"/api/launches/{launch_id}/document-uploads/{hidden_stage.json()['id']}/publish", headers=H,
+        json={'folder': 'bleu', 'title': 'Archive douanière neutre', 'doc_type': 'Pièce douanière'})
+    assert hidden.status_code == 201, hidden.text
+    assert chef.get('/api/workspace/search', params={'q': secret}).json()['total'] == 1
+    assert d.get('/api/workspace/search', params={'q': secret}).json()['total'] == 0
+
+    # Restaure l'affectation de lecture utilisée par les scénarios suivants.
+    assign(env, 'd', '001', {'jaune': ['document.read']})
+
+
 def test_13_14_revocation_and_deactivation_take_effect_immediately(env):
     L, docs = env['launches'], env['docs']
     a, b = login(env, 'a'), login(env, 'b')

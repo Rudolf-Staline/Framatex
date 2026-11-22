@@ -97,7 +97,7 @@ def public_analysis(user, analysis):
                    if permitted(user, 'document.read', item['folder']) and permitted(user, 'document.write', item['folder'])]
     public = {key: value for key, value in analysis.items() if key not in {'comparison_text', 'comparison_lines'}}
     public['relationships'] = [
-        {**item, 'can_add_version': permitted(user, 'document.write', item['folder'])}
+        {**item, 'can_add_version': permitted(user, 'document.version', item['folder'])}
         for item in analysis.get('relationships', [])
     ]
     return {**public, 'classification': {**classification, 'suggestions': suggestions,
@@ -163,6 +163,10 @@ def publish_document(launch_id: str, upload_id: str, payload: PublishUpload,
     document = db.get(Document, chosen_document_id) if chosen_document_id else None
     if chosen_document_id and (not document or document.folder_id != entity.id or document.doc_type != doc_type):
         raise HTTPException(404, 'Document introuvable pour ce type et ce sous-dossier')
+    if document:
+        # Déposer une pièce et créer une version sont deux responsabilités
+        # distinctes dans la matrice d'habilitations.
+        must(user, 'document.version', document.folder.slug)
     if not (STORAGE / staged.disk_name).is_file():
         raise HTTPException(503, 'Fichier temporaire indisponible')
     analysis = staged.analysis
@@ -206,7 +210,7 @@ def verify_type(version_id: str, payload: VerifyType, user: User = Depends(get_c
     document = get_doc(db, version.document_id)
     must(user, 'launch.read')
     must(user, 'document.read', document.folder.slug)
-    must(user, 'document.write', document.folder.slug)
+    must(user, 'quality.review', document.folder.slug)
     if version.number != max(v.number for v in document.versions):
         raise HTTPException(409, 'Vérifiez la version courante du document')
     item = db.get(DocumentIdentification, version_id)

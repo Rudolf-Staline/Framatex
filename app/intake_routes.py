@@ -82,6 +82,7 @@ def compare_previous(version_id: str, user: User=Depends(get_current_user), db: 
     if not current: raise HTTPException(404,'Version introuvable')
     document=get_doc(db,current.document_id)
     must(user,'launch.read');must(user,'document.read',document.folder.slug)
+    must(user,'controls.read',document.folder.slug)
     previous=next((item for item in document.versions if item.number==current.number-1),None)
     if not previous: return {'status':'first_version','current_version':current.number,'changes':[],'notice':'Première version : aucune comparaison disponible.'}
     before=db.get(DocumentIdentification,previous.id);after=db.get(DocumentIdentification,current.id)
@@ -127,12 +128,16 @@ def compare_previous(version_id: str, user: User=Depends(get_current_user), db: 
     for rule in db.scalars(select(CrossDocumentRule).where(CrossDocumentRule.active.is_(True))).all():
         if ((rule.left_folder,rule.left_doc_type)==(document.folder.slug,document.doc_type) or
                 (rule.right_folder,rule.right_doc_type)==(document.folder.slug,document.doc_type)):
-            if permitted(user,'document.read',rule.left_folder) and permitted(user,'document.read',rule.right_folder):
+            if all(permitted(user, action, folder)
+                   for folder in (rule.left_folder, rule.right_folder)
+                   for action in ('document.read', 'controls.read')):
                 controls.append({'kind':'coherence','id':rule.id,'name':rule.name})
     for rule in db.scalars(select(ImpactRule).where(ImpactRule.active.is_(True),
             ImpactRule.source_kind=='document',ImpactRule.source_key==document.doc_type,
             ImpactRule.source_folder==document.folder.slug)).all():
-        if permitted(user,'document.read',rule.target_folder):
+        if all(permitted(user, action, folder)
+               for folder in (document.folder.slug, rule.target_folder)
+               for action in ('document.read', 'controls.read')):
             controls.append({'kind':'impact','id':rule.id,'name':rule.name})
     return {'status':'compared','document_id':document.id,'previous_version':previous.number,
         'current_version':current.number,'changes':changes,'excel_formula_changes':formulas,
@@ -146,7 +151,7 @@ def confirm_field(version_id:str,payload:ConfirmField,user:User=Depends(get_curr
     doc=get_doc(db,v.document_id)
     must(user,'launch.read')
     must(user,'document.read',doc.folder.slug)
-    must(user,'document.write',doc.folder.slug)
+    must(user,'value.write',doc.folder.slug)
     if payload.field_key not in PATTERNS:raise HTTPException(422,'Champ métier inconnu')
     if not v==max(doc.versions,key=lambda x:x.number):raise HTTPException(409,'Une nouvelle version du document existe')
     item=ConfirmedField(document_version_id=v.id,field_key=payload.field_key,

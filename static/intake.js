@@ -24,7 +24,8 @@ async function intakeExisting(versionId) {
     const endpoint = '/api/document-versions/' + encodeURIComponent(versionId);
     const data = await api(endpoint + '/intake');
     const doc = state.detail.folders.flatMap(item => item.documents || []).find(item => item.versions.some(v => v.id === versionId));
-    const editable = doc && doc.latest.id === versionId && can('document.write', doc.folder);
+    const folderAccess = state.detail?.folders?.find(folder => folder.slug === doc?.folder);
+    const editable = doc && doc.latest.id === versionId && !!folderAccess?.can_value;
     const review = editable && ['to_verify', 'incompatible'].includes(data.identification?.status);
     const pending = data.fields.filter(field => !data.confirmed.some(item => item.key === field.key));
     const reached = data.classification.suggestions;
