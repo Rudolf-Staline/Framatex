@@ -105,6 +105,10 @@ async function documentUploadDialog(options) {
     updateDestination();
   }
   function existingDocument() {
+    if (relationshipChoice === 'new_version' && staged?.analysis?.relationships?.[0]) {
+      const candidate = staged.analysis.relationships[0].candidate_document_id;
+      return writable.find(item => item.id === candidate) || null;
+    }
     return options.document || null;
   }
   function updateDestination() {
@@ -137,11 +141,14 @@ async function documentUploadDialog(options) {
     const reason = data.warnings.join(' · ');
     const canMove = proposal && classification.decisive && !options.document && !matches;
     const relationships = data.relationships || [];
-    const related = relationships[0];
+    const related = options.document
+      ? relationships.find(item => item.candidate_document_id === options.document.id) || relationships[0]
+      : relationships[0];
+    if (options.document && related?.candidate_document_id === options.document.id && !relationshipChoice) relationshipChoice = 'new_version';
     const relationLabel = {exact_duplicate: 'Doublon exact', potential_duplicate: 'Doublon potentiel', new_version: 'Nouvelle version probable'};
     const selectedRelation = value => relationshipChoice === value ? ' selected' : '';
     const relationChoices = related ? [
-      related.kind === 'new_version' && related.can_add_version ? `<option value="new_version"${selectedRelation('new_version')}>Ajouter comme nouvelle version du document proposé</option>` : '',
+      (related.kind === 'new_version' || options.document?.id === related.candidate_document_id) && related.can_add_version ? `<option value="new_version"${selectedRelation('new_version')}>Ajouter comme nouvelle version du document proposé</option>` : '',
       `<option value="new_document"${selectedRelation('new_document')}>Conserver comme nouveau document indépendant</option>`,
       `<option value="keep_duplicate"${selectedRelation('keep_duplicate')}>Conserver malgré le rapprochement signalé</option>`,
     ].filter(Boolean).join('') : '';
