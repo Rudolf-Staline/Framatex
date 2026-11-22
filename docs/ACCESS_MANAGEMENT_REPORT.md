@@ -247,7 +247,7 @@ dépôt sans validation (A sur DEMO-001), quatre sous-dossiers (B sur DEMO-002),
 | `scripts/validate_business_memory_ui.py` | **11/11** |
 | `scripts/validate_document_workspace.py` | **9/9** |
 | `scripts/qa_platform_review.py` | **96/96** (avec Tesseract installé ; sans Tesseract, seuls les 2 contrôles OCR échouent — environnement) |
-| `scripts/demo_full_platform.py` | en cours d’exécution au moment de ce commit — résultat ajouté au commit suivant |
+| `scripts/demo_full_platform.py` | **135/135** (recette globale API + navigateurs Client et FRAMATEX) |
 
 Tests existants ajustés sans affaiblissement : `test_business_memory` (tranche de révisions par
 nom, plus par position), `test_pilot_feedback` et `test_internal_operations` (migration avant
@@ -299,4 +299,16 @@ sauvegarde de `data/framat.db` avant le premier démarrage suffit.
 
 ## 11. Commit et branche
 
-SHA_FINAL
+Branche distante : `origin/feat/access-management`. Le SHA final est celui du commit qui
+contient ce paragraphe ; il est donné dans le message de livraison et vérifiable par
+`git ls-remote origin feat/access-management`. Commits de la mission :
+
+- point de contrôle central, modèles, migration 0013, API, isolation ;
+- tests des 20 scénarios ;
+- écrans Collaborateurs et habilitations, technicien, Mon compte ;
+- `3c9d4b1` recette Chromium, comptes de démo isolés, matrice ;
+- `10b3eef` Consulter contrôles, mot de passe du chef temporaire, assistant borné ;
+- `f9f12d8` rapport et captures ;
+- commit final : résultats complets des recettes.
+
+`main` n'est pas modifié ; `feat/document-intelligence` n'est pas fusionnée.

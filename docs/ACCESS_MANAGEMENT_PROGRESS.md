@@ -61,7 +61,8 @@ Rapport détaillé : [`ACCESS_MANAGEMENT_REPORT.md`](ACCESS_MANAGEMENT_REPORT.md
 - `pytest` : 198 réussis (186 existants + 12 habilitations).
 - Tests JS (`node tests/*.cjs`) : 19/19 réussis.
 - `scripts/validate_access_ui.py` : 15 vérifications, 12 captures, aucune erreur JS.
-- Recettes globales : voir le rapport (résultats réels).
+- Recettes globales : qa_platform_review 96/96, demo_full_platform 135/135,
+  validate_internal_ui, validate_client_workflow_ui, business_memory 11/11, document_workspace 9/9.
 
 ## Limitations
 
