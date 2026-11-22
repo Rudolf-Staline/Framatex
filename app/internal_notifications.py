@@ -9,10 +9,10 @@ from .models import User
 from .approval_models import InternalNotification
 
 
-def permitted_now(user: User, action: str, folder: str | None = None):
+def permitted_now(user: User, action: str, folder: str | None = None, launch_id: str | None = None):
     # Import différé pour éviter une dépendance circulaire pendant l'enregistrement des routes.
-    from .main import permitted
-    return permitted(user, action, folder)
+    from .access_control import can
+    return can(user, action, folder, launch_id)
 
 
 def emit_to_role(db: Session, *, role_id: str, launch_id: str, folder: str,
@@ -24,8 +24,8 @@ def emit_to_role(db: Session, *, role_id: str, launch_id: str, folder: str,
     for user in db.scalars(select(User).where(User.active.is_(True))).all():
         if not accessible(db,user,launch) or user.id == exclude_user_id or not any(role.id == role_id for role in user.roles):
             continue
-        if not (permitted_now(user, 'launch.read') and permitted_now(user, 'document.read', folder)
-                and permitted_now(user, action, folder)):
+        if not (permitted_now(user, 'launch.read') and permitted_now(user, 'document.read', folder, launch_id)
+                and permitted_now(user, action, folder, launch_id)):
             continue
         db.add(InternalNotification(recipient_id=user.id, event_key=event_key, kind=kind,
                                     launch_id=launch_id, folder_slug=folder,
@@ -39,9 +39,9 @@ def emit_to_folder(db: Session, *, launch_id: str, source_folder: str, target_fo
     from .models import Launch
     launch = db.get(Launch, launch_id)
     for user in db.scalars(select(User).where(User.active.is_(True))).all():
-        if not accessible(db,user,launch) or not (permitted_now(user, 'launch.read') and permitted_now(user, 'document.read', source_folder)
-                and permitted_now(user, 'document.read', target_folder)
-                and permitted_now(user, action, target_folder)):
+        if not accessible(db,user,launch) or not (permitted_now(user, 'launch.read') and permitted_now(user, 'document.read', source_folder, launch_id)
+                and permitted_now(user, 'document.read', target_folder, launch_id)
+                and permitted_now(user, action, target_folder, launch_id)):
             continue
         db.add(InternalNotification(recipient_id=user.id, event_key=event_key, kind=kind,
                                     launch_id=launch_id, folder_slug=source_folder,
@@ -53,7 +53,7 @@ def emit_to_user(db: Session, *, user_id: str, launch_id: str, folder: str,
     user = db.get(User, user_id)
     from .access import accessible
     from .models import Launch
-    if not user or not accessible(db,user,db.get(Launch,launch_id)) or not (permitted_now(user, 'launch.read') and permitted_now(user, 'document.read', folder)):
+    if not user or not accessible(db,user,db.get(Launch,launch_id)) or not (permitted_now(user, 'launch.read') and permitted_now(user, 'document.read', folder, launch_id)):
         return
     db.add(InternalNotification(recipient_id=user.id, event_key=event_key, kind=kind,
                                 launch_id=launch_id, folder_slug=folder,

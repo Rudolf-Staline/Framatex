@@ -277,7 +277,10 @@ def notification_out(n: InternalNotification):
 
 
 def notification_visible(user: User, n: InternalNotification):
-    return (permitted_now(user,'launch.read') and permitted_now(user,'document.read',n.folder_slug))
+    # Évaluée sur la commande de la notification : un retrait de droit la masque immédiatement.
+    from .access_control import launch_scope
+    with launch_scope(n.launch_id):
+        return (permitted_now(user,'launch.read') and permitted_now(user,'document.read',n.folder_slug))
 
 
 @router.get('/api/notifications')

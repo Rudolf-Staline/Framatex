@@ -131,7 +131,7 @@ def test_legacy_migration_preserves_note_and_allows_general_note(tmp_path, monke
             category VARCHAR(30) NOT NULL, body TEXT NOT NULL,
             author_id VARCHAR(36) NOT NULL, created_at DATETIME NOT NULL)'''))
         conn.execute(text("INSERT INTO internal_experience_notes VALUES ('old', 'launch', 'fournisseur', 'Atelier ancien', 'retard', 'Historique conservé', 'author', '2026-01-01')"))
-        for revision in migrator.REVISIONS[:-1]:
+        for revision in migrator.REVISIONS[:migrator.REVISIONS.index('0011_business_memory')]:
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'), {'v':revision,'d':'2026-01-01'})
     monkeypatch.setattr(migrator, 'engine', isolated)
     migrator.migrate()

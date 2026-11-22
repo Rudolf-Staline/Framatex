@@ -17,14 +17,9 @@ from .models import User, Launch, LaunchMember, Document, DocumentVersion
 
 
 def accessible(db: Session, user: User, launch: Launch | None) -> bool:
-    if launch is None or not user.active:
-        return False
-    if any(r.name == "Administrateur" for r in user.roles):
-        return True
-    if not launch.restricted or launch.created_by == user.id:
-        return True
-    return db.scalar(select(LaunchMember.id).where(
-        LaunchMember.launch_id == launch.id, LaunchMember.user_id == user.id)) is not None
+    """Visibilité d'une commande : délègue au point de contrôle central (app/access_control.py)."""
+    from .access_control import launch_accessible
+    return launch_accessible(db, user, launch)
 
 
 def visible(db: Session, user: User, launches: list[Launch]) -> list[Launch]:
@@ -122,4 +117,6 @@ def guard_http_request(request: Request):
         target_launch = indirect_launch(db,params)
         if target_launch and not accessible(db,user,db.get(Launch,target_launch)):
             return JSONResponse({'detail':'Lancement introuvable'},status_code=404)
+        # Commande de la requête : les droits de sous-dossier sont évalués dans ce contexte.
+        request.state.framatex_launch = target_launch
     return None

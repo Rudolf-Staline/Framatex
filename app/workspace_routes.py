@@ -75,73 +75,76 @@ def build_priorities(user, db, launch=None):
     items = []
     visible_launches = launches if launch else [l for l in launches if l.status != "Clôturé"]
     for launch in visible_launches:
-        report = evaluate(db, launch, user, permitted)
-        for row in report.get("rows", []):
-            labels = {'missing': ('missing', 'Pièce manquante'), 'pending_validation': ('validation', 'Validation à obtenir'),
-                      'to_verify': ('identification', 'Type à vérifier'), 'incompatible': ('identification', 'Type incompatible')}
-            if row['status'] not in labels:
-                continue
-            kind, label = labels[row['status']]
-            _add(items, launch, kind=kind,
-                 title=f'{label} : {row["title"]}',
-                 description=f"Sous-dossier {row['folder'].capitalize()} · {row['document_type']}",
-                 rank=1, area="documents", action="open_launch", item_id=row["id"],
-                 folder=row["folder"], document_id=row["documents"][0]["id"] if row["documents"] else None)
-        alerts = db.scalars(select(ImpactAlert).where(ImpactAlert.launch_id == launch.id,
-                                                      ImpactAlert.status.in_(["to_review", "action_required"]))).all()
-        for alert in alerts:
-            rule = db.get(ImpactRule, alert.rule_id)
-            if not rule or not (permitted(user,"document.read",rule.source_folder)
-                                and permitted(user,"document.read",rule.target_folder)):
-                continue
-            _add(items, launch, kind="impact", title="Modification à examiner : " + rule.name,
-                 description=rule.instruction[:210], rank=1, area="workflow",
-                 action="open_launch", item_id=alert.id, folder=rule.target_folder,
-                 version_id=alert.source_ref_id if rule.source_kind == "document" else None)
-        for req in db.scalars(select(ClientRequirement).where(ClientRequirement.launch_id == launch.id)).all():
-            source_folder = _source_folder(db, req.source_version_id)
-            evidence_folder = _source_folder(db, req.evidence_version_id)
-            if not source_folder or not permitted(user,"document.read",source_folder):
-                continue
-            if req.evidence_version_id and (not evidence_folder or not permitted(user,"document.read",evidence_folder)):
-                continue
-            state = _req_output(db, req, user)["state"]
-            if state == "verified":
-                continue
-            _add(items, launch, kind="requirement", title="Exigence à vérifier : " + req.title,
-                 description={"uncovered":"Justificatif absent", "to_verify":"Preuve à examiner",
-                              "source_changed":"Document source modifié", "evidence_changed":"Preuve remplacée"}.get(state,"À examiner"),
-                 rank=1, area="spec", action="open_launch", item_id=req.id)
-        for amb in db.scalars(select(SpecificationAmbiguity).where(SpecificationAmbiguity.launch_id == launch.id)).all():
-            source_folder = _source_folder(db, amb.source_version_id)
-            clarification_folder = _source_folder(db, amb.clarification_version_id)
-            if not source_folder or not permitted(user,"document.read",source_folder):
-                continue
-            if amb.clarification_version_id and (not clarification_folder or not permitted(user,"document.read",clarification_folder)):
-                continue
-            state = _amb_output(db,amb,user)["status"]
-            if state not in ("open", "source_changed"):
-                continue
-            _add(items, launch, kind="ambiguity", title="Clarification requise",
-                 description=amb.question[:210], rank=1, area="spec", action="open_launch", item_id=amb.id)
-        if permitted(user,"document.read","rose"):
-            for commitment in db.scalars(select(EmailCommitment).where(
-                    EmailCommitment.launch_id == launch.id,
-                    EmailCommitment.status.in_(["pending", "postponed"]))).all():
-                if not commitment.due_date:
-                    continue  # Date inconnue : ne pas inventer d'urgence.
-                try:
-                    due = datetime.strptime(commitment.due_date, "%Y-%m-%d").date()
-                except ValueError:
+        # Habilitations par commande : chaque priorité est évaluée sur sa propre commande.
+        from .access_control import launch_scope
+        with launch_scope(launch.id):
+            report = evaluate(db, launch, user, permitted)
+            for row in report.get("rows", []):
+                labels = {'missing': ('missing', 'Pièce manquante'), 'pending_validation': ('validation', 'Validation à obtenir'),
+                          'to_verify': ('identification', 'Type à vérifier'), 'incompatible': ('identification', 'Type incompatible')}
+                if row['status'] not in labels:
                     continue
-                if due > horizon:
+                kind, label = labels[row['status']]
+                _add(items, launch, kind=kind,
+                     title=f'{label} : {row["title"]}',
+                     description=f"Sous-dossier {row['folder'].capitalize()} · {row['document_type']}",
+                     rank=1, area="documents", action="open_launch", item_id=row["id"],
+                     folder=row["folder"], document_id=row["documents"][0]["id"] if row["documents"] else None)
+            alerts = db.scalars(select(ImpactAlert).where(ImpactAlert.launch_id == launch.id,
+                                                          ImpactAlert.status.in_(["to_review", "action_required"]))).all()
+            for alert in alerts:
+                rule = db.get(ImpactRule, alert.rule_id)
+                if not rule or not (permitted(user,"document.read",rule.source_folder)
+                                    and permitted(user,"document.read",rule.target_folder)):
                     continue
-                overdue = due < today
-                _add(items, launch, kind="commitment", title=commitment.description[:120],
-                     description=f"Engagement {('en retard' if overdue else 'à suivre')} · {commitment.responsible[:100]}",
-                     rank=0 if overdue else 2, area="mail", action="open_launch",
-                     item_id=commitment.id, deadline=commitment.due_date)
-    from .internal_service import extra_actions
+                _add(items, launch, kind="impact", title="Modification à examiner : " + rule.name,
+                     description=rule.instruction[:210], rank=1, area="workflow",
+                     action="open_launch", item_id=alert.id, folder=rule.target_folder,
+                     version_id=alert.source_ref_id if rule.source_kind == "document" else None)
+            for req in db.scalars(select(ClientRequirement).where(ClientRequirement.launch_id == launch.id)).all():
+                source_folder = _source_folder(db, req.source_version_id)
+                evidence_folder = _source_folder(db, req.evidence_version_id)
+                if not source_folder or not permitted(user,"document.read",source_folder):
+                    continue
+                if req.evidence_version_id and (not evidence_folder or not permitted(user,"document.read",evidence_folder)):
+                    continue
+                state = _req_output(db, req, user)["state"]
+                if state == "verified":
+                    continue
+                _add(items, launch, kind="requirement", title="Exigence à vérifier : " + req.title,
+                     description={"uncovered":"Justificatif absent", "to_verify":"Preuve à examiner",
+                                  "source_changed":"Document source modifié", "evidence_changed":"Preuve remplacée"}.get(state,"À examiner"),
+                     rank=1, area="spec", action="open_launch", item_id=req.id)
+            for amb in db.scalars(select(SpecificationAmbiguity).where(SpecificationAmbiguity.launch_id == launch.id)).all():
+                source_folder = _source_folder(db, amb.source_version_id)
+                clarification_folder = _source_folder(db, amb.clarification_version_id)
+                if not source_folder or not permitted(user,"document.read",source_folder):
+                    continue
+                if amb.clarification_version_id and (not clarification_folder or not permitted(user,"document.read",clarification_folder)):
+                    continue
+                state = _amb_output(db,amb,user)["status"]
+                if state not in ("open", "source_changed"):
+                    continue
+                _add(items, launch, kind="ambiguity", title="Clarification requise",
+                     description=amb.question[:210], rank=1, area="spec", action="open_launch", item_id=amb.id)
+            if permitted(user,"document.read","rose"):
+                for commitment in db.scalars(select(EmailCommitment).where(
+                        EmailCommitment.launch_id == launch.id,
+                        EmailCommitment.status.in_(["pending", "postponed"]))).all():
+                    if not commitment.due_date:
+                        continue  # Date inconnue : ne pas inventer d'urgence.
+                    try:
+                        due = datetime.strptime(commitment.due_date, "%Y-%m-%d").date()
+                    except ValueError:
+                        continue
+                    if due > horizon:
+                        continue
+                    overdue = due < today
+                    _add(items, launch, kind="commitment", title=commitment.description[:120],
+                         description=f"Engagement {('en retard' if overdue else 'à suivre')} · {commitment.responsible[:100]}",
+                         rank=0 if overdue else 2, area="mail", action="open_launch",
+                         item_id=commitment.id, deadline=commitment.due_date)
+        from .internal_service import extra_actions
     items.extend(extra_actions(db, user, visible_launches))
     items.sort(key=lambda row: (row["rank"], row["deadline"] or "9999-12-31",
                                 row["launch_name"].casefold(),row["id"]))

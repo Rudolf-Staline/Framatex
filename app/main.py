@@ -101,6 +101,10 @@ async def request_header_guard(request: Request, call_next):
         denied = await run_in_threadpool(guard_http_request, request)
         if denied is not None:
             return denied
+        # Habilitations : commande de la requête + cache propre à la requête (révocation immédiate).
+        from .access_control import request_context
+        with request_context(getattr(request.state, "framatex_launch", None)):
+            return await call_next(request)
     return await call_next(request)
 
 
@@ -127,13 +131,9 @@ def is_admin(user: User) -> bool:
 
 
 def permitted(user: User, action: str, folder: str | None = None) -> bool:
-    if is_admin(user):
-        return True
-    for role in user.roles:
-        for grant in role.grants:
-            if grant.action == action and (folder is None and grant.folder_slug is None or folder is not None and grant.folder_slug in (None, folder)):
-                return True
-    return False
+    """Délègue au point de contrôle central : app/access_control.can (commande du contexte)."""
+    from .access_control import can
+    return can(user, action, folder)
 
 
 def must(user: User, action: str, folder: str | None = None):
@@ -258,7 +258,13 @@ def logout(response: Response, request: Request, user: User = Depends(get_curren
 @app.get("/api/auth/me")
 def me(user: User = Depends(get_current_user)):
     perms = [{"action": g.action, "folder": g.folder_slug} for r in user.roles for g in r.grants]
-    return {**user_out(user), "permissions": perms}
+    from .access_models import CollaboratorProfile
+    from .access_control import access_mode
+    from sqlalchemy.orm import object_session
+    profile = object_session(user).get(CollaboratorProfile, user.id)
+    return {**user_out(user), "permissions": perms, "access_mode": access_mode(user),
+            "job_title": profile.job_title if profile else "",
+            "must_change_password": bool(profile and profile.must_change_password)}
 
 @app.get("/api/dashboard")
 def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -266,7 +272,8 @@ def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_
     from .access import visible
     launches = visible(db, user, db.scalars(select(Launch)).all())
     documents = db.scalars(select(Document).join(Folder)).all()
-    visible_documents = [d for d in documents if d.folder.launch_id in {l.id for l in launches} and permitted(user, "document.read", d.folder.slug)]
+    from .access_control import can
+    visible_documents = [d for d in documents if d.folder.launch_id in {l.id for l in launches} and can(user, "document.read", d.folder.slug, d.folder.launch_id)]
     completion = [evaluate(db, l, user, permitted) for l in launches]
     return {"launches": len(launches), "incomplete": sum(l.status == "À compléter" for l in launches),
             "documents": len(visible_documents), "versions": sum(len(d.versions) for d in visible_documents),
@@ -314,7 +321,10 @@ def launch_detail(launch_id: str, user: User = Depends(get_current_user), db: Se
     for slug, label in FOLDERS:
         folder = next((f for f in l.folders if f.slug == slug), None)
         docs = [] if not folder or not permitted(user, "document.read", slug) else [doc_out(d) for d in folder.documents]
-        folders.append({"slug": slug, "label": label, "can_read": permitted(user, "document.read", slug), "can_write": permitted(user, "document.write", slug), "documents": docs})
+        folders.append({"slug": slug, "label": label, "can_read": permitted(user, "document.read", slug), "can_write": permitted(user, "document.write", slug),
+                        "can_version": permitted(user, "document.version", slug), "can_download": permitted(user, "document.download", slug),
+                        "can_comment": permitted(user, "document.comment", slug), "can_review": permitted(user, "document.review", slug),
+                        "documents": docs})
     return {**launch_out(l), "folders": folders, "can_update": permitted(user, "launch.update"), "can_manage_access": is_admin(user)}
 
 @app.patch("/api/launches/{launch_id}")
@@ -459,7 +469,7 @@ async def save_direct_upload(db, user, stored, entity, title, doc_type, comment,
 @app.post("/api/documents/{doc_id}/versions", status_code=201)
 async def new_version(doc_id: str, file: UploadFile = File(...), comment: str = Form("", max_length=2000), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     d = get_doc(db, doc_id)
-    must(user, "document.write", d.folder.slug)
+    must(user, "document.version", d.folder.slug)
     stored = await store_upload(file)
     return await save_direct_upload(db, user, stored, d.folder, d.title, d.doc_type, comment, d)
 
@@ -490,6 +500,7 @@ def persist_version(db, user, stored, doc, comment, identification=None):
 def download(doc_id: str, number: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     doc = get_doc(db, doc_id)
     must(user, "document.read", doc.folder.slug)
+    must(user, "document.download", doc.folder.slug)
     version = next((v for v in doc.versions if v.number == number), None)
     if not version:
         raise HTTPException(404, "Version introuvable")
@@ -546,6 +557,9 @@ def create_user(payload: UserPayload, user: User = Depends(get_current_user), db
     db.add(new_user)
     try:
         db.flush()
+        # Compte créé par l'application : refus par défaut, accès par affectations explicites.
+        from .access_models import CollaboratorProfile
+        db.add(CollaboratorProfile(user_id=new_user.id, notification_prefs="{}"))
         audit(db, user, "user.create", "user", new_user.id, {"roles": [r.name for r in roles]})
         db.commit()
     except IntegrityError:
@@ -862,6 +876,10 @@ app.include_router(client_workflow_router)
 
 from .document_intake_routes import router as document_intake_router
 app.include_router(document_intake_router)
+
+# Collaborateurs et habilitations par commande / sous-dossier (0013_access_management).
+from .access_admin_routes import router as access_admin_router
+app.include_router(access_admin_router)
 
 # Le contrôle global de portée est effectué dans request_header_guard, avant
 # le dispatch FastAPI. Aucun routeur historique ne peut l'éviter.

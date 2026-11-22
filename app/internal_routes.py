@@ -53,8 +53,12 @@ class ExperiencePayload(CommentPayload):
 def document_types(user: User = Depends(get_current_user)):
     must, permitted, _, _ = guards()
     must(user, "launch.read")
+    from .access_control import access_mode
+    # Catalogue générique (non confidentiel) : un collaborateur affecté voit les types de tous les sous-dossiers ;
+    # le dépôt reste vérifié sur la commande et le sous-dossier.
+    scoped = access_mode(user) == "assignments"
     return {slug: {"label": FOLDER_LABELS[slug], "types": types}
-            for slug, types in DOCUMENT_TYPES.items() if permitted(user, "document.read", slug)}
+            for slug, types in DOCUMENT_TYPES.items() if scoped or permitted(user, "document.read", slug)}
 
 
 @router.get("/api/workspace/collaborators")
@@ -192,7 +196,10 @@ def dashboard_report(user, db, launch=None):
     for dossier, row in zip(launches, summaries):
         if not launch and row["status"] == "Clôturé":
             continue
-        for group in duplicate_groups(db, user, dossier):
+        from .access_control import launch_scope
+        with launch_scope(dossier.id):
+            groups = duplicate_groups(db, user, dossier)
+        for group in groups:
             if group["reviewed"]:
                 continue
             latest = group["documents"][-1]
@@ -265,7 +272,7 @@ def post_comment(version_id: str, payload: CommentPayload,
                  user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must, _, _, _ = guards()
     version = readable_version(db, user, version_id)
-    must(user, "document.write", version.document.folder.slug)
+    must(user, "document.comment", version.document.folder.slug)
     item = append_comment(db, user, version, payload.body)
     version.document.folder.launch.updated_at = utcnow()
     db.commit()
@@ -285,7 +292,8 @@ def search(q: str = "", folder: str = "", doc_type: str = "", launch_id: str = "
     for version in db.scalars(query):
         document = version.document
         launch = launch_rows.get(document.folder.launch_id)
-        if not launch or not permitted(user, "document.read", document.folder.slug):
+        from .access_control import can
+        if not launch or not can(user, "document.read", document.folder.slug, launch.id):
             continue
         if folder and folder != document.folder.slug or launch_id and launch_id != launch.id:
             continue
@@ -371,8 +379,13 @@ def experience(party_type: str = "", q: str = "", user: User = Depends(get_curre
                db: Session = Depends(get_db)):
     must, permitted, _, _ = guards()
     must(user, "launch.read")
-    must(user, "document.read", "jaune")
-    allowed = {launch.id for launch in visible_launches(db, user)}
+    from .access_control import access_mode, can
+    if access_mode(user) != "assignments":
+        must(user, "document.read", "jaune")
+    # Mémoire atelier liée au sous-dossier Technique : commandes où ce sous-dossier est consultable.
+    allowed = {launch.id for launch in visible_launches(db, user) if can(user, "document.read", "jaune", launch.id)}
+    if not allowed and access_mode(user) == "assignments":
+        raise HTTPException(403, "Accès interdit : habilitation insuffisante")
     return [note_out(db, row) for row in db.scalars(select(ExperienceNote).order_by(ExperienceNote.created_at.desc()))
             if row.launch_id in allowed and (not party_type or row.party_type == party_type)
             and q.casefold() in (row.party_name + " " + row.body).casefold()]
