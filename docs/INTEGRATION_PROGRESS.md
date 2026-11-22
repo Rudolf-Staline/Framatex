@@ -49,8 +49,8 @@ Branche : `integration/document-intelligence-access`.
 
 ## Prochaine action
 
-Créer le rapport final et publier les captures intégrées utiles.
+Publier le rapport et les captures, puis vérifier le SHA distant et la propreté du worktree.
 
 ## Dernier commit stable
 
-- Sécurité documentaire intégrée distante : `89a398b2f97efba1d650429b5ecd0c9f037fc013`.
+- Validateur d'accès intégré distant : `4ca6b1e304365f07d408c5e2c07ead0b7dae3bf8`.
