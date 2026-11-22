@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.core import Base,engine,SessionLocal,hash_password
 from app.models import User,Role,RolePermission
-from app.intake import classify_document,extract_fields
+from app.intake import classify_document,extract_fields,preview
 
 H={'X-Framatex-Request':'1'}
 TEXT=(b'BON DE LIVRAISON\nReference matiere : TISSU-ABC-91\n'
@@ -49,6 +49,23 @@ def test_rule_based_classification_and_field_provenance():
     assert bykey['quantite']['value']=='240'
     assert bykey['date_document']['value']=='17/10/2026'
     assert 'Quantité' in bykey['quantite']['source_excerpt']
+
+
+def test_hybrid_pdf_reads_native_and_scanned_pages_with_page_provenance(tmp_path, monkeypatch):
+    import fitz
+    import app.intake as intake
+    path=tmp_path/'hybrid.pdf'
+    with fitz.open() as pdf:
+        first=pdf.new_page();first.insert_text((50,60),'COMMANDE CLIENT\nReference commande : CMD-501')
+        pdf.new_page()
+        pdf.save(path)
+    monkeypatch.setattr(intake,'_ocr_image',lambda image, engine:'Quantite : 240 pieces')
+    report=preview(path,'scan.pdf')
+    assert report['method']=='pdf_hybrid'
+    qty=next(item for item in report['fields'] if item['key']=='quantite')
+    assert qty['value']=='240' and qty['page']==2 and qty['method']=='pdf_ocr'
+    ref=next(item for item in report['fields'] if item['key']=='reference_commande')
+    assert ref['page']==1 and ref['method']=='pdf_text'
 
 
 def test_preview_is_temporary_and_does_not_create_document(client):

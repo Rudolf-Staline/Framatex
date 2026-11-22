@@ -55,34 +55,68 @@ for key, label, units in (
     PATTERNS[key] = rf'\b{label}[ \t]*[:=]?[ \t]*(\d[\d \u00a0\u202f.,]{{0,18}})[ \t]*({units})\b'
 
 
-def _read_pdf(path: Path, allow_ocr: bool) -> tuple[str, str, list[str]]:
+def _ocr_image(image, pytesseract):
+    """Bounded local OCR preprocessing; failures fall back to the original raster."""
+    from PIL import ImageOps, ImageEnhance, ImageFilter
+    image = ImageOps.grayscale(image)
+    image = ImageOps.autocontrast(image, cutoff=1)
+    image = ImageEnhance.Contrast(image).enhance(1.25)
+    image = image.filter(ImageFilter.MedianFilter(size=3))
+    try:
+        osd = pytesseract.image_to_osd(image, timeout=3)
+        rotate = int(re.search(r'Rotate:\s*(\d+)', osd).group(1))
+        if rotate in (90, 180, 270):
+            image = image.rotate(rotate, expand=True)
+    except Exception:
+        pass
+    return pytesseract.image_to_string(image, lang='fra+eng', timeout=7)
+
+
+def _read_pdf(path: Path, allow_ocr: bool) -> tuple[str, str, list[str], list[dict]]:
     import pymupdf as fitz
     try:
         with fitz.open(path, filetype='pdf') as doc:
             if doc.is_encrypted:
-                return '', 'protected', ['PDF protégé : extraction impossible']
+                return '', 'protected', ['PDF protégé : extraction impossible'], []
             pages = [doc[i] for i in range(min(MAX_PAGES, len(doc)))]
             warnings = [f'Analyse limitée aux {MAX_PAGES} premières pages'] if len(doc) > MAX_PAGES else []
-            chunks = [page.get_text()[:MAX_TEXT] for page in pages]
-            if any(chunk.strip() for chunk in chunks):
-                return '\n'.join(chunks)[:MAX_TEXT], 'pdf_text', warnings
-            if not allow_ocr:
-                return '', 'ocr_required', warnings
-            import pytesseract
-            from PIL import Image
-            for page in pages:
-                scale = min(1.5, 1400 / max(page.rect.width, page.rect.height, 1))
-                pix = page.get_pixmap(matrix=fitz.Matrix(scale, scale), colorspace=fitz.csRGB, alpha=False)
-                im = Image.frombytes('RGB', [pix.width, pix.height], pix.samples)
-                chunks.append(pytesseract.image_to_string(im, lang='fra+eng', timeout=7)[:MAX_TEXT])
-            return '\n'.join(chunks)[:MAX_TEXT], 'pdf_ocr', warnings
+            chunks, sources, methods = [], [], set()
+            for index, page in enumerate(pages, start=1):
+                native = page.get_text()[:MAX_TEXT]
+                if native.strip():
+                    chunks.append(native); methods.add('pdf_text')
+                    sources.append({'page': index, 'method': 'pdf_text', 'text': native[:MAX_TEXT]})
+                    continue
+                if not allow_ocr:
+                    warnings.append(f'Page {index} sans texte natif; OCR requis')
+                    continue
+                try:
+                    import pytesseract
+                    from PIL import Image
+                    scale = min(2.0, 1800 / max(page.rect.width, page.rect.height, 1))
+                    pix = page.get_pixmap(matrix=fitz.Matrix(scale, scale), colorspace=fitz.csRGB, alpha=False)
+                    image = Image.frombytes('RGB', [pix.width, pix.height], pix.samples)
+                    extracted = _ocr_image(image, pytesseract)[:MAX_TEXT]
+                    methods.add('pdf_ocr')
+                    if extracted.strip():
+                        chunks.append(extracted)
+                        sources.append({'page': index, 'method': 'pdf_ocr', 'text': extracted})
+                    else:
+                        warnings.append(f'Page {index} illisible par OCR')
+                except Exception:
+                    warnings.append(f'Page {index}: OCR indisponible ou illisible (Tesseract fra/eng requis)')
+            if len(doc) > MAX_PAGES:
+                warnings.append(f'Analyse limitée aux {MAX_PAGES} premières pages')
+            method = 'pdf_hybrid' if len(methods) > 1 else next(iter(methods), 'ocr_unavailable' if allow_ocr else 'ocr_required')
+            return '\n'.join(chunks)[:MAX_TEXT], method, warnings, sources
     except Exception:
-        return '', 'pdf_unreadable', ['Extraction PDF impossible ou OCR indisponible. Vérifiez le fichier et Tesseract fra/eng.']
+        return '', 'pdf_unreadable', ['Extraction PDF impossible. Vérifiez le fichier.'], []
 
 
 def read_document(path: Path, filename: str, allow_ocr=True) -> dict:
     suffix = Path(filename).suffix.lower()
     warnings = []
+    page_sources = []
     text, method = "", "unsupported"
     if path.stat().st_size > MAX_ANALYSIS_BYTES:
         return {'text': '', 'method': 'size_limit', 'warnings': ['Analyse automatique limitée à 12 Mo. Vérification manuelle requise.']}
@@ -94,7 +128,7 @@ def read_document(path: Path, filename: str, allow_ocr=True) -> dict:
         except (OSError, zipfile.BadZipFile):
             return {'text': '', 'method': 'unreadable', 'warnings': ['Archive Office illisible.']}
     if suffix == ".pdf":
-        text, method, warnings = _read_pdf(path, allow_ocr)
+        text, method, warnings, page_sources = _read_pdf(path, allow_ocr)
     elif suffix in {".png", ".jpg", ".jpeg"} and allow_ocr:
         try:
             from PIL import Image, ImageOps, UnidentifiedImageError
@@ -103,7 +137,7 @@ def read_document(path: Path, filename: str, allow_ocr=True) -> dict:
                 if raw.width * raw.height > MAX_IMAGE_PIXELS:
                     return {"text":"", "method":"image_limit", "warnings":["Image trop grande pour une analyse OCR sûre"]}
                 im = ImageOps.exif_transpose(raw).convert("RGB")
-                text = pytesseract.image_to_string(im, lang="fra+eng", timeout=12)[:MAX_TEXT]
+                text = _ocr_image(im, pytesseract)[:MAX_TEXT]
                 method = "image_ocr"
         except Exception:
             method = "ocr_unavailable"
@@ -150,7 +184,9 @@ def read_document(path: Path, filename: str, allow_ocr=True) -> dict:
             warnings.append('Lecture des valeurs saisies. Les formules et leurs valeurs en cache sont exclues.')
         except Exception:
             warnings.append("Lecture XLSX impossible")
-    return {"text":text, "method":method, "warnings":warnings}
+        if text:
+            page_sources = [{'page': None, 'method': method, 'text': text}]
+    return {"text":text, "method":method, "warnings":warnings, 'sources': page_sources}
 
 
 def normalized(text):
@@ -197,12 +233,27 @@ def extract_fields(text: str) -> list[dict]:
         # Une chaîne tronquée ou un séparateur seul n'est pas une donnée exploitable.
         if not value or (key in {"quantite","montant"} and not re.search(r"\d",value)): continue
         alternatives = {(normalized(item.group(1)), normalized(item.group(2) or '') if item.lastindex >= 2 else '') for item in matches}
-        result.append({"key":key,"value":value,"unit":(match.group(2) or "") if match.lastindex and match.lastindex>=2 else "", "source_excerpt":text[max(0,match.start()-35):min(len(text),match.end()+35)].replace("\n"," ").strip()[:180],"status":"ambiguous" if len(alternatives) > 1 else "proposed"})
+        result.append({"key":key,"value":value,"unit":(match.group(2) or "") if match.lastindex and match.lastindex>=2 else "", "source_excerpt":text[max(0,match.start()-35):min(len(text),match.end()+35)].replace("\n"," ").strip()[:180],"offset":match.start(),"status":"ambiguous" if len(alternatives) > 1 else "proposed"})
     return result
 
 
 def preview(path: Path, filename: str, allow_ocr=True) -> dict:
     read=read_document(path,filename,allow_ocr)
+    fields = extract_fields(read['text'])
+    for field in fields:
+        offset = field['offset']
+        cursor = 0
+        source = None
+        for item in read.get('sources', []):
+            end = cursor + len(item['text'])
+            if cursor <= offset < end:
+                source = item
+                field['source_excerpt'] = item['text'][max(0, offset-cursor-35):min(len(item['text']), offset-cursor+150)].replace('\n',' ').strip()[:180]
+                break
+            cursor = end + 1
+        field['page'] = source['page'] if source else None
+        field['method'] = source['method'] if source else read['method']
+        field.pop('offset', None)
     return {"filename":filename,"method":read["method"],"warnings":read["warnings"],
             "text_excerpt":read["text"][:650],"classification":classify_document(filename,read["text"]),
-            "fields":extract_fields(read["text"]),"human_validation_required":True}
+            "fields":fields,"human_validation_required":True}
