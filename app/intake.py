@@ -282,4 +282,6 @@ def preview(path: Path, filename: str, allow_ocr=True) -> dict:
     return {"filename":filename,"method":read["method"],"warnings":read["warnings"],
             "text_excerpt":read["text"][:650],"classification":classify_document(filename,read["text"]),
             "comparison_text":normalized(read["text"])[:12000],
+            "comparison_lines":[line.strip()[:500] for line in read["text"].splitlines()
+                                if len(line.strip()) >= 4][:80],
             "fields":fields,"human_validation_required":True}

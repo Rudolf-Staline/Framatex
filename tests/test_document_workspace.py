@@ -182,6 +182,9 @@ def test_guided_upload_distinguishes_exact_duplicate_version_and_independent_doc
                       document_id=first['id'], relationship_action='new_version',
                       relationship_candidate_version_id=proposal['candidate_version_id']).json()
     assert version['id'] == first['id'] and version['latest']['number'] == 2
+    comparison=workspace.get(f"/api/document-versions/{version['latest']['id']}/compare-previous").json()
+    assert any(change['field']=='quantite' and change['kind']=='changed' for change in comparison['changes'])
+    assert comparison['text_changes']
 
     independent = (b'COMMANDE CLIENT\nReference commande : CMD-OTHER-99\n'
                    b'Reference article : ART-OTHER\nQuantite : 80 pieces')

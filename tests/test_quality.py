@@ -69,18 +69,39 @@ def test_cross_document_difference_and_decision_stale_on_new_version(c):
     report=c.get(f'/api/launches/{lid}/quality').json()
     assert report['counts']['difference']==1
     mismatch=report['rows'][0]
+    assert mismatch['outcome']=='deviation'
     assert mismatch['pair'][0]['value']=='1500' and mismatch['pair'][1]['value']=='1450'
     assert c.post(f'/api/launches/{lid}/quality/{rid}/decisions',json={
         'signature':mismatch['signature'],'decision':'justified','note':'Réduction validée après le provisoire'},headers=H).status_code==201
     again=c.get(f'/api/launches/{lid}/quality').json()['rows'][0]
-    assert again['decision']['status']=='justified'
+    assert again['decision']['status']=='justified' and again['decision']['by']=='Admin'
+    assert c.post(f'/api/launches/{lid}/quality/{rid}/decisions',json={
+        'signature':mismatch['signature'],'decision':'justified','note':'Acceptation répétée interdite'},headers=H).status_code==409
     changed=c.post(f'/api/documents/{b}/versions',files={'file':('v2.txt',b'Nouvelle version definitive')},headers=H)
     assert changed.status_code==201
+    notifications=c.get('/api/notifications').json()['items']
+    assert any(item['kind']=='quality_recheck' and item['launch_id']==lid for item in notifications)
     next_report=c.get(f'/api/launches/{lid}/quality').json()['rows'][0]
     assert next_report['status']=='unavailable' and 'decision' not in next_report
     old=c.post(f'/api/launches/{lid}/quality/{rid}/decisions',json={
         'signature':mismatch['signature'],'decision':'justified','note':'La situation semble identique'},headers=H)
     assert old.status_code==409
+
+
+def test_difference_can_be_deferred_without_changing_technical_result(c):
+    lid=launch(c)
+    _,left=doc(c,lid,'Commande client')
+    _,right=doc(c,lid,'Fiche emploi')
+    rid=rule(c,'Commande client','Fiche emploi')
+    assert put(c,left,'quantite_lancement','5000').status_code==201
+    assert put(c,right,'quantite_lancement','4500').status_code==201
+    item=c.get(f'/api/launches/{lid}/quality').json()['rows'][0]
+    response=c.post(f'/api/launches/{lid}/quality/{rid}/decisions',json={
+        'signature':item['signature'],'decision':'deferred',
+        'note':'Écart conservé pour une revue métier ultérieure'},headers=H)
+    assert response.status_code==201
+    deferred=c.get(f'/api/launches/{lid}/quality').json()['rows'][0]
+    assert deferred['status']=='difference' and deferred['decision']['status']=='deferred'
 
 
 def test_qualified_tolerance_and_incompatible_units(c):

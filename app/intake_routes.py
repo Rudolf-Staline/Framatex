@@ -1,5 +1,7 @@
 """0.5 : aperçu OCR et classement, vérification humaine avant dépôt/exploitation."""
 from __future__ import annotations
+import json
+from difflib import SequenceMatcher
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -35,6 +37,7 @@ async def intake_preview(launch_id:str,file:UploadFile=File(...),user:User=Depen
     try:
         result = await run_in_threadpool(read_safely, path, name)
         result.pop('comparison_text', None)
+        result.pop('comparison_lines', None)
         original = result['classification']['suggestions']
         # Ne jamais révéler une rubrique suggérée que le collaborateur n'a pas le droit d'utiliser.
         filtered = [x for x in original if permitted(user, 'document.write', x['folder'])]
@@ -57,6 +60,7 @@ def version_intake(version_id:str,user:User=Depends(get_current_user),db:Session
     identification = db.get(DocumentIdentification, v.id)
     result = dict(identification.analysis) if identification and identification.analysis['method'] not in {'busy', 'analysis_failed', 'ocr_unavailable', 'pdf_unreadable'} else read_safely(path, v.original_name)
     result.pop('comparison_text', None)
+    result.pop('comparison_lines', None)
     result['identification'] = {'status': identification.status, 'justification': identification.justification} if identification else None
     result['version_id']=v.id
     candidates = {item['key']: item for item in result.get('fields', [])}
@@ -81,10 +85,18 @@ def compare_previous(version_id: str, user: User=Depends(get_current_user), db: 
     previous=next((item for item in document.versions if item.number==current.number-1),None)
     if not previous: return {'status':'first_version','current_version':current.number,'changes':[],'notice':'Première version : aucune comparaison disponible.'}
     before=db.get(DocumentIdentification,previous.id);after=db.get(DocumentIdentification,current.id)
-    def field_map(item):
-        if not item:return {}
-        return {entry['key']:entry for entry in item.analysis.get('fields',[])}
-    old,new=field_map(before),field_map(after)
+    def field_map(item, version):
+        values = {entry['key']:{**entry, 'verification_status':'proposed'}
+                  for entry in item.analysis.get('fields',[])} if item else {}
+        for confirmed in db.scalars(select(ConfirmedField).where(
+                ConfirmedField.document_version_id == version.id)).all():
+            source = values.get(confirmed.field_key, {})
+            values[confirmed.field_key] = {**source, 'key':confirmed.field_key,
+                'value':confirmed.value, 'unit':confirmed.unit,
+                'source_excerpt':confirmed.source_excerpt,
+                'verification_status':'confirmed'}
+        return values
+    old,new=field_map(before,previous),field_map(after,current)
     changes=[]
     for key in sorted(set(old)|set(new)):
         a,b=old.get(key),new.get(key)
@@ -98,9 +110,34 @@ def compare_previous(version_id: str, user: User=Depends(get_current_user), db: 
     formulas=[]
     if inspection:
         formulas=[item for item in json.loads(inspection.findings_json) if item.get('type') in {'formula_changed','formula_removed','broken_reference'}]
+    old_lines=(before.analysis.get('comparison_lines') if before else None) or ((before.analysis.get('text_excerpt','').splitlines()) if before else [])
+    new_lines=(after.analysis.get('comparison_lines') if after else None) or ((after.analysis.get('text_excerpt','').splitlines()) if after else [])
+    matcher=SequenceMatcher(None,old_lines,new_lines,autojunk=False)
+    text_changes=[]
+    for tag,i1,i2,j1,j2 in matcher.get_opcodes():
+        if tag=='equal':continue
+        if tag in {'delete','replace'}:
+            text_changes.extend({'kind':'removed','text':line[:500]} for line in old_lines[i1:i2] if len(line.strip())>=4)
+        if tag in {'insert','replace'}:
+            text_changes.extend({'kind':'added','text':line[:500]} for line in new_lines[j1:j2] if len(line.strip())>=4)
+        if len(text_changes)>=30:break
+    from .quality_models import CrossDocumentRule
+    from .workflow_models import ImpactRule
+    controls=[]
+    for rule in db.scalars(select(CrossDocumentRule).where(CrossDocumentRule.active.is_(True))).all():
+        if ((rule.left_folder,rule.left_doc_type)==(document.folder.slug,document.doc_type) or
+                (rule.right_folder,rule.right_doc_type)==(document.folder.slug,document.doc_type)):
+            if permitted(user,'document.read',rule.left_folder) and permitted(user,'document.read',rule.right_folder):
+                controls.append({'kind':'coherence','id':rule.id,'name':rule.name})
+    for rule in db.scalars(select(ImpactRule).where(ImpactRule.active.is_(True),
+            ImpactRule.source_kind=='document',ImpactRule.source_key==document.doc_type,
+            ImpactRule.source_folder==document.folder.slug)).all():
+        if permitted(user,'document.read',rule.target_folder):
+            controls.append({'kind':'impact','id':rule.id,'name':rule.name})
     return {'status':'compared','document_id':document.id,'previous_version':previous.number,
         'current_version':current.number,'changes':changes,'excel_formula_changes':formulas,
-        'notice':'La comparaison est indicative et limitée aux champs analysés et aux inspections Excel disponibles.'}
+        'text_changes':text_changes[:30],'controls_to_recheck':controls,
+        'notice':'Comparaison indicative : les valeurs confirmées sont distinguées des propositions; les textes et formules restent à vérifier dans les sources.'}
 
 @router.post('/api/document-versions/{version_id}/intake/confirm',status_code=201)
 def confirm_field(version_id:str,payload:ConfirmField,user:User=Depends(get_current_user),db:Session=Depends(get_db)):

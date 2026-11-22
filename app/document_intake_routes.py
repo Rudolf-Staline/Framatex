@@ -95,7 +95,7 @@ def public_analysis(user, analysis):
     suggestions = [{**item, 'canonical_type': ALIASES.get(normalized(item['doc_type']), item['doc_type'])}
                    for item in classification['suggestions']
                    if permitted(user, 'document.read', item['folder']) and permitted(user, 'document.write', item['folder'])]
-    public = {key: value for key, value in analysis.items() if key != 'comparison_text'}
+    public = {key: value for key, value in analysis.items() if key not in {'comparison_text', 'comparison_lines'}}
     public['relationships'] = [
         {**item, 'can_add_version': permitted(user, 'document.write', item['folder'])}
         for item in analysis.get('relationships', [])

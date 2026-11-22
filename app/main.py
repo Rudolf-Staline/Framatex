@@ -481,6 +481,8 @@ def persist_version(db, user, stored, doc, comment, identification=None):
     doc.folder.launch.updated_at = utcnow()
     if number > 1:
         emit_document_impacts(db, doc, version)
+        from .quality import notify_quality_rechecks
+        notify_quality_rechecks(db, doc, version)
         audit(db, user, "document.version.add", "document", doc.id, {"version": number, "sha256": sha})
     from .quality_routes import auto_inspect_excel
     auto_inspect_excel(db, version, user.id)

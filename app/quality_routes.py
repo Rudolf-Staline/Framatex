@@ -37,7 +37,7 @@ class RuleIn(BaseModel):
 
 class QualityDecisionIn(BaseModel):
     signature: str = Field(min_length=64,max_length=64)
-    decision: Literal['justified','to_correct']
+    decision: Literal['justified','to_correct','deferred']
     note: str = Field(min_length=12,max_length=1800)
 
 
@@ -110,6 +110,7 @@ def quality_report(launch_id:str,user:User=Depends(get_current_user),db:Session=
                 .order_by(QualityDecision.decided_at.desc(),QualityDecision.id.desc()).limit(1))
             if decision:
                 item['decision']={'status':decision.decision,'note':decision.note,
+                                  'by':db.get(User, decision.decided_by).name,
                                   'date':decision.decided_at.isoformat()}
         item['can_review']=permitted(user,'quality.review',r.left_folder) and permitted(user,'quality.review',r.right_folder)
         rows.append(item)
@@ -127,6 +128,11 @@ def decide_quality(launch_id:str,rule_id:str,payload:QualityDecisionIn,user:User
     item=comparison(db,launch_id,rule)
     if item['status']!='difference' or payload.signature!=item['signature']:
         raise HTTPException(409,'Constat changé : actualisez et recommencez')
+    accepted=db.scalar(select(QualityDecision).where(QualityDecision.launch_id==launch_id,
+        QualityDecision.rule_id==rule_id,QualityDecision.evidence_signature==item['signature'],
+        QualityDecision.decision=='justified').limit(1))
+    if accepted:
+        raise HTTPException(409,'Cet écart a déjà été accepté pour ces sources et cette règle')
     dec=QualityDecision(launch_id=launch_id,rule_id=rule_id,evidence_signature=item['signature'],
                         decision=payload.decision,note=payload.note.strip(),decided_by=user.id)
     db.add(dec);db.flush()

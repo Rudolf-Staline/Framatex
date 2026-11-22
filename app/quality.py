@@ -118,11 +118,32 @@ def comparison(db: Session, launch_id: str, rule: CrossDocumentRule):
             reason = 'Écart dans la tolérance' if status == 'consistent' else 'Écart à examiner'
     source = {'rule':rule.id,'pairs':[(p['version_id'],p['value'],p['unit']) for p in pair]}
     signature = hashlib.sha256(json.dumps(source,sort_keys=True).encode()).hexdigest()
+    outcome = {'consistent':'coherent', 'difference':'deviation', 'unavailable':'missing_data',
+               'ambiguous':'ambiguous_sources', 'unit_mismatch':'incompatible_units'}.get(status, 'control_impossible')
     return {'rule_id':rule.id,'name':rule.name, 'field_key':rule.field_key,
             'left_doc_type':rule.left_doc_type, 'right_doc_type':rule.right_doc_type,
             'folders':[rule.left_folder,rule.right_folder], 'tolerance':rule.tolerance_text,
-            'status':status,'reason':reason,'pair':pair,'signature':signature,
+            'status':status,'outcome':outcome,'reason':reason,'pair':pair,'signature':signature,
             'delta':format(delta, 'f') if delta is not None else None}
+
+
+def notify_quality_rechecks(db: Session, document: Document, version: DocumentVersion):
+    """Signale uniquement les règles configurées qui utilisent le document modifié."""
+    rules = db.scalars(select(CrossDocumentRule).where(CrossDocumentRule.active.is_(True))).all()
+    for rule in rules:
+        left = (rule.left_folder, rule.left_doc_type)
+        right = (rule.right_folder, rule.right_doc_type)
+        source = (document.folder.slug, document.doc_type)
+        if source not in {left, right}:
+            continue
+        target_folder = rule.right_folder if source == left else rule.left_folder
+        from .internal_notifications import emit_to_folder
+        emit_to_folder(db, launch_id=document.folder.launch_id,
+            source_folder=document.folder.slug, target_folder=target_folder,
+            event_key=f'quality-recheck:{rule.id}:{version.id}', kind='quality_recheck',
+            title='Cohérence documentaire à revérifier',
+            message=f'{rule.name} doit être recalculée après le dépôt de la version {version.number}.',
+            action='quality.review')
 
 
 def _read_cells(path: Path):

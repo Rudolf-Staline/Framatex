@@ -13,6 +13,10 @@ Branche : `feat/document-intelligence`, créée depuis `feat/smart-business-memo
 - Classification alignée sur le catalogue standard, avec états `identified`, `probable`, `multiple` et `impossible`; le nom de fichier reste un indice non décisif et les preuves de contenu restent visibles.
 - Extraction distincte des quantités commandée, produite et livrée, ainsi que référence client et montant total. Les localisateurs page PDF, feuille/plage Excel et paragraphe Word sont associés aux propositions et aux valeurs confirmées.
 - Lecture Excel bornée : les formules restent exclues de l’extraction de valeurs et sont inspectées séparément, sans macro, lien externe ni recalcul.
+- Cohérence enrichie sans remplacer le moteur existant : identité stable par règle/versions/valeurs, résultat technique distinct de la décision humaine, états API explicites (`coherent`, `deviation`, `missing_data`, `ambiguous_sources`, `incompatible_units`, `control_impossible`).
+- Décisions persistantes : accepter avec justification, demander une correction ou reporter. Un écart accepté ne peut pas être accepté une seconde fois pour la même signature; une nouvelle version change la signature et réouvre la vérification.
+- Revérification ciblée : une nouvelle version ne notifie que les règles de cohérence configurées qui utilisent ce type et ce sous-dossier. Les notifications internes existantes restent filtrées par les droits.
+- Comparateur enrichi : valeurs proposées/confirmées avant-après, texte significatif ajouté/retiré, constats Excel et liste des contrôles configurés à revérifier.
 
 ## Résultats vérifiés sur `096c5887e2e5df841dfe38cb38191462da49acf0`
 
@@ -36,9 +40,15 @@ Branche : `feat/document-intelligence`, créée depuis `feat/smart-business-memo
 - Syntaxe des interfaces intake et dépôt vérifiée par Node.
 - Couverture ajoutée : états de classification, quantités distinctes, provenance Word et Excel, extraction ambiguë préservée.
 
+## Tests du lot cohérence, décisions et revérification
+
+- `tests/test_quality.py` + `tests/test_document_workspace.py` + `tests/test_intake.py` : 23 réussis.
+- Syntaxe `static/quality.js` et `static/internal.js` vérifiée par Node.
+- Couverture ajoutée : résultat technique maintenu après décision, acceptation non répétable, traitement reporté, invalidation sur nouvelle version, notification ciblée et diff textuel.
+
 ## Partiellement terminé
 
-- Cohérence et décisions : moteur stable existant identifié; enrichissement des états, de la traçabilité et de la revérification à poursuivre.
+- Contrôles `not_applicable` : disponibles au niveau des alertes d’impact existantes; pas encore proposés comme décision d’une règle de cohérence chiffrée.
 - Comparaison : champs et formules disponibles; diff textuel encore absent.
 
 ## Non commencé
