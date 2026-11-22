@@ -225,18 +225,23 @@ def full_journey(qa, browser, base, admin_password, captures):
             row('Bon de livraison').locator('[data-dj-upload]').click()
             assert adm.locator('#ops-folder').input_value() == 'rose'
             assert adm.locator('#ops-type').input_value() == 'Bon de livraison'
-            adm.locator('#ops-file').set_input_files({'name': 'bl-v1.txt', 'mimeType': 'text/plain', 'buffer': b'Bon de livraison V1'})
+            first_delivery = f'BON DE LIVRAISON\nReference commande : {ref}\nQuantite livree : 100 pieces'.encode()
+            adm.locator('#ops-file').set_input_files({'name': 'bl-v1.txt', 'mimeType': 'text/plain', 'buffer': first_delivery})
             adm.locator('#ops-upload-form button[type=submit]').click()
             adm.wait_for_selector('.dj-row:has-text("Bon de livraison") .dj-state:has-text("Présent")')
             assert 'V1' in row('Bon de livraison').inner_text()
             missing = admin.context.request.get(base + '/api/workspace/dashboard').json()['missing_documents']
             assert not any(m['launch_id'] == launch_id and m['title'] == 'Bon de livraison' for m in missing)
-            # F. Nouveau dépôt du même type → V2 sur la même ligne, aucun second document.
+            # F. Le type seul ne suffit jamais. La référence commune permet de
+            # proposer V2, puis le collaborateur choisit explicitement la version.
             adm.click('#upload-doc')
             adm.select_option('#ops-folder', 'rose')
             adm.fill('#ops-type', 'Bon de livraison')
+            second_delivery = f'BON DE LIVRAISON\nReference commande : {ref}\nQuantite livree : 110 pieces'.encode()
+            adm.locator('#ops-file').set_input_files({'name': 'bl-v2.txt', 'mimeType': 'text/plain', 'buffer': second_delivery})
+            adm.wait_for_selector('#du-relationship-action')
+            adm.select_option('#du-relationship-action', 'new_version')
             adm.wait_for_selector('#dj-version-note:has-text("V2")')
-            adm.locator('#ops-file').set_input_files({'name': 'bl-v2.txt', 'mimeType': 'text/plain', 'buffer': b'Bon de livraison V2'})
             adm.locator('#ops-upload-form button[type=submit]').click()
             adm.wait_for_selector('.dj-row:has-text("Bon de livraison") td:has-text("V2")')
             report = admin.context.request.get(base + f'/api/launches/{launch_id}/completeness').json()
@@ -264,13 +269,17 @@ def full_journey(qa, browser, base, admin_password, captures):
             row = lambda title: adm.locator('.dj-row', has_text=title).first
             adm.click('[data-dj-folder="rose"]')
             blob = b'Email logistique identique ' + secrets.token_bytes(8)
-            for name in ('arrivee-lot.txt', 'arrivee-lot-copie.txt'):
+            for index, name in enumerate(('arrivee-lot.txt', 'arrivee-lot-copie.txt')):
                 adm.click('#upload-doc')
                 adm.select_option('#ops-folder', 'rose')
                 adm.fill('#ops-type', 'Email')
                 if adm.locator('#dj-separate').count():
                     adm.check('#dj-separate')
                 adm.locator('#ops-file').set_input_files({'name': name, 'mimeType': 'text/plain', 'buffer': blob})
+                if index:
+                    adm.wait_for_selector('#du-relationship-action')
+                    adm.select_option('#du-relationship-action', 'keep_duplicate')
+                    adm.fill('#du-relationship-note', 'Copie logistique conservée volontairement pour la recette.')
                 adm.locator('#du-justification').fill('Courriel logistique lu et vérifié pendant la recette.')
                 adm.locator('#ops-upload-form button[type=submit]').click()
                 adm.wait_for_selector('#ops-upload-form', state='detached')
