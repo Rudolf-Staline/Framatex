@@ -49,6 +49,38 @@ def test_rule_based_classification_and_field_provenance():
     assert bykey['quantite']['value']=='240'
     assert bykey['date_document']['value']=='17/10/2026'
     assert 'Quantité' in bykey['quantite']['source_excerpt']
+    assert c['status']=='identified'
+    assert classify_document('facture.pdf','')['status']=='probable'
+    assert classify_document('fichier.pdf','')['status']=='impossible'
+    assert classify_document('document.txt','Bon de livraison\nFiche de prix')['status']=='multiple'
+
+
+def test_specific_quantities_remain_distinct_and_ambiguous_values_are_flagged():
+    fields=extract_fields('Quantité commandée : 5000 pièces\nQuantité produite : 4700 pièces\n'
+                          'Quantité livrée : 4500 pièces\nRéférence client : CLI-88')
+    bykey={item['key']:item for item in fields}
+    assert bykey['quantite_commandee']['value']=='5000'
+    assert bykey['quantite_produite']['value']=='4700'
+    assert bykey['quantite_livree']['value']=='4500'
+    assert bykey['reference_client']['value']=='CLI-88'
+    assert 'quantite' not in bykey
+
+
+def test_word_and_excel_fields_include_source_locator(tmp_path):
+    from docx import Document as Word
+    from openpyxl import Workbook
+
+    word=Word();word.add_paragraph('COMMANDE CLIENT');word.add_paragraph('Quantité commandée : 1250 pièces')
+    word_path=tmp_path/'commande.docx';word.save(word_path)
+    word_report=preview(word_path,word_path.name)
+    quantity=next(item for item in word_report['fields'] if item['key']=='quantite_commandee')
+    assert quantity['method']=='docx_text' and quantity['paragraph']==2
+
+    book=Workbook();sheet=book.active;sheet.title='Production';sheet.append(['Quantité produite :', 1190, 'pièces'])
+    excel_path=tmp_path/'production.xlsx';book.save(excel_path)
+    excel_report=preview(excel_path,excel_path.name)
+    produced=next(item for item in excel_report['fields'] if item['key']=='quantite_produite')
+    assert produced['method']=='xlsx_values' and produced['sheet']=='Production' and produced['cell']=='A1:C1'
 
 
 def test_hybrid_pdf_reads_native_and_scanned_pages_with_page_provenance(tmp_path, monkeypatch):

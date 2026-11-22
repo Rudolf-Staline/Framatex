@@ -19,12 +19,12 @@ KINDS = (
     ("Facture", "vert", ("facture", "invoice", "montant ht", "montant ttc", "total ttc")),
     ("Bon de livraison", "rose", ("bon de livraison", "bl n°", "delivery note", "bon livraison")),
     ("Bon de réception", "rose", ("bon de réception", "bon de reception", "réception matière", "reception matiere")),
-    ("Déclaration douanière", "bleu", ("douane", "dedouanement", "dédouanement", "déclaration import", "declaration import")),
+    ("Pièce douanière", "bleu", ("déclaration douanière", "declaration douaniere", "douane", "dedouanement", "dédouanement", "déclaration import", "declaration import")),
     ("Fiche de prix", "jaune", ("fiche de prix", "calcul de prix", "prix de revient", "cost sheet")),
     ("Fiche d’emploi", "jaune", ("fiche d'emploi", "fiche d’emploi", "consommation tissu", "fabric consumption")),
     ("Lancement définitif", "jaune", ("lancement definitif", "lancement définitif")),
     ("Lancement provisoire", "jaune", ("lancement provisoire",)),
-    ("Dossier technique", "jaune", ("dossier technique", "technical pack", "tech pack")),
+    ("Dossier technique client", "jaune", ("dossier technique client", "dossier technique", "technical pack", "tech pack")),
     ("Commande client", "jaune", ("commande client", "bon de commande", "purchase order")),
     ("Excel BE", "jaune", ("étude be", "bureau d'études", "étude technique")),
     ("Tests tissu", "jaune", ("test tissu", "essai textile", "rapport de test tissu")),
@@ -35,14 +35,21 @@ KINDS = (
     ("Justificatif de dédouanement", "bleu", ("justificatif de dédouanement", "quittance douanière")),
     ("Document facturation", "vert", ("pièce de facturation", "document de facturation")),
     ("Avoir / correction de facture", "vert", ("note de crédit", "avoir client", "facture d'avoir")),
+    ("Email", "jaune", ("email technique", "courriel technique", "technical email")),
+    ("Email", "rose", ("email réception", "email logistique", "courriel logistique", "logistics email")),
 )
 
 PATTERNS = {
     "numero_lancement": r"\b(?:n[°o.]?\s*(?:de\s*)?lancement|lancement\s*n[°o.]?|orli)\s*[:#-]?\s*([A-Z0-9][A-Z0-9_/-]{2,35})",
     "reference_matiere": r"\b(?:r[eé]f[eé]rence\s*(?:mati[eè]re|tissu)|r[eé]f\.\s*tissu)\s*[:#-]?\s*([A-Z0-9][A-Z0-9_/-]{2,40})",
-    "quantite": r"\b(?:quantit[eé]|qt[eé])[ \t]*[:=]?[ \t]*(\d[\d \u00a0\u202f.,]{0,18})[ \t]*(pi[eè]ces?|pcs?|m[eè]tres?|m\b|kg\b)?",
+    "reference_client": r"\b(?:r[eé]f[eé]rence\s+client|r[eé]f\.\s*client)[ \t]*[:#-]?[ \t]*([A-Z0-9][A-Z0-9_/-]{2,39})",
+    "quantite_commandee": r"\bquantit[eé]\s+command[eé]e[ \t]*[:=]?[ \t]*(\d[\d \u00a0\u202f.,]{0,18})[ \t]*(pi[eè]ces?|pcs?)?",
+    "quantite_produite": r"\bquantit[eé]\s+produite[ \t]*[:=]?[ \t]*(\d[\d \u00a0\u202f.,]{0,18})[ \t]*(pi[eè]ces?|pcs?)?",
+    "quantite_livree": r"\bquantit[eé]\s+livr[eé]e[ \t]*[:=]?[ \t]*(\d[\d \u00a0\u202f.,]{0,18})[ \t]*(pi[eè]ces?|pcs?)?",
+    "quantite": r"\b(?:quantit[eé](?!\s+(?:command[eé]e|produite|livr[eé]e))|qt[eé])[ \t]*[:=]?[ \t]*(\d[\d \u00a0\u202f.,]{0,18})[ \t]*(pi[eè]ces?|pcs?|m[eè]tres?|m\b|kg\b)?",
     "date_document": r"\b(?:date|livr[eé]\s*le|r[eé]ception\s*le)\s*[:=]?\s*(\d{2}[/-]\d{2}[/-]\d{4})",
-    "montant": r"\b(?:montant|total\s*ttc|total\s*ht)\s*[:=]?\s*(\d[\d\s.,]{0,18})\s*(MAD|DH|EUR|€)?",
+    "montant_total": r"\b(?:montant\s+total|total\s*ttc|total\s*ht)\s*[:=]?\s*(\d[\d\s.,]{0,18})\s*(MAD|DH|EUR|€|USD)?",
+    "montant": r"\bmontant(?!\s+total)\s*[:=]?\s*(\d[\d\s.,]{0,18})\s*(MAD|DH|EUR|€|USD)?",
     "reference_commande": r"\b(?:r[eé]f[eé]rence\s+(?:de\s+)?commande|commande\s+n[°o.]?)\s*[:#]?\s+([A-Z0-9][A-Z0-9_/-]{2,39})",
     "reference_article": r"\br[eé]f[eé]rence\s+(?:article|mod[eè]le)\s*[:#]?\s+([A-Z0-9][A-Z0-9_/-]{2,39})",
 }
@@ -50,7 +57,7 @@ for key, label, units in (
     ('consommation_matiere', r'consommation(?:\s+(?:mati[eè]re|tissu))?', r'm\s*/\s*(?:pi[eè]ce|pc)|kg\s*/\s*(?:pi[eè]ce|pc)'),
     ('besoin_matiere', r'besoin\s+(?:mati[eè]re|tissu)', r'kg|m[eè]tres?|m'),
     ('prix_unitaire', r'prix\s+unitaire', r'(?:MAD|DH|EUR|€|USD)\s*/\s*(?:pi[eè]ce|pc)'),
-    ('prix_total', r'(?:prix\s+total|total\s+ht)', r'MAD|DH|EUR|€|USD'),
+    ('prix_total', r'prix\s+total', r'MAD|DH|EUR|€|USD'),
 ):
     PATTERNS[key] = rf'\b{label}[ \t]*[:=]?[ \t]*(\d[\d \u00a0\u202f.,]{{0,18}})[ \t]*({units})\b'
 
@@ -139,6 +146,7 @@ def read_document(path: Path, filename: str, allow_ocr=True) -> dict:
                 im = ImageOps.exif_transpose(raw).convert("RGB")
                 text = _ocr_image(im, pytesseract)[:MAX_TEXT]
                 method = "image_ocr"
+                page_sources = [{'page': 1, 'method': method, 'text': text}]
         except Exception:
             method = "ocr_unavailable"
             warnings.append("OCR image indisponible ou image illisible ; vérifiez Tesseract et fra/eng")
@@ -146,9 +154,18 @@ def read_document(path: Path, filename: str, allow_ocr=True) -> dict:
         try:
             from docx import Document as Word
             document = Word(path)
-            paragraphs = (p.text for p in itertools.islice(document.paragraphs, 300))
-            rows = (" ".join(c.text for c in row.cells[:16]) for table in document.tables[:10] for row in table.rows[:100])
-            text = "\n".join(line[:MAX_TEXT] for line in itertools.chain(paragraphs, rows))[:MAX_TEXT]
+            chunks = []
+            for index, paragraph in enumerate(itertools.islice(document.paragraphs, 300), start=1):
+                if paragraph.text.strip():
+                    chunks.append({'paragraph': index, 'method': 'docx_text', 'text': paragraph.text[:1000]})
+            for table_index, table in enumerate(document.tables[:10], start=1):
+                for row_index, row in enumerate(table.rows[:100], start=1):
+                    value = ' '.join(cell.text[:300] for cell in row.cells[:16] if cell.text.strip())
+                    if value:
+                        chunks.append({'table': table_index, 'row': row_index,
+                                       'method': 'docx_text', 'text': value})
+            page_sources = chunks
+            text = "\n".join(item['text'] for item in chunks)[:MAX_TEXT]
             method = "docx_text"
         except Exception:
             warnings.append("Lecture DOCX impossible")
@@ -156,6 +173,7 @@ def read_document(path: Path, filename: str, allow_ocr=True) -> dict:
         with path.open(encoding='utf-8-sig', errors='replace') as source:
             text = source.read(MAX_TEXT)
         method = "plain_text"
+        page_sources = [{'method': method, 'text': text}]
     elif suffix == ".eml":
         from email import policy
         from email.parser import BytesParser
@@ -164,28 +182,33 @@ def read_document(path: Path, filename: str, allow_ocr=True) -> dict:
                 email = BytesParser(policy=policy.default).parsebytes(source.read(2_000_000))
             text = str(email.get('Subject', '')) + '\n' + '\n'.join(str(part.get_content()) for part in email.walk() if part.get_content_type()=="text/plain")[:MAX_TEXT]
             method="email_text"
+            page_sources = [{'method': method, 'text': text}]
         except Exception:
             warnings.append("Lecture du courrier impossible")
     elif suffix == ".xlsx":
         try:
             from openpyxl import load_workbook
-            lines = []
+            chunks = []
             with path.open('rb') as source:
                 wb = load_workbook(source, read_only=True, data_only=False, keep_links=False)
                 try:
                     for sheet in wb.worksheets[:3]:
-                        lines.append(sheet.title)
+                        chunks.append({'sheet': sheet.title, 'method': 'xlsx_values', 'text': sheet.title})
                         for row in sheet.iter_rows(max_row=min(sheet.max_row or 120, 120), max_col=min(sheet.max_column or 16, 16)):
-                            lines.append(' '.join(str(cell.value)[:160] if cell.data_type != 'f' else '[formule]' for cell in row if cell.value is not None))
+                            cells = [cell for cell in row if cell.value is not None and cell.data_type != 'f']
+                            value = ' '.join(str(cell.value)[:160] for cell in cells)
+                            if value:
+                                chunks.append({'sheet': sheet.title,
+                                               'cell': f'{cells[0].coordinate}:{cells[-1].coordinate}',
+                                               'method': 'xlsx_values', 'text': value})
                 finally:
                     wb.close()
-            text="\n".join(lines)[:MAX_TEXT]
+            page_sources = chunks
+            text="\n".join(item['text'] for item in chunks)[:MAX_TEXT]
             method="xlsx_values"
             warnings.append('Lecture des valeurs saisies. Les formules et leurs valeurs en cache sont exclues.')
         except Exception:
             warnings.append("Lecture XLSX impossible")
-        if text:
-            page_sources = [{'page': None, 'method': method, 'text': text}]
     return {"text":text, "method":method, "warnings":warnings, 'sources': page_sources}
 
 
@@ -218,8 +241,9 @@ def classify_document(filename: str, content: str) -> dict:
     matches.sort(key=lambda item: item[0], reverse=True)
     ambiguous = len(matches) > 1 and matches[0][0] == matches[1][0]
     decisive = bool(matches and matches[0][0] >= 2 and not ambiguous)
+    status = 'identified' if decisive else 'multiple' if ambiguous else 'probable' if matches else 'impossible'
     return {'suggestions': [record for _, record in matches[:3]], 'needs_confirmation': True,
-            'ambiguous': ambiguous, 'decisive': decisive}
+            'status': status, 'ambiguous': ambiguous, 'decisive': decisive}
 
 
 def extract_fields(text: str) -> list[dict]:
@@ -251,7 +275,8 @@ def preview(path: Path, filename: str, allow_ocr=True) -> dict:
                 field['source_excerpt'] = item['text'][max(0, offset-cursor-35):min(len(item['text']), offset-cursor+150)].replace('\n',' ').strip()[:180]
                 break
             cursor = end + 1
-        field['page'] = source['page'] if source else None
+        for locator in ('page', 'sheet', 'cell', 'paragraph', 'table', 'row'):
+            field[locator] = source.get(locator) if source else None
         field['method'] = source['method'] if source else read['method']
         field.pop('offset', None)
     return {"filename":filename,"method":read["method"],"warnings":read["warnings"],

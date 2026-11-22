@@ -10,6 +10,9 @@ Branche : `feat/document-intelligence`, créée depuis `feat/smart-business-memo
 - Rapprochement guidé au dépôt : doublon exact par SHA-256, nouvelle version par références et type compatibles, doublon potentiel par texte normalisé et champs communs. Les références contradictoires empêchent un faux rapprochement de deux documents du même type.
 - Choix humain obligatoire lorsqu’un rapprochement est proposé : nouvelle version, nouveau document indépendant, conservation justifiée ou annulation du transfert. La décision, les versions et la preuve sont persistées sans suppression ni fusion automatique.
 - Migration additive `0012_document_intelligence`, à appliquer avant la migration `0013_access_management` de la branche Claude.
+- Classification alignée sur le catalogue standard, avec états `identified`, `probable`, `multiple` et `impossible`; le nom de fichier reste un indice non décisif et les preuves de contenu restent visibles.
+- Extraction distincte des quantités commandée, produite et livrée, ainsi que référence client et montant total. Les localisateurs page PDF, feuille/plage Excel et paragraphe Word sont associés aux propositions et aux valeurs confirmées.
+- Lecture Excel bornée : les formules restent exclues de l’extraction de valeurs et sont inspectées séparément, sans macro, lien externe ni recalcul.
 
 ## Résultats vérifiés sur `096c5887e2e5df841dfe38cb38191462da49acf0`
 
@@ -26,9 +29,15 @@ Branche : `feat/document-intelligence`, créée depuis `feat/smart-business-memo
 - Syntaxe `static/document-upload.js` vérifiée par Node.
 - Couverture ajoutée : doublon exact renommé, choix manquant refusé, conservation justifiée persistée, version proposée, document indépendant de même type et doublon potentiel conservé séparément.
 
+## Tests du lot classification et extraction
+
+- `tests/test_intake.py` + `tests/test_document_workspace.py` : 17 réussis.
+- `tests/test_quality.py` + `tests/test_intake.py` : 14 réussis.
+- Syntaxe des interfaces intake et dépôt vérifiée par Node.
+- Couverture ajoutée : états de classification, quantités distinctes, provenance Word et Excel, extraction ambiguë préservée.
+
 ## Partiellement terminé
 
-- Classification et extraction : moteur existant conservé, extension aux 22 types et provenance Excel/Word encore à réaliser.
 - Cohérence et décisions : moteur stable existant identifié; enrichissement des états, de la traçabilité et de la revérification à poursuivre.
 - Comparaison : champs et formules disponibles; diff textuel encore absent.
 

@@ -11,7 +11,8 @@ function bindIntake(){
 }
 function renderCandidates(items){
  if(!items?.length)return `<p class="workflow-help">Aucun champ structuré détecté.</p>`;
- return `<div class="intake-candidates">${items.map((x,i)=>`<div class="intake-candidate"><strong>${e(x.key.replaceAll('_',' '))}</strong><span>${e(x.value)} ${e(x.unit||'')}</span><small>${e(x.source_excerpt||'')}</small></div>`).join('')}</div>`;
+ const source=x=>[x.page?`page ${x.page}`:'',x.sheet?`feuille ${x.sheet}`:'',x.cell?`cellule ${x.cell}`:'',x.paragraph?`paragraphe ${x.paragraph}`:''].filter(Boolean).join(' · ');
+ return `<div class="intake-candidates">${items.map(x=>`<div class="intake-candidate"><strong>${e(x.key.replaceAll('_',' '))}</strong><span>${e(x.value)} ${e(x.unit||'')}</span><small>${e(source(x))}${source(x)?' · ':''}${e(x.source_excerpt||'')}</small></div>`).join('')}</div>`;
 }
 function intakeOpen() {
   return dossierUpload({folder: state.folder}).catch(showErr);
@@ -27,8 +28,10 @@ async function intakeExisting(versionId) {
     const review = editable && ['to_verify', 'incompatible'].includes(data.identification?.status);
     const pending = data.fields.filter(field => !data.confirmed.some(item => item.key === field.key));
     const reached = data.classification.suggestions;
-    const labels = {quantite: 'Quantité', reference_commande: 'Référence de commande', reference_article: 'Référence article',
-      consommation_matiere: 'Consommation matière', besoin_matiere: 'Besoin matière', prix_unitaire: 'Prix unitaire', prix_total: 'Prix total hors taxes'};
+    const labels = {quantite: 'Quantité', quantite_commandee: 'Quantité commandée', quantite_produite: 'Quantité produite',
+      quantite_livree: 'Quantité livrée', reference_commande: 'Référence de commande', reference_article: 'Référence article',
+      reference_client: 'Référence client', consommation_matiere: 'Consommation matière', besoin_matiere: 'Besoin matière',
+      prix_unitaire: 'Prix unitaire', prix_total: 'Prix total hors taxes', montant_total: 'Montant total'};
     const label = key => labels[key] || key.replaceAll('_', ' ');
     modal('Identification et valeurs documentaires', `<p class="modal-desc">${e(DOCUMENT_METHODS[data.method] || 'Vérification manuelle')}. Les valeurs explicitement confirmées peuvent alimenter les comparaisons sur cette version.</p>
       ${data.warnings.length ? `<p class="permission-lock">${e(data.warnings.join(' · '))}</p>` : ''}
@@ -37,7 +40,7 @@ async function intakeExisting(versionId) {
       ${review ? '<form id="du-review-type"><div class="field"><label for="du-review-note">Justifier le type après lecture du document</label><textarea id="du-review-note" required minlength="12" maxlength="1800" rows="2"></textarea></div><button class="primary tiny" type="submit">Confirmer le type</button></form>' : ''}
       <div class="field"><label for="du-source-text">Extrait du document</label><textarea id="du-source-text" readonly rows="4">${e(data.text_excerpt)}</textarea></div>
       <h3>Champs à vérifier</h3>
-      ${pending.map(x => `<div class="intake-field-row"><div class="workflow-meta"><strong>${e(label(x.key))}</strong> · ${e(x.source_excerpt)}${x.status === 'ambiguous' ? '<br>Plusieurs valeurs trouvées. Relevez la valeur dans la source.' : ''}</div>
+      ${pending.map(x => `<div class="intake-field-row"><div class="workflow-meta"><strong>${e(label(x.key))}</strong> · ${e([x.page&&'page '+x.page,x.sheet&&'feuille '+x.sheet,x.cell&&'cellule '+x.cell,x.paragraph&&'paragraphe '+x.paragraph].filter(Boolean).join(' · '))}${e(x.source_excerpt ? ' · '+x.source_excerpt : '')}${x.status === 'ambiguous' ? '<br>Plusieurs valeurs trouvées. Relevez la valeur dans la source.' : ''}</div>
         ${editable ? `<input aria-label="Valeur de ${e(label(x.key))}" id="if-${e(x.key)}" value="${x.status === 'ambiguous' ? '' : e(x.value)}" maxlength="140">
         <input aria-label="Unité de ${e(label(x.key))}" id="iu-${e(x.key)}" value="${x.status === 'ambiguous' ? '' : e(x.unit)}" maxlength="30" placeholder="Unité">
         <button class="secondary tiny" data-intake-confirm="${e(x.key)}">Valider la valeur</button>` : `<span>${e(x.value)} ${e(x.unit)}</span>`}</div>`).join('') || '<p>Aucun champ proposé.</p>'}

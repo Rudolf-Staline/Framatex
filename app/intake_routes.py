@@ -34,6 +34,7 @@ async def intake_preview(launch_id:str,file:UploadFile=File(...),user:User=Depen
     path = STORAGE / disk_name
     try:
         result = await run_in_threadpool(read_safely, path, name)
+        result.pop('comparison_text', None)
         original = result['classification']['suggestions']
         # Ne jamais révéler une rubrique suggérée que le collaborateur n'a pas le droit d'utiliser.
         filtered = [x for x in original if permitted(user, 'document.write', x['folder'])]
@@ -55,9 +56,18 @@ def version_intake(version_id:str,user:User=Depends(get_current_user),db:Session
     # Analyse demandée explicitement par l'utilisateur. Aucune extraction poussée vers l'ERP.
     identification = db.get(DocumentIdentification, v.id)
     result = dict(identification.analysis) if identification and identification.analysis['method'] not in {'busy', 'analysis_failed', 'ocr_unavailable', 'pdf_unreadable'} else read_safely(path, v.original_name)
+    result.pop('comparison_text', None)
     result['identification'] = {'status': identification.status, 'justification': identification.justification} if identification else None
     result['version_id']=v.id
-    result['confirmed']=[{'key':x.field_key,'value':x.value,'unit':x.unit,'confirmed_at':x.confirmed_at.isoformat()} for x in db.scalars(select(ConfirmedField).where(ConfirmedField.document_version_id==v.id)).all()]
+    candidates = {item['key']: item for item in result.get('fields', [])}
+    result['confirmed']=[{
+        'key':x.field_key,'value':x.value,'unit':x.unit,'source_excerpt':x.source_excerpt,
+        'method':candidates.get(x.field_key, {}).get('method'),
+        'page':candidates.get(x.field_key, {}).get('page'),
+        'sheet':candidates.get(x.field_key, {}).get('sheet'),
+        'cell':candidates.get(x.field_key, {}).get('cell'),
+        'status':'confirmed','confirmed_at':x.confirmed_at.isoformat()
+    } for x in db.scalars(select(ConfirmedField).where(ConfirmedField.document_version_id==v.id)).all()]
     return result
 
 

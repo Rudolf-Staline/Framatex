@@ -25,7 +25,7 @@ QUALITY_FIELDS_EXTRA = {'reference_commande': ('Référence de commande', 'réf�
                         'reference_article': ('Référence article', 'référence'),
                         'prix_total': ('Prix total hors taxes', 'MAD')}
 REFERENCE_KEYS = {'reference_commande', 'reference_article'}
-EXTRACTED_KEYS = {'quantite_lancement': 'quantite', 'besoin_matiere_total': 'besoin_matiere'}
+EXTRACTED_KEYS = {'besoin_matiere_total': ('besoin_matiere',)}
 
 
 def source_unit(unit):
@@ -38,9 +38,16 @@ def source_unit(unit):
 
 
 def extracted_value(db, version, doc, key):
-    mapped = EXTRACTED_KEYS.get(key, key)
-    field = db.scalar(select(ConfirmedField).where(ConfirmedField.document_version_id == version.id,
-                                                   ConfirmedField.field_key == mapped))
+    if key == 'quantite_lancement':
+        mapped = ('quantite_commandee', 'quantite') if doc.doc_type == 'Commande client' else ('quantite_produite', 'quantite')
+    else:
+        mapped = EXTRACTED_KEYS.get(key, (key,))
+    field = None
+    for candidate in mapped:
+        field = db.scalar(select(ConfirmedField).where(ConfirmedField.document_version_id == version.id,
+                                                       ConfirmedField.field_key == candidate))
+        if field:
+            break
     if not field or not field.value.strip():
         return None
     if key in REFERENCE_KEYS:
