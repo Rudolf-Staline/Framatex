@@ -26,3 +26,8 @@ Branche de travail : `feat/document-intelligence`, créée depuis `feat/smart-bu
 5. Recettes navigateur/globales, rapport, commits et push vérifié.
 
 Dernier état récupérable : commit initial de branche `6b0eafe3713e16f607aadfb3a91724218f4467ca`.
+
+## Lots poussés
+- `1e08c0e` — PDF hybride lu page par page, OCR local prétraité et orientation Tesseract tentée (fallback conservé), champs extraits avec méthode/page/source, test synthétique d’un PDF natif + scan.
+- `En cours` — comparaison version à version ajoutée à l’API d’intake et exposée depuis la fiche d’historique. Vérifiée par test de permissions et de version.
+- Les tests ciblés intake, qualité et passeport couvrent les changements présents.

@@ -107,8 +107,19 @@ def test_confirmed_fields_attached_to_exact_version(client):
     assert client.post(f'/api/document-versions/{version}/intake/confirm',json={**body,'field_key':'montant'},headers=H).status_code==409
     login(client,'recep@intake.local')
     assert client.post(f'/api/document-versions/{version}/intake/confirm',json=body,headers=H).status_code==403
+
+
+def test_version_comparison_is_scoped_to_same_document_and_permission(client):
+    lid=setup(client)
+    first=client.post(f'/api/launches/{lid}/documents',data={'folder':'rose','title':'BL compare','doc_type':'Bon de livraison'},
+        files={'file':('bl1.txt',b'Quantite livree : 10 pieces')},headers=H).json()
+    v1=first['latest']['id']
+    assert client.get(f'/api/document-versions/{v1}/compare-previous').json()['status']=='first_version'
+    second=client.post(f"/api/documents/{first['id']}/versions",files={'file':('bl2.txt',b'Quantite livree : 12 pieces')},headers=H).json()
+    result=client.get(f"/api/document-versions/{second['latest']['id']}/compare-previous")
+    assert result.status_code==200 and result.json()['previous_version']==1
     login(client,'tech@intake.local')
-    assert client.get(f'/api/document-versions/{version}/intake').status_code==403
+    assert client.get(f"/api/document-versions/{second['latest']['id']}/compare-previous").status_code==403
 
 
 def test_upload_validation_on_preview(client):

@@ -60,6 +60,38 @@ def version_intake(version_id:str,user:User=Depends(get_current_user),db:Session
     result['confirmed']=[{'key':x.field_key,'value':x.value,'unit':x.unit,'confirmed_at':x.confirmed_at.isoformat()} for x in db.scalars(select(ConfirmedField).where(ConfirmedField.document_version_id==v.id)).all()]
     return result
 
+
+@router.get('/api/document-versions/{version_id}/compare-previous')
+def compare_previous(version_id: str, user: User=Depends(get_current_user), db: Session=Depends(get_db)):
+    """Compare une version uniquement à sa précédente version du même document."""
+    current=db.get(DocumentVersion,version_id)
+    if not current: raise HTTPException(404,'Version introuvable')
+    document=get_doc(db,current.document_id)
+    must(user,'launch.read');must(user,'document.read',document.folder.slug)
+    previous=next((item for item in document.versions if item.number==current.number-1),None)
+    if not previous: return {'status':'first_version','current_version':current.number,'changes':[],'notice':'Première version : aucune comparaison disponible.'}
+    before=db.get(DocumentIdentification,previous.id);after=db.get(DocumentIdentification,current.id)
+    def field_map(item):
+        if not item:return {}
+        return {entry['key']:entry for entry in item.analysis.get('fields',[])}
+    old,new=field_map(before),field_map(after)
+    changes=[]
+    for key in sorted(set(old)|set(new)):
+        a,b=old.get(key),new.get(key)
+        av=(a.get('value'),a.get('unit')) if a else None
+        bv=(b.get('value'),b.get('unit')) if b else None
+        if av!=bv:
+            changes.append({'field':key,'kind':'added' if a is None else 'removed' if b is None else 'changed',
+                'previous':a,'current':b,'explanation':'Valeur extraite automatiquement; confirmer avec le document source.'})
+    from .quality_models import ExcelInspection
+    inspection=db.scalar(select(ExcelInspection).where(ExcelInspection.document_version_id==current.id))
+    formulas=[]
+    if inspection:
+        formulas=[item for item in json.loads(inspection.findings_json) if item.get('type') in {'formula_changed','formula_removed','broken_reference'}]
+    return {'status':'compared','document_id':document.id,'previous_version':previous.number,
+        'current_version':current.number,'changes':changes,'excel_formula_changes':formulas,
+        'notice':'La comparaison est indicative et limitée aux champs analysés et aux inspections Excel disponibles.'}
+
 @router.post('/api/document-versions/{version_id}/intake/confirm',status_code=201)
 def confirm_field(version_id:str,payload:ConfirmField,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
     v=db.get(DocumentVersion,version_id)
