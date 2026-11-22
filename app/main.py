@@ -262,9 +262,22 @@ def me(user: User = Depends(get_current_user)):
     from .access_control import access_mode
     from sqlalchemy.orm import object_session
     profile = object_session(user).get(CollaboratorProfile, user.id)
-    return {**user_out(user), "permissions": perms, "access_mode": access_mode(user),
+    mode = access_mode(user)
+    assigned, launches = {}, set()
+    if mode == "assignments":
+        # Union des actions affectées, pour l'affichage des menus ; chaque action reste vérifiée par commande.
+        import json as _json
+        from .access_models import LaunchAssignment
+        for row in object_session(user).scalars(select(LaunchAssignment).where(LaunchAssignment.user_id == user.id)):
+            actions = _json.loads(row.actions or "[]")
+            if actions:
+                launches.add(row.launch_id)
+                assigned.setdefault(row.folder_slug, set()).update(actions)
+    return {**user_out(user), "permissions": perms, "access_mode": mode,
             "job_title": profile.job_title if profile else "",
-            "must_change_password": bool(profile and profile.must_change_password)}
+            "must_change_password": bool(profile and profile.must_change_password),
+            "assigned_actions": {slug: sorted(actions) for slug, actions in assigned.items()},
+            "assigned_launches": len(launches)}
 
 @app.get("/api/dashboard")
 def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
