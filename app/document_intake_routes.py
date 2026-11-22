@@ -11,6 +11,8 @@ from starlette.concurrency import run_in_threadpool
 from .core import get_current_user, get_db
 from .document_intake import ALIASES, identification_status, normalized, read_safely
 from .document_intake_models import DocumentIdentification, PendingDocumentUpload
+from .document_intelligence_models import DocumentRelationshipDecision
+from .document_relationships import propose_relationships
 from .main import (SLUGS, STORAGE, audit, get_doc, get_launch, must, permitted, persist_document,
                    persist_version, require_active_launch_rule, store_upload)
 from .models import Document, DocumentVersion, User
@@ -28,6 +30,9 @@ class PublishUpload(BaseModel):
     justification: str = Field(default='', max_length=1800)
     rule_id: str | None = None
     document_id: str | None = None
+    relationship_action: str | None = None
+    relationship_candidate_version_id: str | None = None
+    relationship_reason: str = Field(default='', max_length=1800)
 
 
 class VerifyType(BaseModel):
@@ -71,6 +76,8 @@ async def stage_document(launch_id: str, folder: str = Form(...), file: UploadFi
     original, disk_name, size, sha, mime = await store_upload(file)
     try:
         analysis = await run_in_threadpool(read_safely, STORAGE / disk_name, original)
+        launch = get_launch(db, launch_id)
+        analysis['relationships'] = propose_relationships(db, user, launch, sha, analysis)
         staged = PendingDocumentUpload(launch_id=launch_id, user_id=user.id, folder=folder,
                                         original_name=original, disk_name=disk_name, size=size, sha256=sha,
                                         content_type=mime, analysis=analysis, expires_at=now() + EXPIRY)
@@ -88,7 +95,12 @@ def public_analysis(user, analysis):
     suggestions = [{**item, 'canonical_type': ALIASES.get(normalized(item['doc_type']), item['doc_type'])}
                    for item in classification['suggestions']
                    if permitted(user, 'document.read', item['folder']) and permitted(user, 'document.write', item['folder'])]
-    return {**analysis, 'classification': {**classification, 'suggestions': suggestions,
+    public = {key: value for key, value in analysis.items() if key != 'comparison_text'}
+    public['relationships'] = [
+        {**item, 'can_add_version': permitted(user, 'document.write', item['folder'])}
+        for item in analysis.get('relationships', [])
+    ]
+    return {**public, 'classification': {**classification, 'suggestions': suggestions,
             'decisive': classification['decisive'] and bool(suggestions)
             and suggestions[0]['doc_type'] == classification['suggestions'][0]['doc_type']}}
 
@@ -131,8 +143,25 @@ def publish_document(launch_id: str, upload_id: str, payload: PublishUpload,
         _, rule = require_active_launch_rule(db, launch_id, payload.rule_id)
         if (rule.folder_slug, rule.document_type) != (payload.folder, doc_type):
             raise HTTPException(422, 'Le classement doit correspondre à la pièce attendue')
-    document = db.get(Document, payload.document_id) if payload.document_id else None
-    if payload.document_id and (not document or document.folder_id != entity.id or document.doc_type != doc_type):
+    proposals = propose_relationships(db, user, get_launch(db, launch_id), staged.sha256, staged.analysis)
+    selected = next((item for item in proposals
+                     if item['candidate_version_id'] == payload.relationship_candidate_version_id), None)
+    if proposals and not payload.relationship_action:
+        raise HTTPException(409, 'Choisissez comment traiter le rapprochement documentaire proposé')
+    if payload.relationship_action not in {None, 'new_version', 'new_document', 'keep_duplicate'}:
+        raise HTTPException(422, 'Décision de rapprochement invalide')
+    relationship_reason = payload.relationship_reason.strip()
+    if payload.relationship_action in {'new_version', 'keep_duplicate'} and not selected:
+        raise HTTPException(422, 'Sélectionnez le document rapproché')
+    if payload.relationship_action == 'keep_duplicate' and len(relationship_reason) < 12:
+        raise HTTPException(422, 'Justifiez la conservation du doublon en au moins 12 caractères')
+    chosen_document_id = payload.document_id
+    if payload.relationship_action == 'new_version':
+        chosen_document_id = selected['candidate_document_id']
+    elif payload.relationship_action in {'new_document', 'keep_duplicate'}:
+        chosen_document_id = None
+    document = db.get(Document, chosen_document_id) if chosen_document_id else None
+    if chosen_document_id and (not document or document.folder_id != entity.id or document.doc_type != doc_type):
         raise HTTPException(404, 'Document introuvable pour ce type et ce sous-dossier')
     if not (STORAGE / staged.disk_name).is_file():
         raise HTTPException(503, 'Fichier temporaire indisponible')
@@ -148,6 +177,18 @@ def publish_document(launch_id: str, upload_id: str, payload: PublishUpload,
     try:
         result = (persist_version(db, user, stored, document, payload.comment, identified) if document else
                   persist_document(db, user, stored, entity, title, doc_type, payload.comment, identified))
+        if payload.relationship_action:
+            latest_id = result['latest']['id']
+            evidence = selected['evidence_signature'] if selected else staged.sha256
+            kind = selected['kind'] if selected else 'new_document'
+            db.add(DocumentRelationshipDecision(
+                launch_id=launch_id, uploaded_version_id=latest_id,
+                candidate_version_id=selected['candidate_version_id'] if selected else None,
+                evidence_signature=evidence, relationship_kind=kind,
+                action=payload.relationship_action, reason=relationship_reason, decided_by=user.id))
+            audit(db, user, 'document.relationship.decide', 'document_version', latest_id,
+                  {'kind': kind, 'action': payload.relationship_action,
+                   'candidate_version_id': selected['candidate_version_id'] if selected else None})
         audit(db, user, 'intake.classification.publish', 'document_version', result['latest']['id'],
               {'status': identified['status'], 'justification': justification})
         db.commit()

@@ -88,6 +88,7 @@ async function documentUploadDialog(options) {
   const progress = get('#du-progress');
   const drop = get('#ops-upload-drop');
   let queue = [], active = null, transfer = null, staged = null, accepted = null, saving = false, closed = false;
+  let relationshipChoice = '';
   let targetFolder = start.slug;
   const writable = launch.folders.flatMap(item => item.can_write ? item.documents || [] : []);
 
@@ -104,8 +105,7 @@ async function documentUploadDialog(options) {
     updateDestination();
   }
   function existingDocument() {
-    const matching = writable.filter(item => item.folder === folder.value && item.doc_type === type.value.trim());
-    return options.document || (matching.length === 1 ? matching[0] : null);
+    return options.document || null;
   }
   function updateDestination() {
     const choices = [...new Set([...rules.filter(rule => rule.folder === folder.value).map(rule => rule.document_type),
@@ -136,6 +136,15 @@ async function documentUploadDialog(options) {
       : matches ? 'Le type détecté correspond au classement sélectionné.' : 'Confirmez le classement proposé ou choisissez un type.';
     const reason = data.warnings.join(' · ');
     const canMove = proposal && classification.decisive && !options.document && !matches;
+    const relationships = data.relationships || [];
+    const related = relationships[0];
+    const relationLabel = {exact_duplicate: 'Doublon exact', potential_duplicate: 'Doublon potentiel', new_version: 'Nouvelle version probable'};
+    const selectedRelation = value => relationshipChoice === value ? ' selected' : '';
+    const relationChoices = related ? [
+      related.kind === 'new_version' && related.can_add_version ? `<option value="new_version"${selectedRelation('new_version')}>Ajouter comme nouvelle version du document proposé</option>` : '',
+      `<option value="new_document"${selectedRelation('new_document')}>Conserver comme nouveau document indépendant</option>`,
+      `<option value="keep_duplicate"${selectedRelation('keep_duplicate')}>Conserver malgré le rapprochement signalé</option>`,
+    ].filter(Boolean).join('') : '';
     get('#ops-analysis').innerHTML = `<section class="du-analysis ${conflict ? 'is-conflict' : ''}">
       <strong>${e(message)}</strong>
       ${DOCUMENT_METHODS[data.method] ? `<p>${e(DOCUMENT_METHODS[data.method])}</p>` : ''}
@@ -144,12 +153,25 @@ async function documentUploadDialog(options) {
       ${detectedOrder ? `<p>Référence repérée · <strong>${e(detectedOrder.value)}</strong></p>` : ''}
       ${data.text_excerpt ? `<details><summary>Voir l’extrait analysé</summary><p>${e(data.text_excerpt)}</p></details>` : ''}
       ${data.fields.length ? `<details><summary>Voir les valeurs à confirmer</summary>${renderCandidates(data.fields)}</details>` : ''}
+      ${related ? `<div class="du-relationship"><strong>${e(relationLabel[related.kind])} · ${e(related.title)} · V${related.candidate_version}</strong>
+        <ul>${related.evidence.map(item => `<li>${e(item)}</li>`).join('')}</ul>
+        <div class="field"><label for="du-relationship-action">Décision du collaborateur</label><select id="du-relationship-action"><option value="">Choisir une action…</option>${relationChoices}</select></div>
+        <div class="field" id="du-relationship-reason" ${relationshipChoice === 'keep_duplicate' ? '' : 'hidden'}><label for="du-relationship-note">Justification de conservation</label><textarea id="du-relationship-note" minlength="12" maxlength="1800" rows="2"></textarea></div>
+        <small>Vous pouvez aussi annuler ce fichier. Aucun rapprochement n’est appliqué automatiquement.</small></div>` : ''}
       ${canMove ? `<button type="button" class="secondary tiny" id="du-correct">Classer dans ${djFolderTitle(proposal.folder)} · ${e(proposal.canonical_type)}</button>` : ''}
       ${!matches && selectedType ? '<p>Sans justification, le fichier est conservé avec un type à vérifier et ne compte pas dans la complétude.</p>' : ''}
     </section>`;
     get('#du-correct')?.addEventListener('click', () => {
       const rule = rules.find(item => item.folder === proposal.folder && item.document_type === proposal.canonical_type);
       setDestination(proposal.folder, proposal.canonical_type, rule?.title || proposal.canonical_type);
+    });
+    get('#du-relationship-action')?.addEventListener('change', event => {
+      relationshipChoice = event.target.value;
+      const note = get('#du-relationship-reason');
+      note.hidden = relationshipChoice !== 'keep_duplicate';
+      if (relationshipChoice === 'new_version') {
+        setDestination(related.folder, related.doc_type, related.title);
+      }
     });
     submit.textContent = conflict ? 'Conserver avec le classement sélectionné' : 'Confirmer le dépôt';
   }
@@ -173,6 +195,7 @@ async function documentUploadDialog(options) {
     if (!next) return;
     active = next;
     staged = null;
+    relationshipChoice = '';
     submit.disabled = true;
     get('#du-retry').hidden = true;
     get('#du-cancel-file').hidden = false;
@@ -248,11 +271,17 @@ async function documentUploadDialog(options) {
     const selectedType = type.value.trim();
     const selectedFolder = folder.value;
     if (!selectedType || !title.value.trim()) { error('Renseignez le type et le titre du document.'); return; }
+    const related = staged.analysis.relationships?.[0];
+    if (related && !relationshipChoice) { error('Choisissez comment traiter le rapprochement documentaire proposé.'); return; }
+    const relationshipReason = get('#du-relationship-note')?.value.trim() || '';
+    if (relationshipChoice === 'keep_duplicate' && relationshipReason.length < 12) { error('Justifiez la conservation du doublon en au moins 12 caractères.'); return; }
     const input = get('#du-justification');
     const justification = input.closest('[hidden]') ? '' : input.value.trim();
     if (justification && justification.length < 12) { error('La justification doit comporter au moins 12 caractères.'); return; }
     const rule = rules.find(item => item.folder === selectedFolder && item.document_type === selectedType);
-    const existing = get('#dj-separate')?.checked ? null : existingDocument();
+    const existing = relationshipChoice === 'new_version'
+      ? writable.find(item => item.id === related?.candidate_document_id)
+      : get('#dj-separate')?.checked ? null : existingDocument();
     saving = true;
     submit.disabled = true;
     get('#cancel-modal').disabled = true;
@@ -262,12 +291,16 @@ async function documentUploadDialog(options) {
       accepted = await api(`${base}/${encodeURIComponent(staged.id)}/publish`, {method: 'POST', body: JSON.stringify({
         folder: selectedFolder, doc_type: selectedType, title: title.value.trim(), rule_id: rule?.id,
         document_id: existing?.id, comment: get('#ops-upload-comment').value, justification,
+        relationship_action: relationshipChoice || null,
+        relationship_candidate_version_id: related?.candidate_version_id || null,
+        relationship_reason: relationshipReason,
       })});
       if (existing) existing.latest = accepted.latest;
       else writable.push(accepted);
       targetFolder = selectedFolder;
       active.status = `Déposé · V${accepted.latest.number}${['to_verify', 'incompatible'].includes(accepted.identification) ? ' · type à vérifier' : ''}`;
       active = staged = null;
+      relationshipChoice = '';
       get('#du-cancel-file').hidden = get('#du-justification-field').hidden = get('#du-transfer').hidden = true;
       get('#ops-analysis').replaceChildren();
       drawFiles();

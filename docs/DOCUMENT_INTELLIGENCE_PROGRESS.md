@@ -6,7 +6,10 @@ Branche : `feat/document-intelligence`, créée depuis `feat/smart-business-memo
 
 - PDF hybride traité page par page : le texte natif est conservé et les pages sans texte passent par OCR. Les résultats d’extraction comprennent page, méthode et extrait source. Prétraitement d’image et tentative de correction d’orientation avec fallback.
 - Comparaison d’une version documentaire avec sa précédente : champs structurés analysés et constats Excel, endpoint protégé et accès depuis l’historique de document. Aucune fusion automatique.
-- Pas de migration nouvelle; les données d’analyse existantes sont réutilisées.
+- Les analyses OCR et comparaisons de versions continuent de réutiliser les données existantes.
+- Rapprochement guidé au dépôt : doublon exact par SHA-256, nouvelle version par références et type compatibles, doublon potentiel par texte normalisé et champs communs. Les références contradictoires empêchent un faux rapprochement de deux documents du même type.
+- Choix humain obligatoire lorsqu’un rapprochement est proposé : nouvelle version, nouveau document indépendant, conservation justifiée ou annulation du transfert. La décision, les versions et la preuve sont persistées sans suppression ni fusion automatique.
+- Migration additive `0012_document_intelligence`, à appliquer avant la migration `0013_access_management` de la branche Claude.
 
 ## Résultats vérifiés sur `096c5887e2e5df841dfe38cb38191462da49acf0`
 
@@ -16,6 +19,23 @@ Branche : `feat/document-intelligence`, créée depuis `feat/smart-business-memo
 - Recette Chromium : 133/133, incluant Client A/B, OCR, responsive et stabilité runtime.
 - Rapport détaillé et captures : `docs/DOCUMENT_INTELLIGENCE_REPORT.md` et `docs/document-intelligence-captures/`.
 
+## Tests du lot doublons et versions
+
+- `tests/test_document_workspace.py` : 8 réussis.
+- `tests/test_intake.py` : 7 réussis.
+- Syntaxe `static/document-upload.js` vérifiée par Node.
+- Couverture ajoutée : doublon exact renommé, choix manquant refusé, conservation justifiée persistée, version proposée, document indépendant de même type et doublon potentiel conservé séparément.
+
+## Partiellement terminé
+
+- Classification et extraction : moteur existant conservé, extension aux 22 types et provenance Excel/Word encore à réaliser.
+- Cohérence et décisions : moteur stable existant identifié; enrichissement des états, de la traçabilité et de la revérification à poursuivre.
+- Comparaison : champs et formules disponibles; diff textuel encore absent.
+
+## Non commencé
+
+- Recherche plein texte P2.
+
 ## Limites de périmètre
 
 Voir le rapport final pour les fonctionnalités avancées restantes : dédoublonnage sémantique, recherche plein texte indexée, comparaison complète de contenu, suivi persistant d’anomalies, analyse périodique d’empreintes, provenance exhaustive cellule/page et calibration de confiance. La livraison est partielle par rapport à une intelligence documentaire avancée complète; les tests verts ne valident pas ces fonctionnalités non implémentées.
@@ -24,4 +44,5 @@ Voir le rapport final pour les fonctionnalités avancées restantes : dédoublon
 
 - `1e08c0e` PDF hybride, OCR et provenance.
 - `096c588` comparaison des versions analysées.
-- Le commit du rapport et des captures, puis le SHA de la branche publiée, sont communiqués dans la réponse finale.
+- `b64b9bd` rapport du premier état partiel.
+- Prochain jalon : classification des 22 catégories et extraction structurée avec provenance.

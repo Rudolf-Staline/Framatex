@@ -256,4 +256,5 @@ def preview(path: Path, filename: str, allow_ocr=True) -> dict:
         field.pop('offset', None)
     return {"filename":filename,"method":read["method"],"warnings":read["warnings"],
             "text_excerpt":read["text"][:650],"classification":classify_document(filename,read["text"]),
+            "comparison_text":normalized(read["text"])[:12000],
             "fields":fields,"human_validation_required":True}

@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from app.core import Base, SessionLocal, engine, hash_password
 from app.intake import classify_document, extract_fields
+from app.document_intelligence_models import DocumentRelationshipDecision
 from app.main import app
 from app.models import Role, User
 
@@ -147,6 +148,60 @@ def test_analysis_respects_content_ambiguity_and_opaque_workbook_paths(workspace
     assert result['method'] == 'xlsx_values'
     assert result['fields'][0]['value'] == '150'
     assert '=100+500' not in result['text_excerpt']
+
+
+def test_guided_upload_distinguishes_exact_duplicate_version_and_independent_document(workspace):
+    dossier = launch(workspace, 'CMD-RELATIONSHIPS')
+    original = (b'COMMANDE CLIENT\nReference commande : CMD-REL-42\n'
+                b'Reference article : ART-7\nQuantite : 5000 pieces')
+    first_stage = stage(workspace, dossier, 'commande-initiale.txt', original).json()
+    first = publish(workspace, dossier, first_stage['id'], 'jaune', 'Commande client').json()
+    first_version = first['latest']['id']
+
+    exact_stage = stage(workspace, dossier, 'copie-renommee.txt', original).json()
+    exact = exact_stage['analysis']['relationships'][0]
+    assert exact['kind'] == 'exact_duplicate' and exact['candidate_version_id'] == first_version
+    refused = publish(workspace, dossier, exact_stage['id'], 'jaune', 'Commande client')
+    assert refused.status_code == 409
+    kept = publish(workspace, dossier, exact_stage['id'], 'jaune', 'Commande client',
+                   relationship_action='keep_duplicate',
+                   relationship_candidate_version_id=first_version,
+                   relationship_reason='Copie contractuelle conservée avec justification').json()
+    assert kept['id'] != first['id']
+    with SessionLocal() as db:
+        decision = db.query(DocumentRelationshipDecision).filter_by(uploaded_version_id=kept['latest']['id']).one()
+        assert decision.relationship_kind == 'exact_duplicate' and decision.action == 'keep_duplicate'
+
+    changed = (b'COMMANDE CLIENT\nReference commande : CMD-REL-42\n'
+               b'Reference article : ART-7\nQuantite : 5200 pieces')
+    version_stage = stage(workspace, dossier, 'commande-revisee.txt', changed).json()
+    proposal = next(item for item in version_stage['analysis']['relationships']
+                    if item['candidate_document_id'] == first['id'])
+    assert proposal['kind'] == 'new_version'
+    version = publish(workspace, dossier, version_stage['id'], 'jaune', 'Commande client',
+                      document_id=first['id'], relationship_action='new_version',
+                      relationship_candidate_version_id=proposal['candidate_version_id']).json()
+    assert version['id'] == first['id'] and version['latest']['number'] == 2
+
+    independent = (b'COMMANDE CLIENT\nReference commande : CMD-OTHER-99\n'
+                   b'Reference article : ART-OTHER\nQuantite : 80 pieces')
+    independent_stage = stage(workspace, dossier, 'autre-commande.txt', independent).json()
+    assert independent_stage['analysis']['relationships'] == []
+
+
+def test_similar_content_is_only_a_proposal_and_never_auto_merged(workspace):
+    dossier = launch(workspace, 'CMD-SIMILAR')
+    first_text = b'FICHE DE PRIX\nTissu coton bleu marine\nPrix unitaire : 12 MAD/piece\nTotal HT : 60000 MAD'
+    first_stage = stage(workspace, dossier, 'prix-v1.txt', first_text).json()
+    first = publish(workspace, dossier, first_stage['id'], 'jaune', 'Fiche de prix').json()
+    similar_text = b'FICHE DE PRIX\nTissu coton bleu marine\nPrix unitaire : 13 MAD/piece\nTotal HT : 65000 MAD'
+    similar_stage = stage(workspace, dossier, 'prix-copie.txt', similar_text).json()
+    proposal = similar_stage['analysis']['relationships'][0]
+    assert proposal['kind'] == 'potential_duplicate'
+    separate = publish(workspace, dossier, similar_stage['id'], 'jaune', 'Fiche de prix',
+                       relationship_action='new_document',
+                       relationship_candidate_version_id=proposal['candidate_version_id']).json()
+    assert separate['id'] != first['id'] and separate['latest']['number'] == 1
 
 
 def test_configured_upload_limit_and_archive_without_analysis(workspace, monkeypatch):
