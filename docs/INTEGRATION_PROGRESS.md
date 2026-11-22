@@ -38,15 +38,19 @@ Branche : `integration/document-intelligence-access`.
 - Scénarios d'accès dynamiques seuls : **13 réussis**, 1 avertissement, 0 échec.
 - JavaScript global : **19 réussis**, 0 échec.
 - Couverture ajoutée : dépôt sans version, confirmation sans valeur, contrôle masqué, alerte masquée, téléchargement séparé et recherche FTS confidentielle.
+- Python global intégré : **207 réussis**, 1 avertissement, 0 échec.
+- Recette API/migrations : **96/96** sur base vierge puis copie historique, rejeu et conservation des données.
+- Recette Chromium globale : **135/135**, Client A/B, FRAMATEX, documentaire, responsive et runtime T+60.
+- Recette Chromium habilitations : **15/15**, trois techniciens, révocation immédiate, URL directes, persistance après redémarrage et 12 captures.
 
 ## Erreurs restantes
 
-- Suites Python globales, migrations isolées et recettes API/Chromium intégrées encore à exécuter.
+- Aucune erreur critique connue. Le lanceur Windows natif reste non exécutable depuis cet environnement Linux; ses tests unitaires et le démarrage Uvicorn équivalent sont validés.
 
 ## Prochaine action
 
-Commit/push du lot de sécurité, puis validation des migrations et recettes globales.
+Créer le rapport final et publier les captures intégrées utiles.
 
 ## Dernier commit stable
 
-- Merge récupérable distant : `a2771952a9f890f9b8e4c3c16329841fbfc3fddf`.
+- Sécurité documentaire intégrée distante : `89a398b2f97efba1d650429b5ecd0c9f037fc013`.

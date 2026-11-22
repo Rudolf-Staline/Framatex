@@ -104,9 +104,10 @@ def main():
 
 def run_browser(output, base, chef_email, chef_pw, checks, secrets_used, port):
     from playwright.sync_api import sync_playwright, expect
+    from windows_runtime import browser_executable
     errors = []
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(executable_path=os.environ.get('FRAMATEX_CHROMIUM', '/opt/pw-browsers/chromium') if Path('/opt/pw-browsers/chromium').exists() else None)
+        browser = pw.chromium.launch(executable_path=browser_executable(), headless=True)
 
         def context(width=1440):
             ctx = browser.new_context(base_url=base, viewport={'width': width, 'height': 900 if width > 600 else 844}, locale='fr-FR')
