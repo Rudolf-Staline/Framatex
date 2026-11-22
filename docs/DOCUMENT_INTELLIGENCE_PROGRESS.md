@@ -53,6 +53,8 @@ Branche : `feat/document-intelligence`, créée depuis `feat/smart-business-memo
 - `tests/test_internal_operations.py` + `tests/test_document_workspace.py` : 37 réussis.
 - FTS5 disponible dans le runtime SQLite; syntaxe de l’interface vérifiée par Node.
 - Couverture ajoutée : recherche d’une expression absente des métadonnées, extrait source, mise à jour à la publication et refus de restitution à un rôle sans lecture du sous-dossier.
+- Suite globale : 194 tests Python réussis, 1 avertissement de dépréciation; 19 tests JavaScript réussis.
+- Correctif de stabilité Chromium : le mouvement 3D d’une carte s’arrête immédiatement lorsque le pointeur atteint un lien ou un contrôle, afin que la cible du clic ne se déplace plus.
 
 ## Partiellement terminé
 

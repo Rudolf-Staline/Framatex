@@ -83,6 +83,14 @@
       schedule();
     }
     function leave(state) { state.tx = state.ty = state.target = 0; state.bounds = null; schedule(); }
+    function calmInteractive(state) {
+      state.x = state.y = state.tx = state.ty = state.hover = state.target = 0;
+      state.bounds = null;
+      set(state.el, '--card-rx', '0deg'); set(state.el, '--card-ry', '0deg');
+      set(state.el, '--card-lift', '0px'); set(state.el, '--card-scale', '1');
+      set(state.el, '--image-x', '0px'); set(state.el, '--image-y', '0px');
+      state.el.classList.remove('is-tilting');
+    }
     if (hero) {
       heroState.el = hero;
       listen(hero, 'pointerenter', function (evt) { heroState.bounds = hero.getBoundingClientRect(); input(heroState, evt); }, { passive: true });
@@ -90,6 +98,9 @@
       listen(hero, 'pointerleave', function () { leave(heroState); }, { passive: true });
     }
     cardStates.forEach(function (state) {
+      listen(state.el, 'pointerover', function (evt) {
+        if (evt.target.closest('a,button,input,select,textarea')) calmInteractive(state);
+      }, { passive: true });
       listen(state.el, 'pointerenter', function (evt) { state.bounds = state.el.getBoundingClientRect(); input(state, evt); }, { passive: true });
       listen(state.el, 'pointermove', function (evt) { input(state, evt); }, { passive: true });
       listen(state.el, 'pointerleave', function () { leave(state); }, { passive: true });
