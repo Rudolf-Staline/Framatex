@@ -23,6 +23,13 @@ PHASE_RANK = {code: position for position, (code, _) in enumerate(PHASES)}
 
 def evaluate(db: Session, launch: Launch, user, permitted):
     """Ne renvoie aucune règle d'un sous-dossier que l'utilisateur ne peut lire."""
+    # Habilitations par commande : les droits de sous-dossier s'évaluent sur cette commande.
+    from .access_control import launch_scope
+    with launch_scope(launch.id):
+        return _evaluate(db, launch, user, permitted)
+
+
+def _evaluate(db: Session, launch: Launch, user, permitted):
     context = db.get(LaunchCompleteness, launch.id)
     phase = context.phase if context else "preparation"
     profile = db.get(CompletenessProfile, context.profile_id) if context and context.profile_id else None

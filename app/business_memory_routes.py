@@ -29,14 +29,31 @@ def norm(value: str) -> str:
 
 def rights(user: User, write=False):
     from .main import must
+    from .access_control import access_mode
     must(user, 'launch.read')
+    if access_mode(user) == 'assignments':
+        # Collaborateur affecté : mémoire ouverte s'il consulte (ou alimente) le sous-dossier
+        # Technique d'au moins une commande qui lui est attribuée. Les notes générales (sans
+        # commande) sont alors consultables ; une note liée à une commande ne l'est que si
+        # Technique y est consultable (visible_ids).
+        from sqlalchemy.orm import object_session
+        action = 'document.write' if write else 'document.read'
+        if not technique_launches(object_session(user), user, action):
+            from fastapi import HTTPException
+            raise HTTPException(403, "Accès interdit : habilitation insuffisante")
+        return
     must(user, 'document.read', 'jaune')
     if write:
         must(user, 'document.write', 'jaune')
 
 
+def technique_launches(db, user, action='document.read'):
+    from .access_control import can
+    return {launch.id for launch in visible_launches(db, user) if can(user, action, 'jaune', launch.id)}
+
+
 def visible_ids(db, user):
-    return {launch.id for launch in visible_launches(db, user)}
+    return technique_launches(db, user)
 
 
 def partner_out(row):

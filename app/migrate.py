@@ -22,6 +22,7 @@ from . import internal_models # noqa: F401
 from . import client_workflow_models # noqa: F401
 from . import document_intake_models # noqa: F401
 from . import document_intelligence_models # noqa: F401
+from . import access_models # noqa: F401  (0013_access_management)
 
 # Include the migration ledger in SQLAlchemy metadata so test databases that
 # reset Base.metadata also reset this ledger; production upgrades remain explicit.
@@ -32,7 +33,8 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
 REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_client_space',
              '0005_internal_operations', '0006_client_workflow', '0007_client_order_launch',
              '0008_optional_rules', '0009_visible_checklist_duplicates', '0010_document_intake',
-             '0011_business_memory', '0012_document_intelligence', '0012b_document_search')
+             '0011_business_memory', '0012_document_intelligence', '0012b_document_search',
+             '0013_access_management')
 
 
 def _versions(conn):
@@ -75,7 +77,8 @@ def migrate():
                                 'client_order_launches', 'document_duplicate_reviews',
                                 'pending_document_uploads', 'document_identifications',
                                 'business_partners', 'business_partner_aliases', 'launch_partners',
-                                'internal_experience_decisions'}
+                                'internal_experience_decisions', 'collaborator_profiles',
+                                'launch_assignments', 'legacy_access_proposals'}
                 missing = (set(Base.metadata.tables) - later_tables) - existing
                 if missing:
                     raise RuntimeError('Base antérieure incomplète : tables manquantes : ' + ', '.join(sorted(missing)))
@@ -193,6 +196,12 @@ def migrate():
                 USING fts5(version_id UNINDEXED, content, title, "references", tokenize='unicode61')'''))
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0012b_document_search','d':datetime.now(timezone.utc).isoformat()})
+        if '0013_access_management' not in done:
+            # Habilitations par commande : voir app/access_migration.py (aucun droit ouvert automatiquement).
+            from .access_migration import migrate_0013
+            migrate_0013(conn, Base.metadata)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0013_access_management','d':datetime.now(timezone.utc).isoformat()})
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
         cols = {c['name'] for c in inspect(conn).get_columns('launches')}
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():

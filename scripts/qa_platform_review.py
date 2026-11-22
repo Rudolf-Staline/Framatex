@@ -742,9 +742,21 @@ def run_checks(qa, base, password, ids, tmp):
                                                     'password': collab_pw, 'role_ids': [role.json()['id']]})
     qa.check('FRAMATEX', 'Administration : rôle et compte collaborateur créés', role.status_code == 201 and created.status_code == 201,
              role.text + created.text)
+    # Habilitations dynamiques (0013) : sans affectation, aucun accès ; le chef affecte la commande et le sous-dossier.
+    collab_rights = {'folders': {'jaune': ['document.read', 'document.review']}}
+    assigned = admin.put(f"/api/admin/collaborators/{created.json()['id']}/assignments/{scratch}", json=collab_rights)
+    qa.check('FRAMATEX', 'Habilitations : commande et sous-dossier Jaune affectés au collaborateur', assigned.status_code == 200, assigned.text)
     collab = httpx.Client(base_url=base, headers=H, timeout=30)
     qa.check('FRAMATEX', 'Connexion d’un collaborateur non administrateur',
              collab.post('/api/auth/login', json={'email': 'controle@framatex.test', 'password': collab_pw}).status_code == 200)
+    # Le mot de passe défini par le chef est temporaire : rien n'est accessible avant son remplacement.
+    collab_new_pw = secrets.token_urlsafe(18) + 'Bb2!'
+    qa.secrets.add(collab_new_pw)
+    blocked = collab.get('/api/workspace/launches').status_code
+    changed = collab.post('/api/account/password', json={'current_password': collab_pw, 'new_password': collab_new_pw})
+    qa.check('Sécurité', 'Mot de passe défini par le chef : changement imposé avant tout accès',
+             blocked == 403 and changed.status_code == 200 and collab.get('/api/workspace/launches').status_code == 200,
+             f'{blocked} {changed.status_code}')
     def collab_scope():
         for path in ('/api/admin/clients', '/api/admin/users', '/api/admin/client-order-requests', '/api/orli/imports'):
             assert collab.get(path).status_code == 403, path
@@ -756,14 +768,22 @@ def run_checks(qa, base, password, ids, tmp):
         assert all(i['folder'] == 'jaune' for i in hits['items']), hits['items']
     qa.run('Sécurité', 'Collaborateur : routes d’administration refusées (403) et seule la rubrique autorisée visible', collab_scope)
     def access_restriction():
+        uid = created.json()['id']
+        target = f'/api/admin/collaborators/{uid}/assignments/{scratch}'
+        # Retrait de l'affectation : effet immédiat sur la session ouverte.
+        assert admin.put(target, json={'folders': {}}).status_code == 200
+        assert collab.get(f'/api/launches/{scratch}').status_code == 404
+        # L'ancien mécanisme « membre d'un dossier restreint » n'ouvre plus rien sans affectation.
         assert admin.put(f'/api/launches/{scratch}/access', json={'restricted': True}).status_code == 200
+        assert admin.post(f'/api/launches/{scratch}/access/members', json={'user_id': uid}).status_code == 201
         assert collab.get(f'/api/launches/{scratch}').status_code == 404
-        assert admin.post(f'/api/launches/{scratch}/access/members', json={'user_id': created.json()['id']}).status_code == 201
-        assert collab.get(f'/api/launches/{scratch}').status_code == 200
-        assert admin.delete(f"/api/launches/{scratch}/access/members/{created.json()['id']}").status_code == 200
-        assert collab.get(f'/api/launches/{scratch}').status_code == 404
+        assert admin.delete(f'/api/launches/{scratch}/access/members/{uid}').status_code == 200
         assert admin.put(f'/api/launches/{scratch}/access', json={'restricted': False}).status_code == 200
-    qa.run('Sécurité', 'Accès restreint par dossier : membre ajouté puis retiré', access_restriction)
+        # Réaffectation : accès rétabli, limité au sous-dossier Jaune.
+        assert admin.put(target, json=collab_rights).status_code == 200
+        r = collab.get(f'/api/launches/{scratch}')
+        assert r.status_code == 200 and {f['slug'] for f in r.json()['folders'] if f['can_read']} == {'jaune'}
+    qa.run('Sécurité', 'Affectation par commande : retirée puis rétablie, effet immédiat (membre sans affectation refusé)', access_restriction)
     def approval_circuit():
         tpl = admin.post('/api/admin/approval-templates', json={'name': 'Circuit recette', 'folder_slug': 'jaune',
               'document_type': 'Fiche recette', 'stages': [{'name': 'Contrôle', 'reviewer_role_id': role.json()['id']}]})

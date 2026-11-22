@@ -132,4 +132,19 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(401, "Session expirée ou invalide")
     if not user or not user.active:
         raise HTTPException(401, "Compte désactivé")
+    from .access_models import CollaboratorProfile
+    profile = db.get(CollaboratorProfile, user.id)
+    if profile is not None:
+        valid_after = profile.sessions_valid_after
+        if valid_after is not None:
+            if valid_after.tzinfo is None:
+                valid_after = valid_after.replace(tzinfo=timezone.utc)
+            if int(payload.get("iat", 0)) < int(valid_after.timestamp()):
+                raise HTTPException(401, "Session révoquée : veuillez vous reconnecter")
+        # Mot de passe temporaire : seul son remplacement est possible.
+        if profile.must_change_password and request.url.path not in PASSWORD_CHANGE_PATHS:
+            raise HTTPException(403, "Changement du mot de passe temporaire obligatoire")
     return user
+
+
+PASSWORD_CHANGE_PATHS = {"/api/auth/me", "/api/auth/logout", "/api/account/password"}

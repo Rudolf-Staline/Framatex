@@ -22,6 +22,9 @@ PASSWORD = "InternalRecipePassword2026!"
 def setup():
     with TestClient(app) as api:
         suffix = uuid.uuid4().hex[:8]
+        # Comptes créés après la migration 0013 : mode hérité par rôles, comme avant.
+        from app.migrate import migrate
+        migrate()
         with SessionLocal() as db:
             role = db.scalar(select(Role).where(Role.name == "Administrateur"))
             if not role:

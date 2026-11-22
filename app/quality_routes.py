@@ -101,7 +101,9 @@ def quality_report(launch_id:str,user:User=Depends(get_current_user),db:Session=
                      .order_by(CrossDocumentRule.name)).all()
     rows=[]
     for r in rules:
-        if not (permitted(user,'document.read',r.left_folder) and permitted(user,'document.read',r.right_folder)):
+        # Un contrôle croisé n'est montré que si les deux sous-dossiers sont lisibles ET
+        # « Consulter contrôles » y est accordé : aucune fuite d'un dossier non attribué.
+        if not all(permitted(user,act,f) for f in (r.left_folder,r.right_folder) for act in ('document.read','controls.read')):
             continue
         item=comparison(db,launch_id,r)
         if item['status']=='difference':
@@ -199,7 +201,7 @@ def list_excel_inspections(launch_id:str,user:User=Depends(get_current_user),db:
     docs=db.scalars(select(Document).join(Folder).where(Folder.launch_id==launch_id)).all()
     rows=[]
     for doc in docs:
-        if not permitted(user,'document.read',doc.folder.slug):continue
+        if not (permitted(user,'document.read',doc.folder.slug) and permitted(user,'controls.read',doc.folder.slug)):continue
         for v in doc.versions:
             if Path(v.original_name).suffix.lower()!='.xlsx': continue
             inspection=db.scalar(select(ExcelInspection).where(ExcelInspection.document_version_id==v.id))

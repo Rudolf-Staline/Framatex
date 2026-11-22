@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "checks": [
+    "1. Connexion du chef",
+    "2. Création de trois techniciens dans l’interface (mot de passe temporaire affiché une seule fois)",
+    "3. Première connexion : mot de passe temporaire remplacé avant tout accès",
+    "4. Technicien nouvellement créé : aucune commande, état vide clair",
+    "5–9. Affectations : A → 001 Jaune+Rose et 003 Bleu+Vert ; B → 001 Bleu et 002 complète ; C → aucune",
+    "6. Aucun accès aux commandes non attribuées (liste et URL directe)",
+    "7–8. Sous-dossiers non attribués verrouillés, sans titre ni contenu",
+    "10. Commande 004 gérée uniquement par le chef (indicateur, pas d’erreur)",
+    "12. Dépôt autorisé, validation refusée (permission distincte)",
+    "13. Retrait pendant une session active : effet immédiat",
+    "15–16. URL directe, téléchargement, passeport et QR refusés sans affectation",
+    "17. Recherche et tableau de bord calculés sur les seules données autorisées",
+    "14. Désactivation : session ouverte refusée immédiatement",
+    "Aucune erreur JavaScript ; écrans 1440 et 390 px sans défilement horizontal",
+    "20. Habilitations (ajouts et retraits) conservées après redémarrage du serveur"
+  ],
+  "screenshots": [
+    "acces-01-creation-collaborateur.png",
+    "acces-02-mot-de-passe-temporaire.png",
+    "acces-03-liste-collaborateurs.png",
+    "acces-04-premiere-connexion.png",
+    "acces-05-technicien-sans-commande.png",
+    "acces-06-matrice-commande.png",
+    "acces-07-technicien-dossier-partiel.png",
+    "acces-08-mes-sous-dossiers.png",
+    "acces-09-vue-globale.png",
+    "acces-10-mon-compte.png",
+    "acces-11-mobile-collaborateurs.png",
+    "acces-12-mobile-matrice.png"
+  ]
+}

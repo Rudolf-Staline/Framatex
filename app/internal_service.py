@@ -54,6 +54,13 @@ def visible_launches(db, user):
 
 
 def launch_summary(db, user, launch):
+    # Habilitations par commande : tous les contrôles de sous-dossier portent sur cette commande.
+    from .access_control import launch_scope
+    with launch_scope(launch.id):
+        return _launch_summary(db, user, launch)
+
+
+def _launch_summary(db, user, launch):
     from .main import launch_out, permitted
     from .quality_routes import quality_report
     report = evaluate(db, launch, user, permitted)
@@ -119,6 +126,15 @@ def launch_summary(db, user, launch):
 
 
 def extra_actions(db, user, launches):
+    from .access_control import launch_scope
+    items = []
+    for launch in launches:
+        with launch_scope(launch.id):
+            items.extend(_extra_actions(db, user, [launch]))
+    return items
+
+
+def _extra_actions(db, user, launches):
     from .main import permitted
     from .quality_routes import quality_report, list_excel_inspections
     items = []
@@ -210,12 +226,13 @@ def activity(db, user, *, launch_id=None, document_id=None, actor_id=None, actio
             if not (include_global and is_admin(user)) or launch_id or document_id:
                 continue
         else:
-            if not accessible(db, user, launch):
-                continue
-            if doc and not permitted(user, "document.read", doc.folder.slug):
-                continue
-            # Une opération sur deux sous-dossiers n'est visible que si les deux le sont.
-            if not doc and not all(permitted(user, "document.read", slug) for slug in FOLDER_LABELS):
+            from .access_control import launch_scope
+            with launch_scope(launch.id):
+                hidden = (not accessible(db, user, launch)
+                          or (doc and not permitted(user, "document.read", doc.folder.slug))
+                          # Une opération sur deux sous-dossiers n'est visible que si les deux le sont.
+                          or (not doc and not all(permitted(user, "document.read", slug) for slug in FOLDER_LABELS)))
+            if hidden:
                 continue
             if launch_id and launch.id != launch_id:
                 continue

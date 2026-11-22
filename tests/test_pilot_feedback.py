@@ -13,6 +13,10 @@ PASSWORD = 'PiloteQualite2026!'
 
 def setup_users():
     Base.metadata.create_all(engine)
+    # Base migrée avant la création des comptes : ces comptes de test restent en mode
+    # hérité par rôles (0013 ne convertit que les comptes existant au moment de la migration).
+    from app.migrate import migrate
+    migrate()
     tag=uuid4().hex[:10]
     with SessionLocal() as db:
         admin_role = db.scalar(select(Role).where(Role.name=='Administrateur'))
