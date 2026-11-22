@@ -179,6 +179,7 @@ def run_browser(output, base_url, email, password, ids):
                     'mimeType': 'text/plain', 'buffer': 'Calcul du besoin\nQuantité : 1800 pièces'.encode()})
         page.locator('#ops-title').fill('Calcul du besoin recette navigateur')
         page.locator('#ops-type').fill('Calcul du besoin')
+        page.locator('.du-optional-note summary').click()
         page.locator('#ops-upload-comment').fill('Commentaire interne de la recette navigateur')
         if page.locator('#dj-separate').count():
             page.check('#dj-separate')

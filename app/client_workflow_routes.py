@@ -20,7 +20,7 @@ from .client_workflow import (DOCUMENT_TRANSITIONS, authorized_source, commit_wo
                               shared_out, transition_order)
 from .client_workflow_models import ClientDocumentRequest, ClientOrderLaunch, ClientSharedDocument
 from .core import get_current_user, get_db, utcnow
-from .internal_models import LaunchOperations
+from .internal_models import LaunchOperations, BusinessPartner, LaunchPartner
 from .models import DocumentVersion, Folder, Launch, User
 
 router = APIRouter(tags=["Workflow Client"])
@@ -121,6 +121,19 @@ def open_launch_for_order(order_id: str, response: Response,
     db.add(LaunchOperations(launch_id=launch.id, article=order.article[:180], quantity=order.quantite,
                             responsible_id=user.id))
     db.add(ClientOrderLaunch(order_request_id=order.id, launch_id=launch.id, created_by=user.id))
+    from .business_memory_routes import norm
+    partner = db.scalar(select(BusinessPartner).where(BusinessPartner.client_account_id == client.id))
+    if not partner:
+        partner = db.scalar(select(BusinessPartner).where(BusinessPartner.party_type == 'client',
+            BusinessPartner.normalized_name == norm(client.raison_sociale), BusinessPartner.client_account_id.is_(None)))
+        if partner:
+            partner.client_account_id = client.id
+        else:
+            partner = BusinessPartner(party_type='client', name=client.raison_sociale,
+                normalized_name=norm(client.raison_sociale), client_account_id=client.id)
+            db.add(partner)
+            db.flush()
+    db.add(LaunchPartner(launch_id=launch.id, partner_id=partner.id))
     from .standard_profile import apply_standard_profile
     apply_standard_profile(db, launch, user, reason="client_order")
     audit(db, user, "launch.create", "launch", launch.id,

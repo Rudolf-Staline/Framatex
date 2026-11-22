@@ -21,12 +21,12 @@ const DJ_TABS = [['documents', 'Documents'], ['controles', 'Contrôles'], ['comm
 const DJ_MODULES = {
   controles: [
     ['completude', 'Complétude', () => djCompletenessModule()],
-    ['decisions', 'Décisions et impacts', () => renderWorkflow()],
     ['fiabilite', 'Cohérence et Excel', () => renderQuality()],
     ['lecture', 'Lecture OCR', () => renderIntake()],
+    ['decisions', 'Décisions et impacts', () => renderWorkflow()],
+    ['simulation', 'Simulation', () => renderImpactSimulation()],
     ['circuits', 'Circuits de validation', () => renderApprovals()],
     ['exigences', 'Exigences client', () => renderSpec()],
-    ['simulation', 'Simulation', () => renderImpactSimulation()],
     ['matieres', 'Matières', () => renderMaterialReport()],
     ['orli', 'Rapprochement ORLI', () => renderOrliReconciliation()],
   ],
@@ -37,10 +37,16 @@ const DJ_MODULES = {
   ],
   historique: [
     ['activite', 'Activité', () => djActivityModule()],
-    ['memoire', 'Mémoire interne', () => djNotesModule()],
+    ['memoire', 'Mémoire métier', () => djNotesModule()],
     ['passeports', 'QR et passeports', () => renderPaper()],
     ['technique', 'Détails techniques', () => djTechnicalModule()],
   ],
+};
+const DJ_CONTROL_GROUPS = {
+  completude: 'Qualité documentaire', fiabilite: 'Qualité documentaire', lecture: 'Qualité documentaire',
+  decisions: 'Suivi des modifications', simulation: 'Suivi des modifications',
+  circuits: 'Validation et suivi métier', exigences: 'Validation et suivi métier',
+  matieres: 'Validation et suivi métier', orli: 'Validation et suivi métier',
 };
 // Zones historiques (actions prioritaires, fiches document) → onglet et module.
 const DJ_AREAS = {
@@ -280,6 +286,7 @@ function djRow(rule, docs, folder, duplicates = djDuplicateIndex()) {
     action += `${folder.can_write ? `<button class="secondary tiny" data-intake-version="${e(latest?.id)}">Vérifier le type</button>
       <button class="link" data-dj-upload="${e(rule.id)}">Déposer une version</button>` : ''}`;
   }
+  if (latest) action += `<button class="link" data-bm-passport="${e(latest.id)}">Passeport numérique</button>`;
   const tone = DJ_STATES[status]?.[1] || 'idle';
   return `<tr class="dj-row is-${tone}" data-rule="${e(rule.id)}" data-state="${status}">
     <td data-label="Document"><strong>${e(rule.title)}</strong>${subs.length ? `<small>${subs.join(' · ')}</small>` : ''}</td>
@@ -345,7 +352,7 @@ function djDocumentsPanel() {
         <tbody>${others.map(doc => { const group = duplicates.get(doc.id);
           return `<tr class="dj-row${group ? ' is-duplicate' : ''}" data-doc="${e(doc.id)}"${group ? ' data-state="duplicate"' : ''}><td data-label="Document"><strong>${e(doc.title)}</strong><small>${e(doc.latest.original_name)}${group ? ` · ${djDuplicateHint(group, [doc.id])}` : ''}</small></td>
           <td data-label="Type">${group ? djStatePill('duplicate') : e(doc.doc_type)}</td><td data-label="Dernière version">V${doc.latest.number}</td><td data-label="Date">${niceDate(doc.latest.created_at)}</td>
-          <td class="dj-action" data-label="Action"><span class="dj-action-group">${group ? `<button class="secondary tiny dj-dup-btn" data-dj-duplicate="${e(group.sha256)}">Examiner le doublon</button>` : `<button class="secondary tiny" data-history="${e(doc.id)}">Ouvrir</button>`}</span></td></tr>`; }).join('')}</tbody></table></div></section>`
+          <td class="dj-action" data-label="Action"><span class="dj-action-group">${group ? `<button class="secondary tiny dj-dup-btn" data-dj-duplicate="${e(group.sha256)}">Examiner le doublon</button>` : `<button class="secondary tiny" data-history="${e(doc.id)}">Ouvrir</button>`}<button class="link" data-bm-passport="${e(doc.latest.id)}">Passeport numérique</button></span></td></tr>`; }).join('')}</tbody></table></div></section>`
     : '';
   const expected = rows.filter(r => r.required !== false).length;
   const phase = rows.length ? ` · ${expected} pièce${expected > 1 ? 's' : ''} obligatoire${expected > 1 ? 's' : ''}${rows.length > expected ? `, ${rows.length - expected} facultative${rows.length - expected > 1 ? 's' : ''}` : ''}` : '';
@@ -431,8 +438,13 @@ function djPanels() {
     else {
       const modules = DJ_MODULES[id].map(([key, label, render]) => [key, label, render()]).filter(([, , html]) => html && String(html).trim());
       if (!modules.some(([key]) => key === ui.module[id]) && modules.length) ui.module[id] = modules[0][0];
-      body = `<div class="dj-subnav" role="tablist" aria-label="${e(DJ_TABS.find(t => t[0] === id)[1])}">${modules.map(([key, label]) =>
-          `<button role="tab" class="dj-chip" aria-selected="${ui.module[id] === key}" aria-controls="dj-module-${key}" data-dj-module="${id}:${key}">${e(label)}${djModuleBadge(key)}</button>`).join('')}</div>
+      let group = '';
+      body = `<div class="dj-subnav" role="tablist" aria-label="${e(DJ_TABS.find(t => t[0] === id)[1])}">${modules.map(([key, label]) => {
+          const next = id === 'controles' ? DJ_CONTROL_GROUPS[key] : '';
+          const heading = next && next !== group ? `<span class="dj-control-group" aria-hidden="true">${e(next)}</span>` : '';
+          group = next;
+          return `${heading}<button role="tab" class="dj-chip" aria-selected="${ui.module[id] === key}" aria-controls="dj-module-${key}" data-dj-module="${id}:${key}">${e(label)}${djModuleBadge(key)}</button>`;
+        }).join('')}</div>
         ${modules.map(([key, , html]) => `<section class="dj-module" role="tabpanel" id="dj-module-${key}" data-dj-section="${key}" ${ui.module[id] === key ? '' : 'hidden'}>${html}</section>`).join('')}`;
     }
     return `<div class="dj-panel" role="tabpanel" id="dj-panel-${id}" aria-labelledby="dj-tab-${id}" ${ui.tab === id ? '' : 'hidden'}>${body}</div>`;

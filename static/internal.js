@@ -147,7 +147,7 @@ async function operationsClientRequest(id){const r=await api(`/api/admin/client-
 const opsOriginalMount=mount;
 mount=function(html,label){
  opsOriginalMount(html,label);const nav=app.querySelector('.sidebar-nav');
- const extra=[['search','search','Documents / recherche'],...(can('document.read','jaune')?[['experience','file','Mémoire interne']]:[]),...(state.me.admin?[['clients','users','Clients et demandes']]:[])];
+ const extra=[['search','search','Documents / recherche'],...(can('document.read','jaune')?[['experience','file','Mémoire métier']]:[]),...(state.me.admin?[['clients','users','Clients et demandes']]:[])];
  nav.insertAdjacentHTML('beforeend',extra.map(([view,ico,text])=>`<button class="nav-btn ${state.view===view?'active':''}" data-ops-view="${view}">${icon(ico)}<span>${e(text)}</span></button>`).join(''));
  if(can('audit.read')&&!state.me.admin)nav.insertAdjacentHTML('beforeend','<button class="nav-btn" data-ops-view="audit">'+icon('shield')+'<span>Historique et audit</span></button>');
  app.querySelectorAll('[data-ops-view]').forEach(button=>button.onclick=()=>navigate(button.dataset.opsView));

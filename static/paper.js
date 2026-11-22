@@ -23,10 +23,10 @@ async function paperQR(){
   const result=await api(`/api/launches/${encodeURIComponent(d.id)}/paper-link`);
   modal('Étiquette QR du lancement',`<div class="paper-qr-content"><p class="modal-desc">${e(result.notice)}</p>
   <img class="paper-qr-image" src="/api/launches/${encodeURIComponent(d.id)}/paper-qr.png" alt="QR code du dossier">
-  <p><strong>${e(result.launch_name)}</strong></p><code>${e(result.launch_id)}</code>
+  <p><strong>${e(result.order_ref||result.launch_name)}</strong></p><p>${e(result.client_name||'Client non renseigné')} · ${e(result.article||result.launch_name)}</p><code>${e(result.launch_id)}</code>
   <p class="workflow-help">Adresse encodée : ${e(result.url)}</p>
   <p class="permission-lock">Sur téléphone, l'adresse doit être accessible sur le réseau autorisé. L'adresse 127.0.0.1 ne fonctionne que sur l'ordinateur qui héberge le serveur.</p>
-  <div class="modal-actions"><button class="secondary" id="paper-close">Fermer</button><button class="primary" id="paper-print">Ouvrir l'étiquette à imprimer</button></div></div>`,true);
+  <div class="modal-actions"><button class="secondary" id="paper-close">Fermer</button><a class="secondary" href="/api/launches/${encodeURIComponent(d.id)}/paper-qr.png" download="qr-${e(result.order_ref||d.id)}.png">Télécharger le QR</a><button class="primary" id="paper-print">Ouvrir l'étiquette à imprimer</button></div></div>`,true);
   overlay.querySelector('#paper-close').onclick=closeModal;
   overlay.querySelector('#paper-print').onclick=()=>window.open(`/api/launches/${encodeURIComponent(d.id)}/paper-label`,'_blank','noopener');
  }catch(err){showErr(err)}

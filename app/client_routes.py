@@ -230,6 +230,20 @@ def set_client_status(client_id: str, payload: StatusPayload,
     previous = client.status
     client.status = payload.status
     client.updated_at = utcnow()
+    if payload.status == 'active':
+        from .internal_models import BusinessPartner
+        from .business_memory_routes import norm
+        if not db.scalar(select(BusinessPartner.id).where(BusinessPartner.client_account_id == client.id)):
+            candidates = db.scalars(select(BusinessPartner.id).where(
+                BusinessPartner.party_type == 'client',
+                BusinessPartner.normalized_name == norm(client.raison_sociale),
+                BusinessPartner.client_account_id.is_(None))).all()
+            if not candidates:
+                db.add(BusinessPartner(party_type='client', name=client.raison_sociale,
+                    normalized_name=norm(client.raison_sociale), client_account_id=client.id))
+            else:
+                add_audit(db, user.id, 'client.partner_match_pending', 'client_account', client.id,
+                          {'candidate_count': len(candidates)})
     add_audit(db, user.id, "client.status.update", "client_account", client.id,
               {"previous": previous, "status": payload.status})
     db.commit()

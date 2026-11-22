@@ -59,9 +59,16 @@ def paper_link(launch_id: str, user: User = Depends(get_current_user), db: Sessi
     _, _, get_launch, _, must, _ = _context()
     must(user, "launch.read")
     launch = get_launch(db, launch_id)
+    from .access import must_access
+    must_access(db, user, launch_id)
+    from .internal_models import LaunchOperations
+    operations = db.get(LaunchOperations, launch_id)
     return {
         "launch_id": launch.id,
         "launch_name": launch.name,
+        "order_ref": launch.order_ref,
+        "client_name": launch.client_name,
+        "article": operations.article if operations else None,
         "url": f"{_public_base_url()}/#/launch/{launch.id}",
         "requires_authentication": True,
         "is_access_token": False,

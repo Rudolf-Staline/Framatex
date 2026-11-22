@@ -30,7 +30,8 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
 
 REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_client_space',
              '0005_internal_operations', '0006_client_workflow', '0007_client_order_launch',
-             '0008_optional_rules', '0009_visible_checklist_duplicates', '0010_document_intake')
+             '0008_optional_rules', '0009_visible_checklist_duplicates', '0010_document_intake',
+             '0011_business_memory')
 
 
 def _versions(conn):
@@ -71,7 +72,9 @@ def migrate():
                                 'launch_operations', 'internal_document_comments', 'internal_experience_notes',
                                 'client_document_requests', 'client_document_request_events', 'client_shared_documents',
                                 'client_order_launches', 'document_duplicate_reviews',
-                                'pending_document_uploads', 'document_identifications'}
+                                'pending_document_uploads', 'document_identifications',
+                                'business_partners', 'business_partner_aliases', 'launch_partners',
+                                'internal_experience_decisions'}
                 missing = (set(Base.metadata.tables) - later_tables) - existing
                 if missing:
                     raise RuntimeError('Base antérieure incomplète : tables manquantes : ' + ', '.join(sorted(missing)))
@@ -143,6 +146,43 @@ def migrate():
                 Base.metadata.tables[name].create(bind=conn, checkfirst=True)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0010_document_intake','d':datetime.now(timezone.utc).isoformat()})
+        if '0011_business_memory' not in done:
+            for name in ('business_partners', 'business_partner_aliases', 'launch_partners'):
+                Base.metadata.tables[name].create(bind=conn, checkfirst=True)
+            columns = {c['name']: c for c in inspect(conn).get_columns('internal_experience_notes')}
+            if columns['launch_id']['nullable'] is False:
+                # SQLite cannot relax NOT NULL in place. This table has no incoming FK in
+                # the historical schema; copy every row and preserve its primary key.
+                conn.execute(text('''CREATE TABLE internal_experience_notes_new (
+                    id VARCHAR(36) PRIMARY KEY, launch_id VARCHAR(36) REFERENCES launches(id),
+                    party_type VARCHAR(20) NOT NULL, party_name VARCHAR(150) NOT NULL,
+                    category VARCHAR(30) NOT NULL, body TEXT NOT NULL,
+                    author_id VARCHAR(36) NOT NULL REFERENCES users(id), created_at DATETIME NOT NULL)'''))
+                conn.execute(text('''INSERT INTO internal_experience_notes_new
+                    SELECT id, launch_id, party_type, party_name, category, body, author_id, created_at
+                    FROM internal_experience_notes'''))
+                conn.execute(text('DROP TABLE internal_experience_notes'))
+                conn.execute(text('ALTER TABLE internal_experience_notes_new RENAME TO internal_experience_notes'))
+            columns = {c['name'] for c in inspect(conn).get_columns('internal_experience_notes')}
+            for name, spec in (
+                ('partner_id', 'VARCHAR(36) REFERENCES business_partners(id)'),
+                ('event_date', 'DATE'),
+                ('importance', "VARCHAR(20) NOT NULL DEFAULT 'information'"),
+                ('status', "VARCHAR(20) NOT NULL DEFAULT 'open'"),
+                ('recommendation', 'TEXT'),
+                ('evidence_version_id', 'VARCHAR(36) REFERENCES document_versions(id)'),
+                ('updated_at', 'DATETIME'),
+            ):
+                if name not in columns:
+                    conn.execute(text(f'ALTER TABLE internal_experience_notes ADD COLUMN {name} {spec}'))
+            conn.execute(text('UPDATE internal_experience_notes SET updated_at = created_at WHERE updated_at IS NULL'))
+            conn.execute(text('CREATE INDEX IF NOT EXISTS ix_internal_experience_notes_launch_id ON internal_experience_notes (launch_id)'))
+            conn.execute(text('CREATE INDEX IF NOT EXISTS ix_internal_experience_notes_party_type ON internal_experience_notes (party_type)'))
+            conn.execute(text('CREATE INDEX IF NOT EXISTS ix_internal_experience_notes_party_name ON internal_experience_notes (party_name)'))
+            conn.execute(text('CREATE INDEX IF NOT EXISTS ix_internal_experience_notes_partner_id ON internal_experience_notes (partner_id)'))
+            Base.metadata.tables['internal_experience_decisions'].create(bind=conn, checkfirst=True)
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0011_business_memory','d':datetime.now(timezone.utc).isoformat()})
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
         cols = {c['name'] for c in inspect(conn).get_columns('launches')}
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():

@@ -69,7 +69,7 @@ async function documentUploadDialog(options) {
         <div class="field"><label for="ops-type">Type documentaire</label><input id="ops-type" list="ops-types" maxlength="100" autocomplete="off"><datalist id="ops-types"></datalist></div></div>
         <div class="field"><label for="ops-title">Titre affiché</label><input id="ops-title" maxlength="220"></div>
       </div>
-      <div class="field"><label for="ops-upload-comment">Commentaire facultatif</label><textarea id="ops-upload-comment" maxlength="2000" rows="2"></textarea></div>
+      <details class="du-optional-note"><summary>+ Ajouter une note facultative</summary><div class="field"><label for="ops-upload-comment">Note liée à cette version</label><textarea id="ops-upload-comment" maxlength="2000" rows="2" placeholder="Préciser la raison du dépôt ou une modification importante…"></textarea></div></details>
       <div id="dj-version-note"></div>
       <div class="field" id="du-justification-field" hidden><label for="du-justification">Justification après vérification</label><textarea id="du-justification" maxlength="1800" rows="2"></textarea></div>
       <p id="du-error" class="du-error" role="alert" hidden></p>

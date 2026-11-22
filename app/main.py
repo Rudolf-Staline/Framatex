@@ -854,6 +854,8 @@ app.include_router(client_router)
 
 from .internal_routes import router as internal_router
 app.include_router(internal_router)
+from .business_memory_routes import router as business_memory_router
+app.include_router(business_memory_router)
 
 from .client_workflow_routes import router as client_workflow_router
 app.include_router(client_workflow_router)

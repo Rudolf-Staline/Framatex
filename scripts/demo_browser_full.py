@@ -25,7 +25,7 @@ def nav(page, view):
     # old main node to be detached before interacting with the next generation.
     old_main.wait_for_element_state('hidden', timeout=15000)
     expected = {'home': 'Tableau de bord', 'launches': 'Commandes et lancements', 'search': 'Recherche documentaire',
-                'audit': 'Historique et audit', 'experience': 'Mémoire d’expérience interne', 'clients': 'Clients et demandes'}
+                'audit': 'Historique et audit', 'experience': 'Mémoire métier', 'clients': 'Clients et demandes'}
     if view in expected:
         from playwright.sync_api import expect
         expect(page.locator('.ops-heading h1')).to_have_text(expected[view])
@@ -62,6 +62,7 @@ def internal_journey(qa, browser, base, password, ids, captures):
         page.locator('#upload-doc').click()
         page.locator('#ops-file').set_input_files({'name': name, 'mimeType': 'application/octet-stream', 'buffer': blob})
         page.fill('#ops-title', title); page.fill('#ops-type', kind)
+        page.locator('.du-optional-note summary').click()
         page.fill('#ops-upload-comment', 'Commentaire interne recette navigateur — ne jamais publier.')
         # Un type déjà présent est proposé en nouvelle version ; la recette crée ici un document distinct.
         if page.locator('#dj-separate').count():
@@ -116,6 +117,7 @@ def internal_journey(qa, browser, base, password, ids, captures):
         for number in (2, 3):
             page.locator('#ops-version-upload').click()
             page.locator('#ops-file').set_input_files({'name': f'fiche-v{number}.txt', 'mimeType': 'text/plain', 'buffer': f'Fiche d’emploi\nVersion {number}'.encode()})
+            page.locator('.du-optional-note summary').click()
             page.fill('#ops-upload-comment', f'Commentaire de révision V{number}')
             page.locator('#ops-upload-form button[type=submit]').click()
             expect(page.locator('.modal')).to_contain_text(f'Commentaires internes · V{number}')
@@ -241,16 +243,17 @@ def internal_journey(qa, browser, base, password, ids, captures):
         page.locator('#close-modal').click()
         page.evaluate("focusWorkspaceArea('notes')")
         page.locator('#ops-add-note').click()
-        page.select_option('#ops-party-type', 'atelier')
-        page.fill('#ops-party-name', 'Atelier recette navigateur')
-        page.fill('#ops-note', 'Retour interne confidentiel saisi via les écrans, jamais transmis au client.')
-        page.locator('#ops-note-form button[type=submit]').click()
+        page.select_option('#bm-type', 'atelier')
+        page.fill('#bm-partner-search', 'Atelier recette navigateur')
+        page.locator('[data-bm-new]').click()
+        page.select_option('#bm-category', 'incident')
+        page.fill('#bm-body', 'Retour interne confidentiel saisi via les écrans, jamais transmis au client.')
+        page.locator('#bm-note-form button[type=submit]').click()
         expect(page.locator('#ops-notes')).to_contain_text('Retour interne confidentiel')
         nav(page, 'experience')
-        page.fill('#ops-experience-form #q', 'Atelier recette navigateur')
-        page.locator('#ops-experience-form button[type=submit]').click()
-        expect(page.locator('#ops-experience-results')).to_contain_text('Retour interne confidentiel')
-        page.locator('#ops-experience-results [data-ops-target]').first.click()
+        page.fill('#bm-filters #q', 'Atelier recette navigateur')
+        expect(page.locator('#bm-results')).to_contain_text('Retour interne confidentiel')
+        page.locator('#bm-results [data-bm-order]').first.click()
         expect(page.locator('#ops-launch-summary')).to_be_visible()
         nav(page, 'audit')
         page.fill('#ops-audit-form #action', 'document.version.add')
@@ -267,8 +270,15 @@ def workflow_journey(qa, browser, base, password, captures):
     # Separate contexts prevent cookie mixing. This includes actual file upload,
     # correction, V2, acceptance, share/download/revoke and suspended account UI.
     import validate_client_workflow_ui as workflow
+    def checked():
+        try:
+            return workflow.run_browser(captures, base, 'recette@framatex.test', password, {}, browser=browser)
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            raise
     qa.run('Navigateur Client', 'Cycle documentaire complet A/B, correction V2, partage/retrait et compte suspendu (15 étapes)',
-           lambda: workflow.run_browser(captures, base, 'recette@framatex.test', password, {}, browser=browser))
+           checked)
 
 
 def failure_journey(qa, browser, base):

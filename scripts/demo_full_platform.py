@@ -101,7 +101,9 @@ def full_journey(qa, browser, base, admin_password, captures):
             assert page.locator('a[href="/espace-client"]').count() and page.locator('a[href="/espace-framatex"]').count()
             client.check_page('parcours-landing')
             page.locator('a[href="/espace-client"]').first.click()
-            page.wait_for_selector('.choice')
+            page.wait_for_url('**/espace-client')
+            page.wait_for_load_state('domcontentloaded')
+            page.wait_for_selector('.choice', timeout=60000)
         qa.run('Navigateur', 'Landing : liens vers l’Espace Client et l’Espace FRAMATEX, puis entrée Client', landing)
 
         def register():
