@@ -294,6 +294,7 @@ async function accLaunchMatrix(launchId) {
       <div class="modal-actions"><button class="secondary" type="button" id="cancel-modal">Annuler</button><button class="primary" type="button" id="acc-matrix-save">Enregistrer les affectations</button></div>`;
   };
   modal(`Affecter des collaborateurs · ${matrix.launch.order_ref || matrix.launch.name}`, draw(), true);
+  overlay.querySelector('.modal')?.classList.add('acc-modal-matrix');
   const bind = () => {
     const root = overlay.querySelector('.modal-body');
     overlay.querySelector('#cancel-modal').onclick = closeModal;
@@ -355,6 +356,7 @@ async function accCollaboratorRights(userId) {
     <div class="acc-matrix-wrap"><table class="acc-matrix"><thead><tr><th scope="col">Commande</th>${ACC_FOLDERS.map(([slug, color, name]) => `<th scope="col"><span class="dj-dot is-${slug}" aria-hidden="true"></span> ${color}<small>${name}</small></th>`).join('')}</tr></thead>
     <tbody>${data.launches.map(drawRow).join('')}</tbody></table></div>`;
   modal(`Habilitations · ${person.name}`, draw(), true);
+  overlay.querySelector('.modal')?.classList.add('acc-modal-matrix');
   const bind = () => {
     const root = overlay.querySelector('.modal-body');
     root.querySelectorAll('[data-acc-edit-cell]').forEach(button => button.onclick = () => {

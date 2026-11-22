@@ -13,7 +13,9 @@
 .acc-matrix { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .acc-matrix th, .acc-matrix td { padding: 10px 12px; border-bottom: 1px solid var(--fx-line); text-align: left; vertical-align: middle; }
 .acc-matrix thead th { background: var(--fx-surface); font: 600 12px/1.2 var(--fx-font); color: var(--fx-text); white-space: nowrap; }
-.acc-matrix tbody th { font-weight: 400; min-width: 170px; }
+.acc-matrix tbody th { min-width: 170px; padding: 10px 12px; background: transparent; color: var(--fx-text); font: 400 13.5px/1.35 var(--fx-font); text-transform: none; letter-spacing: 0; }
+.acc-matrix tbody th strong { font-weight: 600; }
+.modal.wide.acc-modal-matrix { max-width: min(980px, 100%); }
 .acc-cell { min-width: 120px; transition: background-color .2s var(--fx-ease); }
 .acc-cell.is-on.is-jaune { background: color-mix(in srgb, var(--fx-folder-jaune) 10%, var(--fx-white)); }
 .acc-cell.is-on.is-rose { background: color-mix(in srgb, var(--fx-folder-rose) 10%, var(--fx-white)); }
