@@ -1,33 +1,27 @@
 # DOCUMENT INTELLIGENCE — progression
 
-Branche de travail : `feat/document-intelligence`, créée depuis `feat/smart-business-memory-ux` (`6b0eafe3713e16f607aadfb3a91724218f4467ca`).
+Branche : `feat/document-intelligence`, créée depuis `feat/smart-business-memory-ux` à `6b0eafe3713e16f607aadfb3a91724218f4467ca`.
 
-## Terminé
-- Analyse initiale des limites : OCR PDF renvoyait uniquement le texte natif dès qu’une page en contenait, ce qui ignorait les pages scannées du même PDF; prétraitement/rotation OCR absent; provenance page absente.
-- Architecture actuelle utilise analyse isolée en sous-processus borné, upload hashé, staging et confirmation humaine; ne pas remplacer ces garde-fous.
+## Livraison implémentée
 
-## En cours
-- Renforcer extraction page par page du PDF, OCR et provenance tout en gardant les limites temporelles et de taille.
-- Ajouter vérifications ciblées avant les lots suivants.
+- PDF hybride traité page par page : le texte natif est conservé et les pages sans texte passent par OCR. Les résultats d’extraction comprennent page, méthode et extrait source. Prétraitement d’image et tentative de correction d’orientation avec fallback.
+- Comparaison d’une version documentaire avec sa précédente : champs structurés analysés et constats Excel, endpoint protégé et accès depuis l’historique de document. Aucune fusion automatique.
+- Pas de migration nouvelle; les données d’analyse existantes sont réutilisées.
 
-## Tests effectués
-- Inspection statique des modules intake, document intake, quality, routes d’intake, passeport et tests liés.
-- Aucun test de cette nouvelle branche encore exécuté.
+## Résultats vérifiés sur `096c5887e2e5df841dfe38cb38191462da49acf0`
 
-## Problèmes rencontrés
-- Moteur PDF natif/OCR actuel est tout-ou-rien au niveau du document; une seule page avec texte empêche OCR des pages muettes.
-- OCR orientation/preprocessing indisponibles dans le chemin image actuel.
+- Python : 188 réussis, 1 avertissement de dépréciation Starlette/httpx.
+- JavaScript : 19 suites réussies (`node --test tests/*.cjs`).
+- Recette API/plateforme : 94/94.
+- Recette Chromium : 133/133, incluant Client A/B, OCR, responsive et stabilité runtime.
+- Rapport détaillé et captures : `docs/DOCUMENT_INTELLIGENCE_REPORT.md` et `docs/document-intelligence-captures/`.
 
-## Prochaines étapes
-1. OCR multi-page et images avec orientation/prétraitement bornés.
-2. Tests synthétiques PDF hybride, multi-page et OCR indisponible.
-3. Services de comparaison/version et propositions de doublons exacts/similaires avec choix utilisateur, sans fusion automatique.
-4. Résultats cohérence/décisions et ergonomie ciblée, recherche plein texte si réalisable.
-5. Recettes navigateur/globales, rapport, commits et push vérifié.
+## Limites de périmètre
 
-Dernier état récupérable : commit initial de branche `6b0eafe3713e16f607aadfb3a91724218f4467ca`.
+Voir le rapport final pour les fonctionnalités avancées restantes : dédoublonnage sémantique, recherche plein texte indexée, comparaison complète de contenu, suivi persistant d’anomalies, analyse périodique d’empreintes, provenance exhaustive cellule/page et calibration de confiance. La livraison est partielle par rapport à une intelligence documentaire avancée complète; les tests verts ne valident pas ces fonctionnalités non implémentées.
 
-## Lots poussés
-- `1e08c0e` — PDF hybride lu page par page, OCR local prétraité et orientation Tesseract tentée (fallback conservé), champs extraits avec méthode/page/source, test synthétique d’un PDF natif + scan.
-- `En cours` — comparaison version à version ajoutée à l’API d’intake et exposée depuis la fiche d’historique. Vérifiée par test de permissions et de version.
-- Les tests ciblés intake, qualité et passeport couvrent les changements présents.
+## Commits
+
+- `1e08c0e` PDF hybride, OCR et provenance.
+- `096c588` comparaison des versions analysées.
+- Le commit du rapport et des captures, puis le SHA de la branche publiée, sont communiqués dans la réponse finale.
