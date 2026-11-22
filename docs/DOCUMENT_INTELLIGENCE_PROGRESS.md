@@ -17,6 +17,8 @@ Branche : `feat/document-intelligence`, créée depuis `feat/smart-business-memo
 - Décisions persistantes : accepter avec justification, demander une correction ou reporter. Un écart accepté ne peut pas être accepté une seconde fois pour la même signature; une nouvelle version change la signature et réouvre la vérification.
 - Revérification ciblée : une nouvelle version ne notifie que les règles de cohérence configurées qui utilisent ce type et ce sous-dossier. Les notifications internes existantes restent filtrées par les droits.
 - Comparateur enrichi : valeurs proposées/confirmées avant-après, texte significatif ajouté/retiré, constats Excel et liste des contrôles configurés à revérifier.
+- Recherche plein texte FTS5 sur le contenu effectivement analysé et les références extraites. L’index est actualisé à chaque version analysée; les résultats et extraits passent ensuite par les contrôles existants de visibilité de commande et de sous-dossier.
+- Migration additive `0012b_document_search`, ordonnée après `0012_document_intelligence` et avant `0013_access_management` lors de l’intégration.
 
 ## Résultats vérifiés sur `096c5887e2e5df841dfe38cb38191462da49acf0`
 
@@ -46,14 +48,16 @@ Branche : `feat/document-intelligence`, créée depuis `feat/smart-business-memo
 - Syntaxe `static/quality.js` et `static/internal.js` vérifiée par Node.
 - Couverture ajoutée : résultat technique maintenu après décision, acceptation non répétable, traitement reporté, invalidation sur nouvelle version, notification ciblée et diff textuel.
 
+## Tests du lot recherche plein texte
+
+- `tests/test_internal_operations.py` + `tests/test_document_workspace.py` : 37 réussis.
+- FTS5 disponible dans le runtime SQLite; syntaxe de l’interface vérifiée par Node.
+- Couverture ajoutée : recherche d’une expression absente des métadonnées, extrait source, mise à jour à la publication et refus de restitution à un rôle sans lecture du sous-dossier.
+
 ## Partiellement terminé
 
 - Contrôles `not_applicable` : disponibles au niveau des alertes d’impact existantes; pas encore proposés comme décision d’une règle de cohérence chiffrée.
 - Comparaison : champs et formules disponibles; diff textuel encore absent.
-
-## Non commencé
-
-- Recherche plein texte P2.
 
 ## Limites de périmètre
 

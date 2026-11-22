@@ -183,6 +183,21 @@ def test_search_versions_metadata_and_current_review(setup):
     assert one['total'] > 1 and len(one['items']) == 1
 
 
+def test_full_text_search_never_exposes_an_unreadable_folder(setup):
+    api=setup['api'];lid=scratch(api,'Recherche contenu isolé')
+    staged=api.post(f'/api/launches/{lid}/document-uploads',headers=H,data={'folder':'jaune'},
+        files={'file':('contenu.txt',b'COMMANDE CLIENT\nExpression interne quartz confidentiel')}).json()
+    published=api.post(f"/api/launches/{lid}/document-uploads/{staged['id']}/publish",headers=H,json={
+        'folder':'jaune','doc_type':'Commande client','title':'Document indexé'} )
+    assert published.status_code==201,published.text
+    assert api.get('/api/workspace/search',params={'q':'quartz confidentiel'}).json()['total']==1
+    assert api.post('/api/auth/login',headers=H,json={
+        'email':setup['worker_email'],'password':PASSWORD}).status_code==200
+    assert api.get('/api/workspace/search',params={'q':'quartz confidentiel'}).json()['total']==0
+    assert api.post('/api/auth/login',headers=H,json={
+        'email':setup['email'],'password':PASSWORD}).status_code==200
+
+
 def test_intake_classification_keeps_calcul_du_besoin_in_jaune(setup):
     response = setup['api'].post(f"/api/launches/{setup['launches']['B']}/intake/preview", headers=H,
                files={'file': ('calcul_du_besoin.txt', 'Calcul du besoin\nQuantité : 1500 pièces'.encode())})

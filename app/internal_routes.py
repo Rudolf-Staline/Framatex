@@ -281,6 +281,8 @@ def search(q: str = "", folder: str = "", doc_type: str = "", launch_id: str = "
     must(user, "launch.read")
     launch_rows = {row.id: row for row in visible_launches(db, user)}
     results = []
+    from .document_search import search_content
+    content_matches = search_content(db, q) if q.strip() else {}
     query = select(DocumentVersion).join(Document).order_by(DocumentVersion.created_at.desc())
     for version in db.scalars(query):
         document = version.document
@@ -299,7 +301,7 @@ def search(q: str = "", folder: str = "", doc_type: str = "", launch_id: str = "
                        launch.client_name, ops.article if ops else "", ops.provisional_ref if ops else "",
                        ops.definitive_ref if ops else "", document.title, document.doc_type,
                        version.original_name, version.sha256))
-        if q.casefold() not in text.casefold():
+        if q.casefold() not in text.casefold() and version.id not in content_matches:
             continue
         uploader = db.get(User, version.uploaded_by)
         results.append({"launch_id": launch.id, "launch_name": launch.name, "order_ref": launch.order_ref,
@@ -309,6 +311,7 @@ def search(q: str = "", folder: str = "", doc_type: str = "", launch_id: str = "
                         "is_current": version.number == max(v.number for v in document.versions),
                         "original_name": version.original_name, "size": version.size, "sha256": version.sha256,
                         "created_at": version.created_at.isoformat(), "uploader": uploader.name if uploader else None,
+                        "content_excerpt": content_matches.get(version.id),
                         "status": document_state(db, document, version)})
     return {"total": len(results), "items": results[offset:offset + limit], "offset": offset, "limit": limit}
 

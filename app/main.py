@@ -475,6 +475,8 @@ def persist_version(db, user, stored, doc, comment, identification=None):
     db.flush()
     if identification:
         db.add(DocumentIdentification(version_id=version.id, **identification))
+        from .document_search import index_document_version
+        index_document_version(db, version, identification.get('analysis'))
     if comment.strip():
         from .internal_routes import append_comment
         append_comment(db, user, version, comment)

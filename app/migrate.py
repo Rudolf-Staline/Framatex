@@ -32,7 +32,7 @@ MIGRATION_TABLE = Table('schema_migrations', Base.metadata,
 REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_client_space',
              '0005_internal_operations', '0006_client_workflow', '0007_client_order_launch',
              '0008_optional_rules', '0009_visible_checklist_duplicates', '0010_document_intake',
-             '0011_business_memory', '0012_document_intelligence')
+             '0011_business_memory', '0012_document_intelligence', '0012b_document_search')
 
 
 def _versions(conn):
@@ -188,6 +188,11 @@ def migrate():
             Base.metadata.tables['document_relationship_decisions'].create(bind=conn, checkfirst=True)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0012_document_intelligence','d':datetime.now(timezone.utc).isoformat()})
+        if '0012b_document_search' not in done:
+            conn.execute(text('''CREATE VIRTUAL TABLE IF NOT EXISTS document_content_fts
+                USING fts5(version_id UNINDEXED, content, title, "references", tokenize='unicode61')'''))
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0012b_document_search','d':datetime.now(timezone.utc).isoformat()})
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
         cols = {c['name'] for c in inspect(conn).get_columns('launches')}
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():

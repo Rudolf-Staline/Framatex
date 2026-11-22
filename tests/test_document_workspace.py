@@ -153,10 +153,13 @@ def test_analysis_respects_content_ambiguity_and_opaque_workbook_paths(workspace
 def test_guided_upload_distinguishes_exact_duplicate_version_and_independent_document(workspace):
     dossier = launch(workspace, 'CMD-RELATIONSHIPS')
     original = (b'COMMANDE CLIENT\nReference commande : CMD-REL-42\n'
-                b'Reference article : ART-7\nQuantite : 5000 pieces')
+                b'Reference article : ART-7\nQuantite : 5000 pieces\nMatiere alpaga spectral')
     first_stage = stage(workspace, dossier, 'commande-initiale.txt', original).json()
     first = publish(workspace, dossier, first_stage['id'], 'jaune', 'Commande client').json()
     first_version = first['latest']['id']
+    content_search=workspace.get('/api/workspace/search',params={'q':'alpaga spectral'}).json()
+    assert content_search['total']==1 and content_search['items'][0]['version_id']==first_version
+    assert '[alpaga]' in content_search['items'][0]['content_excerpt']
 
     exact_stage = stage(workspace, dossier, 'copie-renommee.txt', original).json()
     exact = exact_stage['analysis']['relationships'][0]
@@ -173,7 +176,7 @@ def test_guided_upload_distinguishes_exact_duplicate_version_and_independent_doc
         assert decision.relationship_kind == 'exact_duplicate' and decision.action == 'keep_duplicate'
 
     changed = (b'COMMANDE CLIENT\nReference commande : CMD-REL-42\n'
-               b'Reference article : ART-7\nQuantite : 5200 pieces')
+               b'Reference article : ART-7\nQuantite : 5200 pieces\nMatiere alpaga spectral')
     version_stage = stage(workspace, dossier, 'commande-revisee.txt', changed).json()
     proposal = next(item for item in version_stage['analysis']['relationships']
                     if item['candidate_document_id'] == first['id'])
