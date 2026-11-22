@@ -571,8 +571,9 @@ def create_user(payload: UserPayload, user: User = Depends(get_current_user), db
     try:
         db.flush()
         # Compte créé par l'application : refus par défaut, accès par affectations explicites.
+        # Le mot de passe saisi par le chef est temporaire : changement imposé à la première connexion.
         from .access_models import CollaboratorProfile
-        db.add(CollaboratorProfile(user_id=new_user.id, notification_prefs="{}"))
+        db.add(CollaboratorProfile(user_id=new_user.id, notification_prefs="{}", must_change_password=True))
         audit(db, user, "user.create", "user", new_user.id, {"roles": [r.name for r in roles]})
         db.commit()
     except IntegrityError:

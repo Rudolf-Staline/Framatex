@@ -188,6 +188,19 @@ def guide(payload: GuideRequest, user: User = Depends(get_current_user), db: Ses
     if payload.launch_id:
         from .access import must_access
         launch = must_access(db, user, payload.launch_id)
+    from .access_control import access_mode, can
+    from .access_models import LaunchAssignment
+    if launch is None and access_mode(user) == "assignments":
+        assigned_ids = set(db.scalars(select(LaunchAssignment.launch_id).where(LaunchAssignment.user_id == user.id)))
+    else:
+        assigned_ids = set()
+
+    def permitted(u, action, folder=None):
+        # Habilitations : la commande demandée, sinon au moins une commande affectée.
+        if launch is not None:
+            return can(u, action, folder, launch.id)
+        return can(u, action, folder) or bool(folder) and any(can(u, action, folder, lid) for lid in assigned_ids)
+
     phrase = _normalize(payload.question)
     hits = [g for g in GUIDES if any(term in phrase for term in g[1])]
     for area, _, title, answer, permission, folder in hits:

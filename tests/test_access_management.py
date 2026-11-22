@@ -115,6 +115,27 @@ def test_01_04_accounts_temporary_password_and_no_default_access(env):
         assert a.get(path).status_code == 403
 
 
+def test_password_chosen_by_chef_in_legacy_screen_is_temporary(env):
+    """Écran Administration historique : le chef ne connaît jamais un mot de passe permanent."""
+    chef = env['chef']
+    role = chef.post('/api/admin/roles', headers=H, json={'name': f'Lecture {env["tag"]}', 'permissions': [{'action': 'launch.read'}]})
+    chosen = secrets.token_urlsafe(16) + 'Cc3!'
+    email = f'historique.{env["tag"]}@example.test'
+    r = chef.post('/api/admin/users', headers=H, json={'name': 'Compte historique', 'email': email, 'password': chosen,
+                                                         'role_ids': [role.json()['id']]})
+    assert r.status_code == 201, r.text
+    user = TestClient(app)
+    assert user.post('/api/auth/login', headers=H, json={'email': email, 'password': chosen}).status_code == 200
+    assert user.get('/api/workspace/launches', headers=H).status_code == 403
+    assert user.get('/api/auth/me', headers=H).json()['must_change_password'] is True
+    own = secrets.token_urlsafe(16) + 'Dd4!'
+    assert user.post('/api/account/password', headers=H, json={'current_password': chosen, 'new_password': own}).status_code == 200
+    assert user.get('/api/workspace/launches', headers=H).json() == []      # aucune commande sans affectation
+    with SessionLocal() as db:
+        stored = db.scalar(select(User).where(User.email == email)).password_hash
+        assert stored.startswith('$argon2') and own not in stored and not check_password(stored, chosen)
+
+
 def test_05_11_dynamic_assignments_example(env):
     L, docs, tag = env['launches'], env['docs'], env['tag']
     # Exemple : A → 001 Jaune+Rose, 003 Bleu+Vert ; B → 001 Bleu, 002 les quatre ; C → aucune.
@@ -203,6 +224,34 @@ def test_17_search_dashboard_activity_and_controls_stay_scoped(env):
     assert all(item.get('folder') in (None, 'jaune', 'rose', 'bleu', 'vert') for item in priorities['items'])
     assert not any(item['launch_id'] == env['launches']['001'] and item.get('folder') in ('bleu', 'vert')
                    for item in priorities['items'])
+    # Assistant : indication de rubrique seulement sur un sous-dossier affecté (Vert : A sur 003, pas sur 001).
+    ask = lambda client, **extra: client.post('/api/assistant/guide', headers=H, json={'question': 'où classer une facture', **extra}).json()
+    assert ask(a)['folder'] == 'vert'
+    assert ask(a, launch_id=env['launches']['001'])['folder'] is None
+    assert ask(a, launch_id=env['launches']['003'])['folder'] == 'vert'
+    assert ask(login(env, 'c'))['folder'] is None
+    assert login(env, 'c').post('/api/assistant/guide', headers=H, json={'question': 'facture', 'launch_id': env['launches']['001']}).status_code == 404
+
+
+def test_controls_require_controls_read_on_both_folders(env):
+    """Consulter contrôles : distinct de la lecture, et sans fuite d'un sous-dossier non attribué."""
+    chef, L = env['chef'], env['launches']
+    rules = []
+    for left, right in (('jaune', 'jaune'), ('jaune', 'bleu')):
+        r = chef.post('/api/admin/quality-rules', headers=H, json={
+            'name': f'Contrôle {left}/{right} {env["tag"]}', 'field_key': 'reference_commande',
+            'left_doc_type': 'Fiche d’emploi', 'right_doc_type': 'Lancement définitif', 'left_folder': left, 'right_folder': right})
+        assert r.status_code == 201, r.text
+        rules.append(r.json()['id'])
+    def seen(client):
+        return {row['rule_id'] for row in client.get(f"/api/launches/{L['001']}/quality").json()['rows']} & set(rules)
+    a, d = login(env, 'a'), login(env, 'd')
+    assert seen(chef) == set(rules)
+    # A : Jaune avec « Consulter contrôles », pas de Bleu → seul le contrôle Jaune/Jaune.
+    assert seen(a) == {rules[0]}
+    # D : Jaune en lecture seule, sans « Consulter contrôles » → aucun contrôle.
+    assert seen(d) == set()
+    assert d.get(f"/api/launches/{L['001']}/excel-inspections").status_code == 200
 
 
 def test_13_14_revocation_and_deactivation_take_effect_immediately(env):
