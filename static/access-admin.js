@@ -34,6 +34,29 @@ function accActionsSummary(actions) {
   return 'Lecture';
 }
 
+const ACC_LEVELS = [
+  ['none', 'Aucun accès'], ['lecture', 'Lecture seule'],
+  ['depot', 'Dépôt sans validation'], ['responsable', 'Responsable'], ['custom', 'Personnalisé…'],
+];
+
+function accSameActions(left, right) {
+  return left.length === right.length && left.every(item => right.includes(item));
+}
+
+function accLevelFor(actions) {
+  if (!actions?.length) return 'none';
+  for (const key of ['lecture', 'depot', 'responsable']) {
+    const preset = accState.catalog.presets.find(item => item.key === key);
+    if (preset && accSameActions(actions, preset.actions)) return key;
+  }
+  return 'custom';
+}
+
+function accLevelLabel(actions) {
+  const level = accLevelFor(actions || []);
+  return ACC_LEVELS.find(item => item[0] === level)?.[1] || 'Personnalisé';
+}
+
 // ------------------------------------------------------------------ navigation et menus
 const accOriginalMount = mount;
 mount = function(html, label) {
@@ -278,19 +301,33 @@ async function accLaunchMatrix(launchId) {
   await accCatalog();
   const [matrix, launches] = await Promise.all([api(`/api/admin/launches/${launchId}/assignments`), api('/api/workspace/launches')]);
   const original = JSON.stringify(matrix.collaborators.map(p => [p.id, p.folders]));
-  let preset = 'depot';
+  const actionsFor = key => accState.catalog.presets.find(item => item.key === key)?.actions || [];
+  const changedPeople = () => {
+    const before = new Map(JSON.parse(original));
+    return matrix.collaborators.filter(person => JSON.stringify(before.get(person.id) || {}) !== JSON.stringify(person.folders));
+  };
+  const removedCells = () => {
+    const before = new Map(JSON.parse(original));
+    return matrix.collaborators.reduce((count, person) => count + ACC_FOLDERS.filter(([slug]) =>
+      (before.get(person.id) || {})[slug]?.length && !person.folders[slug]?.length).length, 0);
+  };
   const draw = () => {
-    const presets = accState.catalog.presets.map(p => `<option value="${e(p.key)}" ${p.key === preset ? 'selected' : ''}>${e(p.label)}</option>`).join('');
     const rows = matrix.collaborators.map(p => `<tr><th scope="row"><strong>${e(p.name)}</strong><small>${e(p.job_title || p.email)}${p.active ? '' : ' · désactivé'}</small></th>
-      ${ACC_FOLDERS.map(([slug, color]) => { const acts = p.folders[slug] || []; return `<td class="acc-cell is-${slug} ${acts.length ? 'is-on' : ''}">
-        <label class="acc-check"><input type="checkbox" data-acc-cell="${e(p.id)}:${slug}" ${acts.length ? 'checked' : ''} ${p.active ? '' : 'disabled'} aria-label="${e(p.name)} · ${color}"><span>${acts.length ? e(accActionsSummary(acts)) : '—'}</span></label>
-        ${acts.length ? `<button class="link acc-detail" type="button" data-acc-detail="${e(p.id)}:${slug}">Réglages</button>` : ''}</td>`; }).join('')}</tr>`).join('');
+      ${ACC_FOLDERS.map(([slug, color, name]) => { const acts = p.folders[slug] || []; const level = accLevelFor(acts); return `<td class="acc-cell is-${slug} ${acts.length ? 'is-on' : ''}">
+        <label class="sr-only" for="acc-level-${e(p.id)}-${slug}">${e(p.name)} · ${e(name)}</label>
+        <select id="acc-level-${e(p.id)}-${slug}" class="acc-level" data-acc-level="${e(p.id)}:${slug}" ${p.active ? '' : 'disabled'}>
+          ${ACC_LEVELS.map(([key, label]) => `<option value="${key}" ${key === level ? 'selected' : ''}>${e(label)}</option>`).join('')}
+        </select>
+        <small>${acts.length ? e(accActionsSummary(acts)) : 'Aucune donnée visible'}</small>
+        <button class="link acc-detail" type="button" data-acc-detail="${e(p.id)}:${slug}" ${p.active ? '' : 'disabled'}>${level === 'custom' ? 'Modifier les droits' : 'Personnaliser'}</button></td>`; }).join('')}</tr>`).join('');
     const sources = launches.filter(l => l.id !== launchId).map(l => `<option value="${e(l.id)}">${e(l.order_ref || l.name)}</option>`).join('');
-    return `<p class="modal-desc">Cochez les sous-dossiers de chaque collaborateur. Une commande sans collaborateur reste gérée par le chef seul.</p>
-      <div class="acc-matrix-tools"><div class="field"><label for="acc-preset">Droits des nouvelles cases</label><select id="acc-preset">${presets}</select></div>
-        <div class="field"><label for="acc-copy-from">Proposition depuis une autre commande</label><select id="acc-copy-from"><option value="">— Choisir —</option>${sources}</select></div></div>
+    const changed = changedPeople().length, removals = removedCells();
+    return `<p class="modal-desc">Choisissez indépendamment le niveau de chaque collaborateur et sous-dossier. Les droits sont appliqués uniquement à cette commande ; aucune case ne donne un accès administrateur.</p>
+      <section class="acc-matrix-guide" aria-label="Niveaux d'autorisation"><span><strong>Lecture seule</strong> consulte sans télécharger</span><span><strong>Dépôt sans validation</strong> ajoute une pièce, pas une version</span><span><strong>Responsable</strong> traite les contrôles et valide</span></section>
+      <details class="acc-copy-option"><summary>Copier les affectations d’une autre commande <span>optionnel</span></summary><div class="field"><label for="acc-copy-from">Proposition à vérifier avant enregistrement</label><select id="acc-copy-from"><option value="">— Choisir une commande —</option>${sources}</select></div></details>
       ${matrix.collaborators.length ? `<div class="acc-matrix-wrap"><table class="acc-matrix"><caption class="sr-only">Affectations de la commande</caption><thead><tr><th scope="col">Collaborateur</th>${ACC_FOLDERS.map(([slug, color, name]) => `<th scope="col"><span class="dj-dot is-${slug}" aria-hidden="true"></span> ${color}<small>${name}</small></th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`
         : '<p class="ops-muted">Aucun collaborateur : créez des comptes dans « Collaborateurs et habilitations ».</p>'}
+      <p class="acc-save-summary" aria-live="polite">${changed ? `${changed} collaborateur${changed > 1 ? 's' : ''} modifié${changed > 1 ? 's' : ''}${removals ? ` · ${removals} accès retiré${removals > 1 ? 's' : ''}` : ''}` : 'Aucune modification à enregistrer.'}</p>
       <div class="modal-actions"><button class="secondary" type="button" id="cancel-modal">Annuler</button><button class="primary" type="button" id="acc-matrix-save">Enregistrer les affectations</button></div>`;
   };
   modal(`Affecter des collaborateurs · ${matrix.launch.order_ref || matrix.launch.name}`, draw(), true);
@@ -298,7 +335,6 @@ async function accLaunchMatrix(launchId) {
   const bind = () => {
     const root = overlay.querySelector('.modal-body');
     overlay.querySelector('#cancel-modal').onclick = closeModal;
-    root.querySelector('#acc-preset').onchange = event => { preset = event.target.value; };
     root.querySelector('#acc-copy-from').onchange = async event => {
       if (!event.target.value) return;
       const proposal = await api(`/api/admin/launches/${launchId}/assignments/copy-from/${event.target.value}`);
@@ -306,32 +342,36 @@ async function accLaunchMatrix(launchId) {
       toast(`Proposition chargée depuis ${proposal.source.order_ref || proposal.source.name} : vérifiez puis enregistrez.`);
       root.innerHTML = draw(); bind();
     };
-    root.querySelectorAll('[data-acc-cell]').forEach(box => box.onchange = () => {
-      const [uid, slug] = box.dataset.accCell.split(':');
+    const editCell = (uid, slug) => {
       const person = matrix.collaborators.find(p => p.id === uid);
-      if (box.checked) person.folders[slug] = [...accState.catalog.presets.find(p => p.key === preset).actions];
-      else delete person.folders[slug];
+      const editor = accActionEditor(person.folders[slug] || actionsFor('lecture'), actions => {
+        if (actions.length) person.folders[slug] = actions; else delete person.folders[slug];
+        root.innerHTML = draw(); bind();
+      });
+      const title = `<h3>${e(person.name)} · ${ACC_FOLDERS.find(f => f[0] === slug)[2]}</h3><p class="ops-muted">Sélectionnez uniquement les actions nécessaires. Le téléchargement et les nouvelles versions restent indépendants.</p>`;
+      const rerender = html => { root.innerHTML = title + html; editor.bind(root, rerender); };
+      rerender(editor.html);
+    };
+    root.querySelectorAll('[data-acc-level]').forEach(select => select.onchange = () => {
+      const [uid, slug] = select.dataset.accLevel.split(':');
+      const person = matrix.collaborators.find(p => p.id === uid);
+      if (select.value === 'custom') return editCell(uid, slug);
+      const actions = select.value === 'none' ? [] : actionsFor(select.value);
+      if (actions.length) person.folders[slug] = [...actions]; else delete person.folders[slug];
       root.innerHTML = draw(); bind();
     });
     root.querySelectorAll('[data-acc-detail]').forEach(button => button.onclick = () => {
       const [uid, slug] = button.dataset.accDetail.split(':');
-      const person = matrix.collaborators.find(p => p.id === uid);
-      const editor = accActionEditor(person.folders[slug] || [], actions => {
-        if (actions.length) person.folders[slug] = actions; else delete person.folders[slug];
-        root.innerHTML = draw(); bind();
-      });
-      const title = `<h3>${e(person.name)} · ${ACC_FOLDERS.find(f => f[0] === slug)[2]}</h3>`;
-      const rerender = html => { root.innerHTML = title + html; editor.bind(root, rerender); };
-      rerender(editor.html);
+      editCell(uid, slug);
     });
     root.querySelector('#acc-matrix-save')?.addEventListener('click', async () => {
-      const before = new Map(JSON.parse(original));
-      const changed = matrix.collaborators.filter(p => JSON.stringify(before.get(p.id) || {}) !== JSON.stringify(p.folders));
-      try {
+      const changed = changedPeople();
+      const save = async () => {
         await api(`/api/admin/launches/${launchId}/assignments`, {method: 'PUT', body: JSON.stringify({assignments: changed.map(p => ({user_id: p.id, folders: p.folders}))})});
-        closeModal();
-        toast(changed.length ? `Affectations enregistrées (${changed.length} collaborateur${changed.length > 1 ? 's' : ''}).` : 'Aucun changement.');
-      } catch (error) { showErr(error); }
+        closeModal(); toast(changed.length ? `Affectations enregistrées pour ${changed.length} collaborateur${changed.length > 1 ? 's' : ''}.` : 'Aucun changement.');
+      };
+      if (removedCells()) return accConfirm('Retirer des accès ?', 'Les accès retirés seront refusés dès la prochaine requête, y compris pour une session déjà ouverte.', save);
+      try { await save(); } catch (error) { showErr(error); }
     });
   };
   bind();

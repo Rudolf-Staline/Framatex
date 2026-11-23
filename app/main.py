@@ -333,15 +333,19 @@ def get_launch(db: Session, launch_id: str) -> Launch:
 def launch_detail(launch_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     must(user, "launch.read")
     l = get_launch(db, launch_id)
+    from .access_control import ACCESS_LEVEL_LABELS, ACTION_KEYS, access_level
     folders = []
     for slug, label in FOLDERS:
         folder = next((f for f in l.folders if f.slug == slug), None)
         docs = [] if not folder or not permitted(user, "document.read", slug) else [doc_out(d) for d in folder.documents]
+        actions = [action for action in ACTION_KEYS if permitted(user, action, slug)]
+        level = access_level(actions)
         folders.append({"slug": slug, "label": label, "can_read": permitted(user, "document.read", slug), "can_write": permitted(user, "document.write", slug),
                         "can_version": permitted(user, "document.version", slug), "can_download": permitted(user, "document.download", slug),
                         "can_comment": permitted(user, "document.comment", slug), "can_controls": permitted(user, "controls.read", slug),
                         "can_value": permitted(user, "value.write", slug), "can_quality": permitted(user, "quality.review", slug),
-                        "can_review": permitted(user, "document.review", slug),
+                        "can_review": permitted(user, "document.review", slug), "access_level": level,
+                        "access_label": ACCESS_LEVEL_LABELS[level],
                         "documents": docs})
     return {**launch_out(l), "folders": folders, "can_update": permitted(user, "launch.update"), "can_manage_access": is_admin(user)}
 

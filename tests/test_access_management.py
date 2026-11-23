@@ -174,6 +174,66 @@ def test_05_11_dynamic_assignments_example(env):
     assert next(x for x in env['chef'].get('/api/admin/collaborators').json() if x['id'] == env['techs']['a']['id'])['launches_count'] == 2
 
 
+def test_access_levels_are_individual_per_person_folder_and_launch(env):
+    """Les niveaux UX correspondent à des actions persistées, pas à un simple affichage."""
+    from app.access_control import ACTION_KEYS, PRESETS
+
+    assert 'document.version' not in PRESETS['depot']['actions']
+    assert set(PRESETS['responsable']['actions']) == set(ACTION_KEYS)
+    chef, L, techs = env['chef'], env['launches'], env['techs']
+    matrix = {
+        techs['a']['id']: {'jaune': ['document.read']},
+        techs['b']['id']: {'jaune': PRESETS['depot']['actions'], 'rose': ['document.read']},
+        techs['c']['id']: {'jaune': PRESETS['responsable']['actions'], 'bleu': ['document.read']},
+        techs['d']['id']: {'bleu': PRESETS['depot']['actions'], 'vert': PRESETS['responsable']['actions']},
+    }
+    response = chef.put(f"/api/admin/launches/{L['001']}/assignments", headers=H,
+                        json={'assignments': [{'user_id': uid, 'folders': folders} for uid, folders in matrix.items()]})
+    assert response.status_code == 200, response.text
+    stored = {row['id']: row['folders'] for row in response.json()['collaborators']}
+    assert {uid: stored[uid] for uid in matrix} == matrix
+
+    a, b, c, d = (login(env, key) for key in ('a', 'b', 'c', 'd'))
+    detail_a = {row['slug']: row for row in a.get(f"/api/launches/{L['001']}").json()['folders']}
+    assert detail_a['jaune']['access_level'] == 'read' and detail_a['jaune']['access_label'] == 'Lecture seule'
+    assert not detail_a['jaune']['can_write'] and not detail_a['jaune']['can_download']
+    assert detail_a['rose']['access_level'] == 'none' and detail_a['rose']['documents'] == []
+
+    detail_b = {row['slug']: row for row in b.get(f"/api/launches/{L['001']}").json()['folders']}
+    assert detail_b['jaune']['access_level'] == 'upload' and detail_b['jaune']['can_write']
+    assert not detail_b['jaune']['can_version'] and not detail_b['jaune']['can_review']
+    assert detail_b['rose']['access_level'] == 'read'
+
+    detail_c = {row['slug']: row for row in c.get(f"/api/launches/{L['001']}").json()['folders']}
+    assert detail_c['jaune']['access_level'] == 'manager' and detail_c['jaune']['can_review']
+    assert detail_c['bleu']['access_level'] == 'read' and not detail_c['bleu']['can_download']
+
+    detail_d = {row['slug']: row for row in d.get(f"/api/launches/{L['001']}").json()['folders']}
+    assert detail_d['bleu']['access_level'] == 'upload' and detail_d['vert']['access_level'] == 'manager'
+
+    # Un niveau personnalisé est conservé et reste propre à une autre commande.
+    custom = ['document.read', 'document.download', 'document.comment']
+    saved = chef.put(f"/api/admin/collaborators/{techs['a']['id']}/assignments/{L['002']}", headers=H,
+                     json={'folders': {'vert': custom}})
+    assert saved.status_code == 200 and saved.json()['folders']['vert'] == custom
+    a_second = {row['slug']: row for row in a.get(f"/api/launches/{L['002']}").json()['folders']}
+    assert a_second['vert']['access_level'] == 'custom' and a_second['vert']['can_download']
+    assert not a_second['vert']['can_write'] and not a_second['jaune']['can_read']
+
+    # Cette fixture est partagée par les scénarios historiques : restaure leur
+    # matrice de référence après la vérification UX isolée.
+    restored = {
+        techs['a']['id']: {'jaune': DEPOT, 'rose': ['document.read']},
+        techs['b']['id']: {'bleu': ['document.read']},
+        techs['c']['id']: {},
+        techs['d']['id']: {'jaune': ['document.read']},
+    }
+    assert chef.put(f"/api/admin/launches/{L['001']}/assignments", headers=H,
+                     json={'assignments': [{'user_id': uid, 'folders': folders} for uid, folders in restored.items()]}).status_code == 200
+    assert chef.put(f"/api/admin/collaborators/{techs['a']['id']}/assignments/{L['002']}", headers=H,
+                     json={'folders': {}}).status_code == 200
+
+
 def test_12_16_actions_upload_validate_download_and_direct_urls(env):
     L, docs = env['launches'], env['docs']
     a, d, c = login(env, 'a'), login(env, 'd'), login(env, 'c')

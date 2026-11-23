@@ -59,9 +59,33 @@ LEGACY_FALLBACK = {"document.download": "document.read", "document.version": "do
 PRESETS = {
     "lecture": {"label": "Lecture seule", "actions": ["document.read"]},
     "lecture_telechargement": {"label": "Lecture et téléchargement", "actions": ["document.read", "document.download", "controls.read"]},
-    "depot": {"label": "Dépôt sans validation", "actions": ["document.read", "document.download", "document.write",
-                                                           "document.version", "document.comment", "controls.read"]},
+    # Le dépôt d'une pièce et la création d'une nouvelle version sont séparés :
+    # aucun préréglage de dépôt ne contourne ``document.version``.
+    "depot": {"label": "Dépôt sans validation", "actions": ["document.read", "document.write"]},
     "responsable": {"label": "Responsable complet", "actions": list(ACTION_KEYS)},
+}
+
+
+def access_level(actions) -> str:
+    """Niveau d'affichage, sans jamais remplacer la vérification action par action."""
+    chosen = set(actions or ())
+    if not chosen:
+        return "none"
+    if chosen == set(PRESETS["lecture"]["actions"]):
+        return "read"
+    if chosen == set(PRESETS["depot"]["actions"]):
+        return "upload"
+    if chosen == set(PRESETS["responsable"]["actions"]):
+        return "manager"
+    return "custom"
+
+
+ACCESS_LEVEL_LABELS = {
+    "none": "Accès restreint",
+    "read": "Lecture seule",
+    "upload": "Dépôt autorisé",
+    "manager": "Responsable",
+    "custom": "Accès personnalisé",
 }
 
 _scope: ContextVar[str | None] = ContextVar("framatex_launch_scope", default=None)
