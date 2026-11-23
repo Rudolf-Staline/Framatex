@@ -143,6 +143,7 @@ class NoteInput(BaseModel):
 
 
 class NoteChange(BaseModel):
+    folder_slug: Literal['jaune', 'rose', 'bleu', 'vert'] | None = None
     body: str | None = Field(default=None, min_length=12, max_length=2000)
     category: Literal['incident', 'retard', 'qualite', 'documentaire', 'modification', 'communication', 'retour', 'recommandation', 'autre'] | None = None
     event_date: date | None = None
@@ -394,6 +395,11 @@ def change_note(note_id: str, payload: NoteChange, user: User = Depends(get_curr
     values = payload.model_dump(exclude_unset=True, exclude={'reason'})
     if not values:
         raise HTTPException(422, 'Aucune modification')
+    if 'folder_slug' in values:
+        if not is_chief(user):
+            raise HTTPException(403, 'Le classement de sous-dossier est réservé au chef')
+        if not row.launch_id or not values['folder_slug']:
+            raise HTTPException(422, 'Un retour classé doit conserver sa commande et son sous-dossier')
     previous = {key: getattr(row, key) for key in values}
     for key, value in values.items():
         setattr(row, key, value)

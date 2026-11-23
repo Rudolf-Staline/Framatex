@@ -45,6 +45,7 @@ function bmBindNotes(root,refresh){
 async function bmEditNote(id,refresh){
  const note=await api(`/api/workspace/business-memory/${id}`);
  modal('Corriger ou clôturer un retour',`<form id="bm-edit">
+ ${state.me.admin&&note.launch_id?`<div class="field"><label for="bm-edit-folder">Sous-dossier concerné</label><select id="bm-edit-folder">${Object.entries(BM_FOLDER).map(([k,v])=>`<option value="${k}" ${k===note.folder_slug?'selected':''}>${v}</option>`).join('')}</select><small>Le reclassement est réservé au chef et conservé dans l’historique.</small></div>`:''}
  <div class="field"><label for="bm-edit-category">Catégorie</label><select id="bm-edit-category">${Object.entries(BM_CATEGORY).map(([k,v])=>`<option value="${k}" ${k===note.category?'selected':''}>${v}</option>`).join('')}</select></div>
  <div class="field"><label for="bm-edit-date">Date de l’événement</label><input type="date" id="bm-edit-date" value="${e(note.event_date||note.created_at.slice(0,10))}"></div>
  <div class="field"><label for="bm-edit-body">Description factuelle</label><textarea id="bm-edit-body" minlength="12" maxlength="2000" required>${e(note.body)}</textarea></div>
@@ -52,7 +53,7 @@ async function bmEditNote(id,refresh){
  <div class="field"><label for="bm-edit-importance">Importance</label><select id="bm-edit-importance">${Object.entries(BM_IMPORTANCE).map(([k,v])=>`<option value="${k}" ${k===note.importance?'selected':''}>${v}</option>`).join('')}</select></div>
  <div class="field"><label for="bm-edit-status">Statut</label><select id="bm-edit-status">${Object.entries(BM_STATUS).map(([k,v])=>`<option value="${k}" ${k===note.status?'selected':''}>${v}</option>`).join('')}</select></div>
  <div class="field"><label for="bm-edit-reason">Justification de la modification</label><textarea id="bm-edit-reason" minlength="12" maxlength="1000" required></textarea></div><button class="primary" type="submit">Enregistrer la décision</button></form>`,true);
- overlay.querySelector('#bm-edit').onsubmit=async event=>{event.preventDefault();try{await api(`/api/workspace/business-memory/${id}`,{method:'PATCH',body:JSON.stringify({category:val('bm-edit-category'),event_date:val('bm-edit-date'),body:val('bm-edit-body'),recommendation:val('bm-edit-recommendation')||null,importance:val('bm-edit-importance'),status:val('bm-edit-status'),reason:val('bm-edit-reason')})});closeModal();await refresh()}catch(error){showErr(error)}};
+ overlay.querySelector('#bm-edit').onsubmit=async event=>{event.preventDefault();try{await api(`/api/workspace/business-memory/${id}`,{method:'PATCH',body:JSON.stringify({category:val('bm-edit-category'),event_date:val('bm-edit-date'),body:val('bm-edit-body'),recommendation:val('bm-edit-recommendation')||null,importance:val('bm-edit-importance'),status:val('bm-edit-status'),folder_slug:overlay.querySelector('#bm-edit-folder')?.value,reason:val('bm-edit-reason')})});closeModal();await refresh()}catch(error){showErr(error)}};
 }
 async function bmPartnerSheet(id){
  const row=await api(`/api/workspace/partners/${encodeURIComponent(id)}`);

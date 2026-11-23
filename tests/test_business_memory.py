@@ -54,6 +54,9 @@ def test_partner_unique_lookup_legacy_and_note_flow(setup):
     assert any(item['id'] == partner['id'] for item in api.get('/api/workspace/partners', params={'q':'tissage atla ' + setup['suffix']}).json())
     detail = api.get(f"/api/workspace/partners/{partner['id']}").json()
     assert any(n['id'] == old_id for n in detail['notes'])
+    classified = api.patch(f'/api/workspace/business-memory/{old_id}', headers=H, json={
+        'folder_slug': 'jaune', 'reason': 'Classement historique confirmé par le chef.'})
+    assert classified.status_code == 200 and classified.json()['folder_slug'] == 'jaune'
     similar = api.post('/api/workspace/partners', headers=H, json={'party_type':'fournisseur','name':'Tissage Atlas Sud ' + setup['suffix']})
     assert similar.status_code == 201 and similar.json()['id'] != partner['id']
     assert api.post(f'/api/launches/{lid}/partners', headers=H, json={'partner_id':partner['id']}).status_code == 201
@@ -111,9 +114,10 @@ def test_restricted_launch_notes_are_not_in_memory_results(setup):
         assert worker.get(f"/api/workspace/business-memory/{secret.json()['id']}/decisions").status_code == 404
         assert worker.patch(f"/api/workspace/business-memory/{secret.json()['id']}", headers=H,
             json={'status':'resolved','reason':'Vérification interdite pour ce dossier.'}).status_code == 404
-        # L'ancien retour non classé est chef-only : sa fiche ne révèle pas
-        # l'existence du partenaire au technicien.
-        assert worker.get(f"/api/workspace/partners/{partner['id']}").status_code == 404
+        # Le retour historique classé Jaune est visible ; l'incident non
+        # classé de la commande restreinte reste totalement absent.
+        detail = worker.get(f"/api/workspace/partners/{partner['id']}").json()
+        assert all(row['id'] != secret.json()['id'] for row in detail['notes'])
         assert worker.get(f"/api/workspace/partners/{private_partner['id']}").status_code == 404
         assert all(row['id'] != private_partner['id'] for row in worker.get('/api/workspace/partners').json())
 

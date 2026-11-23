@@ -33,7 +33,9 @@ def run(qa, browser, server, captures):
                 page.locator('[data-bm-results] [data-bm-new]').click()
             else:
                 page.locator('[data-bm-results] [data-bm-id]').first.click()
-            if launch:page.select_option('#bm-launch',launch)
+            if launch:
+                page.select_option('#bm-launch',launch)
+                expect(page.locator('#bm-folder')).to_have_value('jaune')
             page.select_option('#bm-category',category)
             page.select_option('#bm-importance',importance)
             page.fill('#bm-body',body)
@@ -98,17 +100,17 @@ def run(qa, browser, server, captures):
         qa.check('Document navigateur','QR réel et téléchargement',True)
         for width in (1920,1440,1024,820,390):
             page.set_viewport_size({'width':width,'height':860})
-            if width<=820 and page.locator('.drawer-open').count():page.locator('.ops-drawer-close').click()
+            if width<=820 and page.locator('.drawer-open').count():page.keyboard.press('Escape')
             view.width=width
             view.check_page('commande-memoire')
             if width<=820:page.locator('.ops-drawer-toggle').click()
             page.locator('.sidebar [data-ops-view="experience"]').click()
-            if width<=820 and page.locator('.drawer-open').count():page.locator('.ops-drawer-close').click()
+            if width<=820 and page.locator('.drawer-open').count():page.keyboard.press('Escape')
             expect(page.locator('#bm-stats')).to_be_visible()
             view.check_page('memoire-metier')
             if width<=820:page.locator('.ops-drawer-toggle').click()
             page.locator('.sidebar [data-view="launches"]').click()
-            if width<=820 and page.locator('.drawer-open').count():page.locator('.ops-drawer-close').click()
+            if width<=820 and page.locator('.drawer-open').count():page.keyboard.press('Escape')
             page.evaluate('(id)=>openLaunch(id)',launch_id)
             expect(page.locator('.bm-context')).to_be_visible()
         qa.check('Mémoire navigateur','Cinq largeurs sans débordement',True)
