@@ -111,7 +111,9 @@ def test_restricted_launch_notes_are_not_in_memory_results(setup):
         assert worker.get(f"/api/workspace/business-memory/{secret.json()['id']}/decisions").status_code == 404
         assert worker.patch(f"/api/workspace/business-memory/{secret.json()['id']}", headers=H,
             json={'status':'resolved','reason':'Vérification interdite pour ce dossier.'}).status_code == 404
-        assert all(row['id'] != secret.json()['id'] for row in worker.get(f"/api/workspace/partners/{partner['id']}").json()['notes'])
+        # L'ancien retour non classé est chef-only : sa fiche ne révèle pas
+        # l'existence du partenaire au technicien.
+        assert worker.get(f"/api/workspace/partners/{partner['id']}").status_code == 404
         assert worker.get(f"/api/workspace/partners/{private_partner['id']}").status_code == 404
         assert all(row['id'] != private_partner['id'] for row in worker.get('/api/workspace/partners').json())
 
@@ -140,6 +142,9 @@ def test_legacy_migration_preserves_note_and_allows_general_note(tmp_path, monke
     with isolated.connect() as conn:
         assert conn.execute(text("SELECT body, updated_at FROM internal_experience_notes WHERE id='old'")).one() == ('Historique conservé', '2026-01-01')
         assert next(c for c in inspect(conn).get_columns('internal_experience_notes') if c['name']=='launch_id')['nullable']
+        assert next(c for c in inspect(conn).get_columns('internal_experience_notes') if c['name']=='folder_slug')['nullable']
+        assert conn.execute(text("SELECT folder_slug FROM internal_experience_notes WHERE id='old'")).scalar() is None
+        assert '0014_business_memory_folder_access' in {row[0] for row in conn.execute(text('SELECT version FROM schema_migrations'))}
         assert 'business_partners' in inspect(conn).get_table_names()
     isolated.dispose()
 

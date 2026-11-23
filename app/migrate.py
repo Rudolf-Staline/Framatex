@@ -34,7 +34,7 @@ REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_c
              '0005_internal_operations', '0006_client_workflow', '0007_client_order_launch',
              '0008_optional_rules', '0009_visible_checklist_duplicates', '0010_document_intake',
              '0011_business_memory', '0012_document_intelligence', '0012b_document_search',
-             '0013_access_management')
+             '0013_access_management', '0014_business_memory_folder_access')
 
 
 def _versions(conn):
@@ -202,6 +202,16 @@ def migrate():
             migrate_0013(conn, Base.metadata)
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0013_access_management','d':datetime.now(timezone.utc).isoformat()})
+        if '0014_business_memory_folder_access' not in done:
+            # Additive and deliberately nullable: historical notes cannot be
+            # inferred reliably and therefore remain chef-only until classified.
+            columns = {c['name'] for c in inspect(conn).get_columns('internal_experience_notes')}
+            if 'folder_slug' not in columns:
+                conn.execute(text('ALTER TABLE internal_experience_notes ADD COLUMN folder_slug VARCHAR(12)'))
+            conn.execute(text('CREATE INDEX IF NOT EXISTS ix_internal_experience_notes_folder_slug '
+                              'ON internal_experience_notes (folder_slug)'))
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0014_business_memory_folder_access','d':datetime.now(timezone.utc).isoformat()})
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
         cols = {c['name'] for c in inspect(conn).get_columns('launches')}
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():

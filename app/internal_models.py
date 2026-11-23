@@ -32,6 +32,10 @@ class ExperienceNote(Base):
     __tablename__ = "internal_experience_notes"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     launch_id: Mapped[str | None] = mapped_column(ForeignKey("launches.id"), index=True, nullable=True)
+    # Les retours créés par un collaborateur sont toujours rattachés à l'un des
+    # quatre sous-dossiers. NULL reste réservé aux anciennes données non
+    # classées et aux notes générales du chef.
+    folder_slug: Mapped[str | None] = mapped_column(String(12), index=True, nullable=True)
     partner_id: Mapped[str | None] = mapped_column(ForeignKey("business_partners.id"), index=True, nullable=True)
     party_type: Mapped[str] = mapped_column(String(20), index=True)
     party_name: Mapped[str] = mapped_column(String(150), index=True)

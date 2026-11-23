@@ -1,4 +1,4 @@
-"""Mémoire métier interne, limitée aux dossiers visibles et aux droits du Dossier Jaune."""
+"""Mémoire métier interne, strictement limitée au sous-dossier autorisé."""
 from __future__ import annotations
 
 import re
@@ -27,33 +27,48 @@ def norm(value: str) -> str:
     return ' '.join(re.findall(r'[\w]+', clean, flags=re.UNICODE))
 
 
-def rights(user: User, write=False):
-    from .main import must
-    from .access_control import access_mode
-    must(user, 'launch.read')
-    if access_mode(user) == 'assignments':
-        # Collaborateur affecté : mémoire ouverte s'il consulte (ou alimente) le sous-dossier
-        # Technique d'au moins une commande qui lui est attribuée. Les notes générales (sans
-        # commande) sont alors consultables ; une note liée à une commande ne l'est que si
-        # Technique y est consultable (visible_ids).
-        from sqlalchemy.orm import object_session
-        action = 'document.write' if write else 'document.read'
-        if not technique_launches(object_session(user), user, action):
-            from fastapi import HTTPException
-            raise HTTPException(403, "Accès interdit : habilitation insuffisante")
-        return
-    must(user, 'document.read', 'jaune')
-    if write:
-        must(user, 'document.write', 'jaune')
+FOLDER_SLUGS = ('jaune', 'rose', 'bleu', 'vert')
 
 
-def technique_launches(db, user, action='document.read'):
+def is_chief(user: User) -> bool:
+    from .access_control import is_admin
+    return is_admin(user)
+
+
+def readable_folders(user: User, launch_id: str) -> list[str]:
+    """Permissions effectives, jamais une union entre deux commandes."""
+    if is_chief(user):
+        return list(FOLDER_SLUGS)
     from .access_control import can
-    return {launch.id for launch in visible_launches(db, user) if can(user, action, 'jaune', launch.id)}
+    return [slug for slug in FOLDER_SLUGS if can(user, 'document.read', slug, launch_id)]
+
+
+def memory_launches(db: Session, user: User) -> list[Launch]:
+    launches = db.scalars(select(Launch).order_by(Launch.updated_at.desc())).all() if is_chief(user) else visible_launches(db, user)
+    return [launch for launch in launches if readable_folders(user, launch.id)]
+
+
+def rights(user: User, db: Session):
+    from .main import must
+    must(user, 'launch.read')
+    if is_chief(user):
+        return
+    # Lecture sur n'importe quel sous-dossier suffit pour contribuer à la
+    # mémoire de ce sous-dossier. Le dépôt documentaire reste indépendant.
+    if not memory_launches(db, user):
+        raise HTTPException(403, "Accès interdit : aucune commande ou rubrique consultable")
 
 
 def visible_ids(db, user):
-    return technique_launches(db, user)
+    return {launch.id for launch in memory_launches(db, user)}
+
+
+def note_visible(user: User, row: ExperienceNote) -> bool:
+    if is_chief(user):
+        return True
+    # NULL signifie note générale ou historique « à classer » : chef seulement.
+    return bool(row.launch_id and row.folder_slug and row.folder_slug in FOLDER_SLUGS
+                and row.folder_slug in readable_folders(user, row.launch_id))
 
 
 def partner_out(row):
@@ -63,12 +78,17 @@ def partner_out(row):
 
 
 def scoped_partner(db, user, row, allowed=None):
-    allowed = visible_ids(db, user) if allowed is None else allowed
     notes = db.scalars(select(ExperienceNote).where(ExperienceNote.partner_id == row.id)).all()
     links = db.scalars(select(LaunchPartner).where(LaunchPartner.partner_id == row.id)).all()
+    if is_chief(user):
+        visible_notes, visible_links = notes, links
+    else:
+        allowed = visible_ids(db, user) if allowed is None else allowed
+        visible_notes = [note for note in notes if note_visible(user, note)]
+        # A launch association alone has no folder classification and must not
+        # reveal a partner attached only to a confidential workflow.
+        visible_links = [link for link in links if link.launch_id in allowed and visible_notes]
     associated = bool(notes or links)
-    visible_notes = [note for note in notes if note.launch_id is None or note.launch_id in allowed]
-    visible_links = [link for link in links if link.launch_id in allowed]
     if associated and not visible_notes and not visible_links:
         return None
     result = partner_out(row)
@@ -81,7 +101,7 @@ def scoped_partner(db, user, row, allowed=None):
 def note_out(db, row):
     author = db.get(User, row.author_id)
     launch = db.get(Launch, row.launch_id) if row.launch_id else None
-    return {'id': row.id, 'partner_id': row.partner_id, 'launch_id': row.launch_id,
+    return {'id': row.id, 'partner_id': row.partner_id, 'launch_id': row.launch_id, 'folder_slug': row.folder_slug,
             'party_type': row.party_type, 'party_name': row.party_name, 'category': row.category,
             'body': row.body, 'author': author.name if author else 'Utilisateur',
             'created_at': row.created_at.isoformat(), 'event_date': row.event_date.isoformat() if row.event_date else None,
@@ -92,10 +112,8 @@ def note_out(db, row):
 
 
 def scoped_notes(db, user, partner_id=None):
-    allowed = visible_ids(db, user)
     rows = db.scalars(select(ExperienceNote).order_by(ExperienceNote.created_at.desc())).all()
-    return [r for r in rows if (r.launch_id is None or r.launch_id in allowed)
-            and (partner_id is None or r.partner_id == partner_id)]
+    return [r for r in rows if note_visible(user, r) and (partner_id is None or r.partner_id == partner_id)]
 
 
 def note_counts(notes):
@@ -114,6 +132,7 @@ class PartnerInput(BaseModel):
 class NoteInput(BaseModel):
     partner_id: str
     launch_id: str | None = None
+    folder_slug: Literal['jaune', 'rose', 'bleu', 'vert'] | None = None
     category: Literal['incident', 'retard', 'qualite', 'documentaire', 'modification', 'communication', 'retour', 'recommandation', 'autre']
     event_date: date
     body: str = Field(min_length=12, max_length=2000)
@@ -142,8 +161,13 @@ class ClientLinkInput(BaseModel):
 
 
 @router.get('/api/workspace/partners')
-def partners(q: str = '', party_type: str = '', user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    rights(user)
+def partners(q: str = '', party_type: str = '', launch_id: str = '', folder_slug: str = '',
+             user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    rights(user, db)
+    if launch_id:
+        must_access(db, user, launch_id)
+        if folder_slug not in readable_folders(user, launch_id):
+            raise HTTPException(403, 'Accès interdit à ce sous-dossier')
     needle = norm(q)
     rows = db.scalars(select(BusinessPartner).order_by(BusinessPartner.name)).all()
     result = []
@@ -151,7 +175,14 @@ def partners(q: str = '', party_type: str = '', user: User = Depends(get_current
     for row in rows:
         scoped = scoped_partner(db, user, row, allowed)
         if scoped is None:
-            continue
+            # Dans le formulaire d'un sous-dossier autorisé, un partenaire
+            # déjà lié à la même commande peut être sélectionné, sans exposer
+            # ses retours ni ceux d'autres rubriques.
+            linked_here = launch_id and db.scalar(select(LaunchPartner.id).where(
+                LaunchPartner.launch_id == launch_id, LaunchPartner.partner_id == row.id))
+            if not linked_here:
+                continue
+            scoped = partner_out(row)
         if party_type and row.party_type != party_type:
             continue
         names = [row.normalized_name] + [a.normalized_name for a in db.scalars(select(PartnerAlias).where(PartnerAlias.partner_id == row.id))]
@@ -166,7 +197,7 @@ def partners(q: str = '', party_type: str = '', user: User = Depends(get_current
 
 @router.post('/api/workspace/partners', status_code=201)
 def create_partner(payload: PartnerInput, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    rights(user, True)
+    rights(user, db)
     name = payload.name.strip()
     normalized = norm(name)
     if len(normalized) < 2:
@@ -201,7 +232,7 @@ def create_partner(payload: PartnerInput, user: User = Depends(get_current_user)
 
 @router.get('/api/workspace/partners/{partner_id}')
 def partner_detail(partner_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    rights(user)
+    rights(user, db)
     row = db.get(BusinessPartner, partner_id)
     scoped = scoped_partner(db, user, row) if row else None
     if scoped is None:
@@ -240,7 +271,7 @@ def link_client_account(partner_id: str, payload: ClientLinkInput,
 
 @router.post('/api/launches/{launch_id}/partners', status_code=201)
 def link_partner(launch_id: str, payload: LinkInput, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    rights(user, True)
+    rights(user, db)
     must_access(db, user, launch_id)
     row = db.get(BusinessPartner, payload.partner_id)
     if not row or scoped_partner(db, user, row) is None:
@@ -258,15 +289,15 @@ def link_partner(launch_id: str, payload: LinkInput, user: User = Depends(get_cu
 
 @router.get('/api/launches/{launch_id}/partners')
 def launch_partners(launch_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    rights(user)
+    rights(user, db)
     must_access(db, user, launch_id)
     links = db.scalars(select(LaunchPartner).where(LaunchPartner.launch_id == launch_id)).all()
-    return [partner_out(db.get(BusinessPartner, link.partner_id)) for link in links]
+    return [scoped for link in links if (scoped := scoped_partner(db, user, db.get(BusinessPartner, link.partner_id))) is not None]
 
 
 @router.get('/api/workspace/partners/{partner_id}/vigilance')
 def vigilance(partner_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    rights(user)
+    rights(user, db)
     row = db.get(BusinessPartner, partner_id)
     scoped = scoped_partner(db, user, row) if row else None
     if scoped is None:
@@ -276,17 +307,28 @@ def vigilance(partner_id: str, user: User = Depends(get_current_user), db: Sessi
             'items': [note_out(db, n) for n in notes if n.category != 'retour' and n.importance in ('surveiller', 'important', 'critique')][:10]}
 
 
+@router.get('/api/workspace/business-memory/options')
+def memory_options(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    rights(user, db)
+    launches = memory_launches(db, user)
+    return {'can_create': bool(launches), 'can_general': is_chief(user),
+            'launches': [{'id': launch.id, 'name': launch.name, 'order_ref': launch.order_ref,
+                          'folders': readable_folders(user, launch.id)} for launch in launches]}
+
+
 @router.get('/api/workspace/business-memory')
 def memory(q: str = '', party_type: str = '', category: str = '', importance: str = '', status: str = '',
+           launch_id: str = '', folder_slug: str = '',
            date_from: date | None = None, date_to: date | None = None, sort: str = 'date',
            user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    rights(user)
+    rights(user, db)
     rows = scoped_notes(db, user)
     all_rows = rows
     needle = norm(q)
     rows = [r for r in rows if (not party_type or r.party_type == party_type)
             and (not category or r.category == category) and (not importance or r.importance == importance)
             and (not status or r.status == status)
+            and (not launch_id or r.launch_id == launch_id) and (not folder_slug or r.folder_slug == folder_slug)
             and (not date_from or (r.event_date or r.created_at.date()) >= date_from)
             and (not date_to or (r.event_date or r.created_at.date()) <= date_to)
             and (not needle or needle in norm(r.party_name + ' ' + r.body))]
@@ -305,35 +347,50 @@ def memory(q: str = '', party_type: str = '', category: str = '', importance: st
 
 @router.post('/api/workspace/business-memory', status_code=201)
 def create_note(payload: NoteInput, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    rights(user, True)
-    partner = db.get(BusinessPartner, payload.partner_id)
-    if not partner or scoped_partner(db, user, partner) is None:
-        raise HTTPException(404, 'Partenaire introuvable')
+    rights(user, db)
+    if not is_chief(user) and (not payload.launch_id or not payload.folder_slug):
+        raise HTTPException(422, 'Commande et sous-dossier obligatoires pour un collaborateur')
+    if not is_chief(user) and bool(payload.launch_id) != bool(payload.folder_slug):
+        raise HTTPException(422, 'Commande et sous-dossier doivent être renseignés ensemble')
     if payload.launch_id:
         must_access(db, user, payload.launch_id)
+        if payload.folder_slug and payload.folder_slug not in readable_folders(user, payload.launch_id):
+            raise HTTPException(403, 'Accès interdit à ce sous-dossier')
+    partner = db.get(BusinessPartner, payload.partner_id)
+    linked_to_target = bool(payload.launch_id and db.scalar(select(LaunchPartner.id).where(
+        LaunchPartner.launch_id == payload.launch_id, LaunchPartner.partner_id == payload.partner_id)))
+    if not partner or (scoped_partner(db, user, partner) is None and not linked_to_target):
+        raise HTTPException(404, 'Partenaire introuvable')
     if payload.evidence_version_id:
         version = db.get(DocumentVersion, payload.evidence_version_id)
         if not version or not payload.launch_id or version.document.folder.launch_id != payload.launch_id:
             raise HTTPException(422, 'Justificatif hors de la commande associée')
-        from .main import must
-        must(user, 'document.read', version.document.folder.slug)
+        if version.document.folder.slug != payload.folder_slug or version.document.folder.launch_id != payload.launch_id:
+            raise HTTPException(422, 'Justificatif hors du sous-dossier associé')
+        if version.document.folder.slug not in readable_folders(user, payload.launch_id):
+            raise HTTPException(403, 'Justificatif inaccessible')
     row = ExperienceNote(partner_id=partner.id, party_type=partner.party_type, party_name=partner.name,
                          author_id=user.id, **payload.model_dump(exclude={'partner_id'}))
     db.add(row)
+    if payload.launch_id and not linked_to_target:
+        db.add(LaunchPartner(launch_id=payload.launch_id, partner_id=partner.id))
     partner.last_activity = utcnow()
     from .main import audit
     db.flush()
-    audit(db, user, 'experience.note.create', 'experience_note', row.id, {'partner_id': partner.id, 'launch_id': row.launch_id})
+    audit(db, user, 'experience.note.create', 'experience_note', row.id,
+          {'partner_id': partner.id, 'launch_id': row.launch_id, 'folder_slug': row.folder_slug})
     db.commit()
     return note_out(db, row)
 
 
 @router.patch('/api/workspace/business-memory/{note_id}')
 def change_note(note_id: str, payload: NoteChange, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    rights(user, True)
+    rights(user, db)
     row = db.get(ExperienceNote, note_id)
-    if not row or (row.launch_id and row.launch_id not in visible_ids(db, user)):
+    if not row or not note_visible(user, row):
         raise HTTPException(404, 'Retour introuvable')
+    if not is_chief(user) and row.author_id != user.id:
+        raise HTTPException(403, 'Seul l’auteur peut corriger son retour')
     values = payload.model_dump(exclude_unset=True, exclude={'reason'})
     if not values:
         raise HTTPException(422, 'Aucune modification')
@@ -352,18 +409,18 @@ def change_note(note_id: str, payload: NoteChange, user: User = Depends(get_curr
 
 @router.get('/api/workspace/business-memory/{note_id}')
 def get_note(note_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    rights(user)
+    rights(user, db)
     row = db.get(ExperienceNote, note_id)
-    if not row or (row.launch_id and row.launch_id not in visible_ids(db, user)):
+    if not row or not note_visible(user, row):
         raise HTTPException(404, 'Retour introuvable')
     return note_out(db, row)
 
 
 @router.get('/api/workspace/business-memory/{note_id}/decisions')
 def decisions(note_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    rights(user)
+    rights(user, db)
     row = db.get(ExperienceNote, note_id)
-    if not row or (row.launch_id and row.launch_id not in visible_ids(db, user)):
+    if not row or not note_visible(user, row):
         raise HTTPException(404, 'Retour introuvable')
     return [{'action': d.action, 'reason': d.reason, 'actor': db.get(User, d.actor_id).name,
              'created_at': d.created_at.isoformat()} for d in db.scalars(select(ExperienceDecision).where(

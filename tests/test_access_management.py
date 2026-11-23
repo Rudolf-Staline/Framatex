@@ -432,16 +432,80 @@ def test_18_business_memory_confidentiality(env):
     partner = chef.post('/api/workspace/partners', headers=H, json={'party_type': 'fournisseur', 'name': f"Fournisseur {env['tag']}"}).json()
     general = chef.post('/api/workspace/business-memory', headers=H, json={
         'partner_id': partner['id'], 'category': 'retard', 'event_date': '2026-11-01', 'body': 'Note generale fournisseur visible'}).json()
+    visible = chef.post('/api/workspace/business-memory', headers=H, json={
+        'partner_id': partner['id'], 'launch_id': L['001'], 'folder_slug': 'jaune', 'category': 'qualite', 'event_date': '2026-11-02',
+        'body': 'Note technique commande 001'}).json()
     secret = chef.post('/api/workspace/business-memory', headers=H, json={
-        'partner_id': partner['id'], 'launch_id': L['002'], 'category': 'qualite', 'event_date': '2026-11-02',
+        'partner_id': partner['id'], 'launch_id': L['001'], 'folder_slug': 'bleu', 'category': 'qualite', 'event_date': '2026-11-02',
         'body': 'Note confidentielle commande 002'}).json()
-    assert general['id'] and secret['id']
-    a, c = login(env, 'a'), login(env, 'c')
+    assert general['id'] and visible['id'] and secret['id']
+    a = login(env, 'a')
     items = a.get('/api/workspace/business-memory').json()['items']
     ids = {i['id'] for i in items}
-    assert general['id'] in ids and secret['id'] not in ids          # A : Technique de 001, pas 002
+    assert visible['id'] in ids and general['id'] not in ids and secret['id'] not in ids
     assert a.get(f"/api/workspace/business-memory/{secret['id']}").status_code in (403, 404)
-    assert c.get('/api/workspace/business-memory').status_code == 403   # C : aucune commande
+    assert a.get(f"/api/workspace/business-memory/{general['id']}").status_code in (403, 404)
+
+
+def test_18b_business_memory_is_scoped_to_current_folder_and_read_permission(env):
+    """Lire un sous-dossier permet de contribuer à sa mémoire, sans droit de dépôt."""
+    chef, L = env['chef'], env['launches']
+    assign(env, 'a', '001', {'jaune': ['document.read']})
+    assign(env, 'b', '001', {'rose': ['document.read']})
+    assign(env, 'c', '001', {'bleu': ['document.read', 'document.write']})
+    assign(env, 'd', '001', {'vert': DEPOT})
+    partner = chef.post('/api/workspace/partners', headers=H, json={
+        'party_type': 'atelier', 'name': f"Atelier mémoire {env['tag']}"}).json()
+    clients = {key: login(env, key) for key in ('a', 'b', 'c', 'd')}
+    folders = {'a': 'jaune', 'b': 'rose', 'c': 'bleu', 'd': 'vert'}
+    notes = {}
+    for key, folder in folders.items():
+        response = clients[key].post('/api/workspace/business-memory', headers=H, json={
+            'partner_id': partner['id'], 'launch_id': L['001'], 'folder_slug': folder,
+            'category': 'incident', 'event_date': '2026-11-20',
+            'body': f'Incident observé dans le sous-dossier {folder} par le technicien {key}.',
+        })
+        assert response.status_code == 201, response.text
+        notes[key] = response.json()
+        assert response.json()['folder_slug'] == folder
+
+    # A est lecteur Jaune : il peut créer/corriger son observation, mais ne voit
+    # ni Rose, Bleu, Vert ni les notes générales ou historiques non classées.
+    a_items = {row['id'] for row in clients['a'].get('/api/workspace/business-memory').json()['items']}
+    assert notes['a']['id'] in a_items
+    assert not {notes['b']['id'], notes['c']['id'], notes['d']['id']} & a_items
+    assert clients['a'].get(f"/api/workspace/business-memory/{notes['c']['id']}").status_code == 404
+    assert clients['a'].post('/api/workspace/business-memory', headers=H, json={
+        'partner_id': partner['id'], 'launch_id': L['001'], 'folder_slug': 'bleu',
+        'category': 'incident', 'event_date': '2026-11-20', 'body': 'Tentative dans une rubrique interdite.'}).status_code == 403
+    assert clients['a'].patch(f"/api/workspace/business-memory/{notes['b']['id']}", headers=H, json={
+        'body': 'Tentative de modification du retour Rose d’un autre collaborateur.',
+        'reason': 'Cette modification doit être refusée.'}).status_code == 404
+    own = clients['a'].patch(f"/api/workspace/business-memory/{notes['a']['id']}", headers=H, json={
+        'body': 'Incident Jaune corrigé par son auteur avec une description factuelle complète.',
+        'reason': 'Précision ajoutée après vérification terrain.'})
+    assert own.status_code == 200 and own.json()['author']
+
+    # Les options et statistiques ne peuvent pas déduire les autres sous-dossiers.
+    options = clients['a'].get('/api/workspace/business-memory/options').json()
+    own_launch = next(row for row in options['launches'] if row['id'] == L['001'])
+    assert own_launch['folders'] == ['jaune'] and options['can_create'] is True
+    detail = clients['a'].get(f"/api/workspace/partners/{partner['id']}").json()
+    assert detail['counts']['incident'] == 1 and [row['id'] for row in detail['notes']] == [notes['a']['id']]
+    assert clients['a'].get('/api/workspace/business-memory', params={'q': 'sous-dossier bleu'}).json()['items'] == []
+
+    # Une révocation est effective dès la requête suivante.
+    assert assign(env, 'a', '001', {})['folders'] == {}
+    assert assign(env, 'a', '003', {})['folders'] == {}
+    assert clients['a'].get('/api/workspace/business-memory').status_code == 403
+    # Remet le jeu de données partagé dans l'état attendu par les scénarios
+    # historiques suivants.
+    assign(env, 'a', '001', {'jaune': DEPOT, 'rose': ['document.read']})
+    assign(env, 'a', '003', {'bleu': ['document.read'], 'vert': ['document.read', 'document.download']})
+    assign(env, 'b', '001', {'bleu': ['document.read']})
+    assign(env, 'b', '002', {s: ['document.read', 'document.download'] for s in ('jaune', 'rose', 'bleu', 'vert')})
+    assign(env, 'c', '001', {})
+    assign(env, 'd', '001', {'jaune': ['document.read']})
 
 
 def test_19_notification_recipients(env):

@@ -4,17 +4,18 @@ const BM_CATEGORY={incident:'Incident',retard:'Retard de livraison',qualite:'Non
 const BM_IMPORTANCE={information:'Information',surveiller:'À surveiller',important:'Important',critique:'Critique'};
 const BM_STATUS={open:'Ouvert',resolved:'Résolu'};
 const BM_TYPE={client:'Client',fournisseur:'Fournisseur',atelier:'Atelier'};
+const BM_FOLDER={jaune:'Jaune · Technique',rose:'Rose · Réception',bleu:'Bleu · Douane',vert:'Vert · Facturation'};
 const bmDay=value=>value?opsDay(value):'—';
 const bmOptions=(items,empty)=>`<option value="">${empty}</option>${items.map(([key,label])=>`<option value="${e(key)}">${e(label)}</option>`).join('')}`;
 
-function bmBindSearch(root,{type,selection,showCreate=true}){
+function bmBindSearch(root,{type,selection,showCreate=true,scope=()=>({})}){
  const input=root.querySelector('[data-bm-search]'),results=root.querySelector('[data-bm-results]');
  let timer=0,token=0;
  const lookup=async()=>{
   const t=++token,query=input.value.trim();
   selection(null);
   if(query.length<2){results.innerHTML='';return}
-  const rows=await api('/api/workspace/partners?'+new URLSearchParams({q:query,party_type:type()}));
+  const rows=await api('/api/workspace/partners?'+new URLSearchParams({q:query,party_type:type(),...scope()}));
   if(t!==token||!results.isConnected)return;
   results.innerHTML=rows.map(row=>`<button class="bm-choice" type="button" data-bm-id="${e(row.id)}"><strong>${e(row.name)}</strong><small>${e(BM_TYPE[row.party_type])} · ${row.match==='exact'?'Correspondance exacte':'Vérifier la correspondance'}</small></button>`).join('')
    +(showCreate?`<button class="bm-choice bm-new" type="button" data-bm-new>+ Créer « ${e(query)} » après vérification</button>`:'');
@@ -31,7 +32,7 @@ function bmBindSearch(root,{type,selection,showCreate=true}){
 function bmNoteCard(row,actions=false){
  return `<article class="bm-note"><div class="bm-note-head"><strong>${e(BM_CATEGORY[row.category]||row.category)}</strong><span class="ops-pill ${row.status==='resolved'?'ok':'warn'}">${e(BM_STATUS[row.status]||row.status)}</span><span class="ops-pill">${e(BM_IMPORTANCE[row.importance]||row.importance)}</span></div>
  <p>${e(row.body)}</p>${row.recommendation?`<p class="bm-recommend"><strong>Action recommandée :</strong> ${e(row.recommendation)}</p>`:''}
- <small>${bmDay(row.event_date||row.created_at)} · ${e(row.author)}${row.launch_id?` · ${e(row.order_ref||'Commande associée')}`:' · Note générale'}</small>
+ <small>${bmDay(row.event_date||row.created_at)} · ${e(row.author)}${row.launch_id?` · ${e(row.order_ref||'Commande associée')}${row.folder_slug?` · ${e(BM_FOLDER[row.folder_slug]||row.folder_slug)}`:''}`:' · Note générale'}</small>
  <div class="bm-links">${row.launch_id?`<button class="link" data-bm-order="${e(row.launch_id)}">Ouvrir la commande</button>`:''}
  ${row.evidence_version_id?`<button class="link" data-bm-proof="${e(row.evidence_version_id)}">Voir le justificatif</button>`:''}
  ${actions?`<button class="link" data-bm-edit="${e(row.id)}">Corriger / clôturer</button>`:''}</div></article>`;
@@ -71,9 +72,13 @@ function bmBindContext(root){root.querySelectorAll('[data-bm-partner]').forEach(
 
 operationsExperience=async function(){
  state.view='experience';
- mount(`${opsHeading('Mémoire métier','Retours d’expérience internes et fiches partenaires, selon vos habilitations.',can('document.write','jaune')?'<button class="primary" id="bm-add">+ Ajouter un retour</button>':'')}
+ const access=await api('/api/workspace/business-memory/options');
+ const launchOptions=access.launches.map(l=>`<option value="${e(l.id)}">${e(l.order_ref||l.name)}</option>`).join('');
+ mount(`${opsHeading('Mémoire métier','Retours d’expérience internes et fiches partenaires, selon vos habilitations.',access.can_create?'<button class="primary" id="bm-add">+ Ajouter un retour</button>':'')}
  <section class="bm-metrics" id="bm-stats" aria-label="Indicateurs réels"></section>
  <form class="ops-filters bm-filters" id="bm-filters">${opsField('q','Rechercher')}
+ <div class="field"><label for="launch_id">Commande</label><select id="launch_id" name="launch_id"><option value="">Toutes les commandes</option>${launchOptions}</select></div>
+ <div class="field"><label for="folder_slug">Sous-dossier</label><select id="folder_slug" name="folder_slug"><option value="">Tous les sous-dossiers</option>${Object.entries(BM_FOLDER).map(([key,label])=>`<option value="${key}">${label}</option>`).join('')}</select></div>
  <div class="field"><label for="party_type">Partenaire</label><select id="party_type" name="party_type">${bmOptions(Object.entries(BM_TYPE),'Tous')}</select></div>
  <div class="field"><label for="category">Catégorie</label><select id="category" name="category">${bmOptions(Object.entries(BM_CATEGORY),'Toutes')}</select></div>
  <div class="field"><label for="importance">Importance</label><select id="importance" name="importance">${bmOptions(Object.entries(BM_IMPORTANCE),'Toutes')}</select></div>
@@ -92,11 +97,13 @@ operationsExperience=async function(){
  app.querySelector('#bm-add')?.addEventListener('click',()=>operationsAddNote());await draw();
 };
 
-operationsAddNote=async function(launchId=null){
- const launches=await api('/api/launches');
+operationsAddNote=async function(launchId=null,folderSlug=null){
+ const access=await api('/api/workspace/business-memory/options');
+ const launches=launchId?access.launches.filter(l=>l.id===launchId):access.launches;
+ if(!access.can_create||!launches.length){toast('Aucun sous-dossier accessible pour enregistrer un retour.');return}
  modal('Ajouter un retour métier',`<form id="bm-note-form" class="bm-form">
  <div class="two-fields"><div class="field"><label for="bm-type">Type de partenaire</label><select id="bm-type">${Object.entries(BM_TYPE).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div><div class="field"><label for="bm-partner-search">Partenaire</label><input id="bm-partner-search" data-bm-search autocomplete="off" required placeholder="Rechercher ou créer"><div class="bm-suggestions" data-bm-results></div></div></div>
- <div class="field"><label for="bm-launch">Commande associée</label><select id="bm-launch"><option value="">Retour général · sans commande</option>${launches.map(l=>`<option value="${e(l.id)}" ${l.id===launchId?'selected':''}>${e(l.order_ref||l.name)}</option>`).join('')}</select></div>
+ <div class="two-fields"><div class="field"><label for="bm-launch">Commande concernée</label><select id="bm-launch" required>${access.can_general?'<option value="">Retour général · chef uniquement</option>':''}${launches.map(l=>`<option value="${e(l.id)}" ${l.id===launchId?'selected':''}>${e(l.order_ref||l.name)}</option>`).join('')}</select></div><div class="field"><label for="bm-folder">Sous-dossier concerné</label><select id="bm-folder" required></select></div></div>
  <div class="two-fields"><div class="field"><label for="bm-category">Catégorie</label><select id="bm-category">${Object.entries(BM_CATEGORY).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div><div class="field"><label for="bm-event-date">Date de l’événement</label><input id="bm-event-date" type="date" required value="${new Date().toISOString().slice(0,10)}"></div></div>
  <div class="field"><label for="bm-body">Description factuelle</label><textarea id="bm-body" minlength="12" maxlength="2000" required placeholder="Décrivez les faits observés et leur contexte."></textarea></div>
  <div class="two-fields"><div class="field"><label for="bm-importance">Importance</label><select id="bm-importance">${Object.entries(BM_IMPORTANCE).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div><div class="field"><label for="bm-status">Statut</label><select id="bm-status">${Object.entries(BM_STATUS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div></div>
@@ -104,13 +111,14 @@ operationsAddNote=async function(launchId=null){
  <div class="field"><label for="bm-evidence">Document justificatif existant · facultatif</label><select id="bm-evidence"><option value="">Aucun</option></select></div>
  <button class="primary" type="submit">Enregistrer le retour</button></form>`,true);
  let selected=null;const type=overlay.querySelector('#bm-type');const name=overlay.querySelector('#bm-partner-search');
- bmBindSearch(overlay,{type:()=>type.value,selection:row=>{selected=row}});
+ bmBindSearch(overlay,{type:()=>type.value,selection:row=>{selected=row},scope:()=>({launch_id:overlay.querySelector('#bm-launch').value,folder_slug:overlay.querySelector('#bm-folder').value})});
  type.onchange=()=>{selected=null;name.value='';overlay.querySelector('[data-bm-results]').innerHTML=''};
- const order=overlay.querySelector('#bm-launch'),evidence=overlay.querySelector('#bm-evidence');
- const loadEvidence=async()=>{evidence.innerHTML='<option value="">Aucun</option>';if(!order.value)return;try{const detail=await api(`/api/launches/${order.value}`);evidence.insertAdjacentHTML('beforeend',detail.folders.filter(f=>f.can_read).flatMap(f=>f.documents.flatMap(d=>d.versions.map(v=>`<option value="${e(v.id)}">${e(d.title)} · V${v.number}</option>`))).join(''))}catch(error){showErr(error)}};
- order.onchange=loadEvidence;await loadEvidence();
+ const order=overlay.querySelector('#bm-launch'),folder=overlay.querySelector('#bm-folder'),evidence=overlay.querySelector('#bm-evidence');
+ const loadFolders=()=>{const launch=access.launches.find(l=>l.id===order.value);const folders=launch?.folders||[];folder.innerHTML=folders.map(slug=>`<option value="${slug}" ${slug===folderSlug?'selected':''}>${e(BM_FOLDER[slug])}</option>`).join('');folder.disabled=!folders.length};
+ const loadEvidence=async()=>{evidence.innerHTML='<option value="">Aucun</option>';if(!order.value||!folder.value)return;try{const detail=await api(`/api/launches/${order.value}`);evidence.insertAdjacentHTML('beforeend',detail.folders.filter(f=>f.slug===folder.value&&f.can_read).flatMap(f=>f.documents.flatMap(d=>d.versions.map(v=>`<option value="${e(v.id)}">${e(d.title)} · V${v.number}</option>`))).join(''))}catch(error){showErr(error)}};
+ order.onchange=async()=>{loadFolders();await loadEvidence()};folder.onchange=loadEvidence;loadFolders();await loadEvidence();
  overlay.querySelector('#bm-note-form').onsubmit=async event=>{event.preventDefault();if(!selected){toast('Sélectionnez ou créez la fiche partenaire.');return}try{
-  await api('/api/workspace/business-memory',{method:'POST',body:JSON.stringify({partner_id:selected.id,launch_id:order.value||null,category:val('bm-category'),event_date:val('bm-event-date'),body:val('bm-body'),importance:val('bm-importance'),status:val('bm-status'),recommendation:val('bm-recommendation')||null,evidence_version_id:evidence.value||null})});
+  await api('/api/workspace/business-memory',{method:'POST',body:JSON.stringify({partner_id:selected.id,launch_id:order.value||null,folder_slug:folder.value||null,category:val('bm-category'),event_date:val('bm-event-date'),body:val('bm-body'),importance:val('bm-importance'),status:val('bm-status'),recommendation:val('bm-recommendation')||null,evidence_version_id:evidence.value||null})});
   closeModal();toast('Retour enregistré dans la mémoire métier');if(launchId)await openLaunch(launchId,state.folder);else await operationsExperience();
  }catch(error){showErr(error)}};
 };
@@ -138,6 +146,15 @@ djBind=function(){
  bmBindContext(app);
  app.querySelector('#bm-link-partner')?.addEventListener('click',()=>bmLinkPartner(state.detail.id));
  app.querySelectorAll('[data-bm-passport]').forEach(b=>b.onclick=()=>paperPassport(b.dataset.bmPassport));
+ // Le bouton est décidé par l'API sur la commande et le sous-dossier ouverts,
+ // jamais par le droit de dépôt Jaune ou une permission d'une autre commande.
+ api('/api/workspace/business-memory/options').then(access=>{
+  const launch=access.launches.find(item=>item.id===state.detail?.id);
+  if(!launch||!launch.folders.includes(state.folder)||app.querySelector('#bm-add-folder-note'))return;
+  const host=app.querySelector('.dj-head-actions');if(!host)return;
+  const button=document.createElement('button');button.id='bm-add-folder-note';button.type='button';button.className='secondary';button.textContent='+ Ajouter un retour';
+  button.onclick=()=>operationsAddNote(state.detail.id,state.folder).catch(showErr);host.prepend(button);
+ }).catch(()=>{});
 };
 async function bmLinkPartner(launchId){
  modal('Associer un partenaire à la commande',`<form id="bm-link-form"><div class="field"><label for="bm-link-type">Type</label><select id="bm-link-type"><option value="fournisseur">Fournisseur</option><option value="atelier">Atelier</option><option value="client">Client</option></select></div>
