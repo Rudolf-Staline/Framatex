@@ -11,7 +11,7 @@ function materialSourceOptions(folder){
 }
 function materialEvidenceSelect(slug){
  const sources=materialSourceOptions(slug);
- return `<div class="field"><label for="mat-source">Version du justificatif (${e(slug==='jaune'?'Technique · Jaune':'Réception · Rose')})</label><select id="mat-source" required><option value="">Sélectionner une version</option>${sources.map(v=>`<option value="${e(v.id)}">${e(v.label)}</option>`).join('')}</select>${sources.length?'':'<small>Déposez d’abord une pièce dans le sous-dossier concerné.</small>'}</div>`;
+ return `<div class="field"><label for="mat-source">Version du justificatif (${e(slug==='jaune'?'Sous-dossier jaune':'Sous-dossier rose')})</label><select id="mat-source" required><option value="">Sélectionner une version</option>${sources.map(v=>`<option value="${e(v.id)}">${e(v.label)}</option>`).join('')}</select>${sources.length?'':'<small>Déposez d’abord une pièce dans le sous-dossier concerné.</small>'}</div>`;
 }
 function materialSourceCell(source){
  if(!source||!source.available)return '<span class="tag orange">Source indisponible</span>';
@@ -61,7 +61,7 @@ function materialRevision(lineId){
 function materialMovement(lineId,kind){
  const line=state.materials?.lines.find(x=>x.id===lineId);if(!line)return;
  const receipt=kind==='received',slug=receipt?'rose':'jaune';
- modal((receipt?'Réception':'Commande')+' · '+line.label,`<p class="modal-desc">Saisie contrôlée en ${e(line.unit)}. La pièce justificative doit être déposée dans le sous-dossier ${receipt?'Rose':'Jaune'}. Aucun mouvement de stock ORLI n’est créé.</p><form id="material-movement-form">${materialFormBase(slug)}<div class="two-fields"><div class="field"><label for="mat-counterparty">Fournisseur / interlocuteur</label><input id="mat-counterparty" maxlength="140"></div><div class="field"><label for="mat-movement-ref">Référence bon / commande</label><input id="mat-movement-ref" maxlength="100"></div></div><div class="modal-actions"><button type="button" class="secondary" id="material-cancel-form">Annuler</button><button class="primary" type="submit">Enregistrer</button></div></form>`,true);
+ modal((receipt?'Réception':'Commande')+' · '+line.label,`<p class="modal-desc">Saisie contrôlée en ${e(line.unit)}. La pièce justificative doit être déposée dans le ${receipt?'sous-dossier rose':'sous-dossier jaune'}. Aucun mouvement de stock ORLI n’est créé.</p><form id="material-movement-form">${materialFormBase(slug)}<div class="two-fields"><div class="field"><label for="mat-counterparty">Fournisseur / interlocuteur</label><input id="mat-counterparty" maxlength="140"></div><div class="field"><label for="mat-movement-ref">Référence bon / commande</label><input id="mat-movement-ref" maxlength="100"></div></div><div class="modal-actions"><button type="button" class="secondary" id="material-cancel-form">Annuler</button><button class="primary" type="submit">Enregistrer</button></div></form>`,true);
  bindMaterialForm('material-movement-form',`/api/launches/${state.detail.id}/materials/${line.id}/movements`,'POST',()=>({kind,counterparty:overlay.querySelector('#mat-counterparty').value,reference:overlay.querySelector('#mat-movement-ref').value}));
  if(!receipt)overlay.querySelector('#mat-quantity').min='0.001';else overlay.querySelector('#mat-quantity').min='0.001';
 }

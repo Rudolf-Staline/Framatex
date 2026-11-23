@@ -1,6 +1,6 @@
 'use strict';
 // Compléments métier : mêmes sessions, mêmes modules et mêmes autorisations.
-const OPS_FOLDERS={jaune:'JAUNE / TECHNIQUE',rose:'ROSE / RÉCEPTION',bleu:'BLEU / DÉDOUANEMENT',vert:'VERT / FACTURES'};
+const OPS_FOLDERS={jaune:'SOUS-DOSSIER JAUNE',rose:'SOUS-DOSSIER ROSE',bleu:'SOUS-DOSSIER BLEU',vert:'SOUS-DOSSIER VERT'};
 const OPS_STATES={complete:'Complet',incomplete:'Incomplet',partial:'Vue partielle',unconfigured:'Sans profil',not_due:'Non exigible'};
 const OPS_REVIEWS={to_review:'À vérifier',approved:'Validé',rejected:'Rejeté',changes_requested:'Correction nécessaire'};
 AREA_TARGETS.quality='.quality-root';AREA_TARGETS.approvals='.approval-section';

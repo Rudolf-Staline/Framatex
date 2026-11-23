@@ -54,7 +54,7 @@ ctx.GROUP = {sha256: 'a'.repeat(64), reviewed: false, documents: [
 run(`state.djDuplicates = [GROUP]; state.folder = 'jaune'`);
 const dup = row('Dossier technique client');
 assert(dup.includes('Doublon détecté') && dup.includes('data-dj-duplicate="' + 'a'.repeat(64) + '"') && dup.includes('data-state="duplicate"'));
-assert(dup.includes('Contenu identique à « Copie &lt;b&gt;DT&lt;/b&gt; » (Réception)') && !dup.includes('<b>DT'));
+assert(dup.includes('Contenu identique à « Copie &lt;b&gt;DT&lt;/b&gt; » (Sous-dossier rose)') && !dup.includes('<b>DT'));
 assert.equal(run(`djFolderStats('rose').duplicates`), 1);
 assert.equal(run(`djFolderStats('jaune').present`), 1);
 run(`state.djDuplicates = [{...GROUP, reviewed: true}]`);

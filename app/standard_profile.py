@@ -16,8 +16,8 @@ from sqlalchemy import select
 from .completeness_models import CompletenessProfile, LaunchCompleteness, RequirementRule
 
 STANDARD_PROFILE_NAME = "Dossier Jaune FRAMATEX standard"
-STANDARD_PROFILE_DESCRIPTION = ("Checklist documentaire par défaut des Dossiers Jaunes : technique, réception, "
-                                "dédouanement et factures, selon l'étape de la commande.")
+STANDARD_PROFILE_DESCRIPTION = ("Checklist documentaire par défaut des Dossiers Jaunes : sous-dossier jaune, rose, "
+                                "bleu et vert, selon l'étape de la commande.")
 
 # (sous-dossier, libellé de la checklist, type documentaire, exigible dès, validation requise, obligatoire)
 STANDARD_RULES = [

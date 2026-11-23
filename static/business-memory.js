@@ -4,7 +4,7 @@ const BM_CATEGORY={incident:'Incident',retard:'Retard de livraison',qualite:'Non
 const BM_IMPORTANCE={information:'Information',surveiller:'À surveiller',important:'Important',critique:'Critique'};
 const BM_STATUS={open:'Ouvert',resolved:'Résolu'};
 const BM_TYPE={client:'Client',fournisseur:'Fournisseur',atelier:'Atelier'};
-const BM_FOLDER={jaune:'Jaune · Technique',rose:'Rose · Réception',bleu:'Bleu · Douane',vert:'Vert · Facturation'};
+const BM_FOLDER={jaune:'Sous-dossier jaune',rose:'Sous-dossier rose',bleu:'Sous-dossier bleu',vert:'Sous-dossier vert'};
 const bmDay=value=>value?opsDay(value):'—';
 const bmOptions=(items,empty)=>`<option value="">${empty}</option>${items.map(([key,label])=>`<option value="${e(key)}">${e(label)}</option>`).join('')}`;
 

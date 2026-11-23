@@ -30,7 +30,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import object_session
 
 FOLDERS = ("jaune", "rose", "bleu", "vert")
-FOLDER_NAMES = {"jaune": "Technique (Jaune)", "rose": "Réception (Rose)", "bleu": "Dédouanement (Bleu)", "vert": "Factures (Vert)"}
+FOLDER_NAMES = {"jaune": "Sous-dossier jaune", "rose": "Sous-dossier rose", "bleu": "Sous-dossier bleu", "vert": "Sous-dossier vert"}
 
 # Actions attribuables par sous-dossier, dans l'ordre d'affichage.
 ACTION_CATALOG = [

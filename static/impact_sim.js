@@ -7,7 +7,7 @@ function simNumber(value){
  return Number.isFinite(n)?new Intl.NumberFormat('fr-FR',{maximumFractionDigits:4}).format(n):'Non calculable';
 }
 function simGraphHtml(graph){
- if(!graph||graph.limited)return `<p class="sim-empty">Le graphe technique est réservé aux utilisateurs habilités à consulter le sous-dossier Jaune.</p>`;
+ if(!graph||graph.limited)return `<p class="sim-empty">Le graphe technique est réservé aux utilisateurs habilités à consulter le sous-dossier jaune.</p>`;
  const inputs=graph.nodes.filter(x=>x.kind==='input');
  const outputs=graph.nodes.filter(x=>x.kind==='derived');
  const processes=graph.nodes.filter(x=>x.kind==='process');

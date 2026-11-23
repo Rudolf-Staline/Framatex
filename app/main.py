@@ -41,7 +41,7 @@ from .workflow import emit_document_impacts, latest_review
 from .document_intake_models import DocumentIdentification
 from .upload_limits import InternalUploadBodyLimit, MIB, upload_limit, limits_mib
 
-FOLDERS = [("jaune", "Technique"), ("rose", "Réception"), ("bleu", "Douane"), ("vert", "Facturation")]
+FOLDERS = [("jaune", "Sous-dossier jaune"), ("rose", "Sous-dossier rose"), ("bleu", "Sous-dossier bleu"), ("vert", "Sous-dossier vert")]
 SLUGS = {slug for slug, _ in FOLDERS}
 ACTIONS = {"launch.read", "launch.create", "launch.update", "document.read", "document.download",
            "document.write", "document.version", "document.comment", "controls.read", "audit.read",

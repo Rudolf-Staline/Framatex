@@ -3,7 +3,7 @@
 // commande, changement obligatoire du mot de passe temporaire, « Mon compte ».
 // Toutes les règles sont vérifiées par le serveur ; cet écran ne fait que les présenter.
 
-const ACC_FOLDERS = [['jaune', 'Jaune', 'Technique'], ['rose', 'Rose', 'Réception'], ['bleu', 'Bleu', 'Dédouanement'], ['vert', 'Vert', 'Factures']];
+const ACC_FOLDERS = [['jaune', 'Jaune', 'Sous-dossier jaune'], ['rose', 'Rose', 'Sous-dossier rose'], ['bleu', 'Bleu', 'Sous-dossier bleu'], ['vert', 'Vert', 'Sous-dossier vert']];
 const accState = {catalog: null, tab: 'people', filters: {launch: '', user: '', folder: ''}};
 
 // ------------------------------------------------------------------ permissions côté écran

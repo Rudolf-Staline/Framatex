@@ -386,7 +386,7 @@ def experience(party_type: str = "", q: str = "", user: User = Depends(get_curre
     from .access_control import access_mode, can
     if access_mode(user) != "assignments":
         must(user, "document.read", "jaune")
-    # Mémoire atelier liée au sous-dossier Technique : commandes où ce sous-dossier est consultable.
+    # Mémoire atelier liée au sous-dossier jaune : commandes où ce sous-dossier est consultable.
     allowed = {launch.id for launch in visible_launches(db, user) if can(user, "document.read", "jaune", launch.id)}
     if not allowed and access_mode(user) == "assignments":
         raise HTTPException(403, "Accès interdit : habilitation insuffisante")

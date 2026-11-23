@@ -5,10 +5,10 @@
 // ils sont rendus et liés comme avant, puis rangés dans des onglets.
 
 const DJ_FOLDERS = {
-  jaune: {name: 'Technique', color: 'Jaune', order: '01'},
-  rose: {name: 'Réception', color: 'Rose', order: '02'},
-  bleu: {name: 'Dédouanement', color: 'Bleu', order: '03'},
-  vert: {name: 'Factures', color: 'Vert', order: '04'},
+  jaune: {name: 'Sous-dossier jaune', color: 'jaune', order: '01'},
+  rose: {name: 'Sous-dossier rose', color: 'rose', order: '02'},
+  bleu: {name: 'Sous-dossier bleu', color: 'bleu', order: '03'},
+  vert: {name: 'Sous-dossier vert', color: 'vert', order: '04'},
 };
 // États affichés d'une ligne. « Doublon détecté » se superpose à l'état du moteur de
 // complétude (la pièce reste présente) tant que le doublon n'est pas examiné.
@@ -230,7 +230,7 @@ function djFolderTitle(slug) { return `Sous-dossier ${DJ_FOLDERS[slug].color}`; 
 function djFolderCards() {
   return `<div class="dj-folders" aria-label="Sous-dossiers">${state.detail.folders.map(folder => {
     const meta = DJ_FOLDERS[folder.slug];
-    const heading = `<span class="dj-folder-top"><span class="dj-folder-icon">${icon('folder')}</span><span><strong class="dj-folder-name">${djFolderTitle(folder.slug)}</strong><span class="dj-folder-function">${e(meta.name)}</span></span></span>`;
+    const heading = `<span class="dj-folder-top"><span class="dj-folder-icon">${icon('folder')}</span><span><strong class="dj-folder-name">${djFolderTitle(folder.slug)}</strong>${meta.name&&!meta.name.startsWith('Sous-dossier')?`<span class="dj-folder-function">${e(meta.name)}</span>`:''}</span></span>`;
     if (!folder.can_read) {
       return `<article class="folder-card dj-folder is-locked" data-folder="${folder.slug}">${heading}<span class="dj-folder-meta">${icon('lock')} ${e(folder.access_label || 'Accès restreint')}</span></article>`;
     }

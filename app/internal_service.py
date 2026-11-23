@@ -12,8 +12,8 @@ from .models import AuditEvent, Document, DocumentVersion, Folder, Launch, User
 from .workflow import latest_review
 from .workflow_models import BusinessValueRevision, ImpactAlert, ImpactRule
 
-FOLDER_LABELS = {"jaune": "JAUNE / TECHNIQUE", "rose": "ROSE / RÉCEPTION",
-                 "bleu": "BLEU / DÉDOUANEMENT", "vert": "VERT / FACTURES"}
+FOLDER_LABELS = {"jaune": "SOUS-DOSSIER JAUNE", "rose": "SOUS-DOSSIER ROSE",
+                 "bleu": "SOUS-DOSSIER BLEU", "vert": "SOUS-DOSSIER VERT"}
 DOCUMENT_TYPES = {
     "jaune": ["Dossier technique client", "Commande client", "Lancement provisoire",
               "Lancement définitif", "Fiche d’emploi", "Calcul du besoin", "Fiche de prix",

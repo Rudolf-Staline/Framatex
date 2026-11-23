@@ -24,7 +24,7 @@ def test_workspace_priorities_and_access():
     with TestClient(app) as c:
         with SessionLocal() as db:
             admin_role=Role(name="Administrateur")
-            rose_role=Role(name="Réception")
+            rose_role=Role(name="Sous-dossier rose")
             rose_role.grants.extend([RolePermission(action="launch.read",folder_slug=None),
                                     RolePermission(action="document.read",folder_slug="rose")])
             db.add_all([admin_role,rose_role]);db.flush()

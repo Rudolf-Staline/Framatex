@@ -231,7 +231,7 @@ def run_browser(output, base_url, email, password, ids):
 
         # Les anciens liens QR restent utilisables depuis la racine existante.
         page.goto('/#/launch/' + ids['B'])
-        expect(page.locator('.page-title')).to_have_text('Sous-dossier Jaune')
+        expect(page.locator('.page-title')).to_have_text('Sous-dossier jaune')
         expect(page.locator('#ops-launch-summary')).to_contain_text('FR-DEMO-2026-0142')
         for path in ('/', '/espace-framatex', '/espace-client', '/api/health'):
             assert context.request.get(path).ok

@@ -171,7 +171,7 @@ GUIDES = (
     ("workflow", ("validation", "impact", "modification", "historique", "version"), "Versions et décisions",
      "Ouvrez le dossier concerné, puis Versions et décisions pour examiner les changements et leur prise en compte.", "document.read", None),
     ("documents", ("deposer", "depot", "ajouter un document", "facture", "bon de livraison", "qr code", "scanner", "document"), "Dépôt et recherche documentaire",
-     "Dans Dossiers jaunes, ouvrez un lancement et choisissez son sous-dossier : Jaune (technique), Rose (réception), Bleu (douane), Vert (facturation). Le QR code ne donne jamais d'accès sans connexion.", "document.read", None),
+     "Dans Dossiers jaunes, ouvrez un lancement et choisissez le sous-dossier jaune, rose, bleu ou vert. Le QR code ne donne jamais d'accès sans connexion.", "document.read", None),
     ("priorities", ("priorite", "urgence", "tache", "action", "tableau de bord", "retard"), "Actions prioritaires",
      "La vue d'ensemble présente les actions issues des règles documentaires, alertes de modification, exigences, ambiguïtés et échéances d'engagement. Les priorités ne sont pas des décisions automatiques.", "launch.read", None),
     ("launches", ("creer un dossier", "ouvrir un dossier", "lancement", "orli", "commande"), "Dossiers de lancement",
@@ -223,10 +223,10 @@ def guide(payload: GuideRequest, user: User = Depends(get_current_user), db: Ses
             if "livraison" in phrase and not permitted(user,"document.read","rose"):
                 continue
             if "facture" in phrase and permitted(user,"document.read","vert"):
-                answer = "Les factures Framatex sont classées dans le sous-dossier Vert du lancement. Ouvrez ce dossier pour déposer ou retrouver la pièce."
+                answer = "Les factures Framatex sont classées dans le sous-dossier vert du lancement. Ouvrez ce dossier pour déposer ou retrouver la pièce."
                 folder = "vert"
             elif "livraison" in phrase and permitted(user,"document.read","rose"):
-                answer = "Un bon de livraison se classe dans le sous-dossier Rose. Vérifiez le lancement avant de confirmer le dépôt."
+                answer = "Un bon de livraison se classe dans le sous-dossier rose. Vérifiez le lancement avant de confirmer le dépôt."
                 folder = "rose"
             elif not any(permitted(user,"document.read",slug) for slug in ("jaune","rose","bleu","vert")):
                 continue

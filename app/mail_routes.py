@@ -1,7 +1,7 @@
 """0.8 — Archivage manuel .eml, suggestions et registre des engagements.
 
 Pas de connexion aux messageries ni d'envoi automatique. Droits de lecture
-fondés sur le sous-dossier Rose, décisions humaines et journal d'audit.
+fondés sur le sous-dossier rose, décisions humaines et journal d'audit.
 """
 from __future__ import annotations
 import json
@@ -87,7 +87,7 @@ async def import_email(launch_id:str,file:UploadFile=File(...),
     # Réinitialisation pour réutiliser le mécanisme éprouvé de stockage et de hash.
     await file.seek(0)
     rose=next((folder for folder in launch.folders if folder.slug=='rose'),None)
-    if rose is None:raise HTTPException(409,'Sous-dossier Rose absent')
+    if rose is None:raise HTTPException(409,'Sous-dossier rose absent')
     original,disk_name,size,sha,mime=await store_upload(file)
     try:
         doc=Document(folder_id=rose.id,title=('Email · '+parsed['subject'])[:220],doc_type='Courriel',created_by=user.id)

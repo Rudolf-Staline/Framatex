@@ -745,7 +745,7 @@ def run_checks(qa, base, password, ids, tmp):
     # Habilitations dynamiques (0013) : sans affectation, aucun accès ; le chef affecte la commande et le sous-dossier.
     collab_rights = {'folders': {'jaune': ['document.read', 'document.review']}}
     assigned = admin.put(f"/api/admin/collaborators/{created.json()['id']}/assignments/{scratch}", json=collab_rights)
-    qa.check('FRAMATEX', 'Habilitations : commande et sous-dossier Jaune affectés au collaborateur', assigned.status_code == 200, assigned.text)
+    qa.check('FRAMATEX', 'Habilitations : commande et sous-dossier jaune affectés au collaborateur', assigned.status_code == 200, assigned.text)
     collab = httpx.Client(base_url=base, headers=H, timeout=30)
     qa.check('FRAMATEX', 'Connexion d’un collaborateur non administrateur',
              collab.post('/api/auth/login', json={'email': 'controle@framatex.test', 'password': collab_pw}).status_code == 200)
@@ -779,7 +779,7 @@ def run_checks(qa, base, password, ids, tmp):
         assert collab.get(f'/api/launches/{scratch}').status_code == 404
         assert admin.delete(f'/api/launches/{scratch}/access/members/{uid}').status_code == 200
         assert admin.put(f'/api/launches/{scratch}/access', json={'restricted': False}).status_code == 200
-        # Réaffectation : accès rétabli, limité au sous-dossier Jaune.
+        # Réaffectation : accès rétabli, limité au sous-dossier jaune.
         assert admin.put(target, json=collab_rights).status_code == 200
         r = collab.get(f'/api/launches/{scratch}')
         assert r.status_code == 200 and {f['slug'] for f in r.json()['folders'] if f['can_read']} == {'jaune'}
