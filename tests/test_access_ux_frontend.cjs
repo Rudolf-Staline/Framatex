@@ -2,7 +2,9 @@
 const fs=require('fs'),assert=require('node:assert/strict');
 const access=fs.readFileSync('static/access-admin.js','utf8');
 const app=fs.readFileSync('static/app.js','utf8');
+const dossier=fs.readFileSync('static/dossier.js','utf8');
 const css=fs.readFileSync('static/brand/access.css','utf8');
+const dossierCss=fs.readFileSync('static/brand/dossier.css','utf8');
 
 // La matrice est individuelle : aucun préréglage global de « nouvelles cases ».
 assert(!access.includes('Droits des nouvelles cases'));
@@ -15,6 +17,9 @@ assert(access.includes("const actionsFor = key"));
 // Les détails de commande emploient les capacités de la commande courante,
 // pas une union de droits d'autres commandes.
 for(const capability of ['folder.access_label','f.can_download','f.can_write']) assert(app.includes(capability),capability);
+assert(dossier.includes("folder.access_label || 'Lecture seule'"));
+assert(dossier.includes("folder.access_label || 'Accès restreint'"));
+assert(dossierCss.includes('.dj-access-level'));
 for(const selector of ['.acc-level','.acc-matrix-guide','.acc-copy-option']) assert(css.includes(selector),selector);
 assert(css.includes('@media (max-width: 760px)'));
 console.log('UX accès : matrice individuelle, niveaux, confirmation et adaptation technicien OK');

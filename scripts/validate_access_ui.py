@@ -192,9 +192,12 @@ def run_browser(output, base, chef_email, chef_pw, checks, secrets_used, port):
         chef.evaluate('(id)=>openLaunch(id,"jaune")', launches['001'])
         chef.locator('#acc-assign').click()
         expect(chef.locator('.acc-matrix')).to_be_visible()
-        chef.select_option('#acc-preset', 'depot')
-        for key, folder in (('a', 'jaune'), ('a', 'rose'), ('b', 'bleu')):
-            chef.locator(f'[data-acc-cell="{users[techs[key]["email"]]}:{folder}"]').check()
+        # Chaque case dispose maintenant de son propre niveau : aucun préréglage
+        # global ne doit pouvoir attribuer des droits par accident.
+        for key, folder, level in (('a', 'jaune', 'depot'), ('a', 'rose', 'lecture'), ('b', 'bleu', 'depot')):
+            chef.select_option(f'#acc-level-{users[techs[key]["email"]]}-{folder}', level)
+        expect(chef.locator('.acc-matrix')).to_contain_text('Lecture seule')
+        expect(chef.locator('.acc-matrix')).to_contain_text('Dépôt sans validation')
         shot(chef, 'acces-06-matrice-commande')
         chef.locator('#acc-matrix-save').click()
         expect(chef.locator('.acc-matrix')).to_have_count(0)

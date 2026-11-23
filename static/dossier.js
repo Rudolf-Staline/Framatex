@@ -232,7 +232,7 @@ function djFolderCards() {
     const meta = DJ_FOLDERS[folder.slug];
     const heading = `<span class="dj-folder-top"><span class="dj-folder-icon">${icon('folder')}</span><span><strong class="dj-folder-name">${djFolderTitle(folder.slug)}</strong><span class="dj-folder-function">${e(meta.name)}</span></span></span>`;
     if (!folder.can_read) {
-      return `<article class="folder-card dj-folder is-locked" data-folder="${folder.slug}">${heading}<span class="dj-folder-meta">${icon('lock')} Accès restreint</span></article>`;
+      return `<article class="folder-card dj-folder is-locked" data-folder="${folder.slug}">${heading}<span class="dj-folder-meta">${icon('lock')} ${e(folder.access_label || 'Accès restreint')}</span></article>`;
     }
     const st = djFolderStats(folder.slug);
     const ratio = st.due ? Math.round(100 * st.present / st.due) : 0;
@@ -248,7 +248,7 @@ function djFolderCards() {
     return `<button class="folder-card dj-folder" type="button" data-folder="${folder.slug}">${heading}
       <span class="dj-folder-body"><span class="dj-folder-figure">${count}</span>${djRing(ratio)}</span>
       <span class="dj-bar dj-folder-bar"><span style="width:${ratio}%"></span></span>
-      <span class="dj-folder-meta">${notes}</span><span class="dj-folder-open">Ouvrir le sous-dossier ${icon('arrow')}</span></button>`;
+      <span class="dj-folder-meta"><span class="dj-access-level">${e(folder.access_label || 'Lecture seule')}</span>${notes}</span><span class="dj-folder-open">Ouvrir le sous-dossier ${icon('arrow')}</span></button>`;
   }).join('')}</div>`;
 }
 
