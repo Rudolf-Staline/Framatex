@@ -87,7 +87,11 @@ def run_browser(output, base_url, email, password, ids, browser=None):
         admin.locator(f'[data-ops-request="{order_id}"]').click()
         admin.locator('#cw-order-status').select_option('under_review')
         admin.locator('#cw-order-status-form button[type=submit]').click()
-        expect(admin.locator('#cw-order-status-form')).to_be_visible()
+        # La soumission reconstruit la fenêtre avec les données serveur. Attendre
+        # cet état fraîchement rendu évite de cliquer une action sur le DOM de la
+        # fenêtre précédente pendant son remplacement asynchrone.
+        expect(admin.locator('.modal')).to_contain_text('Statut de la demande : En cours d’étude')
+        expect(admin.locator('#cw-ask-document')).to_be_visible()
         assert client_a.request.get('/api/client/order-requests/' + order_id).json()['status'] == 'under_review'
         check('1–2 : création de demande puis étude FRAMATEX')
 

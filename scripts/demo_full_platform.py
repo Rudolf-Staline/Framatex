@@ -209,8 +209,11 @@ def full_journey(qa, browser, base, admin_password, captures):
             adm.click('#dj-folders-back')
             adm.click('#dj-edit-phase')
             adm.select_option('#c-phase', 'approvisionnement')
-            adm.locator('#context-form button[type=submit]').click()
-            adm.wait_for_selector('#ops-launch-summary')
+            with adm.expect_response(lambda response: response.request.method == 'PATCH' and response.url.endswith('/completeness/context')):
+                adm.locator('#context-form button[type=submit]').click()
+            # La modale est fermée seulement après le PATCH ; le résumé ne
+            # répète pas nécessairement le libellé de l'étape.
+            adm.wait_for_selector('#context-form', state='detached')
             assert admin.context.request.get(base + f'/api/launches/{launch_id}/completeness').json()['phase'] == 'approvisionnement'
             # A. Tableau de bord → Documents manquants → Réception → Bon de livraison → bonne ligne.
             nav(adm, 'home')
@@ -219,19 +222,19 @@ def full_journey(qa, browser, base, admin_password, captures):
             line.locator('[data-ops-target]').click()
             adm.wait_for_selector('[data-folder-panel="rose"]')
             adm.wait_for_selector('.dj-row:has-text("Bon de livraison") button:focus')
-            assert state_of('Bon de livraison') == 'Manquant'
+            assert state_of('Bon de livraison') == 'Manquant', state_of('Bon de livraison')
             admin.check_page('parcours-tableau-de-bord-vers-bon-de-livraison')
             # B. Dépôt depuis la ligne : modale préremplie → Présent, V1, retiré des manquants.
             row('Bon de livraison').locator('[data-dj-upload]').click()
-            assert adm.locator('#ops-folder').input_value() == 'rose'
-            assert adm.locator('#ops-type').input_value() == 'Bon de livraison'
+            assert adm.locator('#ops-folder').input_value() == 'rose', adm.locator('#ops-folder').input_value()
+            assert adm.locator('#ops-type').input_value() == 'Bon de livraison', adm.locator('#ops-type').input_value()
             first_delivery = f'BON DE LIVRAISON\nReference commande : {ref}\nQuantite livree : 100 pieces'.encode()
             adm.locator('#ops-file').set_input_files({'name': 'bl-v1.txt', 'mimeType': 'text/plain', 'buffer': first_delivery})
             adm.locator('#ops-upload-form button[type=submit]').click()
             adm.wait_for_selector('.dj-row:has-text("Bon de livraison") .dj-state:has-text("Présent")')
-            assert 'V1' in row('Bon de livraison').inner_text()
+            assert 'V1' in row('Bon de livraison').inner_text(), row('Bon de livraison').inner_text()
             missing = admin.context.request.get(base + '/api/workspace/dashboard').json()['missing_documents']
-            assert not any(m['launch_id'] == launch_id and m['title'] == 'Bon de livraison' for m in missing)
+            assert not any(m['launch_id'] == launch_id and m['title'] == 'Bon de livraison' for m in missing), missing
             # F. Le type seul ne suffit jamais. La référence commune permet de
             # proposer V2, puis le collaborateur choisit explicitement la version.
             adm.click('#upload-doc')
@@ -246,7 +249,7 @@ def full_journey(qa, browser, base, admin_password, captures):
             adm.wait_for_selector('.dj-row:has-text("Bon de livraison") td:has-text("V2")')
             report = admin.context.request.get(base + f'/api/launches/{launch_id}/completeness').json()
             delivery = next(r for r in report['rows'] if r['title'] == 'Bon de livraison')
-            assert delivery['status'] == 'present' and len(delivery['documents']) == 1 and delivery['documents'][0]['version'] == 2
+            assert delivery['status'] == 'present' and len(delivery['documents']) == 1 and delivery['documents'][0]['version'] == 2, delivery
             # E. Fiche de prix déposée → En validation → validée dans l'interface → Présent.
             adm.click('[data-dj-folder="jaune"]')
             row('Fiche de prix').locator('[data-dj-upload]').click()
@@ -257,7 +260,7 @@ def full_journey(qa, browser, base, admin_password, captures):
             adm.locator('#approve-form button[type=submit]').click()
             adm.wait_for_selector('.dj-row:has-text("Fiche de prix") .dj-state:has-text("Présent")')
             # Facultatif : jamais « Manquant ».
-            assert state_of('Emails techniques') == 'Non applicable' and 'Facultatif' in row('Emails techniques').inner_text()
+            assert state_of('Emails techniques') == 'Non applicable' and 'Facultatif' in row('Emails techniques').inner_text(), row('Emails techniques').inner_text()
             admin.check_page('parcours-checklist-technique')
             assert ref
         qa.run('Navigateur', 'Checklist Dossier Jaune : 22 pièces visibles dès la création, lien tableau de bord → ligne Bon de livraison, dépôt V1 puis V2, validation Fiche de prix', checklist_cases)
