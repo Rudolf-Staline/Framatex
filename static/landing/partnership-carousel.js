@@ -11,7 +11,7 @@
   var pauseBtn = root.querySelector('[data-pcar-pause]');
   var dialog = root.querySelector('.pcar-lightbox');
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-  var index = 0, timer = null, hovering = false, userPaused = reduce.matches, startX = null, swiped = false;
+  var index = 0, timer = null, hovering = false, userPaused = reduce.matches, startX = null, swiped = false, visible = false;
 
   function show(next, announce) {
     index = (next + slides.length) % slides.length;
@@ -25,7 +25,7 @@
     dots.forEach(function (dot, i) { if (i === index) dot.setAttribute('aria-current', 'true'); else dot.removeAttribute('aria-current'); });
     if (announce && status) status.textContent = 'Photographie ' + (index + 1) + ' sur ' + slides.length;
   }
-  function running() { return !userPaused && !hovering && !document.hidden && !(dialog && dialog.open); }
+  function running() { return visible && !userPaused && !hovering && !document.hidden && !(dialog && dialog.open); }
   function schedule() {
     clearTimeout(timer);
     if (running()) timer = setTimeout(function () { show(index + 1, false); schedule(); }, 5000);
@@ -87,6 +87,10 @@
     dialog.addEventListener('close', function () { slides[index].querySelector('.pcar-zoom').focus(); schedule(); });
   }
   reduce.addEventListener && reduce.addEventListener('change', function () { if (reduce.matches) { userPaused = true; syncPause(); } schedule(); });
+  // Défilement seulement quand le carrousel est visible : aucun travail hors écran.
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries) { visible = entries[0].isIntersecting; schedule(); }, {threshold: 0.25}).observe(root);
+  } else { visible = true; }
   root.classList.add('is-ready');
   show(0, false); syncPause(); schedule();
 })();
