@@ -63,6 +63,18 @@ def version_intake(version_id:str,user:User=Depends(get_current_user),db:Session
     result.pop('comparison_lines', None)
     result['identification'] = {'status': identification.status, 'justification': identification.justification} if identification else None
     result['version_id']=v.id
+    # Stable, access-checked envelope for a future local consumer.  It is
+    # assembled from the authorised relational context, never inferred from OCR.
+    result['document_context'] = {
+        'document_id': doc.id,
+        'document_version_id': v.id,
+        'version_number': v.number,
+        'launch_id': doc.folder.launch_id,
+        'order_reference': doc.folder.launch.order_ref,
+        'folder': doc.folder.slug,
+    }
+    # The registered hash is authoritative for a stored version.
+    result['sha256'] = v.sha256
     candidates = {item['key']: item for item in result.get('fields', [])}
     result['confirmed']=[{
         'key':x.field_key,'value':x.value,'unit':x.unit,'source_excerpt':x.source_excerpt,
