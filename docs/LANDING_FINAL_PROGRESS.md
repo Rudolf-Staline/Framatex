@@ -11,8 +11,20 @@ Branche : `design/landing-final-premium` (depuis `feat/folder-color-naming`).
 
 ## En cours
 
-- Vérification Chromium aux largeurs 1920, 1440, 1024, 820 et 390 px.
-- Ajustements visuels et tests de non-régression.
+- Rapport de livraison et vérification distante du commit final.
+
+## Tests déjà exécutés
+
+- `pytest -q tests/test_landing.py` : 6 réussis.
+- `node --test tests/test_landing_motion.cjs` : 1 réussi.
+- `python scripts/validate_landing_motion.py` : 31/31 contrôles Chromium réussis aux largeurs 1920, 1440, 1024, 820 et 390 px, dont le menu, les deux accès, les animations, l’absence de débordement et `prefers-reduced-motion`.
+- `pytest -q` sur une base temporaire : 210 réussis, 1 avertissement de dépréciation Starlette/httpx.
+- `node --test tests/*.cjs` : 21/21 réussis.
+
+## Dernier état récupérable
+
+- `66cba11` — hero, navigation bleue et photographie de solution, poussé sur GitHub.
+- Prochaine action : exécuter les suites complètes, publier la documentation finale et vérifier le SHA distant.
 
 ## Limites connues
 

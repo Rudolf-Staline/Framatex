@@ -100,7 +100,7 @@ def run_browser(base, output, report):
     with sync_playwright() as pw:
         browser = pw.chromium.launch(executable_path=shutil.which('chromium') or shutil.which('google-chrome'), headless=True)
         try:
-            for width in (1440, 1024, 820, 390):
+            for width in (1920, 1440, 1024, 820, 390):
                 context = browser.new_context(viewport={'width': width, 'height': 900 if width > 640 else 844},
                     reduced_motion='no-preference', has_touch=width <= 820, is_mobile=width == 390, locale='fr-FR')
                 page = context.new_page(); errors = []; failed = []; console_errors = []
