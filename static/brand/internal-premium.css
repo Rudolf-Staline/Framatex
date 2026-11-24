@@ -496,3 +496,72 @@ body.fx-pro :focus-visible { outline: 2px solid var(--p-cyan); outline-offset: 2
 @media (prefers-reduced-motion: reduce) {
   .fx-pro *, .fx-pro *::before, .fx-pro *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* =============================================================================
+   SESSIONS ET CONNEXION (lot cinématique)
+   ============================================================================= */
+.fx-pro .fx-ico { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.fx-pro .fx-spin { animation: fx-spin .8s linear infinite; }
+.fx-pro .fx-exit { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 8px; min-height: 36px; padding: 7px 10px; border: 1px solid rgba(143, 212, 243, .45); border-radius: 4px; background: rgba(45, 170, 225, .12); color: #fff; font: 600 12.5px/1.25 var(--fx-font); text-align: left; cursor: pointer; transition: background-color .15s, border-color .15s; }
+.fx-pro .fx-exit:hover { background: rgba(45, 170, 225, .24); border-color: var(--p-cyan); }
+.fx-pro .fx-exit:disabled, .fx-pro .fx-exit-top:disabled { opacity: .7; cursor: progress; }
+.fx-pro .fx-collapsed .fx-exit span { display: none; }
+.fx-pro .fx-exit-top { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border: 1px solid var(--p-line); border-radius: 4px; background: #fff; color: var(--p-navy); font: 600 13px/1 var(--fx-font); cursor: pointer; white-space: nowrap; }
+.fx-pro .fx-exit-top:hover { border-color: var(--p-navy); background: #f3f6fa; }
+
+.fx-pro .fx-auth { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(380px, .95fr); min-height: 100vh; background: #fff; }
+.fx-pro .fx-auth-art { position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; min-height: 100vh; padding: 48px clamp(32px, 5vw, 80px); background: var(--p-navy); color: #fff; }
+.fx-pro .fx-auth-art::before, .fx-pro .fx-auth-art::after { display: none; }
+.fx-pro .fx-auth-photo { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; transform-origin: 60% 50%; animation: fx-auth-drift 18s var(--p-ease) both; }
+.fx-pro .fx-auth-art > .fx-auth-photo + .brand { margin: 0; }
+.fx-pro .fx-auth-art::after { content: ''; display: block; position: absolute; inset: 0; z-index: -1; background: linear-gradient(100deg, rgba(0, 44, 85, .94) 0%, rgba(0, 59, 112, .78) 45%, rgba(0, 59, 112, .35) 100%); }
+.fx-pro .fx-auth-art .brand { align-self: flex-start; display: block; padding: 0; background: var(--p-logo); border-radius: 0; box-shadow: 0 14px 30px -18px rgba(0, 0, 0, .6); }
+.fx-pro .fx-auth-art .brand .brand-mark { display: block; width: 176px; height: 66px; object-fit: cover; }
+.fx-pro .fx-auth-art .login-hero { margin: auto 0; max-width: 560px; }
+.fx-pro .fx-auth-kicker { display: inline-block; margin: 0 0 22px; padding: 5px 10px; background: #fff; color: var(--p-navy); font: 600 11.5px/1 var(--fx-font); letter-spacing: .32em; text-transform: uppercase; }
+.fx-pro .fx-auth-art h1 { margin: 0; color: #fff; font-family: "Iowan Old Style", "Baskerville", "Times New Roman", serif; font-size: clamp(40px, 4.4vw, 68px); font-weight: 600; line-height: 1.02; letter-spacing: -.02em; }
+.fx-pro .fx-auth-art h1 em { font-style: normal; color: #8fd4f3; }
+.fx-pro .fx-auth-art .login-hero p:last-child { margin: 22px 0 0; max-width: 46ch; color: rgba(255, 255, 255, .82); font-size: 16px; line-height: 1.65; }
+.fx-pro .fx-auth-art .login-caption { margin: 0; color: rgba(255, 255, 255, .7); font-size: 12px; font-weight: 600; letter-spacing: .24em; text-transform: uppercase; }
+.fx-pro .fx-auth .login-form-wrap { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 88px clamp(24px, 5vw, 72px) 48px; background: #fff; }
+.fx-pro .fx-auth-back { position: absolute; top: 28px; left: clamp(24px, 5vw, 72px); display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 14px 0 10px; border: 1px solid var(--p-line); border-radius: 4px; color: var(--p-navy); font: 600 13px/1 var(--fx-font); text-decoration: none; transition: border-color .15s, background-color .15s; }
+.fx-pro a.fx-auth-back:hover { border-color: var(--p-navy); background: #f3f6fa; }
+.fx-pro .fx-auth-back.is-static { border-color: transparent; padding-left: 0; color: var(--p-cyan-ink); }
+.fx-pro .fx-auth .login-form { width: 100%; max-width: 400px; }
+.fx-pro .fx-auth .login-form h2 { margin: 0 0 8px; font-size: 30px; font-weight: 700; letter-spacing: -.015em; color: var(--p-ink); }
+.fx-pro .fx-auth .login-form .page-kicker { display: none; }
+.fx-pro .fx-auth-lead, .fx-pro .fx-auth .login-form > p:not(.fx-auth-switch) { margin: 0 0 26px; color: var(--p-muted); font-size: 14.5px; line-height: 1.6; }
+.fx-pro .fx-auth .field { margin: 0 0 18px; }
+.fx-pro .fx-auth .field label { display: block; margin: 0 0 7px; font: 600 13px/1.3 var(--fx-font); color: var(--p-ink); }
+.fx-pro .fx-input-wrap { position: relative; display: flex; align-items: center; }
+.fx-pro .fx-input-wrap > .fx-ico { position: absolute; left: 13px; color: #8a95a3; pointer-events: none; }
+.fx-pro .fx-auth .field input { width: 100%; height: 48px; padding: 0 14px 0 42px; border: 1px solid #cdd4dc; border-radius: 4px; background: #fff; color: var(--p-ink); font: 400 15px/1 var(--fx-font); transition: border-color .15s, box-shadow .15s; }
+.fx-pro .fx-input-wrap:has(.fx-eye) input { padding-right: 48px; }
+.fx-pro .fx-auth .field input:focus { outline: none; border-color: var(--p-navy); box-shadow: 0 0 0 3px rgba(45, 170, 225, .22); }
+.fx-pro .fx-input-wrap:focus-within > .fx-ico { color: var(--p-navy); }
+.fx-pro .fx-eye { position: absolute; right: 6px; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 4px; background: transparent; color: #66717f; cursor: pointer; }
+.fx-pro .fx-eye:hover { background: var(--p-surface); color: var(--p-navy); }
+.fx-pro .fx-auth-submit { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 50px; margin-top: 8px; font-size: 15px; }
+.fx-pro .fx-auth-submit:disabled { opacity: .85; cursor: progress; }
+.fx-pro .fx-auth .error { margin: 0 0 16px; padding: 11px 14px; }
+.fx-pro .fx-auth-notes { list-style: none; display: grid; gap: 10px; margin: 26px 0 0; padding: 18px 0 0; border-top: 1px solid var(--p-line); }
+.fx-pro .fx-auth-notes li { display: flex; gap: 10px; color: var(--p-muted); font-size: 13px; line-height: 1.5; }
+.fx-pro .fx-auth-notes .fx-ico { width: 16px; height: 16px; margin-top: 2px; color: var(--p-cyan-ink); }
+.fx-pro .fx-auth-switch { margin: 18px 0 0; font-size: 13.5px; color: var(--p-muted); }
+.fx-pro .fx-auth-switch a { color: var(--p-cyan-ink); font-weight: 600; }
+.fx-pro .fx-auth .login-form .link { margin-top: 12px; }
+@keyframes fx-auth-drift { from { transform: scale(1.08) translate3d(-1%, 0, 0); } to { transform: scale(1.02) translate3d(0, 0, 0); } }
+@media (max-width: 960px) {
+  .fx-pro .fx-auth { grid-template-columns: minmax(0, 1fr); }
+  .fx-pro .fx-auth .login-form-wrap { order: -1; padding: 84px 20px 40px; }
+  .fx-pro .fx-auth-back { top: 20px; left: 20px; }
+  .fx-pro .fx-auth-art { min-height: 300px; padding: 28px 20px; }
+  .fx-pro .fx-auth-art .login-hero { margin: 32px 0 20px; }
+  .fx-pro .fx-auth-art h1 { font-size: 36px; }
+  .fx-pro .fx-auth-art .brand .brand-mark { width: 140px; height: 52px; }
+}
+@media (max-width: 820px) { .fx-pro .fx-exit-top span { display: none; } .fx-pro .fx-exit-top { padding: 0; width: 38px; justify-content: center; } }
+/* Le voile reprend toute la surface (annule les cercles décoratifs hérités de .login-art). */
+.fx-pro .fx-auth-art::after { width: auto; height: auto; border: 0; border-radius: 0; inset: 0; right: 0; bottom: 0; }
+.fx-pro .fx-auth-art::before { display: none !important; }
+.fx-pro .fx-auth-art .login-hero h1, .fx-pro .fx-auth-art .login-hero p { text-shadow: 0 2px 24px rgba(0, 30, 60, .35); }

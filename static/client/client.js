@@ -164,11 +164,12 @@ function authLayout(content, { wide = false } = {}) {
       <aside class="auth-visual" aria-hidden="true">
         <img src="${AUTH_PHOTO}" alt="" width="1448" height="1086" />
         <div class="auth-visual-text">
+          <img class="auth-visual-logo" src="${LOGO}" alt="" width="500" height="500" />
           <p class="eyebrow eyebrow-light">Espace Client FRAMATEX</p>
-          <p class="auth-visual-title">Vos demandes de commande et vos documents, au même endroit.</p>
+          <p class="auth-visual-title">Vos commandes et vos documents, <em>au même endroit.</em></p>
         </div>
       </aside>
-      <section class="auth-panel">${content}</section>
+      <section class="auth-panel"><a class="auth-back" href="/">${icon('back')}<span>Retour à l’accueil</span></a>${content}</section>
     </div>`);
 }
 
@@ -227,6 +228,7 @@ function shellLayout(active, content) {
       ${identity()}
       <nav aria-label="Menu principal">${navList(active)}</nav>
       <div class="sidebar-foot">
+        <button type="button" class="nav-link nav-exit" data-exit>${icon('back')}<span>Quitter l’espace et retourner à l’accueil</span></button>
         <button type="button" class="nav-link nav-logout" data-logout>${icon('out')}<span>Déconnexion</span></button>
       </div>
     </aside>
@@ -247,6 +249,7 @@ function shellLayout(active, content) {
         <button type="button" class="icon-btn" data-drawer-close aria-label="Fermer le menu">${icon('x')}</button>
       </div>
       <nav aria-label="Menu principal">${navList(active)}</nav>
+      <button type="button" class="nav-link nav-exit" data-exit>${icon('back')}<span>Quitter l’espace et retourner à l’accueil</span></button>
       <button type="button" class="nav-link nav-logout" data-logout>${icon('out')}<span>Déconnexion</span></button>
     </div>
 
@@ -271,6 +274,7 @@ function pageHead({ eyebrow = 'Espace Client', title, lead = '', actions = '', b
 function mountShell(active, content) {
   app.innerHTML = shellLayout(active, content);
   app.querySelectorAll('[data-logout]').forEach(b => b.addEventListener('click', logout));
+  app.querySelectorAll('[data-exit]').forEach(b => b.addEventListener('click', exitSpace));
   app.querySelector('[data-drawer-open]')?.addEventListener('click', openDrawer);
   app.querySelectorAll('[data-drawer-close]').forEach(b => b.addEventListener('click', closeDrawer));
   refreshPendingBadge();
@@ -296,6 +300,29 @@ function closeDrawer() {
   btn?.focus();
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+// Sortie volontaire : la session est révoquée côté serveur (cookie supprimé) AVANT le retour à
+// l'accueil ; en cas d'échec, l'utilisateur reste dans l'espace et peut réessayer.
+async function exitSpace(e) {
+  const btn = e.currentTarget;
+  setLoading(btn, true, 'Déconnexion…');
+  try {
+    await source.logoutClient();
+  } catch (err) {
+    if (err?.status !== 401) {
+      setLoading(btn, false);
+      toast('La déconnexion n’a pas abouti : la session reste ouverte. Réessayez.', 'error');
+      return;
+    }
+  }
+  state.client = null;
+  state.hadSession = false;
+  for (const key of Object.keys(state)) if (key !== 'notice') state[key] = null;
+  app.innerHTML = '';
+  location.replace('/');
+}
+// Retour navigateur depuis le cache : revérifier la session plutôt qu'afficher un écran mémorisé.
+window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 
 async function logout(e) {
   const btn = e.currentTarget;

@@ -433,3 +433,141 @@ home = fxHome;
 operationsHome = fxHome;
 // Technicien sans affectation : même accueil, état vide explicite.
 accEmptyHome = function() { return fxHome().catch(showErr); };
+
+// ------------------------------------------------------------------ sessions : sortie volontaire
+// Icônes Lucide (ISC, lucide.dev) intégrées en SVG : aucune dépendance chargée.
+const FX_LUCIDE = {
+  mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+  lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  eye: '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
+  eyeOff: '<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/>',
+  back: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  logIn: '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/>',
+  logOut: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  loader: '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
+  shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+};
+function fxIcon(name, cls = 'fx-ico') { return `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${FX_LUCIDE[name]}</svg>`; }
+
+// Efface de la mémoire de la page les données chargées pendant la session.
+function fxForgetSession() {
+  for (const key of Object.keys(state)) delete state[key];
+  state.me = null;
+  overlay.innerHTML = '';
+  app.innerHTML = '';
+}
+
+// « Quitter l'espace et retourner à l'accueil » : la session est révoquée côté serveur
+// (jti enregistré, cookie supprimé) AVANT la redirection ; sinon l'utilisateur reste ici.
+async function fxExitSpace(button) {
+  const html = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = `${fxIcon('loader', 'fx-ico fx-spin')}<span>Déconnexion…</span>`;
+  try {
+    const response = await fetch('/api/auth/logout', {method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: {'X-Framatex-Request': '1'}});
+    if (!response.ok && response.status !== 401) throw new Error(`HTTP ${response.status}`);
+  } catch {
+    button.disabled = false;
+    button.innerHTML = html;
+    toast('La déconnexion n’a pas abouti : la session reste ouverte. Vérifiez la connexion puis réessayez.');
+    return;
+  }
+  fxForgetSession();
+  location.replace('/');
+}
+
+// Retour navigateur depuis le cache : l'application revérifie la session au lieu d'afficher l'ancien écran.
+window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
+
+const fxShellBeforeExit = fxShell;
+fxShell = function() {
+  fxShellBeforeExit();
+  const actions = app.querySelector('.fx-side-actions');
+  if (actions && !app.querySelector('.fx-exit')) {
+    actions.insertAdjacentHTML('afterend', `<button type="button" class="fx-exit" data-fx-exit title="Quitter l’espace et retourner à l’accueil">${fxIcon('logOut')}<span>Quitter l’espace et retourner à l’accueil</span></button>`);
+    app.querySelector('.topbar-actions')?.insertAdjacentHTML('beforeend', `<button type="button" class="fx-exit-top" data-fx-exit aria-label="Quitter l’espace et retourner à l’accueil" title="Quitter l’espace et retourner à l’accueil">${fxIcon('logOut')}<span>Quitter l’espace</span></button>`);
+    app.querySelectorAll('[data-fx-exit]').forEach(button => button.addEventListener('click', () => fxExitSpace(button)));
+  }
+};
+
+// ------------------------------------------------------------------ connexion
+function fxPasswordToggles(root) {
+  root.querySelectorAll('input[type="password"]').forEach(input => {
+    if (input.parentElement.classList.contains('fx-input-wrap') && input.parentElement.querySelector('.fx-eye')) return;
+    let wrap = input.parentElement;
+    if (!wrap.classList.contains('fx-input-wrap')) {
+      wrap = document.createElement('div');
+      wrap.className = 'fx-input-wrap';
+      input.before(wrap);
+      wrap.append(input);
+      wrap.insertAdjacentHTML('afterbegin', fxIcon('lock'));
+    }
+    wrap.insertAdjacentHTML('beforeend', `<button type="button" class="fx-eye" aria-controls="${input.id}" aria-pressed="false" aria-label="Afficher le mot de passe">${fxIcon('eye')}</button>`);
+    const eye = wrap.querySelector('.fx-eye');
+    eye.addEventListener('click', () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      eye.setAttribute('aria-pressed', String(show));
+      eye.setAttribute('aria-label', show ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+      eye.innerHTML = fxIcon(show ? 'eyeOff' : 'eye');
+      input.focus();
+    });
+  });
+}
+
+function fxAuthArt(kicker, title, text) {
+  return `<section class="login-art fx-auth-art" aria-hidden="false">
+    <img class="fx-auth-photo" src="/assets/landing/redesign/espace-framatex.webp" alt="" width="1448" height="1086" decoding="async">
+    <a class="brand" href="/" aria-label="FRAMATEX — retour à l’accueil"><img class="brand-mark" src="/assets/landing/logo-framatex.jpg" alt="FRAMATEX" width="500" height="500"></a>
+    <div class="login-hero"><p class="fx-auth-kicker">${e(kicker)}</p><h1>${title}</h1><p>${e(text)}</p></div>
+    <p class="login-caption">Villeneuve-d’Ascq <span aria-hidden="true">—</span> Casablanca</p></section>`;
+}
+
+renderLogin = function() {
+  overlay.innerHTML = '';
+  app.innerHTML = `<div class="login-page fx-auth">${fxAuthArt('Espace FRAMATEX', 'Chaque commande.<br>Chaque document.<br><em>Au bon endroit.</em>', 'Commandes, sous-dossiers, versions et contrôles : l’espace de travail des équipes FRAMATEX.')}
+    <section class="login-form-wrap"><a class="fx-auth-back" href="/">${fxIcon('back')}<span>Retour à l’accueil</span></a>
+      <form id="login-form" class="login-form" novalidate>
+        <h2>Connexion</h2><p class="fx-auth-lead">Espace réservé aux collaborateurs FRAMATEX.</p>
+        <div id="login-error" role="alert" aria-live="assertive"></div>
+        <div class="field"><label for="email">Adresse email professionnelle</label><div class="fx-input-wrap">${fxIcon('mail')}<input id="email" type="email" autocomplete="username" inputmode="email" required placeholder="prenom.nom@framatex.com"></div></div>
+        <div class="field"><label for="password">Mot de passe</label><div class="fx-input-wrap">${fxIcon('lock')}<input id="password" type="password" autocomplete="current-password" required placeholder="Votre mot de passe"></div></div>
+        <button class="primary fx-auth-submit" type="submit"><span>Se connecter</span>${fxIcon('logIn')}</button>
+        <ul class="fx-auth-notes"><li>${fxIcon('shield')}<span>Les comptes sont créés par le chef FRAMATEX ; un mot de passe temporaire doit être remplacé à la première connexion.</span></li>
+          <li>${fxIcon('lock')}<span>Mot de passe oublié : demandez une réinitialisation à votre responsable.</span></li></ul>
+        <p class="fx-auth-switch">Vous êtes client ? <a href="/espace-client">Accéder à l’Espace Client</a></p>
+      </form></section></div>`;
+  fxPasswordToggles(app);
+  const form = app.querySelector('#login-form');
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = form.querySelector('.fx-auth-submit');
+    const error = app.querySelector('#login-error');
+    const email = app.querySelector('#email').value.trim(), password = app.querySelector('#password').value;
+    if (!email || !password) { error.innerHTML = `<div class="error">Saisissez votre adresse email et votre mot de passe.</div>`; return; }
+    button.disabled = true;
+    button.innerHTML = `${fxIcon('loader', 'fx-ico fx-spin')}<span>Connexion…</span>`;
+    error.innerHTML = '';
+    try {
+      state.me = await api('/api/auth/login', {method: 'POST', body: JSON.stringify({email, password})});
+      state.me = await api('/api/auth/me');
+      if (!(await paperOpenDeepLink())) await navigate('home');
+    } catch (err) {
+      error.innerHTML = `<div class="error">${e(err.message)}</div>`;
+      button.disabled = false;
+      button.innerHTML = `<span>Se connecter</span>${fxIcon('logIn')}`;
+    }
+  });
+};
+
+// Changement de mot de passe temporaire : même composition, logique inchangée (access-admin.js).
+const fxPasswordScreen = accPasswordScreen;
+accPasswordScreen = function() {
+  fxPasswordScreen();
+  const page = app.querySelector('.login-page');
+  if (!page) return;
+  page.classList.add('fx-auth');
+  page.querySelector('.login-art')?.replaceWith(Object.assign(document.createElement('div'), {innerHTML: fxAuthArt('Première connexion', 'Choisissez<br><em>votre mot de passe.</em>', 'Le mot de passe transmis par votre responsable est temporaire : remplacez-le avant d’accéder aux commandes.')}).firstElementChild);
+  page.querySelector('.login-form-wrap')?.insertAdjacentHTML('afterbegin', `<span class="fx-auth-back is-static">${fxIcon('shield')}<span>Sécurité du compte</span></span>`);
+  fxPasswordToggles(page);
+};
