@@ -271,9 +271,13 @@ def test_logical_deletion_permissions_trash_restore_and_optional_type_reason(wor
                               RolePermission(action='document.write', folder_slug='jaune')])
         reader = Role(name='Lecteur test')
         reader.grants.extend([RolePermission(action='launch.read'), RolePermission(action='document.read', folder_slug='jaune')])
-        db.add_all([writer, reader,
+        reviewer = Role(name='Responsable test')
+        reviewer.grants.extend([RolePermission(action='launch.read'), RolePermission(action='document.read', folder_slug='jaune'),
+                                RolePermission(action='document.review', folder_slug='jaune')])
+        db.add_all([writer, reader, reviewer,
                     User(name='Déposant', email='writer@workspace.test', roles=[writer], password_hash=hash_password(PASSWORD)),
-                    User(name='Lecteur', email='reader@workspace.test', roles=[reader], password_hash=hash_password(PASSWORD))])
+                    User(name='Lecteur', email='reader@workspace.test', roles=[reader], password_hash=hash_password(PASSWORD)),
+                    User(name='Responsable', email='reviewer@workspace.test', roles=[reviewer], password_hash=hash_password(PASSWORD))])
         db.commit()
     assert workspace.post('/api/auth/login', headers=H, json={'email': 'writer@workspace.test', 'password': PASSWORD}).status_code == 200
     assert workspace.delete(f'/api/document-versions/{version_id}', headers=H).status_code == 403
@@ -285,7 +289,11 @@ def test_logical_deletion_permissions_trash_restore_and_optional_type_reason(wor
     assert workspace.post('/api/auth/login', headers=H, json={'email': 'reader@workspace.test', 'password': PASSWORD}).status_code == 200
     assert workspace.delete(f'/api/documents/{document["id"]}', headers=H).status_code == 403
 
+    assert workspace.post('/api/auth/login', headers=H, json={'email': 'reviewer@workspace.test', 'password': PASSWORD}).status_code == 200
+    assert workspace.delete(f'/api/documents/{document["id"]}', headers=H).status_code == 204
     login(workspace)
+    assert workspace.post(f'/api/admin/document-trash/documents/{document["id"]}/restore', headers=H).status_code == 200
+
     uncertain = stage(workspace, dossier, 'unknown.txt', b'contenu non classable').json()
     created = publish(workspace, dossier, uncertain['id'], 'jaune', 'Autre').json()
     path = f'/api/document-versions/{created["latest"]["id"]}/identification/confirm'
