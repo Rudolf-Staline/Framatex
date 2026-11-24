@@ -35,7 +35,7 @@ export function mountFabric(host, {interactive = true} = {}) {
   const camera = new THREE.PerspectiveCamera(30, 1, .1, 50);
   camera.position.set(0, 0, 9);
   scene.add(new THREE.AmbientLight(0x9fb8d6, .55));
-  const key = new THREE.DirectionalLight(0xffffff, 2.6); key.position.set(-4, 5, 6); scene.add(key);
+  const key = new THREE.DirectionalLight(0xffffff, 3.4); key.position.set(-6, 6, 2.5); scene.add(key);
   const rim = new THREE.DirectionalLight(0x2daae1, 2.2); rim.position.set(5, -2, 3); scene.add(rim);
 
   const SX = 160, SY = 100;
@@ -47,7 +47,8 @@ export function mountFabric(host, {interactive = true} = {}) {
     bumpMap: weave, bumpScale: .9, side: THREE.DoubleSide,
   });
   const cloth = new THREE.Mesh(geo, mat);
-  cloth.rotation.set(-.32, .18, -.12);
+  cloth.rotation.set(-.62, .22, -.18);
+  cloth.scale.set(1.25, 1.25, 1);
   scene.add(cloth);
 
   let visible = false, raf = 0, px = 0, py = 0, tx = 0, ty = 0, influence = 0, t0 = performance.now();
@@ -56,9 +57,9 @@ export function mountFabric(host, {interactive = true} = {}) {
     for (let i = 0; i < p.length; i += 3) {
       const x = base[i], y = base[i + 1];
       // Grands plis tombants + ondulation fine + froissé léger.
-      let z = Math.sin(x * .9 + time * .45) * .32 * (1 - (y + 2.8) / 9)
+      let z = Math.sin(x * .9 + time * .45) * .55 * (1 - (y + 2.8) / 9)
         + Math.sin(x * 2.3 - y * .6 + time * .8) * .09
-        + Math.abs(Math.sin(x * 1.6 + y * .35 + time * .3)) * -.18
+        + Math.abs(Math.sin(x * 1.6 + y * .35 + time * .3)) * -.32
         + Math.sin(y * 3.4 + x * .4 + time * 1.1) * .025;
       if (influence > .001) {
         const d = (x - px) * (x - px) + (y - py) * (y - py);

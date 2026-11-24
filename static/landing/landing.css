@@ -705,3 +705,9 @@ picture { display: contents; }
 .fd3.is-static .fd3-steps li { opacity: 1; }
 .fd3.is-static .fd3-static { display: block; }
 @media (max-width: 900px) { .fd3.is-static .fd3-copy { grid-template-columns: minmax(0, 1fr); gap: 28px; } }
+
+/* ---------- Tissu bleu 3D (fond de l'appel à l'action) ---------- */
+.fabric3d-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.cta.has-fabric3d::before { display: none; }
+.cta.has-fabric3d .cta-inner { z-index: 2; }
+.cta.has-fabric3d::after { content: ''; position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, rgba(0, 44, 85, .9) 0%, rgba(0, 44, 85, .55) 42%, rgba(0, 44, 85, 0) 78%); pointer-events: none; }
