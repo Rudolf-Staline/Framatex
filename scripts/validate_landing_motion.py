@@ -23,7 +23,7 @@ import time
 from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = 'landing-motion-1'
+VERSION = 'landing-premium-1'
 
 INSPECT = """() => {
   const mat = selector => {

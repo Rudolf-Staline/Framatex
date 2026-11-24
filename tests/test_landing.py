@@ -58,10 +58,22 @@ def test_landing_motion_assets_are_versioned_and_not_cached():
     with TestClient(app) as client:
         html = client.get('/').text
         for name in ('landing.css', 'motion.css', 'landing.js'):
-            path = f'/assets/landing/{name}?v=landing-motion-1'
+            path = f'/assets/landing/{name}?v=landing-premium-1'
             assert path in html
             response = client.get(path)
             assert response.status_code == 200
             assert response.headers['cache-control'] == 'no-store'
             assert response.headers['content-type'].split(';')[0] == ('text/javascript' if name.endswith('.js') else 'text/css')
         assert 'class="hero-weave" aria-hidden="true"' in html
+
+
+def test_landing_premium_navigation_and_real_team_photo():
+    with TestClient(app) as client:
+        html = client.get('/').text
+        assert 'class="site-header" data-header' in html
+        assert 'partnership-meeting.avif' in html
+        assert 'Équipe réunie autour d’une table de travail' in html
+        assert 'btn btn-primary hero-cta' in html
+        css = client.get('/assets/landing/landing.css?v=landing-premium-1').text
+        assert '--landing-serif' in css
+        assert '.site-header {\n  position: sticky; top: 0; z-index: 50;\n  background: var(--navy);' in css
