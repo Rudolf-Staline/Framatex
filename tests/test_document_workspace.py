@@ -289,4 +289,4 @@ def test_logical_deletion_permissions_trash_restore_and_optional_type_reason(wor
     uncertain = stage(workspace, dossier, 'unknown.txt', b'contenu non classable').json()
     created = publish(workspace, dossier, uncertain['id'], 'jaune', 'Autre').json()
     path = f'/api/document-versions/{created["latest"]["id"]}/identification/confirm'
-    assert workspace.post(path, headers=H, json={'justification': ''}).status_code == 200
+    assert workspace.post(path, headers=H, json={'justification': 'O'}).status_code == 200

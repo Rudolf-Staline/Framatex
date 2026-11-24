@@ -343,8 +343,10 @@ def launch_detail(launch_id: str, user: User = Depends(get_current_user), db: Se
             doc_out(d) for d in folder.documents if d.deleted_at is None and any(v.deleted_at is None for v in d.versions)
         ]
         for document in docs:
+            source_document = next((item for item in folder.documents if item.id == document['id']), None)
+            owns_document = bool(source_document and source_document.created_by == user.id)
             document['can_delete_document'] = bool(is_admin(user) or permitted(user, 'document.review', slug)
-                                                    or (document['created_at'] and next((item for item in folder.documents if item.id == document['id']), None).created_by == user.id and permitted(user, 'document.write', slug)))
+                                                    or (owns_document and permitted(user, 'document.write', slug)))
             for version in document['versions']:
                 version['can_delete'] = bool(is_admin(user) or permitted(user, 'document.review', slug)
                                              or (version['uploaded_by'] == user.id and permitted(user, 'document.write', slug)))

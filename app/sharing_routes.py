@@ -67,8 +67,23 @@ def is_safe(doc: Document) -> bool:
 
 def pub_out(db: Session, p: ClientPublication, launch):
     v = db.get(DocumentVersion, p.document_version_id)
-    doc = db.get(Document, v.document_id)
-    stale = latest(doc).id != v.id
+    doc = db.get(Document, v.document_id) if v else None
+    # A deleted source must never remain available through a historic
+    # publication record. Keep the audit record visible to administrators,
+    # but make it ineffective without exposing a missing/deleted file.
+    current = latest(doc) if doc and doc.deleted_at is None else None
+    if not doc or not v or doc.deleted_at is not None or v.deleted_at is not None:
+        return {'id': p.id, 'document_id': doc.id if doc else None,
+                'document_title': doc.title if doc else 'Document supprimé',
+                'document_type': doc.doc_type if doc else None,
+                'folder': doc.folder.slug if doc else None,
+                'version_id': p.document_version_id, 'version': v.number if v else None,
+                'client_name': p.client_name, 'status': p.status, 'stale': True,
+                'client_changed': True, 'approval_current': False, 'effective': False,
+                'reason': p.reason, 'created_at': p.created_at.isoformat(),
+                'revoked_at': p.revoked_at.isoformat() if p.revoked_at else None,
+                'revoked_reason': p.revoked_reason}
+    stale = not current or current.id != v.id
     wrong_client = norm(p.client_name) != norm(launch.client_name or '')
     approved = is_approved(db, v, doc)
     visible = p.status == 'published' and not stale and not wrong_client and approved and is_safe(doc)
@@ -94,9 +109,17 @@ def list_publications(launch_id: str, user: User = Depends(get_current_user), db
     launch = get_launch(db,launch_id)
     rows = db.scalars(select(ClientPublication).where(ClientPublication.launch_id == launch.id)
                       .order_by(ClientPublication.created_at.desc())).all()
-    return {'external_access_enabled':False,'client_name':launch.client_name,
-            'items':[pub_out(db,p,launch) for p in rows
-                     if permitted(user,'document.read',db.get(Document,db.get(DocumentVersion,p.document_version_id).document_id).folder.slug)]}
+    items = []
+    for publication in rows:
+        version = db.get(DocumentVersion, publication.document_version_id)
+        document = db.get(Document, version.document_id) if version else None
+        # Do not disclose a historical publication when its source document
+        # was removed; only an administrator may see the corresponding audit.
+        if not document or document.deleted_at is not None:
+            continue
+        if permitted(user, 'document.read', document.folder.slug):
+            items.append(pub_out(db, publication, launch))
+    return {'external_access_enabled':False, 'client_name':launch.client_name, 'items':items}
 
 
 @router.post('/api/launches/{launch_id}/client-publications',status_code=201)
