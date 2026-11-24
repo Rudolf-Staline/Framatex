@@ -646,3 +646,35 @@ picture { display: contents; }
   .hero-media.has-parallax img { transform: none; }
   .space:hover, .space:hover .space-media img, .step:hover .step-art img { transform: none; }
 }
+
+/* ---------- Partenariat : carrousel (flou → net, léger zoom, perspective) ---------- */
+.pcar { margin: 0; }
+.pcar-date { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; color: var(--cyan-ink); font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+.pcar-date time { color: var(--navy); }
+.pcar-stage { position: relative; aspect-ratio: 1 / 1; max-width: 560px; overflow: hidden; perspective: 1200px; background: #dfe5ec; touch-action: pan-y; }
+.pcar-track { position: absolute; inset: 0; }
+.pcar-slide { position: absolute; inset: 0; opacity: 0; filter: blur(14px); transform: scale(1.08) rotateY(-5deg); transform-origin: 50% 50%;
+  transition: opacity .9s var(--ease), filter 1.1s var(--ease), transform 1.4s var(--ease); pointer-events: none; }
+.pcar-slide.is-before { transform: scale(1.04) rotateY(5deg); }
+.pcar-slide.is-active { opacity: 1; filter: blur(0); transform: none; pointer-events: auto; }
+.pcar-zoom { display: block; width: 100%; height: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.pcar-zoom img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pcar-controls { display: flex; align-items: center; gap: 10px; margin-top: 14px; max-width: 560px; }
+.pcar-btn { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 50%; background: var(--white); color: var(--navy); cursor: pointer; transition: border-color .2s, background-color .2s; }
+.pcar-btn:hover { border-color: var(--navy); background: #f3f6fa; }
+.pcar-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pcar-btn [class^="pcar-ico"] { fill: currentColor; stroke: none; }
+.pcar .pcar-ico-play, .pcar.is-paused .pcar-ico-pause { display: none; }
+.pcar.is-paused .pcar-ico-play { display: block; }
+.pcar-dots { display: flex; gap: 8px; margin-right: auto; }
+.pcar-dot { width: 28px; height: 4px; padding: 0; border: 0; border-radius: 2px; background: #c9d3de; cursor: pointer; transition: background-color .3s, width .3s; }
+.pcar-dot[aria-current="true"] { width: 44px; background: var(--navy); }
+.pcar-lightbox { padding: 0; border: 0; background: transparent; max-width: min(92vw, 900px); overflow: visible; }
+.pcar-lightbox::backdrop { background: rgba(0, 30, 60, .86); }
+.pcar-lightbox img { display: block; width: min(92vw, 86vh, 900px); height: auto; aspect-ratio: 1 / 1; object-fit: contain; }
+.pcar-close { position: absolute; top: -48px; right: 0; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--white); color: var(--navy); font-size: 24px; cursor: pointer; }
+.pcar-lb-prev, .pcar-lb-next { position: absolute; top: 50%; transform: translateY(-50%); }
+.pcar-lb-prev { left: 10px; } .pcar-lb-next { right: 10px; }
+@media (prefers-reduced-motion: reduce) { .pcar-slide { transition: none; filter: none; transform: none; } }
+.pcar-zoom img { -webkit-user-drag: none; user-select: none; }
+.pcar-date { flex-wrap: wrap; row-gap: 4px; } .pcar-date time, .pcar-date span { white-space: nowrap; }

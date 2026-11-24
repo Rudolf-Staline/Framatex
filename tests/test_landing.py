@@ -71,7 +71,12 @@ def test_landing_premium_navigation_and_real_team_photo():
     with TestClient(app) as client:
         html = client.get('/').text
         assert 'class="site-header" data-header' in html
-        assert 'partnership-meeting.avif' in html
+        # Partenariat : les trois photographies officielles de la signature (11 février 2026), locales.
+        assert 'data-carousel' in html and '11 février 2026' in html and 'partnership-carousel.js' in html
+        for n in (1, 2, 3):
+            for ext in ('avif', 'webp', 'jpg'):
+                assert f'/assets/landing/partenariat-{n}.{ext}' in html
+                assert client.get(f'/assets/landing/partenariat-{n}.{ext}').status_code == 200
         # « Notre solution » : photographie officielle de l'équipe (banner-17.jpg), hébergée localement.
         for name in ('notre-solution-equipe.avif', 'notre-solution-equipe.webp', 'notre-solution-equipe.jpg'):
             assert f'/assets/landing/{name}' in html
