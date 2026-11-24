@@ -126,8 +126,16 @@ def tesseract_diagnostics() -> dict:
     except (OSError, subprocess.SubprocessError) as exc:
         LOG.warning("Tesseract configuration unavailable: %s", type(exc).__name__)
         return {"available": False, "code": "tesseract_misconfigured", "languages": [], "message": "Tesseract est présent mais sa configuration est invalide."}
+    usable = [language for language in ("fra", "eng") if language in languages]
     missing = [language for language in ("fra", "eng") if language not in languages]
-    return {"available": not missing, "code": "ocr_language_missing" if missing else "ready", "path": command, "languages": languages, "missing_languages": missing, "message": f"Langue OCR manquante : {', '.join(missing)}." if missing else "Tesseract prêt."}
+    if not usable:
+        return {"available": False, "code": "ocr_language_missing", "path": command, "languages": languages,
+                "missing_languages": missing, "ocr_languages": [],
+                "message": f"Langues OCR manquantes : {', '.join(missing)}."}
+    return {"available": True, "code": "ocr_language_missing" if missing else "ready", "path": command,
+            "languages": languages, "missing_languages": missing, "ocr_languages": usable,
+            "message": (f"Langue OCR manquante : {', '.join(missing)}. Lecture limitée aux langues disponibles : {', '.join(usable)}."
+                        if missing else "Tesseract prêt.")}
 
 
 def _ocr_engine():
@@ -135,6 +143,9 @@ def _ocr_engine():
     if not diagnostic["available"]: raise OCRProblem(diagnostic["code"], diagnostic["message"])
     import pytesseract
     pytesseract.pytesseract.tesseract_cmd = diagnostic["path"]
+    # The configured local engine can continue with English-only or
+    # French-only data, but the caller receives an explicit limitation.
+    pytesseract._framatex_diagnostic = diagnostic
     return pytesseract
 
 
@@ -146,7 +157,8 @@ def _ocr_image(image, pytesseract):
         rotate = int(re.search(r"Rotate:\s*(\d+)", pytesseract.image_to_osd(image, timeout=min(4, LIMITS.ocr_page_timeout))).group(1))
         if rotate in (90, 180, 270): image = image.rotate(rotate, expand=True)
     except Exception: pass
-    return pytesseract.image_to_string(image, lang="fra+eng", timeout=LIMITS.ocr_page_timeout)
+    languages = "+".join(getattr(pytesseract, "_framatex_diagnostic", {}).get("ocr_languages", ["fra", "eng"]))
+    return pytesseract.image_to_string(image, lang=languages, timeout=LIMITS.ocr_page_timeout)
 
 
 def _limit(code, message, **detail): return {"code": code, "message": message, **detail}
@@ -181,7 +193,12 @@ def _read_pdf(path: Path, allow_ocr: bool):
                     message = f"Page {number} sans texte natif exploitable ; OCR requis."
                     warnings.append(message); limitations.append(_limit("ocr_required", message, page=number)); continue
                 try:
-                    engine = engine or _ocr_engine(); area = max(float(page.rect.width * page.rect.height), 1.0)
+                    engine = engine or _ocr_engine()
+                    diagnostic = getattr(engine, "_framatex_diagnostic", {})
+                    if diagnostic.get("missing_languages") and not any(item["code"] == "ocr_language_missing" for item in limitations):
+                        warnings.append(diagnostic["message"])
+                        limitations.append(_limit("ocr_language_missing", diagnostic["message"], missing_languages=diagnostic["missing_languages"]))
+                    area = max(float(page.rect.width * page.rect.height), 1.0)
                     scale = min(LIMITS.render_dpi / 72, (LIMITS.max_image_pixels / area) ** .5)
                     pix = page.get_pixmap(matrix=fitz.Matrix(scale, scale), colorspace=fitz.csRGB, alpha=False)
                     from PIL import Image
@@ -223,7 +240,12 @@ def read_document(path: Path, filename: str, allow_ocr=True) -> dict:
                 from PIL import Image
                 with Image.open(path) as image:
                     if image.width * image.height > LIMITS.max_image_pixels: raise OCRProblem("image_limit", "Image trop grande pour une analyse OCR sûre.")
-                    text = _ocr_image(image.convert("RGB"), _ocr_engine()).strip()[:LIMITS.max_text]
+                    engine = _ocr_engine()
+                    diagnostic = getattr(engine, "_framatex_diagnostic", {})
+                    if diagnostic.get("missing_languages"):
+                        warnings.append(diagnostic["message"])
+                        limitations.append(_limit("ocr_language_missing", diagnostic["message"], missing_languages=diagnostic["missing_languages"]))
+                    text = _ocr_image(image.convert("RGB"), engine).strip()[:LIMITS.max_text]
                 method = "image_ocr"; sources = [{"page":1, "method":method, "text":text}]
                 if not text: warnings.append("Image illisible par OCR."); limitations.append(_limit("page_unreadable", "Image illisible par OCR", page=1))
             except OCRProblem as exc: method = exc.code; warnings.append(exc.message); limitations.append(_limit(exc.code, exc.message))

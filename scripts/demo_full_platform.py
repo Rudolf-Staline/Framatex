@@ -286,6 +286,11 @@ def full_journey(qa, browser, base, admin_password, captures):
                     adm.select_option('#du-relationship-action', 'keep_duplicate')
                     adm.fill('#du-relationship-note', 'Copie logistique conservée volontairement pour la recette.')
                 adm.locator('#du-justification').fill('Courriel logistique lu et vérifié pendant la recette.')
+                # La classification reste une proposition : cette recette doit
+                # donc confirmer explicitement le type avant de déposer les
+                # deux copies du courriel, comme le ferait un collaborateur.
+                if adm.locator('#du-confirm-type').count():
+                    adm.check('#du-confirm-type')
                 adm.locator('#ops-upload-form button[type=submit]').click()
                 adm.wait_for_selector('#ops-upload-form', state='detached')
             adm.wait_for_selector('.dj-row:has-text("Emails réception / logistique") .dj-state:has-text("Doublon détecté")')
