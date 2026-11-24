@@ -193,6 +193,20 @@ def run(output, base, email, password, ids, widths):
                                ('actions', 'mes-actions'), ('search', 'recherche'), ('clients', 'clients'), ('audit', 'audit'), ('account', 'mon-compte')):
                 shot(chef, f'admin-{name}', width, nav(view))
 
+        def collapsed(p):
+            nav('home')(p)
+            if p.locator('.fx-collapse').count():
+                p.locator('.fx-collapse').click()
+                p.wait_for_timeout(300)
+
+        def drawer(p):
+            nav('launches')(p)
+            p.locator('.ops-drawer-toggle').click()
+            p.wait_for_timeout(350)
+
+        shot(chef, 'admin-menu-reduit', 1440, collapsed)
+        chef.evaluate("document.querySelector('.fx-collapse')?.click()")   # retour au menu déployé
+        shot(chef, 'admin-menu-mobile', 390, drawer)
         tech_ctx, tech = session(techs['a']['email'], techs['a']['password'])
         for width in widths:
             shot(tech, 'technicien-accueil', width, nav('home'))

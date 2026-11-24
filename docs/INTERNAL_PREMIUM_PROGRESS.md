@@ -16,7 +16,7 @@ Rapport final : [`INTERNAL_PREMIUM_DESIGN_REPORT.md`](INTERNAL_PREMIUM_DESIGN_RE
 - Recettes adaptées à l'accueil sans statistiques (mêmes vérifications fonctionnelles, KPI attendus à zéro).
 
 ## En cours
-- Captures « après » définitives et rapport.
+- Rien d’inachevé dans P0 et P1 ; restes P3 listés dans le rapport (§ 6 et § 10).
 
 ## Problèmes
 - framatex.net bloqué par la politique réseau : environnement personnel « Framatex » créé (domaine autorisé, approuvé).
@@ -25,7 +25,7 @@ Rapport final : [`INTERNAL_PREMIUM_DESIGN_REPORT.md`](INTERNAL_PREMIUM_DESIGN_RE
   décision « doublon potentiel » désormais exigée au dépôt (comportement métier de la base, hors design).
 
 ## Tests
-- Résultats réels : voir le rapport, § 8.
+- pytest 209 ; JS 21/21 ; validate_internal_ui, access 15/15, client workflow, business memory 11/11, qa 96/96, demo 135/135 ; document_workspace 7/9 (2 échecs antérieurs). Détail : rapport § 8.
 
 ## Limites
 - Voir le rapport, § 10.

@@ -459,7 +459,6 @@ body.fx-pro :focus-visible { outline: 2px solid var(--p-cyan); outline-offset: 2
   .fx-pro .fx-home-side { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
 }
 @media (max-width: 1100px) {
-  .fx-pro .app-shell:not(.fx-collapsed) { grid-template-columns: 232px minmax(0, 1fr); }
   .fx-pro .fx-home-side { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 820px) {
