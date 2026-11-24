@@ -71,7 +71,7 @@ async function documentUploadDialog(options) {
       </div>
       <details class="du-optional-note"><summary>+ Ajouter une note facultative</summary><div class="field"><label for="ops-upload-comment">Note liée à cette version</label><textarea id="ops-upload-comment" maxlength="2000" rows="2" placeholder="Préciser la raison du dépôt ou une modification importante…"></textarea></div></details>
       <div id="dj-version-note"></div>
-      <div class="field" id="du-justification-field" hidden><label for="du-justification">Justification après vérification</label><textarea id="du-justification" maxlength="1800" rows="2"></textarea></div>
+      <div class="field" id="du-justification-field" hidden><label for="du-justification">Justification après vérification (facultative)</label><textarea id="du-justification" maxlength="1800" rows="2"></textarea></div>
       <p id="du-error" class="du-error" role="alert" hidden></p>
       <div class="modal-actions"><button type="button" class="secondary" id="cancel-modal">Fermer</button>
         <button type="button" class="secondary" id="du-cancel-file" hidden>Annuler ce fichier</button>
@@ -166,7 +166,7 @@ async function documentUploadDialog(options) {
         <div class="field" id="du-relationship-reason" ${relationshipChoice === 'keep_duplicate' ? '' : 'hidden'}><label for="du-relationship-note">Justification de conservation</label><textarea id="du-relationship-note" minlength="12" maxlength="1800" rows="2"></textarea></div>
         <small>Vous pouvez aussi annuler ce fichier. Aucun rapprochement n’est appliqué automatiquement.</small></div>` : ''}
       ${canMove ? `<button type="button" class="secondary tiny" id="du-correct">Classer dans ${djFolderTitle(proposal.folder)} · ${e(proposal.canonical_type)}</button>` : ''}
-      ${!matches && selectedType ? '<p>Sans justification, le fichier est conservé avec un type à vérifier et ne compte pas dans la complétude.</p>' : ''}
+      ${!matches && selectedType ? '<label class="checkbox-line"><input type="checkbox" id="du-confirm-type"> Je confirme le type documentaire sélectionné.</label><p>Sans confirmation, le fichier est conservé avec un type à vérifier et ne compte pas dans la complétude.</p>' : ''}
     </section>`;
     get('#du-correct')?.addEventListener('click', () => {
       const rule = rules.find(item => item.folder === proposal.folder && item.document_type === proposal.canonical_type);
@@ -284,7 +284,6 @@ async function documentUploadDialog(options) {
     if (relationshipChoice === 'keep_duplicate' && relationshipReason.length < 12) { error('Justifiez la conservation du doublon en au moins 12 caractères.'); return; }
     const input = get('#du-justification');
     const justification = input.closest('[hidden]') ? '' : input.value.trim();
-    if (justification && justification.length < 12) { error('La justification doit comporter au moins 12 caractères.'); return; }
     const rule = rules.find(item => item.folder === selectedFolder && item.document_type === selectedType);
     const existing = relationshipChoice === 'new_version'
       ? writable.find(item => item.id === related?.candidate_document_id)
@@ -298,6 +297,7 @@ async function documentUploadDialog(options) {
       accepted = await api(`${base}/${encodeURIComponent(staged.id)}/publish`, {method: 'POST', body: JSON.stringify({
         folder: selectedFolder, doc_type: selectedType, title: title.value.trim(), rule_id: rule?.id,
         document_id: existing?.id, comment: get('#ops-upload-comment').value, justification,
+        confirm_type: Boolean(get('#du-confirm-type')?.checked),
         relationship_action: relationshipChoice || null,
         relationship_candidate_version_id: related?.candidate_version_id || null,
         relationship_reason: relationshipReason,

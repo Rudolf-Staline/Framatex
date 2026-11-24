@@ -50,7 +50,7 @@ async def intake_preview(launch_id:str,file:UploadFile=File(...),user:User=Depen
 @router.get('/api/document-versions/{version_id}/intake')
 def version_intake(version_id:str,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
     v=db.get(DocumentVersion,version_id)
-    if not v:raise HTTPException(404,'Version introuvable')
+    if not v or v.deleted_at is not None or v.document.deleted_at is not None:raise HTTPException(404,'Version introuvable')
     doc=get_doc(db,v.document_id)
     must(user,'launch.read')
     must(user,'document.read',doc.folder.slug)

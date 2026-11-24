@@ -34,7 +34,8 @@ REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_c
              '0005_internal_operations', '0006_client_workflow', '0007_client_order_launch',
              '0008_optional_rules', '0009_visible_checklist_duplicates', '0010_document_intake',
              '0011_business_memory', '0012_document_intelligence', '0012b_document_search',
-             '0013_access_management', '0014_business_memory_folder_access')
+             '0013_access_management', '0014_business_memory_folder_access',
+             '0015_document_soft_deletion')
 
 
 def _versions(conn):
@@ -212,6 +213,20 @@ def migrate():
                               'ON internal_experience_notes (folder_slug)'))
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0014_business_memory_folder_access','d':datetime.now(timezone.utc).isoformat()})
+        if '0015_document_soft_deletion' not in done:
+            # Additive logical deletion: historical files and versions remain intact.
+            for table, columns in {
+                'documents': (('deleted_at', 'DATETIME'), ('deleted_by', 'VARCHAR(36) REFERENCES users(id)'), ('deletion_reason', 'TEXT')),
+                'document_versions': (('deleted_at', 'DATETIME'), ('deleted_by', 'VARCHAR(36) REFERENCES users(id)'), ('deletion_reason', 'TEXT')),
+            }.items():
+                existing = {c['name'] for c in inspect(conn).get_columns(table)}
+                for name, spec in columns:
+                    if name not in existing:
+                        conn.execute(text(f'ALTER TABLE {table} ADD COLUMN {name} {spec}'))
+            conn.execute(text('CREATE INDEX IF NOT EXISTS ix_documents_deleted_at ON documents (deleted_at)'))
+            conn.execute(text('CREATE INDEX IF NOT EXISTS ix_document_versions_deleted_at ON document_versions (deleted_at)'))
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0015_document_soft_deletion','d':datetime.now(timezone.utc).isoformat()})
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
         cols = {c['name'] for c in inspect(conn).get_columns('launches')}
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():

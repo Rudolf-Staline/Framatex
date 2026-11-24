@@ -28,6 +28,7 @@ class PublishUpload(BaseModel):
     title: str = Field(min_length=1, max_length=220)
     comment: str = Field(default='', max_length=2000)
     justification: str = Field(default='', max_length=1800)
+    confirm_type: bool = False
     rule_id: str | None = None
     document_id: str | None = None
     relationship_action: str | None = None
@@ -36,7 +37,7 @@ class PublishUpload(BaseModel):
 
 
 class VerifyType(BaseModel):
-    justification: str = Field(min_length=12, max_length=1800)
+    justification: str = Field(default='', max_length=1800)
 
 
 def now():
@@ -172,10 +173,11 @@ def publish_document(launch_id: str, upload_id: str, payload: PublishUpload,
     analysis = staged.analysis
     status = identification_status(analysis, entity.slug, doc_type)
     justification = payload.justification.strip()
-    if justification and len(justification) < 12:
-        raise HTTPException(422, 'Décrivez votre vérification en au moins 12 caractères')
-    identified = {'analysis': analysis, 'status': 'confirmed' if justification else status,
-                  'justification': justification or None, 'reviewed_by': user.id if justification else None}
+    # The explicit confirmation checkbox, not a free-text motive, records the
+    # human classification decision. A reason remains optional in the audit.
+    confirmed = payload.confirm_type and status in {'to_verify', 'incompatible'}
+    identified = {'analysis': analysis, 'status': 'confirmed' if confirmed else status,
+                  'justification': justification or None, 'reviewed_by': user.id if confirmed else None}
     stored = (staged.original_name, staged.disk_name, staged.size, staged.sha256, staged.content_type)
     claim(db, staged)
     try:
@@ -217,8 +219,6 @@ def verify_type(version_id: str, payload: VerifyType, user: User = Depends(get_c
     if not item or item.status not in {'to_verify', 'incompatible'}:
         raise HTTPException(409, 'Aucune vérification de type en attente pour cette version')
     justification = payload.justification.strip()
-    if len(justification) < 12:
-        raise HTTPException(422, 'Décrivez votre vérification en au moins 12 caractères')
     item.status, item.justification, item.reviewed_by = 'confirmed', justification, user.id
     audit(db, user, 'intake.classification.confirm', 'document_version', version_id, {'justification': justification})
     db.commit()

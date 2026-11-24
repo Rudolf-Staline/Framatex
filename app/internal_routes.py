@@ -237,7 +237,7 @@ def readable_version(db, user, version_id):
     must, _, _, _ = guards()
     must(user, "launch.read")
     version = db.get(DocumentVersion, version_id)
-    if not version:
+    if not version or version.deleted_at is not None or version.document.deleted_at is not None:
         raise HTTPException(404, "Version introuvable")
     doc = version.document
     must_access(db, user, doc.folder.launch_id)
@@ -294,6 +294,8 @@ def search(q: str = "", folder: str = "", doc_type: str = "", launch_id: str = "
     query = select(DocumentVersion).join(Document).order_by(DocumentVersion.created_at.desc())
     for version in db.scalars(query):
         document = version.document
+        if document.deleted_at is not None or version.deleted_at is not None:
+            continue
         launch = launch_rows.get(document.folder.launch_id)
         from .access_control import can
         if not launch or not can(user, "document.read", document.folder.slug, launch.id):
@@ -317,7 +319,7 @@ def search(q: str = "", folder: str = "", doc_type: str = "", launch_id: str = "
                         "client_name": launch.client_name, "document_id": document.id, "title": document.title,
                         "doc_type": document.doc_type, "folder": document.folder.slug,
                         "version_id": version.id, "version": version.number,
-                        "is_current": version.number == max(v.number for v in document.versions),
+                        "is_current": version.number == max(v.number for v in document.versions if v.deleted_at is None),
                         "original_name": version.original_name, "size": version.size, "sha256": version.sha256,
                         "created_at": version.created_at.isoformat(), "uploader": uploader.name if uploader else None,
                         "content_excerpt": content_matches.get(version.id),
