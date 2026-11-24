@@ -6,7 +6,7 @@ import subprocess
 import sys
 from threading import BoundedSemaphore
 
-from .intake import MAX_ANALYSIS_BYTES, normalized, preview
+from .intake import LIMITS, MAX_ANALYSIS_BYTES, normalized, preview
 
 ANALYZERS = BoundedSemaphore(2)
 ALIASES = {'dossier technique': 'Dossier technique client', 'declaration douaniere': 'Pièce douanière'}
@@ -15,6 +15,8 @@ ALIASES = {'dossier technique': 'Dossier technique client', 'declaration douanie
 def read_safely(path, filename, *, allow_ocr=True):
     def unavailable(method, message):
         return {'filename': filename, 'method': method, 'warnings': [message], 'text_excerpt': '',
+                'extracted_text': '', 'sources': [], 'limitations': [{'code': method, 'message': message}],
+                'reading_status': 'impossible', 'sha256': None, 'schema_version': 'document-intelligence/v2',
                 'classification': {'suggestions': [], 'decisive': False, 'ambiguous': False,
                                    'needs_confirmation': True}, 'fields': [], 'human_validation_required': True}
 
@@ -25,8 +27,10 @@ def read_safely(path, filename, *, allow_ocr=True):
     try:
         result = subprocess.run([sys.executable, '-m', 'app.document_intake', str(path.resolve()), filename,
                                  'ocr' if allow_ocr else 'text'], cwd=Path(__file__).resolve().parents[1],
-                                capture_output=True, timeout=30 if allow_ocr else 8, check=True)
+                                capture_output=True, timeout=LIMITS.document_timeout if allow_ocr else min(15, LIMITS.document_timeout), check=True)
         return json.loads(result.stdout)
+    except subprocess.TimeoutExpired:
+        return unavailable('analysis_timeout', 'Analyse interrompue après le délai de sécurité. Vérification manuelle requise.')
     except (subprocess.SubprocessError, OSError, ValueError):
         return unavailable('analysis_failed', 'Analyse impossible dans le délai imparti. Vérification manuelle requise.')
     finally:
@@ -65,7 +69,7 @@ def assess_direct(path, filename, folder, doc_type, strict=False):
 if __name__ == '__main__':
     if sys.platform != 'win32':
         import resource
-        ceiling = 768 * 1024 * 1024
+        ceiling = LIMITS.max_memory_mib * 1024 * 1024
         _, current_limit = resource.getrlimit(resource.RLIMIT_AS)
         if current_limit != resource.RLIM_INFINITY:
             ceiling = min(ceiling, current_limit)

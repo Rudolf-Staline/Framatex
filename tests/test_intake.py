@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.core import Base,engine,SessionLocal,hash_password
 from app.models import User,Role,RolePermission
-from app.intake import classify_document,extract_fields,preview
+from app.intake import classify_document,extract_fields,preview,tesseract_diagnostics
 
 H={'X-Framatex-Request':'1'}
 TEXT=(b'BON DE LIVRAISON\nReference matiere : TISSU-ABC-91\n'
@@ -91,6 +91,7 @@ def test_hybrid_pdf_reads_native_and_scanned_pages_with_page_provenance(tmp_path
         first=pdf.new_page();first.insert_text((50,60),'COMMANDE CLIENT\nReference commande : CMD-501')
         pdf.new_page()
         pdf.save(path)
+    monkeypatch.setattr(intake,'_ocr_engine',lambda: object())
     monkeypatch.setattr(intake,'_ocr_image',lambda image, engine:'Quantite : 240 pieces')
     report=preview(path,'scan.pdf')
     assert report['method']=='pdf_hybrid'
@@ -98,6 +99,88 @@ def test_hybrid_pdf_reads_native_and_scanned_pages_with_page_provenance(tmp_path
     assert qty['value']=='240' and qty['page']==2 and qty['method']=='pdf_ocr'
     ref=next(item for item in report['fields'] if item['key']=='reference_commande')
     assert ref['page']==1 and ref['method']=='pdf_text'
+
+
+def test_native_pdf_reads_information_after_the_former_three_page_limit(tmp_path):
+    import fitz
+    path=tmp_path/'long.pdf'
+    with fitz.open() as pdf:
+        for page_number in range(6):
+            page=pdf.new_page()
+            page.insert_text((50,60), f'Page {page_number + 1} - document de travail')
+        pdf[5].insert_text((50,90), 'Reference commande : CMD-FIN-006')
+        pdf.save(path)
+    report=preview(path,path.name,allow_ocr=False)
+    reference=next(item for item in report['fields'] if item['key']=='reference_commande')
+    assert reference['value']=='CMD-FIN-006'
+    assert reference['page']==6
+    assert report['reading_status']=='success'
+    assert not any('3 premières pages' in warning for warning in report['warnings'])
+
+
+def test_structured_values_preserve_raw_value_normalization_and_confidence():
+    fields={item['key']:item for item in extract_fields(
+        'Client : Atelier Atlas\nFournisseur : Textile Maroc\n'
+        'Quantité : 1 250,50 pièces\nMontant total : 1,234.50 EUR\nDate : 7/11/2026')}
+    assert fields['client']['original_value']=='Atelier Atlas'
+    assert fields['fournisseur']['original_value']=='Textile Maroc'
+    assert fields['quantite']['normalized_value']=='1250.50'
+    assert fields['montant_total']['normalized_value']=='1234.50'
+    assert fields['date_document']['normalized_value']=='2026-11-07'
+    assert fields['quantite']['status']=='proposed'
+    assert fields['quantite']['confidence'] < 1
+
+
+def test_unrelated_document_is_not_auto_classified_and_fuzzy_business_heading_is_explainable():
+    assert classify_document('examen-mathematiques.pdf', 'Examen de mathématiques - intégrales')['status']=='impossible'
+    result=classify_document('scan.pdf', 'BON DE LIVRAISON\nQuantité livrée : 42 pièces')
+    assert result['decisive']
+    assert result['suggestions'][0]['confidence'] >= .60
+    assert result['suggestions'][0]['evidence'][0]['source']=='en-tête'
+
+
+def test_tesseract_diagnostics_distinguish_missing_french_language(monkeypatch):
+    import app.intake as intake
+    monkeypatch.setattr(intake,'_tesseract_candidates',lambda:['fake-tesseract'])
+    monkeypatch.setattr(intake.Path,'is_file',lambda self: True)
+    class Answer:
+        stdout='List of available languages in "/tmp" (1):\neng\n'
+    monkeypatch.setattr(intake.subprocess,'run',lambda *args,**kwargs: Answer())
+    result=tesseract_diagnostics()
+    assert result['code']=='ocr_language_missing'
+    assert result['missing_languages']==['fra']
+
+
+def test_protected_pdf_and_missing_tesseract_are_reported_precisely(tmp_path, monkeypatch):
+    import fitz
+    import app.intake as intake
+    protected=tmp_path/'protected.pdf'
+    with fitz.open() as pdf:
+        pdf.new_page().insert_text((50,60),'document protégé')
+        pdf.save(protected,encryption=fitz.PDF_ENCRYPT_AES_256,owner_pw='owner',user_pw='user')
+    report=preview(protected,protected.name)
+    assert report['method']=='pdf_protected'
+    assert report['limitations'][0]['code']=='pdf_protected'
+
+    scanned=tmp_path/'scan.pdf'
+    with fitz.open() as pdf:
+        pdf.new_page()
+        pdf.save(scanned)
+    monkeypatch.setattr(intake,'_ocr_engine',lambda: (_ for _ in ()).throw(intake.OCRProblem('tesseract_missing','Tesseract absent')))
+    report=preview(scanned,scanned.name)
+    assert report['limitations'][0]['code']=='tesseract_missing'
+
+
+@pytest.mark.parametrize(('filename','content','doc_type'),[
+    ('facture-2026.pdf','FACTURE\nMontant total : 200 EUR','Facture'),
+    ('fiche-emploi.pdf',"FICHE D'EMPLOI\nConsommation tissu : 1,2 m / pièce",'Fiche d’emploi'),
+    ('besoin.xlsx','CALCUL DU BESOIN\nBesoin matière : 120 kg','Calcul du besoin'),
+    ('reception.pdf','BON DE RÉCEPTION\nQuantité : 20 pièces','Bon de réception'),
+])
+def test_standard_document_types_remain_explainable(filename,content,doc_type):
+    result=classify_document(filename,content)
+    assert result['suggestions'][0]['doc_type']==doc_type
+    assert result['suggestions'][0]['evidence']
 
 
 def test_preview_is_temporary_and_does_not_create_document(client):
@@ -132,7 +215,11 @@ def test_confirmed_fields_attached_to_exact_version(client):
     body={'field_key':'quantite','value':'240','unit':'pièces','source_excerpt':'Quantité : 240 pièces'}
     assert client.post(f'/api/document-versions/{version}/intake/confirm',json=body,headers=H).status_code==201
     assert client.post(f'/api/document-versions/{version}/intake/confirm',json=body,headers=H).status_code==409
-    assert client.get(f'/api/document-versions/{version}/intake').json()['confirmed'][0]['value']=='240'
+    stored=client.get(f'/api/document-versions/{version}/intake').json()
+    assert stored['confirmed'][0]['value']=='240'
+    assert stored['document_context']['document_version_id']==version
+    assert stored['document_context']['folder']=='rose'
+    assert stored['sha256']==d.json()['latest']['sha256']
     assert client.post(f'/api/document-versions/{version}/intake/confirm',json={**body,'field_key':'unknown'},headers=H).status_code==422
     d2=client.post(f'/api/documents/{d.json()["id"]}/versions',files={'file':('new.txt',b'nouvelle version')},headers=H)
     assert d2.status_code==201
