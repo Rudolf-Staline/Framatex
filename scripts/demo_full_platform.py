@@ -123,7 +123,9 @@ def full_journey(qa, browser, base, admin_password, captures):
         def activate():
             internal_login(admin, 'recette@framatex.test', admin_password)
             headings = adm.locator('main h2').all_inner_texts()
-            order = ['Actions prioritaires', 'Documents à traiter', 'Complétude des dossiers', 'Alertes importantes', 'Activité récente']
+            # Accueil sans statistiques : sections de travail, dans l'ordre de lecture.
+            order = ['Actions prioritaires', 'Documents à traiter', 'Commandes récentes', 'Demandes clients à traiter', 'Alertes à traiter', 'Notifications']
+            assert adm.locator('.ops-kpi, [data-ops-kpi]').count() == 0
             assert [h for h in headings if h in order] == order, headings
             admin.check_page('parcours-dashboard')
             nav(adm, 'clients')

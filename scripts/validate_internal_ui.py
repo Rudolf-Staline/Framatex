@@ -104,10 +104,10 @@ def run_browser(output, base_url, email, password, ids):
         page.locator('#email').fill(email)
         page.locator('#password').fill(password)
         page.locator('#login-form button[type=submit]').click()
-        expect(page.locator('.ops-heading h1')).to_have_text('Tableau de bord')
-        assert page.locator('.ops-kpi').count() == 10
+        expect(page.locator('#fx-welcome-title')).to_be_visible()
+        assert page.locator('.ops-kpi').count() == 0
         expect(page.locator('#ops-missing')).to_contain_text('Calcul du besoin')
-        results['checks'].append('Connexion interne existante et 10 KPI réels')
+        results['checks'].append('Connexion interne existante, accueil sans statistiques et documents à traiter réels')
 
         def ready():
             page.wait_for_load_state('networkidle')
@@ -127,7 +127,7 @@ def run_browser(output, base_url, email, password, ids):
         for width in (1440, 1024, 820, 390):
             page.set_viewport_size({'width': width, 'height': 1000 if width >= 820 else 844})
             page.evaluate("navigate('home')")
-            expect(page.locator('.ops-heading h1')).to_have_text('Tableau de bord')
+            expect(page.locator('#fx-welcome-title')).to_be_visible()
             capture('dashboard', width, full_page=True)
             capture('documents-manquants', width, '#ops-missing')
             page.evaluate("navigate('launches')")

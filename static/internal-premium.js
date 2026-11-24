@@ -111,6 +111,7 @@ function fxShell() {
     const accountButton = document.createElement('button');
     accountButton.type = 'button';
     accountButton.className = state.view === 'account' ? 'is-active' : '';
+    accountButton.dataset.accView = 'account';
     accountButton.title = 'Mon compte';
     accountButton.innerHTML = `${FX_SVG.user}<span>Mon compte</span>`;
     accountButton.onclick = () => navigate('account');
@@ -248,31 +249,6 @@ function fxActionRows(items) {
   }).join('')}</ul>`;
 }
 
-const FX_DOC_TABS = [
-  ['pending', 'En attente de validation', 'pending_validation_documents', 'Validation attendue', 'info'],
-  ['missing', 'Manquants', 'missing_documents', 'Pièce manquante', 'warn'],
-  ['identification', 'Types à vérifier', 'identification_documents', 'Type à confirmer', 'warn'],
-  ['duplicate', 'Doublons', 'duplicate_documents', 'Doublon à examiner', 'warn'],
-];
-function fxDocRows(report, key) {
-  const [, , field, stateLabel, tone] = FX_DOC_TABS.find(tab => tab[0] === key);
-  const rows = (report[field] || []).slice(0, 8);
-  if (!rows.length) return fxEmpty({pending: 'Aucun document en attente de validation.', missing: 'Aucune pièce obligatoire manquante.', identification: 'Aucun type documentaire à confirmer.', duplicate: 'Aucun doublon à examiner.'}[key]);
-  return `<ul class="fx-list">${rows.map(row => {
-    const target = opsTargetData({launch_id: row.launch_id, folder: row.folder, document_id: row.document_id || row.documents?.[0]?.document_id});
-    return `<li><button type="button" class="fx-row" data-ops-target="${target}"><span class="fx-mark is-${e(row.folder)}"></span>
-      <span><strong>${e(row.title)}</strong><small>${e(row.order_ref || row.launch_name)} · ${e(FX_FOLDER_NAME[row.folder] || row.folder)}${row.article ? ' · ' + e(row.article) : ''}</small></span>
-      <span class="fx-state is-${tone}">${e(stateLabel)}</span>${FX_SVG.go}</button></li>`;
-  }).join('')}</ul>`;
-}
-function fxDocuments(report) {
-  const available = FX_DOC_TABS.filter(([key, , field]) => key === 'pending' || (report[field] || []).length);
-  const current = state.fxDocTab && available.some(tab => tab[0] === state.fxDocTab) ? state.fxDocTab : 'pending';
-  const tabs = available.length > 1 ? `<div class="dj-subnav fx-doc-tabs" role="tablist" aria-label="Documents à traiter">${available.map(([key, label, field]) =>
-    `<button type="button" role="tab" class="dj-chip" aria-selected="${key === current}" data-fx-doc="${key}">${e(label)} <span aria-hidden="true">${(report[field] || []).length}</span></button>`).join('')}</div>` : '';
-  return `${tabs}<div id="fx-doc-body">${fxDocRows(report, current)}</div>`;
-}
-
 function fxFolderTags(row) {
   const tags = (row.folders || []).filter(folder => folder.can_read).map(folder => {
     const c = folder.completion || {};
@@ -353,8 +329,16 @@ function fxMemory(notes) {
     <span class="fx-state ${tone[note.importance] ? 'is-' + tone[note.importance] : ''}">${e(note.category || 'Retour')}</span>${FX_SVG.go}</button></li>`).join('')}</ul>`;
 }
 
+// Tableau de bord d'une commande (fonction existante orderDashboard), choisi depuis l'accueil.
+function fxOrderPicker(launches) {
+  if (!launches.length) return '';
+  return `<form id="dash-select-order" class="fx-order-picker"><label for="dash-order">Tableau de bord d’une commande</label>
+    <select id="dash-order" required><option value="">Sélectionnez une commande</option>${launches.map(row => `<option value="${e(row.id)}">${e(row.order_ref || row.name)}${row.client_name ? ' · ' + e(row.client_name) : ''}</option>`).join('')}</select>
+    <button type="submit" class="secondary">Afficher</button></form>`;
+}
+
 function fxWelcome(title, text, shortcuts) {
-  return `<section class="fx-welcome" aria-labelledby="fx-welcome-title"><span class="fx-welcome-eyebrow">Espace FRAMATEX</span>
+  return `<section class="fx-welcome ops-heading" aria-labelledby="fx-welcome-title"><span class="fx-welcome-eyebrow">Espace FRAMATEX</span>
     <h1 id="fx-welcome-title">${e(title)}</h1><p>${e(text)}</p>
     ${shortcuts.length ? `<div class="fx-shortcuts">${shortcuts.map(([action, ico, label, main]) => `<button type="button" class="fx-shortcut ${main ? 'is-main' : ''}" data-fx-shortcut="${action}">${icon(ico)}${e(label)}</button>`).join('')}</div>` : ''}</section>`;
 }
@@ -376,12 +360,13 @@ async function fxHome() {
       ['search', 'search', 'Recherche documentaire'],
       ['access', 'users', 'Collaborateurs et habilitations'], ['clients', 'users', 'Clients et demandes'], ['experience', 'file', 'Mémoire métier'],
     ];
-    mount(`<div class="fx-home">
+    state.dashState = 'missing'; state.dashFilter = 'all'; state.dashShowAll = false;
+    mount(`<div class="fx-home dj-dash">
       ${fxWelcome(`Bonjour ${name}`, `${fxToday()}. Commandes, documents et demandes qui attendent une intervention.`, shortcuts)}
       <div class="fx-home-grid"><div class="fx-home-col">
         ${fxSection('fx-priorities', 'Actions prioritaires', 'Pièces à déposer, validations et vérifications à mener.', fxActionRows(report.priorities.items.slice(0, 6)), fxLink('actions', 'Toutes les actions'))}
-        ${fxSection('fx-documents', 'Documents à traiter', 'Pièces déposées à valider, pièces exigibles absentes et contrôles de classement.', fxDocuments(report))}
-        ${fxSection('fx-orders', 'Commandes récentes', 'Dernières commandes modifiées, avec l’avancement de chaque sous-dossier.', fxOrders(report.launches), fxLink('launches', 'Toutes les commandes'))}
+        ${dashMissingPanel(report)}
+        ${fxSection('fx-orders', 'Commandes récentes', 'Dernières commandes modifiées, avec l’avancement de chaque sous-dossier.', fxOrders(report.launches) + fxOrderPicker(report.launches), fxLink('launches', 'Toutes les commandes'))}
       </div><div class="fx-home-col fx-home-side">
         ${fxSection('fx-requests', 'Demandes clients à traiter', 'Demandes envoyées depuis l’Espace Client.', fxRequests(requests), fxLink('clients', 'Clients et demandes'))}
         ${fxSection('fx-alerts', 'Alertes à traiter', 'Incohérences et modifications qui demandent une décision.', fxAlerts(report))}
@@ -403,13 +388,14 @@ async function fxHome() {
       ['search', 'search', 'Recherche documentaire', 'Uniquement dans vos sous-dossiers'],
       ...(memory ? [['experience', 'file', 'Mémoire métier', 'Retours sur vos sous-dossiers']] : []),
       ['assistant', 'layers', 'Assistant', 'Procédures et bons écrans'], ['account', 'users', 'Mon compte', 'Mot de passe et préférences']];
-    mount(`<div class="fx-home">
+    state.dashState = 'missing'; state.dashFilter = 'all'; state.dashShowAll = false;
+    mount(`<div class="fx-home dj-dash">
       ${fxWelcome(`Bonjour ${name}`, `${fxToday()}. Vos commandes attribuées et ce qui vous attend dans vos sous-dossiers.`,
         [['launches', 'folder', 'Mes commandes', true], ['myfolders', 'folder', 'Mes sous-dossiers'], ['search', 'search', 'Recherche documentaire']])}
       <div class="fx-home-grid"><div class="fx-home-col">
         ${fxSection('fx-assigned', 'Mes commandes attribuées', 'Ouvrez directement le sous-dossier sur lequel vous travaillez.', fxAssigned(account), fxLink('myfolders', 'Mes sous-dossiers'))}
         ${fxSection('fx-priorities', 'Mes actions prioritaires', 'Limitées à vos sous-dossiers et à vos actions autorisées.', fxActionRows(report.priorities.items.slice(0, 6)), fxLink('actions', 'Toutes mes actions'))}
-        ${pending ? fxSection('fx-documents', 'Documents à traiter', 'Dans vos sous-dossiers.', fxDocuments(report)) : ''}
+        ${pending || (report.missing_documents || []).length ? dashMissingPanel(report) : ''}
       </div><div class="fx-home-col fx-home-side">
         ${fxSection('fx-notifications', 'Mes notifications', '', fxNotifications(notifications), fxLink('notifications', 'Toutes les notifications'))}
         ${fxSection('fx-quick', 'Accès rapides', '', fxQuick(quick))}
@@ -422,7 +408,8 @@ async function fxHome() {
 function fxBindHome(report) {
   const root = app.querySelector('.fx-home');
   if (!root) return;
-  bindOpsTargets(root);
+  // Avec le panneau « Documents à traiter », dashBind lie toutes les cibles de l'accueil (une seule fois).
+  if (!root.querySelector('#ops-missing')) bindOpsTargets(root);
   root.querySelectorAll('[data-fx-go]').forEach(button => button.addEventListener('click', () => navigate(button.dataset.fxGo)));
   root.querySelectorAll('[data-fx-shortcut]').forEach(button => button.addEventListener('click', () => {
     if (button.dataset.fxShortcut === 'new') openNewLaunch(); else navigate(button.dataset.fxShortcut);
@@ -434,13 +421,12 @@ function fxBindHome(report) {
   });
   root.querySelectorAll('[data-fx-open]').forEach(button => button.addEventListener('click', () => openLaunch(button.dataset.fxOpen, button.dataset.fxFolder || undefined)));
   root.querySelectorAll('[data-fx-request]').forEach(button => button.addEventListener('click', () => operationsClientRequest(button.dataset.fxRequest).catch(showErr)));
-  root.querySelectorAll('[data-fx-doc]').forEach(button => button.addEventListener('click', () => {
-    state.fxDocTab = button.dataset.fxDoc;
-    root.querySelectorAll('[data-fx-doc]').forEach(tab => tab.setAttribute('aria-selected', String(tab === button)));
-    const body = root.querySelector('#fx-doc-body');
-    body.innerHTML = fxDocRows(report, state.fxDocTab);
-    bindOpsTargets(body);
-  }));
+  // Documents à traiter : composant existant (états, filtre par sous-dossier, lignes cliquables).
+  if (root.querySelector('#ops-missing')) dashBind(report);
+  root.querySelector('#dash-select-order')?.addEventListener('submit', event => {
+    event.preventDefault();
+    orderDashboard(root.querySelector('#dash-order').value).catch(showErr);
+  });
 }
 
 home = fxHome;

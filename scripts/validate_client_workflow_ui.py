@@ -53,7 +53,7 @@ def run_browser(output, base_url, email, password, ids, browser=None):
         admin.locator('#email').fill(email)
         admin.locator('#password').fill(password)
         admin.locator('#login-form button[type=submit]').click()
-        expect(admin.locator('.ops-heading h1')).to_have_text('Tableau de bord')
+        expect(admin.locator('#fx-welcome-title')).to_be_visible()
         client.goto('/espace-client#/inscription')
         for key, value in {'company': 'Entreprise Client A', 'address': '1 adresse fictive', 'contact': 'Contact Client A',
                            'phone': '0600000000', 'email': 'workflow-a@example.test',

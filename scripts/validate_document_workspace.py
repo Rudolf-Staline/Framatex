@@ -113,7 +113,7 @@ def workspace(qa, browser, server, captures, ocr_available):
             colors = page.locator('.dj-folder-top').evaluate_all('nodes => nodes.map(n => getComputedStyle(n).backgroundColor)')
             assert len(set(colors)) == 4 and 'rgba(0, 0, 0, 0)' not in colors, colors
             capture('quatre-sous-dossiers')
-            for folder, label, count in [('jaune', 'Jaune', 10), ('rose', 'Rose', 4), ('bleu', 'Bleu', 5), ('vert', 'Vert', 3)]:
+            for folder, label, count in [('jaune', 'jaune', 10), ('rose', 'rose', 4), ('bleu', 'bleu', 5), ('vert', 'vert', 3)]:
                 page.locator(f'.dj-folder[data-folder="{folder}"]').click()
                 expect(page.locator('h1')).to_have_text(f'Sous-dossier {label}')
                 expect(page.locator('.dj-checklist:not(.dj-other-table) tbody tr')).to_have_count(count)

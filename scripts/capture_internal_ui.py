@@ -108,7 +108,10 @@ def run(output, base, email, password, ids, widths):
                 page.wait_for_timeout(450)
                 over = page.evaluate('document.documentElement.scrollWidth - innerWidth')
                 if over > 1:
-                    report['overflow'].append(f'{width}-{name}: +{over}px')
+                    culprits = page.evaluate('''() => [...document.querySelectorAll('.content *')].filter(el => {
+                        const r = el.getBoundingClientRect(); return r.right > innerWidth + 1 && r.width > 0; })
+                        .slice(-4).map(el => el.tagName.toLowerCase() + '.' + [...el.classList].join('.') + '#' + el.id + ' ' + Math.round(el.getBoundingClientRect().right))''')
+                    report['overflow'].append(f'{width}-{name}: +{over}px {culprits}')
                 path = output / f'{width}-{name}.png'
                 page.screenshot(path=str(path), animations='disabled')
                 report['shots'].append(path.name)
@@ -162,9 +165,30 @@ def run(output, base, email, password, ids, widths):
             shot(chef, 'admin-commandes', width, nav('launches'))
             shot(chef, 'admin-commande', width, open_launch())
             shot(chef, 'admin-sous-dossier-jaune', width, open_launch('jaune'))
+        def document(p):
+            open_launch('jaune')(p)
+            p.locator('.dj-checklist button:has-text("Ouvrir")').first.click()
+            p.wait_for_selector('.modal')
+            p.wait_for_timeout(400)
+
+        def upload(p):
+            open_launch('jaune')(p)
+            p.locator('button:has-text("Déposer des documents")').first.click()
+            p.wait_for_selector('.modal')
+
+        def controls(p):
+            open_launch('jaune')(p)
+            p.locator('[data-dj-tab="controles"]').first.click()
+            p.wait_for_timeout(500)
+
         for width in KEY_WIDTHS:
             shot(chef, 'admin-matrice', width, matrix)
             close_modal(chef)
+            shot(chef, 'admin-document', width, document)
+            close_modal(chef)
+            shot(chef, 'admin-depot', width, upload)
+            close_modal(chef)
+            shot(chef, 'admin-controles', width, controls)
             for view, name in (('access', 'collaborateurs'), ('experience', 'memoire-metier'), ('notifications', 'notifications'),
                                ('actions', 'mes-actions'), ('search', 'recherche'), ('clients', 'clients'), ('audit', 'audit'), ('account', 'mon-compte')):
                 shot(chef, f'admin-{name}', width, nav(view))

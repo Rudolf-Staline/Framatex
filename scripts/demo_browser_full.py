@@ -24,7 +24,10 @@ def nav(page, view):
     # previously reached networkidle state is not a render barrier: require the
     # old main node to be detached before interacting with the next generation.
     old_main.wait_for_element_state('hidden', timeout=15000)
-    expected = {'home': 'Tableau de bord', 'launches': 'Commandes et lancements', 'search': 'Recherche documentaire',
+    if view == 'home':
+        from playwright.sync_api import expect
+        expect(page.locator('#fx-welcome-title')).to_be_visible()
+    expected = {'launches': 'Commandes et lancements', 'search': 'Recherche documentaire',
                 'audit': 'Historique et audit', 'experience': 'Mémoire métier', 'clients': 'Clients et demandes'}
     if view in expected:
         from playwright.sync_api import expect
@@ -79,12 +82,9 @@ def internal_journey(qa, browser, base, password, ids, captures):
 
     def dashboard():
         nav(page, 'home')
-        data = view.context.request.get(base + '/api/workspace/dashboard').json()
-        for key, value in data['kpis'].items():
-            element = page.locator(f'[data-ops-kpi="{key}"] strong')
-            if element.count():
-                expect(element).to_have_text(str(value))
-        for section in ('#ops-priorities', '#ops-missing', '#ops-concerns'):
+        # Accueil sans statistiques : aucune carte d'indicateur, des listes de travail cliquables.
+        assert page.locator('.ops-kpi, [data-ops-kpi]').count() == 0
+        for section in ('#fx-priorities', '#ops-missing', '#fx-alerts'):
             nav(page, 'home')
             total = page.locator(section + ' [data-ops-target]').count()
             assert total > 0, section
@@ -100,9 +100,10 @@ def internal_journey(qa, browser, base, password, ids, captures):
                 if target.get('folder'):
                     expect(page.locator(f'[data-dj-folder="{target["folder"]}"][aria-current="page"]')).to_be_visible()
                 page.locator('#close-modal').click() if page.locator('#close-modal').count() else None
-        for key in ('active_launches', 'complete_launches', 'incomplete_launches', 'pending_documents'):
-            nav(page, 'home'); page.locator(f'[data-ops-kpi="{key}"]').click()
-            expect(page.locator('main')).not_to_contain_text('Chargement de l’espace documentaire')
+        nav(page, 'home'); page.locator('#fx-orders [data-fx-go="launches"]').click()
+        expect(page.locator('#ops-launch-results')).to_be_visible()
+        nav(page, 'home'); page.locator('[data-dash-state="pending"]').click()
+        expect(page.locator('#dash-missing-body')).not_to_contain_text('Chargement de l’espace documentaire')
         open_folder(ids['B'])
         for slug in ('jaune', 'rose', 'bleu', 'vert', 'jaune'):
             page.locator(f'[data-dj-folder="{slug}"]').click()

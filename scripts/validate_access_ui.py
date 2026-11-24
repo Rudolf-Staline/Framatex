@@ -180,7 +180,7 @@ def run_browser(output, base, chef_email, chef_pw, checks, secrets_used, port):
             page.fill('#acc-new', tech['password'])
             page.fill('#acc-confirm', tech['password'])
             page.click('#acc-password-form button[type=submit]')
-            expect(page.locator('.ops-heading h1')).to_have_text('Mon tableau de bord')
+            expect(page.locator('#fx-welcome-title')).to_contain_text('Bonjour')
             tech_pages[key] = (ctx, page)
         a_ctx, a = tech_pages['a']
         expect(a.locator('.acc-empty')).to_contain_text('Aucune commande')

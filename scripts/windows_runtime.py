@@ -440,9 +440,9 @@ def browser_smoke(base, email, password):
             page.goto(base + '/espace-framatex')
             page.fill('#email', email); page.fill('#password', password)
             page.click('#login-form button[type=submit]')
-            expect(page.locator('.ops-heading h1')).to_have_text('Tableau de bord', timeout=15000)
-            expect(page.locator('.ops-kpi')).to_have_count(10)
-            expect(page.locator('[data-ops-kpi="identification_documents"]')).to_be_visible()
+            expect(page.locator('#fx-welcome-title')).to_be_visible(timeout=15000)
+            expect(page.locator('.ops-kpi')).to_have_count(0)
+            expect(page.locator('#ops-missing')).to_be_visible()
             page.locator('.sidebar [data-view="launches"]').click()
             expect(page.locator('#ops-launch-results')).to_be_visible()
             assert not page.locator('.boot').count() and not errors, errors
