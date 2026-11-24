@@ -87,3 +87,16 @@ def test_landing_premium_navigation_and_real_team_photo():
         css = client.get('/assets/landing/landing.css?v=landing-premium-1').text
         assert '--landing-serif' in css
         assert '.site-header {\n  position: sticky; top: 0; z-index: 50;\n  background: var(--navy);' in css
+
+
+def test_landing_folder_3d_scene_is_local_lazy_and_has_static_fallback():
+    with TestClient(app) as client:
+        html = client.get('/').text
+        assert 'data-folder3d' in html and 'folder3d-loader.js' in html
+        assert 'class="fd3-static"' in html and 'plateforme-accueil.jpg' in html      # alternative statique
+        assert 'three.module' not in html                                           # chargement différé
+        loader = client.get('/assets/landing/folder3d-loader.js').text
+        assert 'prefers-reduced-motion' in loader and 'webgl' in loader and "import('/assets/landing/folder3d.js" in loader
+        for path in ('/assets/landing/folder3d.js', '/assets/landing/vendor/three.module.min.js',
+                     '/assets/landing/plateforme-accueil.webp', '/assets/landing/vendor/THREE-LICENSE.txt'):
+            assert client.get(path).status_code == 200, path

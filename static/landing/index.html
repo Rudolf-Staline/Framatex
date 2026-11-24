@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="/assets/landing/motion.css?v=landing-premium-1" />
   <script defer src="/assets/landing/landing.js?v=landing-premium-1"></script>
   <script defer src="/assets/landing/partnership-carousel.js?v=cinematic-1"></script>
+  <script defer src="/assets/landing/folder3d-loader.js?v=cinematic-3d-1"></script>
 </head>
 <body class="lp">
   <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -114,6 +115,25 @@
     </section>
 
     <!-- 3. Nos espaces -->
+    <!-- Le Dossier Jaune en 3D (WebGL, défilement) ; alternative statique sur mobile / mouvement réduit -->
+    <section class="fd3" id="dossier-numerique" aria-labelledby="fd3-title" data-folder3d data-capture="/assets/landing/plateforme-accueil.webp">
+      <div class="fd3-sticky">
+        <canvas class="fd3-canvas" aria-hidden="true"></canvas>
+        <div class="container fd3-copy">
+          <div>
+            <p class="eyebrow">Du papier au numérique</p>
+            <h2 id="fd3-title">Le Dossier Jaune, devenu numérique</h2>
+            <ol class="fd3-steps"><li data-fd-step><strong>Le dossier jaune</strong>Chaque commande commençait par une chemise cartonnée et ses pièces.</li><li data-fd-step><strong>Il s’ouvre</strong>Fiches techniques, commandes, bons de livraison, factures.</li><li data-fd-step><strong>Les pièces se déploient</strong>Chaque document trouve sa place, avec ses versions.</li><li data-fd-step><strong>Quatre sous-dossiers</strong>Jaune, rose, bleu, vert : technique, réception, dédouanement, factures.</li><li data-fd-step><strong>Une plateforme numérique</strong>Le même dossier, accessible et contrôlé, dans l’Espace FRAMATEX.</li></ol>
+          </div>
+          <figure class="fd3-static">
+            <img src="/assets/landing/plateforme-accueil.jpg" alt="Capture de l’accueil de l’Espace FRAMATEX, avec des données de démonstration fictives" width="1280" height="800" loading="lazy" decoding="async" />
+            <ul class="fd3-chips"><li><i style="background:var(--fx-folder-jaune)" aria-hidden="true"></i>Sous-dossier jaune</li><li><i style="background:var(--fx-folder-rose)" aria-hidden="true"></i>Sous-dossier rose</li><li><i style="background:var(--fx-folder-bleu)" aria-hidden="true"></i>Sous-dossier bleu</li><li><i style="background:var(--fx-folder-vert)" aria-hidden="true"></i>Sous-dossier vert</li></ul>
+            <figcaption>Capture réelle de la plateforme, données de démonstration anonymisées.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
     <section class="section spaces" id="espaces" aria-labelledby="spaces-title">
       <div class="container">
         <div class="section-head section-head-split reveal">
