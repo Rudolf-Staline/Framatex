@@ -77,7 +77,7 @@ recette locale.
 | Commande | Résultat |
 |---|---|
 | `python -m app.migrate upgrade` puis `status` sur une base temporaire | Toutes les révisions, dont 0012, 0012b, 0013 et 0015, appliquées ; rejeu stable |
-| `pytest -q` | **211 passed**, 1 avertissement de dépréciation tiers, 58,29 s |
+| `pytest -q` | **211 passed**, 1 avertissement de dépréciation tiers, 56,29 s |
 | `node --test tests/*.cjs` | **21 passed**, 0 échec |
 | `python scripts/validate_internal_ui.py --output /workspace/artifacts/document-deletion-validation` | **passed**, 1440/1024/820/390, 7 contrôles, 52 captures, 0 erreur JS/API |
 
