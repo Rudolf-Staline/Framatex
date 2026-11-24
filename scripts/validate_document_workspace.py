@@ -149,6 +149,18 @@ def workspace(qa, browser, server, captures, ocr_available):
         line('Fiche de prix').get_by_role('button', name='Déposer une version').click()
         select_file('bl-corrige.pdf', native_pdf('BON DE LIVRAISON\nReference commande : CMD-RECETTE-01\nNouvelle pièce'))
         page.locator('#du-correct').click()
+        # Rapprochement signalé (doublon potentiel avec la V1 mal classée) : aucune décision implicite.
+        decision = page.locator('#du-relationship-action')
+        if decision.count():
+            publishes = []
+            listener = lambda response: publishes.append(response.url) if response.url.endswith('/publish') else None
+            page.on('response', listener)
+            page.locator('#ops-upload-form [type=submit]').click()
+            expect(page.locator('#ops-upload-form')).to_contain_text('Choisissez comment traiter le rapprochement documentaire proposé.')
+            page.wait_for_timeout(400)
+            page.remove_listener('response', listener)
+            assert not publishes, publishes
+            decision.select_option('new_document')
         assert save()['folder'] == 'rose'
         expect(line('Bon de livraison')).to_contain_text('Présent et conforme')
         page.locator('[data-dj-folder="jaune"]').click()

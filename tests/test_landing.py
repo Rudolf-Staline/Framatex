@@ -72,6 +72,11 @@ def test_landing_premium_navigation_and_real_team_photo():
         html = client.get('/').text
         assert 'class="site-header" data-header' in html
         assert 'partnership-meeting.avif' in html
+        # « Notre solution » : photographie officielle de l'équipe (banner-17.jpg), hébergée localement.
+        for name in ('notre-solution-equipe.avif', 'notre-solution-equipe.webp', 'notre-solution-equipe.jpg'):
+            assert f'/assets/landing/{name}' in html
+            served = client.get(f'/assets/landing/{name}')
+            assert served.status_code == 200 and served.headers['content-type'].startswith('image/'), name
         assert 'Équipe réunie autour d’une table de travail' in html
         assert 'btn btn-primary hero-cta' in html
         css = client.get('/assets/landing/landing.css?v=landing-premium-1').text
