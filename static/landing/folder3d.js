@@ -129,7 +129,7 @@ export function mountFolderScene(section) {
   const steps = [...section.querySelectorAll('[data-fd-step]')];
 
   function layout(p) {
-    const enter = phase(p, 0, .14), open = phase(p, .12, .36), fan = phase(p, .32, .56), split = phase(p, .52, .76), platform = phase(p, .74, .96);
+    const enter = phase(p, 0, .1), open = phase(p, .08, .28), fan = phase(p, .24, .46), split = phase(p, .42, .64), platform = phase(p, .6, .86);
     // Le dossier glisse sur la table, s'ouvre comme un livre (charnière gauche) et se recentre.
     folder.position.set(mix(1.2, 0, enter) + open * W / 2, 0, mix(1.8, 0, enter) + platform * .4);
     folder.rotation.y = mix(-.55, 0, enter) + pointerX * .05;
@@ -161,7 +161,8 @@ export function mountFolderScene(section) {
     const shift = camera.aspect > 1.25 ? -1.45 : -.8;
     camera.position.set(shift + pointerX * .3, mix(8.2, 5.2, platform), mix(8.6, 9.2, platform));
     camera.lookAt(shift, mix(.25, 1.05, platform), mix(.2, -1, platform));
-    steps.forEach((el, i) => el.classList.toggle('is-current', i === Math.min(steps.length - 1, Math.floor(p * steps.length * .999))));
+    const step = p < .08 ? 0 : p < .24 ? 1 : p < .42 ? 2 : p < .6 ? 3 : 4;   // étapes alignées sur les phases
+    steps.forEach((el, i) => el.classList.toggle('is-current', i === Math.min(steps.length - 1, step)));
   }
 
   function resize() {
@@ -177,10 +178,10 @@ export function mountFolderScene(section) {
   }
   function frame() {
     raf = 0;
-    current += (target - current) * .12;
+    current += (target - current) * .3;            // inertie faible : réponse rapide au défilement
     layout(current);
     renderer.render(scene, camera);
-    if (visible && Math.abs(target - current) > .0005) raf = requestAnimationFrame(frame);
+    if (visible && Math.abs(target - current) > .001) raf = requestAnimationFrame(frame);
   }
   const kick = () => { target = progress(); if (!raf && visible) raf = requestAnimationFrame(frame); };
   addEventListener('scroll', kick, {passive: true});
