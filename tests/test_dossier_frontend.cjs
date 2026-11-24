@@ -114,7 +114,7 @@ for (const route of ['#/documents-demandes', '#/documents-transmis', '#/document
 // 8. Landing : ordre demandé et mouvement réduit respecté.
 const landing = fs.readFileSync('static/landing/index.html', 'utf8');
 const order = [...landing.matchAll(/<section class="([^"]+)"(?: id="([^"]+)")?/g)].map(m => m[2] || m[1]);
-assert.deepEqual(order, ['accueil', 'solution', 'espaces', 'savoir-faire', 'partenariat', 'cta']);
+assert.deepEqual(order, ['accueil', 'solution', 'dossier-numerique', 'espaces', 'savoir-faire', 'partenariat', 'cta']);
 assert(fs.readFileSync('static/landing/landing.js', 'utf8').includes("prefers-reduced-motion: reduce"));
 assert(fs.readFileSync('static/brand/dossier.css', 'utf8').includes('prefers-reduced-motion'));
 console.log('Dossier Jaune : checklist, ordre métier, états, ciblage depuis le tableau de bord, menu Client et landing OK');

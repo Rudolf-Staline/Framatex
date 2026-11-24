@@ -518,6 +518,7 @@ function fxPasswordToggles(root) {
 function fxAuthArt(kicker, title, text) {
   return `<section class="login-art fx-auth-art" aria-hidden="false">
     <img class="fx-auth-photo" src="/assets/landing/redesign/espace-framatex.webp" alt="" width="1448" height="1086" decoding="async">
+    <div class="fx-auth-fabric" aria-hidden="true"></div>
     <a class="brand" href="/" aria-label="FRAMATEX — retour à l’accueil"><img class="brand-mark" src="/assets/landing/logo-framatex.jpg" alt="FRAMATEX" width="500" height="500"></a>
     <div class="login-hero"><p class="fx-auth-kicker">${e(kicker)}</p><h1>${title}</h1><p>${e(text)}</p></div>
     <p class="login-caption">Villeneuve-d’Ascq <span aria-hidden="true">—</span> Casablanca</p></section>`;
@@ -571,3 +572,16 @@ accPasswordScreen = function() {
   page.querySelector('.login-form-wrap')?.insertAdjacentHTML('afterbegin', `<span class="fx-auth-back is-static">${fxIcon('shield')}<span>Sécurité du compte</span></span>`);
   fxPasswordToggles(page);
 };
+
+// Tissu 3D dans le panneau décoratif des connexions (grands écrans, hors mouvement réduit, WebGL requis).
+function fxMountAuthFabric() {
+  const host = app.querySelector('.fx-auth-fabric:not([data-ready])');
+  if (!host || innerWidth < 961 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  try { const c = document.createElement('canvas'); if (!(c.getContext('webgl2') || c.getContext('webgl'))) return; } catch { return; }
+  host.dataset.ready = '1';
+  import('/assets/landing/fabric3d.js?v=cinematic-3d-1').then(m => m.mountFabric(host, {interactive: true})).catch(() => {});
+}
+const fxRenderLoginBase = renderLogin;
+renderLogin = function() { fxRenderLoginBase(); fxMountAuthFabric(); };
+const fxPasswordScreenBase = accPasswordScreen;
+accPasswordScreen = function() { fxPasswordScreenBase(); fxMountAuthFabric(); };

@@ -565,3 +565,6 @@ body.fx-pro :focus-visible { outline: 2px solid var(--p-cyan); outline-offset: 2
 .fx-pro .fx-auth-art::after { width: auto; height: auto; border: 0; border-radius: 0; inset: 0; right: 0; bottom: 0; }
 .fx-pro .fx-auth-art::before { display: none !important; }
 .fx-pro .fx-auth-art .login-hero h1, .fx-pro .fx-auth-art .login-hero p { text-shadow: 0 2px 24px rgba(0, 30, 60, .35); }
+/* Tissu 3D en bas du panneau décoratif de connexion, fondu dans la photographie. */
+.fx-pro .fx-auth-fabric { position: absolute; left: 0; right: 0; bottom: 0; height: 46%; z-index: 0; -webkit-mask-image: linear-gradient(to top, #000 45%, transparent); mask-image: linear-gradient(to top, #000 45%, transparent); }
+.fx-pro .fx-auth-art > :not(.fx-auth-photo):not(.fx-auth-fabric) { position: relative; z-index: 1; }

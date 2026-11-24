@@ -163,6 +163,7 @@ function authLayout(content, { wide = false } = {}) {
   return publicLayout(`<div class="auth ${wide ? 'auth-wide' : ''}">
       <aside class="auth-visual" aria-hidden="true">
         <img src="${AUTH_PHOTO}" alt="" width="1448" height="1086" />
+        <div class="auth-fabric"></div>
         <div class="auth-visual-text">
           <img class="auth-visual-logo" src="${LOGO}" alt="" width="500" height="500" />
           <p class="eyebrow eyebrow-light">Espace Client FRAMATEX</p>
@@ -1088,3 +1089,14 @@ async function viewAccount() {
 
 window.addEventListener('hashchange', render);
 render();
+
+// Tissu 3D dans le panneau décoratif des pages d'authentification (grands écrans, WebGL, mouvement non réduit).
+function mountAuthFabric() {
+  const host = document.querySelector('.auth-fabric:not([data-ready])');
+  if (!host || innerWidth < 1025 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  try { const c = document.createElement('canvas'); if (!(c.getContext('webgl2') || c.getContext('webgl'))) return; } catch { return; }
+  host.dataset.ready = '1';
+  import('/assets/landing/fabric3d.js?v=cinematic-3d-1').then(m => m.mountFabric(host, { interactive: false })).catch(() => {});
+}
+new MutationObserver(mountAuthFabric).observe(document.getElementById('app'), { childList: true, subtree: true });
+setTimeout(mountAuthFabric, 0);

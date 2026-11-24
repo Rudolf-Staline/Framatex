@@ -26,6 +26,7 @@ export function mountFabric(host, {interactive = true} = {}) {
   const canvas = document.createElement('canvas');
   canvas.className = 'fabric3d-canvas';
   canvas.setAttribute('aria-hidden', 'true');
+  canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none';
   host.prepend(canvas);
   const renderer = new THREE.WebGLRenderer({canvas, antialias: true, alpha: true, powerPreference: 'low-power'});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
