@@ -45,6 +45,8 @@ def _validated(db: Session, version: DocumentVersion) -> bool:
 def _may_delete_version(db: Session, user: User, version: DocumentVersion) -> bool:
     audit, is_admin, can = _deps()
     document, launch_id, folder = version.document, version.document.folder.launch_id, version.document.folder.slug
+    if not can(user, 'document.read', folder, launch_id):
+        return False
     if is_admin(user) or can(user, 'document.review', folder, launch_id):
         return True
     return (version.uploaded_by == user.id and not _validated(db, version)
@@ -53,6 +55,8 @@ def _may_delete_version(db: Session, user: User, version: DocumentVersion) -> bo
 
 def _may_delete_document(db: Session, user: User, document: Document) -> bool:
     audit, is_admin, can = _deps()
+    if not can(user, 'document.read', document.folder.slug, document.folder.launch_id):
+        return False
     if is_admin(user) or can(user, 'document.review', document.folder.slug, document.folder.launch_id):
         return True
     versions = _active_versions(document)

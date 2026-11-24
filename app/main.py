@@ -289,10 +289,12 @@ def dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_
     launches = visible(db, user, db.scalars(select(Launch)).all())
     documents = db.scalars(select(Document).join(Folder)).all()
     from .access_control import can
-    visible_documents = [d for d in documents if d.folder.launch_id in {l.id for l in launches} and can(user, "document.read", d.folder.slug, d.folder.launch_id)]
+    visible_documents = [d for d in documents if d.deleted_at is None and any(v.deleted_at is None for v in d.versions)
+                         and d.folder.launch_id in {l.id for l in launches}
+                         and can(user, "document.read", d.folder.slug, d.folder.launch_id)]
     completion = [evaluate(db, l, user, permitted) for l in launches]
     return {"launches": len(launches), "incomplete": sum(l.status == "À compléter" for l in launches),
-            "documents": len(visible_documents), "versions": sum(len(d.versions) for d in visible_documents),
+            "documents": len(visible_documents), "versions": sum(sum(v.deleted_at is None for v in d.versions) for d in visible_documents),
             "completeness_actions": sum(c["counts"]["missing"] + c["counts"]["pending_validation"] for c in completion),
             "completeness_unconfigured": sum(not c["configured"] for c in completion),
             "recent": [launch_out(l) for l in sorted(launches, key=lambda l: l.created_at, reverse=True)[:5]]}

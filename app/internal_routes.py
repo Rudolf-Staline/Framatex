@@ -237,7 +237,7 @@ def readable_version(db, user, version_id):
     must, _, _, _ = guards()
     must(user, "launch.read")
     version = db.get(DocumentVersion, version_id)
-    if not version:
+    if not version or version.deleted_at is not None or version.document.deleted_at is not None:
         raise HTTPException(404, "Version introuvable")
     doc = version.document
     must_access(db, user, doc.folder.launch_id)

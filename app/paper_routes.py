@@ -126,7 +126,7 @@ def _verify_file(version: DocumentVersion):
 def document_passport(version_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     _, _, _, _, must, _ = _context()
     version = db.get(DocumentVersion, version_id)
-    if not version:
+    if not version or version.deleted_at is not None or version.document.deleted_at is not None:
         raise HTTPException(404, "Version introuvable")
     document = version.document
     must(user, "launch.read")
