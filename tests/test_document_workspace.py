@@ -10,7 +10,7 @@ from app.core import Base, SessionLocal, engine, hash_password
 from app.intake import classify_document, extract_fields
 from app.document_intelligence_models import DocumentRelationshipDecision
 from app.main import app
-from app.models import Role, User
+from app.models import Role, RolePermission, User
 
 
 H = {'X-Framatex-Request': '1'}
@@ -77,8 +77,7 @@ def test_wrong_type_does_not_count_and_manual_exceptions_are_audited(workspace):
                        json={'document_id': doc['id']}).status_code == 409
     assert publish(client, dossier, receipt['id'], 'rose', 'Bon de livraison').status_code == 404
     path = f'/api/document-versions/{doc["latest"]["id"]}/identification/confirm'
-    assert client.post(path, headers=H, json={'justification': '            '}).status_code == 422
-    assert client.post(path, headers=H, json={'justification': 'Vérification manuelle documentée par le collaborateur'}).status_code == 200
+    assert client.post(path, headers=H, json={'justification': ''}).status_code == 200
     assert checklist(client, dossier, 'Fiche de prix')['status'] == 'pending_validation'
     nouvelle = stage(client, dossier, 'nouvelle.txt', b'Contenu sans identification').json()
     result = publish(client, dossier, nouvelle['id'], 'jaune', 'Fiche de prix', document_id=doc['id'])
@@ -247,3 +246,47 @@ def test_archive_bomb_and_oversized_chunked_request_are_rejected(workspace, monk
     response = workspace.post(f'/api/launches/{dossier}/document-uploads', content=chunks(),
                               headers={**H, 'Content-Type': 'multipart/form-data; boundary=bound'})
     assert response.status_code == 413, response.text
+
+
+def test_logical_deletion_permissions_trash_restore_and_optional_type_reason(workspace):
+    dossier = launch(workspace, 'CMD-DELETE')
+    uploaded = workspace.post(f'/api/launches/{dossier}/documents', headers=H,
+                              data={'folder': 'jaune', 'title': 'Fiche de prix', 'doc_type': 'Fiche de prix'},
+                              files={'file': ('prix.txt', b'FICHE DE PRIX\nPrix unitaire : 12 MAD/piece')})
+    assert uploaded.status_code == 201, uploaded.text
+    document = uploaded.json()
+    version_id = document['latest']['id']
+    assert workspace.request('DELETE', f'/api/document-versions/{version_id}', headers=H,
+                             json={'reason': 'Dépôt effectué par erreur'}).status_code == 204
+    assert workspace.get(f'/api/documents/{document["id"]}/versions/1/download', headers=H).status_code == 404
+    assert checklist(workspace, dossier, 'Fiche de prix')['status'] == 'missing'
+    trash = workspace.get('/api/admin/document-trash', headers=H).json()['items']
+    assert any(row['version_id'] == version_id and row['reason'] == 'Dépôt effectué par erreur' for row in trash)
+    assert workspace.post(f'/api/admin/document-trash/versions/{version_id}/restore', headers=H).status_code == 200
+    assert workspace.get(f'/api/documents/{document["id"]}/versions/1/download', headers=H).status_code == 200
+
+    with SessionLocal() as db:
+        writer = Role(name='Déposant test')
+        writer.grants.extend([RolePermission(action='launch.read'), RolePermission(action='document.read', folder_slug='jaune'),
+                              RolePermission(action='document.write', folder_slug='jaune')])
+        reader = Role(name='Lecteur test')
+        reader.grants.extend([RolePermission(action='launch.read'), RolePermission(action='document.read', folder_slug='jaune')])
+        db.add_all([writer, reader,
+                    User(name='Déposant', email='writer@workspace.test', roles=[writer], password_hash=hash_password(PASSWORD)),
+                    User(name='Lecteur', email='reader@workspace.test', roles=[reader], password_hash=hash_password(PASSWORD))])
+        db.commit()
+    assert workspace.post('/api/auth/login', headers=H, json={'email': 'writer@workspace.test', 'password': PASSWORD}).status_code == 200
+    assert workspace.delete(f'/api/document-versions/{version_id}', headers=H).status_code == 403
+    own = workspace.post(f'/api/launches/{dossier}/documents', headers=H,
+                         data={'folder': 'jaune', 'title': 'Brouillon déposant', 'doc_type': 'Autre'},
+                         files={'file': ('own.txt', b'brouillon personnel')})
+    assert own.status_code == 201
+    assert workspace.request('DELETE', f'/api/document-versions/{own.json()["latest"]["id"]}', headers=H, json={'reason': ''}).status_code == 204
+    assert workspace.post('/api/auth/login', headers=H, json={'email': 'reader@workspace.test', 'password': PASSWORD}).status_code == 200
+    assert workspace.delete(f'/api/documents/{document["id"]}', headers=H).status_code == 403
+
+    login(workspace)
+    uncertain = stage(workspace, dossier, 'unknown.txt', b'contenu non classable').json()
+    created = publish(workspace, dossier, uncertain['id'], 'jaune', 'Autre').json()
+    path = f'/api/document-versions/{created["latest"]["id"]}/identification/confirm'
+    assert workspace.post(path, headers=H, json={'justification': ''}).status_code == 200

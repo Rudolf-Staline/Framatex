@@ -40,12 +40,13 @@ def _evaluate(db: Session, launch: Launch, user, permitted):
     for rule in visible:
         matching = db.scalars(select(Document).join(Folder).where(
             Folder.launch_id == launch.id, Folder.slug == rule.folder_slug,
-            Document.doc_type == rule.document_type
+            Document.doc_type == rule.document_type, Document.deleted_at.is_(None)
         )).all()
         candidates = []
         for document in matching:
-            if document.versions:
-                version = max(document.versions, key=lambda v: v.number)
+            versions = [version for version in document.versions if version.deleted_at is None]
+            if versions:
+                version = max(versions, key=lambda v: v.number)
                 candidates.append((document, version))
         # Une validation d'une version ancienne ne valide jamais la version courante.
         identifications = {version.id: db.get(DocumentIdentification, version.id) for _, version in candidates}

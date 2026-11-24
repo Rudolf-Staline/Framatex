@@ -73,9 +73,11 @@ def extracted_value(db, version, doc, key):
 
 def latest_document_versions(db: Session, launch_id: str, doc_type: str, folder: str):
     docs = db.scalars(select(Document).join(Folder).where(
-        Folder.launch_id == launch_id, Folder.slug == folder, Document.doc_type == doc_type
+        Folder.launch_id == launch_id, Folder.slug == folder, Document.doc_type == doc_type,
+        Document.deleted_at.is_(None)
     )).all()
-    return [(d, max(d.versions, key=lambda x:x.number)) for d in docs if d.versions]
+    return [(d, max((v for v in d.versions if v.deleted_at is None), key=lambda x:x.number))
+            for d in docs if any(v.deleted_at is None for v in d.versions)]
 
 
 def comparison(db: Session, launch_id: str, rule: CrossDocumentRule):

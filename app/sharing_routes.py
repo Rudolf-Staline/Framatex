@@ -38,13 +38,14 @@ def norm(value: str) -> str:
 def source(db: Session, version_id: str, launch_id: str):
     v = db.get(DocumentVersion, version_id)
     doc = db.get(Document, v.document_id) if v else None
-    if not doc or doc.folder.launch_id != launch_id:
+    if not doc or doc.deleted_at is not None or v.deleted_at is not None or doc.folder.launch_id != launch_id:
         raise HTTPException(422, 'Version absente ou étrangère à ce lancement')
     return v, doc
 
 
 def latest(doc: Document):
-    return max(doc.versions, key=lambda v: v.number) if doc.versions else None
+    active = [version for version in doc.versions if version.deleted_at is None]
+    return max(active, key=lambda v: v.number) if active else None
 
 
 def is_approved(db: Session, v: DocumentVersion, doc: Document) -> bool:

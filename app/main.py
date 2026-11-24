@@ -168,7 +168,7 @@ def version_out(v: DocumentVersion):
 
 
 def doc_out(d: Document):
-    versions = sorted(d.versions, key=lambda v: v.number)
+    versions = sorted((v for v in d.versions if v.deleted_at is None), key=lambda v: v.number)
     return {"id": d.id, "title": d.title, "doc_type": d.doc_type, "folder": d.folder.slug, "created_at": d.created_at.isoformat(), "versions": [version_out(v) for v in versions], "latest": version_out(versions[-1]) if versions else None}
 
 
@@ -337,7 +337,15 @@ def launch_detail(launch_id: str, user: User = Depends(get_current_user), db: Se
     folders = []
     for slug, label in FOLDERS:
         folder = next((f for f in l.folders if f.slug == slug), None)
-        docs = [] if not folder or not permitted(user, "document.read", slug) else [doc_out(d) for d in folder.documents]
+        docs = [] if not folder or not permitted(user, "document.read", slug) else [
+            doc_out(d) for d in folder.documents if d.deleted_at is None and any(v.deleted_at is None for v in d.versions)
+        ]
+        for document in docs:
+            document['can_delete_document'] = bool(is_admin(user) or permitted(user, 'document.review', slug)
+                                                    or (document['created_at'] and next((item for item in folder.documents if item.id == document['id']), None).created_by == user.id and permitted(user, 'document.write', slug)))
+            for version in document['versions']:
+                version['can_delete'] = bool(is_admin(user) or permitted(user, 'document.review', slug)
+                                             or (version['uploaded_by'] == user.id and permitted(user, 'document.write', slug)))
         actions = [action for action in ACTION_KEYS if permitted(user, action, slug)]
         level = access_level(actions)
         folders.append({"slug": slug, "label": label, "can_read": permitted(user, "document.read", slug), "can_write": permitted(user, "document.write", slug),
@@ -371,7 +379,7 @@ def update_launch(launch_id: str, payload: LaunchPatch, user: User = Depends(get
 
 def get_doc(db: Session, doc_id: str) -> Document:
     d = db.get(Document, doc_id)
-    if not d:
+    if not d or d.deleted_at is not None:
         raise HTTPException(404, "Document introuvable")
     return d
 
@@ -527,7 +535,7 @@ def download(doc_id: str, number: int, user: User = Depends(get_current_user), d
     doc = get_doc(db, doc_id)
     must(user, "document.read", doc.folder.slug)
     must(user, "document.download", doc.folder.slug)
-    version = next((v for v in doc.versions if v.number == number), None)
+    version = next((v for v in doc.versions if v.number == number and v.deleted_at is None), None)
     if not version:
         raise HTTPException(404, "Version introuvable")
     path = STORAGE / version.disk_name
@@ -903,6 +911,9 @@ app.include_router(client_workflow_router)
 
 from .document_intake_routes import router as document_intake_router
 app.include_router(document_intake_router)
+
+from .document_deletion_routes import router as document_deletion_router
+app.include_router(document_deletion_router)
 
 # Collaborateurs et habilitations par commande / sous-dossier (0013_access_management).
 from .access_admin_routes import router as access_admin_router

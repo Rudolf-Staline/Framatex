@@ -70,6 +70,9 @@ class Document(Base):
     doc_type: Mapped[str] = mapped_column(String(100), default="Autre")
     created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    deletion_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     folder: Mapped[Folder] = relationship(back_populates="documents")
     versions: Mapped[list[DocumentVersion]] = relationship(back_populates="document", cascade="all, delete-orphan", order_by="DocumentVersion.number")
 
@@ -86,6 +89,9 @@ class DocumentVersion(Base):
     sha256: Mapped[str] = mapped_column(String(64))
     uploaded_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    deletion_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     document: Mapped[Document] = relationship(back_populates="versions")
 
 class AuditEvent(Base):
