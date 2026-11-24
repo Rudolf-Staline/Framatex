@@ -40,7 +40,9 @@ async function api(path,options={}){
   const res=await fetch(path,{...options,headers,credentials:'same-origin',cache:'no-store',signal:controller.signal});
   if(!res.ok){let data;try{data=await res.json()}catch{};if(res.status===401 && !path.includes('/auth/login')){state.me=null;renderLogin()}
     const error=typeof data?.detail==='string'?data.detail:`Erreur HTTP ${res.status}`;const err=new Error(error);err.status=res.status;throw err}
-  if(res.headers.get('content-type')?.includes('application/json'))return await res.json();return res;
+  // 204/205 (et corps vide) : aucune donnée à lire, même si l'en-tête annonce du JSON.
+  if(res.status===204||res.status===205)return null;
+  if(res.headers.get('content-type')?.includes('application/json')){if(typeof res.text!=='function')return await res.json();const text=await res.text();return text?JSON.parse(text):null}return res;
   }catch(err){if(err.name==='AbortError'||err instanceof TypeError){const unavailable=new Error('Impossible de joindre le serveur FRAMATEX. Réessayez.');unavailable.unavailable=true;throw unavailable}throw err}
   finally{clearTimeout(timer)}
 }
