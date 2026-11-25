@@ -11,7 +11,7 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from sqlalchemy import inspect, text, Table, Column, String
-from .core import Base, engine
+from .core import Base, engine, PG_SCHEMA
 
 # Import every registered model before inspecting metadata.
 from . import models, completeness_models, workflow_models, quality_models, intake_models  # noqa: F401
@@ -43,7 +43,41 @@ def _versions(conn):
     return {v for v, in conn.execute(text('SELECT version FROM schema_migrations'))}
 
 
+def migrate_postgresql():
+    """Initialize an isolated PostgreSQL schema; never alter the archived schema."""
+    with engine.begin() as conn:
+        conn.execute(text("SELECT pg_advisory_xact_lock(hashtext(:name))"), {"name": PG_SCHEMA})
+        conn.exec_driver_sql(f'CREATE SCHEMA IF NOT EXISTS "{PG_SCHEMA}"')
+        conn.exec_driver_sql(f'REVOKE ALL ON SCHEMA "{PG_SCHEMA}" FROM PUBLIC')
+        # PostgreSQL gets the current model schema, not the historical SQLite DDL.
+        inspector = inspect(conn)
+        existing = set(inspector.get_table_names(schema=PG_SCHEMA))
+        if existing and 'schema_migrations' not in existing:
+            raise RuntimeError("Schéma PostgreSQL existant sans registre de migrations")
+        if 'schema_migrations' in existing:
+            done = {v for v, in conn.execute(text("SELECT version FROM schema_migrations"))}
+            if done != set(REVISIONS):
+                raise RuntimeError("Migration PostgreSQL supplémentaire requise")
+        Base.metadata.create_all(bind=conn)
+        conn.execute(text('''CREATE TABLE IF NOT EXISTS document_content_fts (
+            version_id VARCHAR(36) PRIMARY KEY, content TEXT NOT NULL,
+            title TEXT NOT NULL, "references" TEXT NOT NULL)'''))
+        conn.execute(text("""CREATE INDEX IF NOT EXISTS ix_document_content_fts_pg
+            ON document_content_fts USING GIN (to_tsvector('simple', content || ' ' || title || ' ' || "references"))"""))
+        for revision in REVISIONS:
+            conn.execute(text("INSERT INTO schema_migrations VALUES (:v, :d) ON CONFLICT (version) DO NOTHING"),
+                         {"v": revision, "d": datetime.now(timezone.utc).isoformat()})
+        inspector = inspect(conn)
+        for table in Base.metadata.tables.values():
+            actual = {c['name'] for c in inspector.get_columns(table.name, schema=PG_SCHEMA)}
+            if set(table.columns.keys()) - actual:
+                raise RuntimeError(f"Colonnes manquantes dans {table.name}")
+    return REVISIONS
+
+
 def migrate():
+    if engine.dialect.name == 'postgresql':
+        return migrate_postgresql()
     if engine.dialect.name != 'sqlite':
         raise RuntimeError('Le migrateur MVP gère SQLite seulement. Ne pas démarrer sur une base PostgreSQL sans migrations spécifiques.')
     # Back up the real SQLite database before any legacy ALTER TABLE.

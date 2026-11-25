@@ -24,6 +24,14 @@ def search_content(db, query: str, limit: int = 500) -> dict[str, str]:
     tokens = re.findall(r'[\wÀ-ÿ]{2,}', query, flags=re.UNICODE)[:12]
     if not tokens:
         return {}
+    if db.get_bind().dialect.name == 'postgresql':
+        rows = db.execute(text("""SELECT version_id, left(content, 300) AS excerpt
+            FROM document_content_fts
+            WHERE to_tsvector('simple', content || ' ' || title || ' ' || "references")
+                @@ plainto_tsquery('simple', :query)
+            ORDER BY version_id LIMIT :limit"""),
+            {'query': ' '.join(tokens), 'limit': limit}).all()
+        return dict(rows)
     expression = ' AND '.join('"' + token.replace('"', '""') + '"' for token in tokens)
     rows = db.execute(text('''SELECT version_id,
         snippet(document_content_fts, 1, '[', ']', ' … ', 18) AS excerpt

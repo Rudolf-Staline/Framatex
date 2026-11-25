@@ -14,11 +14,15 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
+from .core_pg_config import data_dir, database_configuration, install_postgresql_search_path
+
 ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = Path(os.getenv("FRAMATEX_DATA_DIR", str(ROOT / "data"))).resolve()
+DATA_DIR = data_dir(ROOT)
 DATA_DIR.mkdir(parents=True, exist_ok=True)
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / 'framat.db'}")
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False, "timeout": 15} if DATABASE_URL.startswith("sqlite") else {}, pool_pre_ping=True)
+DATABASE_URL, engine_config, PG_SCHEMA = database_configuration(ROOT, DATA_DIR)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, **engine_config)
+if PG_SCHEMA:
+    install_postgresql_search_path(engine, PG_SCHEMA)
 if DATABASE_URL.startswith("sqlite") and ":memory:" not in DATABASE_URL:
     from sqlalchemy import event
 
@@ -47,6 +51,8 @@ def secret_key() -> str:
         if len(env) < 32:
             raise RuntimeError("FRAMATEX_SECRET_KEY doit contenir au moins 32 caractères")
         return env
+    if os.getenv("VERCEL"):
+        raise RuntimeError("FRAMATEX_SECRET_KEY est obligatoire sur Vercel")
     path = DATA_DIR / ".session_secret"
     if not path.exists():
         fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
