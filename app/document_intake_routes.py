@@ -13,6 +13,7 @@ from .document_intake import ALIASES, identification_status, normalized, read_sa
 from .document_intake_models import DocumentIdentification, PendingDocumentUpload
 from .document_intelligence_models import DocumentRelationshipDecision
 from .document_relationships import propose_relationships
+from . import blob_backend
 from .main import (SLUGS, STORAGE, audit, get_doc, get_launch, must, permitted, persist_document,
                    persist_version, require_active_launch_rule, store_upload)
 from .models import Document, DocumentVersion, User
@@ -49,7 +50,7 @@ def clean_expired(db):
                               .returning(PendingDocumentUpload.disk_name)))
     db.commit()
     for name in expired:
-        (STORAGE / name).unlink(missing_ok=True)
+        blob_backend.discard(STORAGE, name)
 
 
 def destination(db, user, launch_id, folder):
@@ -86,7 +87,7 @@ async def stage_document(launch_id: str, folder: str = Form(...), file: UploadFi
         db.commit()
     except BaseException:
         db.rollback()
-        (STORAGE / disk_name).unlink(missing_ok=True)
+        blob_backend.discard(STORAGE, disk_name)
         raise
     return {'id': staged.id, 'analysis': public_analysis(user, analysis), 'size': size, 'sha256': sha}
 
@@ -124,10 +125,9 @@ def claim(db, staged):
 @router.delete('/api/launches/{launch_id}/document-uploads/{upload_id}', status_code=204)
 def cancel_document(launch_id: str, upload_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     staged = staged_upload(db, user, launch_id, upload_id)
-    path = STORAGE / staged.disk_name
     claim(db, staged)
     db.commit()
-    path.unlink(missing_ok=True)
+    blob_backend.discard(STORAGE, staged.disk_name)
     return Response(status_code=204)
 
 
@@ -168,7 +168,7 @@ def publish_document(launch_id: str, upload_id: str, payload: PublishUpload,
         # Déposer une pièce et créer une version sont deux responsabilités
         # distinctes dans la matrice d'habilitations.
         must(user, 'document.version', document.folder.slug)
-    if not (STORAGE / staged.disk_name).is_file():
+    if not blob_backend.resolve(STORAGE, staged.disk_name).is_file():
         raise HTTPException(503, 'Fichier temporaire indisponible')
     analysis = staged.analysis
     status = identification_status(analysis, entity.slug, doc_type)

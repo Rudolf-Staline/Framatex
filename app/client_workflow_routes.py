@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 
 from .client_models import ClientAccount, ClientOrderDocument, ClientOrderDocumentVersion, ClientOrderRequest
+from . import blob_backend
 from .client_routes import (CLIENT_STORAGE, add_audit, get_current_client, order_out, own_order,
                             store_client_upload)
 from .client_workflow import (DOCUMENT_TRANSITIONS, authorized_source, commit_workflow, get_document_request,
@@ -257,11 +258,11 @@ async def upload_requested(request_id: str, file: UploadFile = File(...),
         commit_workflow(db)
     except (IntegrityError, StaleDataError):
         db.rollback()
-        (CLIENT_STORAGE / disk_name).unlink(missing_ok=True)
+        blob_backend.discard(CLIENT_STORAGE, disk_name)
         raise HTTPException(409, "Dépôt concurrent ; actualisez la demande documentaire")
     except Exception:
         db.rollback()
-        (CLIENT_STORAGE / disk_name).unlink(missing_ok=True)
+        blob_backend.discard(CLIENT_STORAGE, disk_name)
         raise
     db.expire(document, ["versions"])
     return request_out(db, item)
@@ -273,7 +274,7 @@ def requested_version(db, item, number):
         ClientOrderDocumentVersion.number == number))
     if not version:
         raise HTTPException(404, "Version client introuvable")
-    path = CLIENT_STORAGE / version.disk_name
+    path = blob_backend.resolve(CLIENT_STORAGE, version.disk_name)
     if not path.is_file():
         raise HTTPException(503, "Fichier client indisponible")
     return version, path
@@ -393,4 +394,4 @@ def download_shared(share_id: str, client: ClientAccount = Depends(get_current_c
     add_audit(db, client.id, "client.shared_document.download", "client_shared_document", item.id,
               {"version_id": version.id})
     db.commit()
-    return FileResponse(STORAGE / version.disk_name, filename=version.original_name, media_type="application/octet-stream")
+    return FileResponse(blob_backend.resolve(STORAGE, version.disk_name), filename=version.original_name, media_type="application/octet-stream")

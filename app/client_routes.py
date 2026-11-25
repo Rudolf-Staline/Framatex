@@ -19,6 +19,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .client_models import ClientAccount, ClientOrderDocument, ClientOrderDocumentVersion, ClientOrderRequest
+from starlette.concurrency import run_in_threadpool
+from . import blob_backend
 from .core import (DATA_DIR, SECRET_KEY, check_password, get_current_user, get_db,
                    hash_password, login_attempt_allowed, login_limit_key,
                    record_login_failure, clear_login_failures, utcnow)
@@ -338,6 +340,7 @@ async def store_client_upload(file: UploadFile):
         if size == 0:
             raise HTTPException(422, "Fichier vide")
         verify_file(target, extension)
+        await run_in_threadpool(blob_backend.publish, target, MIMES[extension])
         return original, disk_name, size, digest.hexdigest(), MIMES[extension]
     except Exception:
         target.unlink(missing_ok=True)
@@ -380,7 +383,7 @@ async def upload_order_document(order_id: str, title: str = Form(...), file: Upl
         return document_out(document)
     except Exception:
         db.rollback()
-        (CLIENT_STORAGE / disk_name).unlink(missing_ok=True)
+        blob_backend.discard(CLIENT_STORAGE, disk_name)
         raise
 
 
@@ -395,7 +398,7 @@ def download_order_document(order_id: str, document_id: str, number: int,
         ClientOrderDocumentVersion.number == number))
     if not version:
         raise HTTPException(404, "Version de document introuvable")
-    path = CLIENT_STORAGE / version.disk_name
+    path = blob_backend.resolve(CLIENT_STORAGE, version.disk_name)
     if not path.is_file():
         raise HTTPException(404, "Fichier client introuvable")
     add_audit(db, client.id, "client.order_document.download", "client_order_document", document_id,

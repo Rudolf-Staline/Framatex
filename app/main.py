@@ -23,6 +23,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, object_session
 
+from . import blob_backend
 from .core import Base, COOKIE, DATA_DIR, ROOT, engine, get_current_user, get_db, hash_password, check_password, make_token, login_limit_key, login_attempt_allowed, record_login_failure, clear_login_failures, utcnow
 from .models import AuditEvent, Document, DocumentVersion, Folder, Launch, LaunchMember, Role, RolePermission, User
 from .completeness_models import CompletenessProfile, RequirementRule, LaunchCompleteness, RequirementValidation, RequirementException
@@ -57,6 +58,7 @@ MIMES = {".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-off
 async def lifespan(app: FastAPI):
     from .migrate import migrate
     limits_mib()
+    blob_backend.validate_configuration()
     migrate()
     from .core import SessionLocal
     from .document_intake_routes import clean_expired
@@ -447,6 +449,7 @@ async def store_upload(file: UploadFile):
         if total == 0:
             raise HTTPException(422, "Fichier vide")
         await run_in_threadpool(verify_file, target, suffix)
+        await run_in_threadpool(blob_backend.publish, target, MIMES[suffix])
         return original_name, disk_name, total, sha.hexdigest(), MIMES[suffix]
     except BaseException:
         target.unlink(missing_ok=True)
@@ -495,7 +498,7 @@ async def save_direct_upload(db, user, stored, entity, title, doc_type, comment,
         return result
     except BaseException as exc:
         db.rollback()
-        (STORAGE / stored[1]).unlink(missing_ok=True)
+        blob_backend.discard(STORAGE, stored[1])
         if isinstance(exc, IntegrityError):
             raise HTTPException(409, "Conflit de version, recommencez le dépôt") from exc
         raise
@@ -542,7 +545,7 @@ def download(doc_id: str, number: int, user: User = Depends(get_current_user), d
     version = next((v for v in doc.versions if v.number == number and v.deleted_at is None), None)
     if not version:
         raise HTTPException(404, "Version introuvable")
-    path = STORAGE / version.disk_name
+    path = blob_backend.resolve(STORAGE, version.disk_name)
     if not path.is_file():
         raise HTTPException(503, "Fichier indisponible dans le stockage")
     audit(db, user, "document.download", "document", doc.id, {"version": number})

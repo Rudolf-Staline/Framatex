@@ -13,6 +13,7 @@ from .models import Document, DocumentVersion, Folder, User
 from .quality_models import DocumentDatum, CrossDocumentRule, QualityDecision, ExcelInspection
 from .quality import QUALITY_FIELDS_EXTRA, REFERENCE_KEYS, comparison, analyze_workbook
 from .workflow import VALUE_FIELDS
+from . import blob_backend
 from .main import must, permitted, admin_only, get_doc, get_launch, audit, STORAGE, SLUGS
 
 router=APIRouter()
@@ -188,7 +189,7 @@ def auto_inspect_excel(db:Session,version:DocumentVersion, user_id:str):
     doc=db.get(Document,version.document_id)
     prev=next((v for v in doc.versions if v.number==version.number-1),None)
     baseline=prev if prev and Path(prev.original_name).suffix.lower()=='.xlsx' else None
-    result=analyze_workbook(STORAGE/version.disk_name,STORAGE/baseline.disk_name if baseline else None)
+    result=analyze_workbook(blob_backend.resolve(STORAGE, version.disk_name),blob_backend.resolve(STORAGE, baseline.disk_name) if baseline else None)
     item=ExcelInspection(document_version_id=version.id,baseline_version_id=baseline.id if baseline else None,
          status=result['status'],scanned_cells=result['scanned_cells'],formula_count=result['formula_count'],
          findings_json=json.dumps(result['findings'],ensure_ascii=False),inspected_by=user_id)

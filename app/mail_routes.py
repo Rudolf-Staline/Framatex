@@ -103,7 +103,9 @@ async def import_email(launch_id:str,file:UploadFile=File(...),
         db.commit()
         return {'email':_email_out(x),'document':doc_out(doc)}
     except Exception:
-        db.rollback();(storage/disk_name).unlink(missing_ok=True)
+        db.rollback()
+        from . import blob_backend
+        blob_backend.discard(storage, disk_name)
         raise
 
 @router.get('/api/launches/{launch_id}/emails')

@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
+from . import blob_backend
 from .core import get_db, get_current_user
 from .models import DocumentVersion, Document, User
 from .intake_models import ConfirmedField
@@ -45,7 +46,7 @@ async def intake_preview(launch_id:str,file:UploadFile=File(...),user:User=Depen
         result['classification']['decisive'] = bool(filtered) and original[0] == filtered[0] and result['classification']['decisive']
         return result
     finally:
-        path.unlink(missing_ok=True)
+        blob_backend.discard(STORAGE, disk_name)
 
 @router.get('/api/document-versions/{version_id}/intake')
 def version_intake(version_id:str,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
@@ -54,7 +55,7 @@ def version_intake(version_id:str,user:User=Depends(get_current_user),db:Session
     doc=get_doc(db,v.document_id)
     must(user,'launch.read')
     must(user,'document.read',doc.folder.slug)
-    path=STORAGE/v.disk_name
+    path=blob_backend.resolve(STORAGE, v.disk_name)
     if not path.exists(): raise HTTPException(503,'Fichier indisponible')
     # Analyse demandée explicitement par l'utilisateur. Aucune extraction poussée vers l'ERP.
     identification = db.get(DocumentIdentification, v.id)

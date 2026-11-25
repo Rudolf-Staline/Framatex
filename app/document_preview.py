@@ -32,6 +32,7 @@ KINDS = {".pdf": "pdf", ".xlsx": "excel", ".xlsm": "excel", ".docx": "word", ".p
 
 def _version(db: Session, user: User, version_id: str):
     from .access import must_access
+    from . import blob_backend
     from .main import STORAGE, must
     version = db.get(DocumentVersion, version_id)
     if not version or version.deleted_at is not None or version.document.deleted_at is not None:
@@ -39,7 +40,7 @@ def _version(db: Session, user: User, version_id: str):
     document = version.document
     must_access(db, user, document.folder.launch_id)
     must(user, "document.read", document.folder.slug)
-    path = STORAGE / version.disk_name
+    path = blob_backend.resolve(STORAGE, version.disk_name)
     if not path.is_file():
         raise HTTPException(503, "Fichier indisponible dans le stockage")
     if path.stat().st_size > MAX_BYTES:
