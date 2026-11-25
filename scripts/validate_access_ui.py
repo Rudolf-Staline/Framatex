@@ -128,6 +128,24 @@ def run_browser(output, base, chef_email, chef_pw, checks, secrets_used, port):
             page.fill('#password', password)
             page.click('#login-form button[type=submit]')
 
+        def nav_click(page, selector):
+            toggle = page.locator('.ops-drawer-toggle')
+            if toggle.is_visible():
+                toggle.click()
+                expect(toggle).to_have_attribute('aria-expanded', 'true')
+            page.locator(selector).click()
+
+        def open_launch(page, order_ref, folder=None):
+            nav_click(page, '[data-view="launches"]')
+            page.fill('#q', order_ref)
+            page.click('#ops-launch-filters button[type=submit]')
+            row = page.locator('[data-ops-target]', has_text=order_ref).first
+            expect(row).to_be_visible(); row.click()
+            expect(page.locator('#ops-launch-summary')).to_contain_text(order_ref)
+            if folder:
+                page.locator(f'.dj-folder[data-folder="{folder}"]').click()
+                expect(page.locator(f'[data-folder-panel="{folder}"]')).to_be_visible()
+
         chef_ctx, chef = context()
         login(chef, chef_email, chef_pw)
         expect(chef.locator('.ops-heading h1')).to_be_visible()
@@ -189,7 +207,7 @@ def run_browser(output, base, chef_email, chef_pw, checks, secrets_used, port):
         checks.append('4. Technicien nouvellement créé : aucune commande, état vide clair')
 
         # 5–11. Matrice d'une commande depuis son en-tête.
-        chef.evaluate('(id)=>openLaunch(id,"jaune")', launches['001'])
+        open_launch(chef, 'CMD-001', 'jaune')
         chef.locator('#acc-assign').click()
         expect(chef.locator('.acc-matrix')).to_be_visible()
         # Chaque case dispose maintenant de son propre niveau : aucun préréglage
@@ -212,7 +230,7 @@ def run_browser(output, base, chef_email, chef_pw, checks, secrets_used, port):
         expect(a.locator('.ops-heading h1')).to_be_visible()
         visible = {row['id'] for row in a_ctx.request.get('/api/workspace/launches').json()}
         assert visible == {launches['001'], launches['003']}, visible
-        a.evaluate('(id)=>openLaunch(id,"jaune")', launches['001'])
+        open_launch(a, 'CMD-001', 'jaune')
         expect(a.locator('.dj-checklist').first).to_be_visible()
         expect(a.locator('[data-dj-folder="rose"]')).to_be_visible()
         expect(a.locator('[data-dj-folder="bleu"]')).to_have_count(0)
@@ -277,11 +295,11 @@ def run_browser(output, base, chef_email, chef_pw, checks, secrets_used, port):
         m_ctx, m = context(390)
         login(m, chef_email, chef_pw)
         expect(m.locator('.ops-heading h1')).to_be_visible()
-        m.evaluate("navigate('access')")
+        nav_click(m, '[data-acc-view="access"]')
         expect(m.locator('.ops-heading h1')).to_have_text('Collaborateurs et habilitations')
         expect(m.locator('.acc-table')).to_be_visible()
         shot(m, 'acces-11-mobile-collaborateurs')
-        m.evaluate('(id)=>openLaunch(id,"jaune")', launches['001'])
+        open_launch(m, 'CMD-001', 'jaune')
         m.locator('#acc-assign').click()
         expect(m.locator('.acc-matrix')).to_be_visible()
         shot(m, 'acces-12-mobile-matrice')

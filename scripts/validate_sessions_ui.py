@@ -68,10 +68,10 @@ def main():
 
 def run(output, base, chef_pw, client_pw):
     from playwright.sync_api import sync_playwright, expect
+    from windows_runtime import browser_executable
     checks, errors = [], []
-    exe = '/opt/pw-browsers/chromium' if Path('/opt/pw-browsers/chromium').exists() else None
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(executable_path=exe)
+        browser = pw.chromium.launch(executable_path=browser_executable())
 
         def context(width=1440):
             ctx = browser.new_context(base_url=base, locale='fr-FR', viewport={'width': width, 'height': 900 if width > 600 else 844})
@@ -127,7 +127,7 @@ def run(output, base, chef_pw, client_pw):
         internal_login(page)
         page.reload()
         expect(page.locator('#fx-welcome-title')).to_be_visible(timeout=15000)
-        page.evaluate("navigate('launches')")
+        page.click('[data-view="launches"]')
         expect(page.locator('#ops-launch-results')).to_be_visible()
         checks.append('Actualisation et navigation interne : session conservée')
 

@@ -47,10 +47,10 @@ def main():
 
 def run(base, pw, ids, out):
     from playwright.sync_api import sync_playwright, expect
+    from windows_runtime import browser_executable
     checks, errors, deletes = [], [], []
-    exe = '/opt/pw-browsers/chromium' if Path('/opt/pw-browsers/chromium').exists() else None
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(executable_path=exe)
+        browser = playwright.chromium.launch(executable_path=browser_executable())
         page = browser.new_page(base_url=base, viewport={'width': 1440, 'height': 900})
         page.on('pageerror', lambda e: errors.append(str(e)))
         page.on('request', lambda r: deletes.append(r.url) if r.method == 'DELETE' else None)
@@ -64,10 +64,26 @@ def run(base, pw, ids, out):
         def documents():
             return [d for f in detail()['folders'] if f['slug'] == 'jaune' for d in f['documents']]
 
+        def open_launch():
+            launch = detail()
+            page.click('[data-view="launches"]')
+            page.fill('#q', launch.get('order_ref') or launch['name'])
+            page.click('#ops-launch-filters button[type=submit]')
+            row = page.locator('[data-ops-target]', has_text=launch.get('order_ref') or launch['name']).first
+            expect(row).to_be_visible(); row.click()
+            expect(page.locator('#ops-launch-summary')).to_be_visible()
+            page.locator('.dj-folder[data-folder="jaune"]').click()
+            expect(page.locator('[data-folder-panel="jaune"]')).to_be_visible()
+
+        def open_document(document_id):
+            button = page.locator(f'[data-history="{document_id}"]').first
+            expect(button).to_be_visible(); button.click()
+            expect(page.locator('.modal')).to_be_visible()
+
         # 1. Suppression d'un document complet (double clic neutralisé).
-        page.evaluate(f'openLaunch("{ids["B"]}","jaune")'); page.wait_for_selector('.dj-checklist')
+        open_launch()
         doc = next(d for d in documents() if (d.get('latest') or {}).get('number', 1) == 1)
-        page.evaluate('(id) => openVersions(id)', doc['id']); page.wait_for_selector('#ops-document-delete')
+        open_document(doc['id']); page.wait_for_selector('#ops-document-delete')
         page.click('#ops-document-delete')
         submit = page.locator('#ops-delete-form [type=submit]')
         page.fill('#ops-delete-reason', 'Recette : pièce déposée par erreur')
@@ -84,15 +100,25 @@ def run(base, pw, ids, out):
 
         # 2. Suppression d'une version individuelle.
         target = next(d for d in documents() if d['id'] != doc['id'])
-        added = req.post(f"/api/documents/{target['id']}/versions", headers={'X-Framatex-Request': '1'},
-                         multipart={'file': {'name': 'v2.txt', 'mimeType': 'text/plain', 'buffer': b'version 2 de recette'}})
-        assert added.status == 201, added.text()
-        page.evaluate(f'openLaunch("{ids["B"]}","jaune")'); page.wait_for_selector('.dj-checklist')
+        open_document(target['id'])
+        page.click('#ops-version-upload')
+        page.locator('#ops-file').set_input_files({
+            'name': 'v2.txt', 'mimeType': 'text/plain',
+            'buffer': b'version 2 de recette, contenu modifie',
+        })
+        expect(page.locator('#ops-analysis')).not_to_be_empty()
+        if page.locator('#du-relationship-action').count():
+            page.select_option('#du-relationship-action', 'new_version')
+        if page.locator('#du-confirm-type').count():
+            page.check('#du-confirm-type')
+        submit_version = page.locator('#ops-upload-form [type=submit]')
+        expect(submit_version).to_be_enabled(); submit_version.click()
+        expect(page.locator('#ops-upload-form')).to_have_count(0)
         multi = next(d for d in documents() if d['id'] == target['id'])
         assert multi['latest']['number'] >= 2
         if multi:
             # La version se choisit dans l'historique du document (entrée portant le droit de suppression).
-            page.evaluate('([d, v]) => operationsDocument(d, v)', [multi['id'], multi['latest']['id']]); page.wait_for_selector('#ops-version-delete')
+            open_document(multi['id']); page.wait_for_selector('#ops-version-delete')
             page.click('#ops-version-delete'); page.click('#ops-delete-form [type=submit]')
             expect(page.locator('#toast')).to_contain_text('Version supprimée avec succès')
             expect(page.locator('.modal')).to_have_count(0)
@@ -101,7 +127,7 @@ def run(base, pw, ids, out):
             checks.append(f"Version : V{multi['latest']['number']} supprimée, version précédente active, sous-dossier actualisé")
 
         # 3. Corbeille administrateur et restauration, par clics.
-        page.evaluate("navigate('trash')"); page.wait_for_selector('[data-ops-restore-id]')
+        page.click('[data-ops-view="trash"]'); page.wait_for_selector('[data-ops-restore-id]')
         expect(page.locator('.ops-table')).to_contain_text(doc['title'])
         expect(page.locator('.ops-table')).to_contain_text('Recette : pièce déposée par erreur')
         page.screenshot(path=str(out / 'corbeille.png'))
@@ -109,12 +135,12 @@ def run(base, pw, ids, out):
         expect(page.locator('#toast')).to_contain_text('Document restauré')
         expect(page.locator(f'[data-ops-restore-id="{doc["id"]}"]')).to_have_count(0)
         assert doc['id'] in [d['id'] for d in documents()]
-        page.evaluate(f'openLaunch("{ids["B"]}","jaune")'); page.wait_for_selector('.dj-checklist')
+        open_launch()
         expect(page.locator('.dj-checklist tr', has_text=doc['title']).first).to_contain_text('Présent')
         checks.append('Corbeille : document et motif listés ; restauration par clic, document de retour dans le sous-dossier')
 
         # 4. Une véritable erreur API reste affichée (pas masquée), le bouton redevient utilisable.
-        page.evaluate('(id) => openVersions(id)', doc['id']); page.wait_for_selector('#ops-document-delete')
+        open_document(doc['id']); page.wait_for_selector('#ops-document-delete')
         page.click('#ops-document-delete')
         page.route('**/api/documents/*', lambda route: route.fulfill(status=403, content_type='application/json', body='{"detail":"Suppression interdite pour ce document"}') if route.request.method == 'DELETE' else route.continue_())
         page.click('#ops-delete-form [type=submit]')
