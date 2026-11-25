@@ -39,7 +39,7 @@ def database_configuration(root: Path, data: Path):
     if url.get_backend_name() == 'sqlite':
         if os.getenv('VERCEL'):
             raise RuntimeError('SQLite persistant est impossible sur Vercel : configurer PostgreSQL')
-        return url_str, {'connect_args': {'check_same_thread': False}}, None
+        return url_str, {'connect_args': {'check_same_thread': False, 'timeout': 15}}, None
     if url.get_backend_name() != 'postgresql':
         raise RuntimeError('SGBD inconnu : utiliser SQLite local ou PostgreSQL')
     schema = ('framatex_bilal_preview_v1' if os.getenv('VERCEL_ENV') == 'preview' else PG_SCHEMA_DEFAULT) if os.getenv('VERCEL') else os.getenv('FRAMATEX_BILAL_DB_SCHEMA', PG_SCHEMA_DEFAULT)
@@ -48,7 +48,7 @@ def database_configuration(root: Path, data: Path):
     if url.drivername != 'postgresql+psycopg':
         url_str = url.set(drivername='postgresql+psycopg').render_as_string(hide_password=False)
     kwargs = {
-        'connect_args': {'connect_timeout': 10, 'prepare_threshold': None, 'sslmode': 'require'},
+        'connect_args': {'connect_timeout': 10, 'prepare_threshold': None, 'sslmode': 'require' if os.getenv('VERCEL') else url.query.get('sslmode', 'prefer')},
         'poolclass': NullPool,
         'execution_options': {'schema_translate_map': {None: schema}},
     }

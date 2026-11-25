@@ -468,7 +468,8 @@ def client_attachment(request_id: str, document_id: str, number: int,
         ClientOrderDocumentVersion.number == number))
     if not version:
         raise HTTPException(404, "Pièce client introuvable")
-    path = CLIENT_STORAGE / version.disk_name
+    from . import blob_backend
+    path = blob_backend.resolve(CLIENT_STORAGE, version.disk_name)
     if not path.is_file():
         raise HTTPException(503, "Fichier client indisponible")
     audit(db, user, "client.attachment.internal_download", "client_order_document", document_id,

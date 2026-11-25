@@ -26,3 +26,35 @@ jobs:
         run: |
           for file in tests/*.cjs; do node "$file"; done
           for file in static/*.js; do node --check "$file"; done
+
+  postgresql-smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: framatex_test
+          POSTGRES_PASSWORD: framatex_test
+          POSTGRES_DB: framatex_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U framatex_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://framatex_test:framatex_test@localhost:5432/framatex_test
+      FRAMATEX_BILAL_DB_SCHEMA: framatex_bilal_ci
+      FRAMATEX_DATA_DIR: /tmp/framatex-ci
+      FRAMATEX_SECRET_KEY: synthetic-test-only-key-not-for-production
+      FRAMATEX_STORAGE_BACKEND: local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements.txt pytest httpx
+      - run: PYTHONPATH=. python scripts/test_postgres_smoke.py

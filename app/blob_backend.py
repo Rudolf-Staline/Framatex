@@ -123,16 +123,18 @@ def publish(path: Path, mime: str) -> None:
 
 
 def resolve(directory: Path, name: str) -> Path:
+    if not remote_enabled():
+        return directory / name
     if not _NAME.fullmatch(name):
         raise HTTPException(503, 'Identifiant de fichier invalide')
-    return download(directory, name) if remote_enabled() else directory / name
+    return download(directory, name)
 
 
 def discard(directory: Path, name: str) -> None:
     """Clean uncommitted/expired uploads. Never call on a published version."""
-    if not _NAME.fullmatch(name):
-        raise ValueError('Identifiant de fichier invalide')
     if remote_enabled():
+        if not _NAME.fullmatch(name):
+            raise ValueError('Identifiant de fichier invalide')
         delete(name)
     (directory / name).unlink(missing_ok=True)
 
