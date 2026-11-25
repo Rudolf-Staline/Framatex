@@ -18,7 +18,20 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = Path(os.getenv("FRAMATEX_DATA_DIR", str(ROOT / "data"))).resolve()
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / 'framat.db'}")
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}, pool_pre_ping=True)
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False, "timeout": 15} if DATABASE_URL.startswith("sqlite") else {}, pool_pre_ping=True)
+if DATABASE_URL.startswith("sqlite") and ":memory:" not in DATABASE_URL:
+    from sqlalchemy import event
+
+    @event.listens_for(engine, "connect")
+    def _sqlite_pragmas(dbapi_connection, _record):
+        # Accès simultanés : WAL (les lectures ne bloquent plus l'écriture), attente de verrou bornée
+        # plutôt qu'une erreur immédiate, synchronisation adaptée au WAL. La sauvegarde utilise l'API
+        # backup de SQLite, compatible avec ce mode.
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA busy_timeout=15000")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.close()
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 class Base(DeclarativeBase):

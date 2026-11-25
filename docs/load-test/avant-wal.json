@@ -1,0 +1,358 @@
+[
+  {
+    "users": 1,
+    "requests": 11,
+    "wall_s": 0.35,
+    "rps": 31.4,
+    "errors": 0,
+    "sqlite_locked": 0,
+    "error_samples": [],
+    "operations": {
+      "connexion": {
+        "n": 1,
+        "median_ms": 39,
+        "p95_ms": 39,
+        "max_ms": 39,
+        "errors": 0
+      },
+      "création commande": {
+        "n": 1,
+        "median_ms": 92,
+        "p95_ms": 92,
+        "max_ms": 92,
+        "errors": 0
+      },
+      "ouverture commande": {
+        "n": 1,
+        "median_ms": 9,
+        "p95_ms": 9,
+        "max_ms": 9,
+        "errors": 0
+      },
+      "recherche": {
+        "n": 1,
+        "median_ms": 11,
+        "p95_ms": 11,
+        "max_ms": 11,
+        "errors": 0
+      },
+      "dépôt PDF": {
+        "n": 1,
+        "median_ms": 13,
+        "p95_ms": 13,
+        "max_ms": 13,
+        "errors": 0
+      },
+      "dépôt Excel": {
+        "n": 1,
+        "median_ms": 21,
+        "p95_ms": 21,
+        "max_ms": 21,
+        "errors": 0
+      },
+      "aperçu PDF (page)": {
+        "n": 1,
+        "median_ms": 96,
+        "p95_ms": 96,
+        "max_ms": 96,
+        "errors": 0
+      },
+      "aperçu Excel (feuille)": {
+        "n": 1,
+        "median_ms": 28,
+        "p95_ms": 28,
+        "max_ms": 28,
+        "errors": 0
+      },
+      "modification fiche": {
+        "n": 1,
+        "median_ms": 10,
+        "p95_ms": 10,
+        "max_ms": 10,
+        "errors": 0
+      },
+      "suppression": {
+        "n": 1,
+        "median_ms": 14,
+        "p95_ms": 14,
+        "max_ms": 14,
+        "errors": 0
+      },
+      "restauration": {
+        "n": 1,
+        "median_ms": 7,
+        "p95_ms": 7,
+        "max_ms": 7,
+        "errors": 0
+      }
+    }
+  },
+  {
+    "users": 5,
+    "requests": 55,
+    "wall_s": 0.91,
+    "rps": 60.3,
+    "errors": 0,
+    "sqlite_locked": 0,
+    "error_samples": [],
+    "operations": {
+      "connexion": {
+        "n": 5,
+        "median_ms": 97,
+        "p95_ms": 110,
+        "max_ms": 112,
+        "errors": 0
+      },
+      "création commande": {
+        "n": 5,
+        "median_ms": 49,
+        "p95_ms": 53,
+        "max_ms": 113,
+        "errors": 0
+      },
+      "ouverture commande": {
+        "n": 5,
+        "median_ms": 38,
+        "p95_ms": 47,
+        "max_ms": 56,
+        "errors": 0
+      },
+      "recherche": {
+        "n": 5,
+        "median_ms": 67,
+        "p95_ms": 69,
+        "max_ms": 95,
+        "errors": 0
+      },
+      "dépôt PDF": {
+        "n": 5,
+        "median_ms": 77,
+        "p95_ms": 81,
+        "max_ms": 83,
+        "errors": 0
+      },
+      "dépôt Excel": {
+        "n": 5,
+        "median_ms": 127,
+        "p95_ms": 133,
+        "max_ms": 138,
+        "errors": 0
+      },
+      "aperçu PDF (page)": {
+        "n": 5,
+        "median_ms": 124,
+        "p95_ms": 130,
+        "max_ms": 134,
+        "errors": 0
+      },
+      "aperçu Excel (feuille)": {
+        "n": 5,
+        "median_ms": 151,
+        "p95_ms": 153,
+        "max_ms": 156,
+        "errors": 0
+      },
+      "modification fiche": {
+        "n": 5,
+        "median_ms": 73,
+        "p95_ms": 77,
+        "max_ms": 89,
+        "errors": 0
+      },
+      "suppression": {
+        "n": 5,
+        "median_ms": 54,
+        "p95_ms": 60,
+        "max_ms": 97,
+        "errors": 0
+      },
+      "restauration": {
+        "n": 5,
+        "median_ms": 25,
+        "p95_ms": 33,
+        "max_ms": 38,
+        "errors": 0
+      }
+    }
+  },
+  {
+    "users": 10,
+    "requests": 110,
+    "wall_s": 1.98,
+    "rps": 55.6,
+    "errors": 0,
+    "sqlite_locked": 0,
+    "error_samples": [],
+    "operations": {
+      "connexion": {
+        "n": 10,
+        "median_ms": 168,
+        "p95_ms": 237,
+        "max_ms": 366,
+        "errors": 0
+      },
+      "création commande": {
+        "n": 10,
+        "median_ms": 74,
+        "p95_ms": 140,
+        "max_ms": 230,
+        "errors": 0
+      },
+      "ouverture commande": {
+        "n": 10,
+        "median_ms": 81,
+        "p95_ms": 93,
+        "max_ms": 98,
+        "errors": 0
+      },
+      "recherche": {
+        "n": 10,
+        "median_ms": 290,
+        "p95_ms": 329,
+        "max_ms": 347,
+        "errors": 0
+      },
+      "dépôt PDF": {
+        "n": 10,
+        "median_ms": 149,
+        "p95_ms": 248,
+        "max_ms": 252,
+        "errors": 0
+      },
+      "dépôt Excel": {
+        "n": 10,
+        "median_ms": 227,
+        "p95_ms": 280,
+        "max_ms": 295,
+        "errors": 0
+      },
+      "aperçu PDF (page)": {
+        "n": 10,
+        "median_ms": 197,
+        "p95_ms": 242,
+        "max_ms": 251,
+        "errors": 0
+      },
+      "aperçu Excel (feuille)": {
+        "n": 10,
+        "median_ms": 243,
+        "p95_ms": 329,
+        "max_ms": 344,
+        "errors": 0
+      },
+      "modification fiche": {
+        "n": 10,
+        "median_ms": 175,
+        "p95_ms": 233,
+        "max_ms": 425,
+        "errors": 0
+      },
+      "suppression": {
+        "n": 10,
+        "median_ms": 74,
+        "p95_ms": 218,
+        "max_ms": 461,
+        "errors": 0
+      },
+      "restauration": {
+        "n": 10,
+        "median_ms": 18,
+        "p95_ms": 133,
+        "max_ms": 186,
+        "errors": 0
+      }
+    }
+  },
+  {
+    "users": 20,
+    "requests": 220,
+    "wall_s": 4.08,
+    "rps": 53.9,
+    "errors": 0,
+    "sqlite_locked": 0,
+    "error_samples": [],
+    "operations": {
+      "connexion": {
+        "n": 20,
+        "median_ms": 279,
+        "p95_ms": 668,
+        "max_ms": 882,
+        "errors": 0
+      },
+      "création commande": {
+        "n": 20,
+        "median_ms": 172,
+        "p95_ms": 415,
+        "max_ms": 686,
+        "errors": 0
+      },
+      "ouverture commande": {
+        "n": 20,
+        "median_ms": 220,
+        "p95_ms": 346,
+        "max_ms": 398,
+        "errors": 0
+      },
+      "recherche": {
+        "n": 20,
+        "median_ms": 743,
+        "p95_ms": 971,
+        "max_ms": 973,
+        "errors": 0
+      },
+      "dépôt PDF": {
+        "n": 20,
+        "median_ms": 368,
+        "p95_ms": 456,
+        "max_ms": 459,
+        "errors": 0
+      },
+      "dépôt Excel": {
+        "n": 20,
+        "median_ms": 477,
+        "p95_ms": 538,
+        "max_ms": 544,
+        "errors": 0
+      },
+      "aperçu PDF (page)": {
+        "n": 20,
+        "median_ms": 306,
+        "p95_ms": 335,
+        "max_ms": 350,
+        "errors": 0
+      },
+      "aperçu Excel (feuille)": {
+        "n": 20,
+        "median_ms": 385,
+        "p95_ms": 584,
+        "max_ms": 619,
+        "errors": 0
+      },
+      "modification fiche": {
+        "n": 20,
+        "median_ms": 349,
+        "p95_ms": 724,
+        "max_ms": 748,
+        "errors": 0
+      },
+      "suppression": {
+        "n": 20,
+        "median_ms": 150,
+        "p95_ms": 776,
+        "max_ms": 811,
+        "errors": 0
+      },
+      "restauration": {
+        "n": 20,
+        "median_ms": 49,
+        "p95_ms": 379,
+        "max_ms": 600,
+        "errors": 0
+      }
+    }
+  },
+  {
+    "duplicate_launch_names": 0,
+    "launches": 36
+  }
+]

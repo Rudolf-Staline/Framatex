@@ -344,8 +344,12 @@ def search(q: str = "", folder: str = "", doc_type: str = "", launch_id: str = "
             document.title, document.doc_type, version.original_name, version.sha256)))
         if needle not in text and version.id not in content_matches:
             continue
+        results.append((launch, document, version))
+    # Détails coûteux (auteur, état documentaire) calculés pour la seule page renvoyée.
+    page = []
+    for launch, document, version in results[offset:offset + limit]:
         uploader = db.get(User, version.uploaded_by)
-        results.append({"launch_id": launch.id, "launch_name": launch.name, "order_ref": launch.order_ref,
+        page.append({"launch_id": launch.id, "launch_name": launch.name, "order_ref": launch.order_ref,
                         "client_name": launch.client_name, "document_id": document.id, "title": document.title,
                         "doc_type": document.doc_type, "folder": document.folder.slug,
                         "version_id": version.id, "version": version.number,
@@ -354,7 +358,7 @@ def search(q: str = "", folder: str = "", doc_type: str = "", launch_id: str = "
                         "created_at": version.created_at.isoformat(), "uploader": uploader.name if uploader else None,
                         "content_excerpt": content_matches.get(version.id),
                         "status": document_state(db, document, version), **{k: launch_info[launch.id][k] for k in ("client_code",)}})
-    return {"total": len(results), "items": results[offset:offset + limit], "offset": offset, "limit": limit,
+    return {"total": len(results), "items": page, "offset": offset, "limit": limit,
             "launches": matched_launches[:50], "launches_total": len(matched_launches)}
 
 
