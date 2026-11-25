@@ -89,7 +89,8 @@ def delete_document(document_id: str, payload: DeletionPayload | None = None,
     document.deletion_reason = (payload.reason if payload else '').strip() or None
     audit, _, _ = _deps()
     audit(db, user, 'document.delete', 'document', document.id,
-          {'reason': document.deletion_reason, 'versions': [version.number for version in _active_versions(document)]})
+          {'reason': document.deletion_reason, 'versions': [version.number for version in _active_versions(document)],
+           'files': [{'version_id': v.id, 'number': v.number, 'original_name': v.original_name} for v in _active_versions(document)]})
     _update_after_change(db, document, max(_active_versions(document), key=lambda item: item.number, default=None))
     db.commit()
 
@@ -106,7 +107,8 @@ def delete_document_version(version_id: str, payload: DeletionPayload | None = N
     version.deletion_reason = (payload.reason if payload else '').strip() or None
     audit, _, _ = _deps()
     audit(db, user, 'document.version.delete', 'document_version', version.id,
-          {'document_id': version.document_id, 'version': version.number, 'reason': version.deletion_reason})
+          {'document_id': version.document_id, 'version': version.number, 'reason': version.deletion_reason,
+           'files': [{'version_id': version.id, 'number': version.number, 'original_name': version.original_name}]})
     _update_after_change(db, version.document, version)
     db.commit()
 

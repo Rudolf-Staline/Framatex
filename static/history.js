@@ -28,6 +28,7 @@ function histRows(items, {compact = false} = {}) {
       isDoc ? `<span>${e(row.doc_type || '')}${row.doc_type ? ' · ' : ''}${row.original_name ? e(row.original_name) : HIST_UNKNOWN}</span>` : '',
       isDoc ? `<span>${row.version_number ? `V${row.version_number}` : row.versions?.length ? row.versions.map(n => `V${n}`).join(', ') : HIST_UNKNOWN}</span>` : '',
     ].filter(Boolean).join('');
+    const affectedFiles = row.files?.length > 1 ? `<details class="hist-changes"><summary>${row.files.length} fichiers / versions concernés</summary><ul>${row.files.map(f => `<li>V${e(f.number)} · ${e(f.original_name)}</li>`).join('')}</ul></details>` : '';
     const changes = row.changes?.length ? `<details class="hist-changes"><summary>${row.changes.length} modification${row.changes.length > 1 ? 's' : ''}</summary>
       <table><thead><tr><th>Champ</th><th>Avant</th><th>Après</th></tr></thead><tbody>${row.changes.map(c => `<tr><td>${e(c.label)}</td><td>${histValue(c.before)}</td><td>${histValue(c.after)}</td></tr>`).join('')}</tbody></table></details>` : '';
     let action = '';
@@ -36,7 +37,7 @@ function histRows(items, {compact = false} = {}) {
     else if (row.launch_id && !compact) action = `<button type="button" class="link" data-hist-open-launch="${e(row.launch_id)}">Ouvrir la commande</button>`;
     return `<li class="hist-row"><time datetime="${e(row.occurred_at)}">${when.day}<small>${when.time}</small></time>
       <div class="hist-main"><strong>${e(opsAuditLabel(row.action))}</strong> <span class="hist-actor">par ${e(row.actor || 'Système')}</span>
-        ${meta ? `<p class="hist-meta">${meta}</p>` : ''}${changes}${row.reason ? `<p class="hist-reason">Motif : ${e(row.reason)}</p>` : ''}</div>
+        ${meta ? `<p class="hist-meta">${meta}</p>` : ''}${affectedFiles}${changes}${row.reason ? `<p class="hist-reason">Motif : ${e(row.reason)}</p>` : ''}</div>
       <div class="hist-act">${action}</div></li>`;
   }).join('')}</ol>`;
 }
