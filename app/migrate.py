@@ -35,7 +35,7 @@ REVISIONS = ('0001_baseline', '0002_launch_scope', '0003_pilot_reports', '0004_c
              '0008_optional_rules', '0009_visible_checklist_duplicates', '0010_document_intake',
              '0011_business_memory', '0012_document_intelligence', '0012b_document_search',
              '0013_access_management', '0014_business_memory_folder_access',
-             '0015_document_soft_deletion')
+             '0015_document_soft_deletion', '0016_order_sheet')
 
 
 def _versions(conn):
@@ -227,6 +227,30 @@ def migrate():
             conn.execute(text('CREATE INDEX IF NOT EXISTS ix_document_versions_deleted_at ON document_versions (deleted_at)'))
             conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
                          {'v':'0015_document_soft_deletion','d':datetime.now(timezone.utc).isoformat()})
+        if '0016_order_sheet' not in done:
+            # Fiche commande complète et demandes Client enrichies : colonnes additives, NULL = non renseigné.
+            for table, columns in {
+                'launch_operations': (('description', 'TEXT'), ('workshop', 'VARCHAR(150)'), ('color', 'VARCHAR(80)'),
+                                      ('of_number', 'VARCHAR(60)'), ('quantity_launched', 'INTEGER'), ('quantity_delivered', 'INTEGER'),
+                                      ('invoice_ref', 'VARCHAR(100)'), ('desired_date', 'DATE'), ('client_order_ref', 'VARCHAR(100)'),
+                                      ('client_account_id', 'VARCHAR(36) REFERENCES client_accounts(id)')),
+                'client_order_requests': (('project_name', 'VARCHAR(180)'), ('description', 'TEXT'), ('color', 'VARCHAR(80)')),
+            }.items():
+                existing = {c['name'] for c in inspect(conn).get_columns(table)}
+                for name, spec in columns:
+                    if name not in existing:
+                        conn.execute(text(f'ALTER TABLE {table} ADD COLUMN {name} {spec}'))
+            for name, table, column in (('ix_launch_operations_workshop', 'launch_operations', 'workshop'),
+                                        ('ix_launch_operations_color', 'launch_operations', 'color'),
+                                        ('ix_launch_operations_of_number', 'launch_operations', 'of_number'),
+                                        ('ix_launch_operations_invoice_ref', 'launch_operations', 'invoice_ref'),
+                                        ('ix_launch_operations_client_order_ref', 'launch_operations', 'client_order_ref'),
+                                        ('ix_launch_operations_client_account_id', 'launch_operations', 'client_account_id'),
+                                        ('ix_launches_order_ref', 'launches', 'order_ref'),
+                                        ('ix_launches_client_name', 'launches', 'client_name')):
+                conn.execute(text(f'CREATE INDEX IF NOT EXISTS {name} ON {table} ({column})'))
+            conn.execute(text('INSERT INTO schema_migrations VALUES (:v, :d)'),
+                         {'v':'0016_order_sheet','d':datetime.now(timezone.utc).isoformat()})
         # Defensive consistency check: pre-0.15 historical tables stay untouched.
         cols = {c['name'] for c in inspect(conn).get_columns('launches')}
         if 'restricted' not in cols or 'launch_members' not in inspect(conn).get_table_names():

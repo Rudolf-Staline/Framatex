@@ -568,3 +568,24 @@ body.fx-pro :focus-visible { outline: 2px solid var(--p-cyan); outline-offset: 2
 /* Tissu 3D en bas du panneau décoratif de connexion, fondu dans la photographie. */
 .fx-pro .fx-auth-fabric { position: absolute; left: 0; right: 0; bottom: 0; height: 46%; z-index: 0; -webkit-mask-image: linear-gradient(to top, #000 45%, transparent); mask-image: linear-gradient(to top, #000 45%, transparent); }
 .fx-pro .fx-auth-art > :not(.fx-auth-photo):not(.fx-auth-fabric) { position: relative; z-index: 1; }
+
+/* Fiche commande (modèle métier FRAMATEX) */
+.fx-pro .fx-sheet { margin: 18px 0 22px; padding: 18px 22px 20px; border: 1px solid var(--p-line); border-radius: 6px; background: #fff; }
+.fx-pro .fx-sheet > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.fx-pro .fx-sheet h2 { margin: 0; font-size: 15.5px; font-weight: 700; }
+.fx-pro .fx-sheet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px 22px; margin: 0; }
+.fx-pro .fx-sheet-grid .is-wide { grid-column: 1 / -1; }
+.fx-pro .fx-sheet-grid dt { font-size: 12px; font-weight: 600; color: var(--p-muted); }
+.fx-pro .fx-sheet-grid dd { margin: 3px 0 0; font-size: 14px; font-weight: 600; color: var(--p-ink); overflow-wrap: anywhere; }
+.fx-pro .fx-sheet-grid dd.is-empty { color: #8a95a3; font-weight: 400; font-style: italic; }
+.fx-pro .modal.sheet-modal { max-width: min(880px, 100%); }
+.fx-pro .sheet-group { margin: 0 0 16px; padding: 0; border: 0; }
+.fx-pro .sheet-group legend { margin-bottom: 10px; font-size: 13px; font-weight: 700; color: var(--p-navy); }
+.fx-pro .sheet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 4px 16px; }
+.fx-pro .sheet-grid .sheet-wide { grid-column: 1 / -1; }
+.fx-pro .sheet-grid textarea { width: 100%; min-height: 72px; padding: 9px 12px; border: 1px solid #cdd4dc; border-radius: 4px; font: 400 14px/1.45 var(--fx-font); }
+.fx-pro .fx-sheet summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; list-style: none; cursor: pointer; }
+.fx-pro .fx-sheet summary::-webkit-details-marker { display: none; }
+.fx-pro .fx-sheet summary h2::after { content: ' ▾'; color: var(--p-muted); font-size: 12px; }
+.fx-pro .fx-sheet details:not([open]) summary h2::after { content: ' ▸'; }
+.fx-pro .fx-sheet details[open] summary { margin-bottom: 14px; }

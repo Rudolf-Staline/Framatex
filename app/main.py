@@ -925,3 +925,7 @@ app.include_router(access_admin_router)
 
 # Le contrôle global de portée est effectué dans request_header_guard, avant
 # le dispatch FastAPI. Aucun routeur historique ne peut l'éviter.
+
+# Fiche commande complète (modèle métier FRAMATEX, 0016_order_sheet).
+from .order_sheet import router as order_sheet_router
+app.include_router(order_sheet_router)

@@ -94,8 +94,9 @@ export function getCurrentClient() { return call('/me', { context: 'session' });
 /** GET /api/client/order-requests — demandes du client connecté uniquement. */
 export function listOrderRequests() { return call('/order-requests'); }
 /** POST /api/client/order-requests */
-export function createOrderRequest({ article, quantite, date_souhaitee, reference_client, commentaire, status }) {
-  return call('/order-requests', { method: 'POST', json: { article, quantite, date_souhaitee, reference_client: reference_client || null, commentaire: commentaire || null, status } });
+export function createOrderRequest({ article, quantite, date_souhaitee, reference_client, commentaire, status, project_name, description, color }) {
+  return call('/order-requests', { method: 'POST', json: { article, quantite, date_souhaitee, reference_client: reference_client || null, commentaire: commentaire || null,
+    project_name: project_name || null, description: description || null, color: color || null, status } });
 }
 /** GET /api/client/order-requests/{id} — détail avec documents et versions. */
 export function getOrderRequest(requestId) { return call(`/order-requests/${encodeURIComponent(requestId)}`); }

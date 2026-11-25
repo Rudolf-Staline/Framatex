@@ -17,6 +17,18 @@ class LaunchOperations(Base):
     definitive_ref: Mapped[str | None] = mapped_column(String(100), nullable=True)
     responsible_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+    # Fiche commande complète (0016_order_sheet) : toutes les valeurs restent facultatives ;
+    # NULL signifie « non renseigné », jamais zéro. Les références sont du texte (zéros initiaux).
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    workshop: Mapped[str | None] = mapped_column(String(150), nullable=True, index=True)
+    color: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    of_number: Mapped[str | None] = mapped_column(String(60), nullable=True, index=True)
+    quantity_launched: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    quantity_delivered: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    invoice_ref: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    desired_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    client_order_ref: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    client_account_id: Mapped[str | None] = mapped_column(ForeignKey("client_accounts.id"), nullable=True, index=True)
 
 
 class InternalComment(Base):

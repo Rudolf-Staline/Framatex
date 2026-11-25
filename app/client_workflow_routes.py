@@ -111,15 +111,18 @@ def open_launch_for_order(order_id: str, response: Response,
         add_audit(db, user.id, "client.order_request.status_changed", "client_order_request", order.id,
                   {"client_id": order.client_id, "previous": previous, "status": "accepted"})
     client = order.client
-    launch = Launch(name=f"{order.article} · {client.raison_sociale}"[:180], client_name=client.raison_sociale[:150],
+    launch = Launch(name=(order.project_name or f"{order.article} · {client.raison_sociale}")[:180], client_name=client.raison_sociale[:150],
                     order_ref=order.request_number, created_by=user.id,
                     restricted=os.getenv("FRAMATEX_RESTRICT_NEW_LAUNCHES", "0") == "1")
     db.add(launch)
     db.flush()
     for slug, label in FOLDERS:
         db.add(Folder(launch_id=launch.id, slug=slug, label=label))
+    # Transfert intégral de la demande vers la fiche commande (aucune double saisie).
     db.add(LaunchOperations(launch_id=launch.id, article=order.article[:180], quantity=order.quantite,
-                            responsible_id=user.id))
+                            responsible_id=user.id, description=order.description, color=order.color,
+                            desired_date=order.date_souhaitee, client_order_ref=order.reference_client,
+                            client_account_id=client.id))
     db.add(ClientOrderLaunch(order_request_id=order.id, launch_id=launch.id, created_by=user.id))
     from .business_memory_routes import norm
     partner = db.scalar(select(BusinessPartner).where(BusinessPartner.client_account_id == client.id))

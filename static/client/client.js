@@ -707,10 +707,18 @@ function viewNewRequest() {
   <form class="form card form-card" id="request-form" novalidate>
     <div class="form-alert" role="alert" hidden></div>
     <fieldset class="form-section">
-      <legend>Article</legend>
+      <legend>Projet</legend>
+      <div class="grid-2">
+        ${field({ id: 'rq-project', label: 'Nom du projet', attrs: 'maxlength="180"', help: 'Repris comme nom du Dossier Jaune lorsque FRAMATEX accepte la demande.' })}
+        ${field({ id: 'rq-color', label: 'Couleur', attrs: 'maxlength="80"' })}
+      </div>
+      ${field({ id: 'rq-description', label: 'Description', rows: 3, attrs: 'maxlength="4000"' })}
+    </fieldset>
+    <fieldset class="form-section">
+      <legend>Article et commande</legend>
       <div class="grid-2">
         ${field({ id: 'rq-article', label: 'Modèle / article', required: true, attrs: 'maxlength="180"' })}
-        ${field({ id: 'rq-ref', label: 'Votre référence', help: 'Référence interne à votre entreprise, si vous en avez une.', attrs: 'maxlength="100"' })}
+        ${field({ id: 'rq-ref', label: 'Votre référence de commande', help: 'Référence interne à votre entreprise. Votre N° client est ajouté automatiquement depuis votre compte.', attrs: 'maxlength="100"' })}
       </div>
     </fieldset>
     <fieldset class="form-section">
@@ -758,7 +766,7 @@ function viewNewRequest() {
     setLoading(btn, true, 'Envoi de la demande…');
     try {
       const status = e.submitter?.dataset.status === 'draft' ? 'draft' : 'submitted';
-      const created = await source.createOrderRequest({ article, quantite: qty, date_souhaitee: date, reference_client: form['rq-ref'].value.trim(), commentaire: form['rq-comment'].value.trim(), status });
+      const created = await source.createOrderRequest({ article, quantite: qty, date_souhaitee: date, reference_client: form['rq-ref'].value.trim(), commentaire: form['rq-comment'].value.trim(), project_name: form['rq-project'].value.trim(), description: form['rq-description'].value.trim(), color: form['rq-color'].value.trim(), status });
       let failures = 0;
       if (uploader.pending().length) { setLoading(btn, true, 'Envoi des documents…'); failures = await uploader.uploadAll(created.id); }
       go(`/demandes/${encodeURIComponent(created.id)}`);
@@ -865,8 +873,11 @@ async function viewRequestDetail({ id }) {
           <h2 class="card-title" id="info-title">Informations</h2>
           <dl class="info-grid">
             <div><dt>Numéro de demande</dt><dd>${esc(r.request_number)}</dd></div>
+            <div><dt>N° client</dt><dd>${esc(state.client?.client_code || '—')}</dd></div>
+            <div><dt>Nom du projet</dt><dd>${esc(r.project_name || 'Non renseigné')}</dd></div>
             <div><dt>Modèle / article</dt><dd>${esc(r.article)}</dd></div>
-            <div><dt>Votre référence</dt><dd>${esc(r.reference_client || '—')}</dd></div>
+            <div><dt>Couleur</dt><dd>${esc(r.color || 'Non renseignée')}</dd></div>
+            <div><dt>Votre référence de commande</dt><dd>${esc(r.reference_client || '—')}</dd></div>
             <div><dt>Quantité</dt><dd>${fmtQty(r.quantite)} pièces</dd></div>
             <div><dt>Date souhaitée</dt><dd>${fmtDate(r.date_souhaitee)}</dd></div>
             <div><dt>Créée le</dt><dd>${fmtDate(r.created_at)}</dd></div>

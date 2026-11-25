@@ -41,6 +41,10 @@ class ClientOrderRequest(Base):
     date_souhaitee: Mapped[date] = mapped_column(Date)
     reference_client: Mapped[str | None] = mapped_column(String(100), nullable=True)
     commentaire: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Informations métier de la demande (0016_order_sheet), transférées au Dossier Jaune.
+    project_name: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    color: Mapped[str | None] = mapped_column(String(80), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="draft", index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)

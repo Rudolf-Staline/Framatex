@@ -72,6 +72,9 @@ class StatusPayload(BaseModel):
 
 
 class OrderPayload(BaseModel):
+    project_name: str | None = Field(default=None, max_length=180)
+    description: str | None = Field(default=None, max_length=4000)
+    color: str | None = Field(default=None, max_length=80)
     article: str = Field(min_length=2, max_length=180)
     quantite: int = Field(gt=0, le=10_000_000)
     date_souhaitee: date
@@ -124,6 +127,7 @@ def order_out(order: ClientOrderRequest, include_documents: bool = False) -> dic
               "article": order.article, "quantite": order.quantite,
               "date_souhaitee": order.date_souhaitee.isoformat(),
               "reference_client": order.reference_client, "commentaire": order.commentaire,
+              "project_name": order.project_name, "description": order.description, "color": order.color,
               "status": order.status, "created_at": order.created_at.isoformat(),
               "updated_at": order.updated_at.isoformat()}
     if include_documents:
@@ -258,6 +262,9 @@ def create_order_request(payload: OrderPayload, client: ClientAccount = Depends(
                                date_souhaitee=payload.date_souhaitee,
                                reference_client=(payload.reference_client or "").strip() or None,
                                commentaire=(payload.commentaire or "").strip() or None,
+                               project_name=(payload.project_name or "").strip() or None,
+                               description=(payload.description or "").strip() or None,
+                               color=(payload.color or "").strip() or None,
                                status=payload.status)
     db.add(order)
     db.flush()
