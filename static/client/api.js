@@ -100,6 +100,7 @@ export function createOrderRequest({ article, quantite, date_souhaitee, referenc
 }
 /** GET /api/client/order-requests/{id} — détail avec documents et versions. */
 export function getOrderRequest(requestId) { return call(`/order-requests/${encodeURIComponent(requestId)}`); }
+export function editOrderRequest(requestId, payload) { return call(`/order-requests/${encodeURIComponent(requestId)}`, { method: 'PATCH', json: payload }); }
 export function submitOrderRequest(requestId) { return call(`/order-requests/${encodeURIComponent(requestId)}/status`, { method: 'PATCH', json: { status: 'submitted' } }); }
 
 // ---- Documents -------------------------------------------------------------

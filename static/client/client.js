@@ -1,7 +1,7 @@
 // Espace Client FRAMATEX — interface (routeur par ancre, écrans, formulaires).
 // Toutes les données passent par l'API client réelle (static/client/api.js → app/client_routes.py).
 
-import * as api from './api.js?v=runtime-final-1';
+import * as api from './api.js?v=order-edit-1';
 import {
   icon, esc, fmtDate, fmtQty, fmtSize, statusBadge, REQUEST_STATUS, DOCUMENT_STATUS, documentStatusBadge, field, passwordField,
   setFieldError, clearErrors, showFormAlert, bindPasswordToggles, setLoading, toast,
@@ -880,7 +880,8 @@ async function viewRequestDetail({ id }) {
     <div class="detail-grid">
       <div class="detail-main">
         <section class="card" aria-labelledby="info-title">
-          <h2 class="card-title" id="info-title">Informations</h2>
+          <div class="card-head"><h2 class="card-title" id="info-title">Informations</h2>${['draft','submitted'].includes(r.status) ? '<button type="button" class="btn btn-secondary btn-sm" id="edit-request">Modifier la demande</button>' : ''}</div>
+          <div id="request-edit-zone"></div>
           <dl class="info-grid">
             <div><dt>Numéro de demande</dt><dd>${esc(r.request_number)}</dd></div>
             <div><dt>N° client</dt><dd>${esc(state.client?.client_code || '—')}</dd></div>
@@ -932,6 +933,7 @@ async function viewRequestDetail({ id }) {
       </aside>
     </div>`;
   bindDownloads(body);
+  body.querySelector('#edit-request')?.addEventListener('click', () => editRequestForm(r, body));
   loadRequestExchanges(r, body);
   body.querySelector('#submit-draft')?.addEventListener('click', async () => {
     try { await source.submitOrderRequest(r.id); go(`/demandes/${encodeURIComponent(r.id)}`); }
@@ -1121,3 +1123,43 @@ function mountAuthFabric() {
 }
 new MutationObserver(mountAuthFabric).observe(document.getElementById('app'), { childList: true, subtree: true });
 setTimeout(mountAuthFabric, 0);
+
+
+// Modify metadata only; preserve documents, reference number and workflow status.
+function editRequestForm(r, body) {
+  const zone = body.querySelector('#request-edit-zone');
+  if (!zone || zone.querySelector('form')) return;
+  const specs = [
+    ['project_name','Nom du projet','text',180], ['article','Modèle / article','text',180],
+    ['color','Couleur','text',80], ['reference_client','Votre référence','text',100],
+    ['quantite','Quantité','number',0], ['date_souhaitee','Date souhaitée','date',0],
+    ['description','Description','textarea',4000], ['commentaire','Commentaire','textarea',4000]
+  ];
+  const render = ([key,label,type,max]) => {
+    const required = ['article','quantite','date_souhaitee'].includes(key);
+    const attrs = (required ? ' required' : '') + (max ? ' maxlength="' + max + '"' : '') + (type === 'number' ? ' min="1" max="10000000" step="1"' : '');
+    const value = esc(r[key] ?? '');
+    return '<div class="field"><label for="edit-' + key + '">' + esc(label) + (required ? ' *' : '') + '</label>' +
+      (type === 'textarea' ? '<textarea id="edit-' + key + '" name="' + key + '" rows="3"' + attrs + '>' + value + '</textarea>' :
+        '<input id="edit-' + key + '" name="' + key + '" type="' + type + '" value="' + value + '"' + attrs + '>') + '</div>';
+  };
+  zone.innerHTML = '<form id="edit-order-form"><p class="field-help">Vous pouvez corriger votre demande tant que FRAMATEX ne l’a pas prise en charge. Les documents restent conservés.</p><div class="info-grid">' + specs.map(render).join('') +
+    '</div><p role="alert" data-edit-error></p><div class="form-actions"><button type="button" class="btn btn-secondary" data-edit-cancel>Annuler</button><button type="submit" class="btn btn-primary">Enregistrer les modifications</button></div></form>';
+  const form = zone.querySelector('form');
+  const opener = body.querySelector('#edit-request');
+  opener.disabled = true;
+  form.querySelector('[data-edit-cancel]').onclick = () => { zone.replaceChildren(); opener.disabled = false; opener.focus(); };
+  form.elements.article.focus();
+  form.onsubmit = async event => {
+    event.preventDefault();
+    const payload = {expected_updated_at: r.updated_at};
+    for (const [key] of specs) {
+      const value = form.elements[key].value.trim();
+      payload[key] = key === 'quantite' ? Number(value) : value || null;
+    }
+    const btn = form.querySelector('[type="submit"]'); btn.disabled = true;
+    try { await source.editOrderRequest(r.id, payload); toast('Demande mise à jour.', 'success'); await viewRequestDetail({id:r.id}); }
+    catch (error) { form.querySelector('[data-edit-error]').textContent = messageFor(error, 'request'); }
+    finally { btn.disabled = false; }
+  };
+}
