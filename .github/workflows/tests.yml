@@ -21,7 +21,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt pytest httpx
       - name: Tests API et fonctions métier
-        run: PYTHONPATH=. python -m pytest -q
+        run: PYTHONPATH=. python -m pytest -q --ignore=scripts/test_postgres_smoke.py
       - name: Tests de rendu JavaScript
         run: |
           for file in tests/*.cjs; do node "$file"; done
