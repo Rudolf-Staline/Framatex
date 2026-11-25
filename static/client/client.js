@@ -555,6 +555,10 @@ function viewSuspended() {
 // --------------------------------------------------------------------------
 // F. Mes demandes
 // --------------------------------------------------------------------------
+function searchKey(values) {
+  return values.filter(Boolean).join(' ').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
 async function viewRequests() {
   mountShell('requests', `${pageHead({
     title: 'Mes demandes', lead: 'Vos demandes de commande transmises à FRAMATEX.',
@@ -583,11 +587,12 @@ async function viewRequests() {
         <li><a href="#/documents-demandes"><strong data-welcome-pending>—</strong><span>pièce(s) à fournir</span></a></li>
       </ul>
     </section>
+    <div class="req-search"><label for="req-search">Rechercher une demande</label><input id="req-search" type="search" placeholder="N° de demande, projet, article, référence, couleur…" autocomplete="off" /></div>
     <div class="table-card">
       <div class="req-head" aria-hidden="true"><span>Demande</span><span>Réf. client</span><span>Quantité</span><span>Date souhaitée</span><span>Créée le</span><span>Statut</span><span></span></div>
       <ul class="req-list">${items.map(r => `
-        <li><a class="req-row" href="#/demandes/${encodeURIComponent(r.id)}">
-          <span class="req-main"><span class="req-number">${esc(r.request_number)}</span><span class="req-article">${esc(r.article)}</span></span>
+        <li data-search="${esc(searchKey([r.request_number, r.project_name, r.article, r.reference_client, r.color, r.description, state.client?.client_code]))}"><a class="req-row" href="#/demandes/${encodeURIComponent(r.id)}">
+          <span class="req-main"><span class="req-number">${esc(r.request_number)}</span><span class="req-article">${esc(r.project_name ? `${r.project_name} · ${r.article}` : r.article)}</span></span>
           <span class="req-cell" data-label="Réf. client">${esc(r.reference_client || '—')}</span>
           <span class="req-cell" data-label="Quantité">${fmtQty(r.quantite)}</span>
           <span class="req-cell" data-label="Date souhaitée">${fmtDate(r.date_souhaitee)}</span>
@@ -596,6 +601,11 @@ async function viewRequests() {
           ${icon('arrow', 'ico req-chevron')}
         </a></li>`).join('')}
       </ul></div>`;
+  // Recherche locale (données déjà limitées au compte) : casse et accents ignorés.
+  body.querySelector('#req-search')?.addEventListener('input', event => {
+    const needle = searchKey([event.target.value]);
+    body.querySelectorAll('.req-list > li').forEach(li => { li.hidden = Boolean(needle) && !li.dataset.search.includes(needle); });
+  });
   const docs = await pending;
   const slot = body.querySelector('[data-welcome-pending]');
   if (slot) slot.textContent = docs ? String(docs.filter(item => PENDING_DOC.has(item.status)).length) : '—';

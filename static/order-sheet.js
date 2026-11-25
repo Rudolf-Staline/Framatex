@@ -92,7 +92,6 @@ async function sheetEdit(launchId) {
 }
 
 // Panneau « Fiche commande » en tête du Dossier Jaune (lecture selon les habilitations).
-const sheetCache = {id: null, data: null, at: 0};
 async function sheetPanel() {
   const anchor = app.querySelector('.dj-summary');
   const launchId = state.detail?.id;
@@ -102,8 +101,7 @@ async function sheetPanel() {
   anchor.after(marker);
   let sheet;
   try {
-    sheet = sheetCache.id === launchId && Date.now() - sheetCache.at < 1500 ? sheetCache.data : await api(`/api/launches/${launchId}/sheet`);
-    Object.assign(sheetCache, {id: launchId, data: sheet, at: Date.now()});
+    sheet = await api(`/api/launches/${launchId}/sheet`);
   } catch { marker.remove(); return; }       // module secondaire : n'empêche jamais l'ouverture de la commande
   const show = ([key, label, type]) => {
     let value = sheet.values[key];

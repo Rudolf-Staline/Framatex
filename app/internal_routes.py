@@ -19,6 +19,13 @@ from .models import Document, DocumentVersion, User
 router = APIRouter(tags=["Espace FRAMATEX"])
 
 
+def fold(value) -> str:
+    """Recherche insensible à la casse et aux accents (« Écru » = « ecru »)."""
+    import unicodedata
+    text = unicodedata.normalize("NFKD", str(value or ""))
+    return "".join(ch for ch in text if not unicodedata.combining(ch)).casefold().strip()
+
+
 def guards():
     from .main import must, permitted, audit, admin_only
     return must, permitted, audit, admin_only
@@ -290,29 +297,52 @@ def search(q: str = "", folder: str = "", doc_type: str = "", launch_id: str = "
     launch_rows = {row.id: row for row in visible_launches(db, user)}
     results = []
     from .document_search import search_content
+    from .access_control import can
+    from .client_models import ClientAccount, ClientOrderRequest
+    from .client_workflow_models import ClientOrderLaunch
+    needle = fold(q)
     content_matches = search_content(db, q) if q.strip() else {}
+    # Texte de recherche de chaque commande autorisée, calculé une seule fois (fiche complète,
+    # N° client du compte rattaché, N° de demande Client) ; insensible à la casse et aux accents.
+    ops_rows = {row.launch_id: row for row in db.scalars(select(LaunchOperations).where(LaunchOperations.launch_id.in_(list(launch_rows))))} if launch_rows else {}
+    accounts = {row.id: row for row in db.scalars(select(ClientAccount).where(ClientAccount.id.in_(
+        [o.client_account_id for o in ops_rows.values() if o.client_account_id])))} if ops_rows else {}
+    requests = {link.launch_id: number for link, number in db.execute(select(ClientOrderLaunch, ClientOrderRequest.request_number).join(
+        ClientOrderRequest, ClientOrderRequest.id == ClientOrderLaunch.order_request_id).where(ClientOrderLaunch.launch_id.in_(list(launch_rows))))} if launch_rows else {}
+    launch_text, launch_info = {}, {}
+    for lid, launch in launch_rows.items():
+        ops = ops_rows.get(lid)
+        account = accounts.get(ops.client_account_id) if ops and ops.client_account_id else None
+        values = (launch.name, launch.order_ref, launch.orli_ref, launch.client_name, requests.get(lid),
+                  account.client_code if account else None, account.raison_sociale if account else None,
+                  *((ops.article, ops.provisional_ref, ops.definitive_ref, ops.workshop, ops.color, ops.of_number,
+                     ops.invoice_ref, ops.client_order_ref, ops.description) if ops else ()))
+        launch_text[lid] = fold(" ".join(str(v) for v in values if v))
+        launch_info[lid] = {"client_code": account.client_code if account else None, "request_number": requests.get(lid),
+                            "article": ops.article if ops else None, "workshop": ops.workshop if ops else None,
+                            "color": ops.color if ops else None, "of_number": ops.of_number if ops else None,
+                            "invoice_ref": ops.invoice_ref if ops else None}
+    matched_launches = [{"launch_id": lid, "name": launch_rows[lid].name, "order_ref": launch_rows[lid].order_ref,
+                         "client_name": launch_rows[lid].client_name, **launch_info[lid]}
+                        for lid in launch_rows if needle and needle in launch_text[lid] and (not launch_id or lid == launch_id)]
     query = select(DocumentVersion).join(Document).order_by(DocumentVersion.created_at.desc())
     for version in db.scalars(query):
         document = version.document
         if document.deleted_at is not None or version.deleted_at is not None:
             continue
         launch = launch_rows.get(document.folder.launch_id)
-        from .access_control import can
         if not launch or not can(user, "document.read", document.folder.slug, launch.id):
             continue
         if folder and folder != document.folder.slug or launch_id and launch_id != launch.id:
             continue
-        if doc_type and doc_type.casefold() not in document.doc_type.casefold():
+        if doc_type and fold(doc_type) not in fold(document.doc_type):
             continue
         day = version.created_at.date()
         if date_from and day < date_from or date_to and day > date_to:
             continue
-        ops = db.get(LaunchOperations, launch.id)
-        text = " ".join(str(value or "") for value in (launch.name, launch.order_ref, launch.orli_ref,
-                       launch.client_name, ops.article if ops else "", ops.provisional_ref if ops else "",
-                       ops.definitive_ref if ops else "", document.title, document.doc_type,
-                       version.original_name, version.sha256))
-        if q.casefold() not in text.casefold() and version.id not in content_matches:
+        text = launch_text[launch.id] + " " + fold(" ".join(str(value or "") for value in (
+            document.title, document.doc_type, version.original_name, version.sha256)))
+        if needle not in text and version.id not in content_matches:
             continue
         uploader = db.get(User, version.uploaded_by)
         results.append({"launch_id": launch.id, "launch_name": launch.name, "order_ref": launch.order_ref,
@@ -323,8 +353,9 @@ def search(q: str = "", folder: str = "", doc_type: str = "", launch_id: str = "
                         "original_name": version.original_name, "size": version.size, "sha256": version.sha256,
                         "created_at": version.created_at.isoformat(), "uploader": uploader.name if uploader else None,
                         "content_excerpt": content_matches.get(version.id),
-                        "status": document_state(db, document, version)})
-    return {"total": len(results), "items": results[offset:offset + limit], "offset": offset, "limit": limit}
+                        "status": document_state(db, document, version), **{k: launch_info[launch.id][k] for k in ("client_code",)}})
+    return {"total": len(results), "items": results[offset:offset + limit], "offset": offset, "limit": limit,
+            "launches": matched_launches[:50], "launches_total": len(matched_launches)}
 
 
 @router.get("/api/workspace/activity")

@@ -84,3 +84,26 @@ def test_client_request_fields_transfer_to_launch_sheet():
     assert v['client_order_ref'] == '00PO-77' and v['desired_date'] == '2027-01-20' and v['quantity'] == 300
     assert v['client_account']['client_code'] == reg.json()['client_code']
     assert v['order_ref'] == order.json()['request_number']           # N° commande FRAMATEX distinct de la référence Client
+
+
+def test_search_by_client_number_references_accents_without_leak():
+    c = chef()
+    pw = secrets.token_urlsafe(16) + 'Aa1!'
+    cl = TestClient(app)
+    reg = cl.post('/api/client/register', headers=H, json={'raison_sociale': 'Atelier Recherche', 'nom_contact': 'Contact',
+                  'email': f'search-{uuid.uuid4().hex[:6]}@example.test', 'telephone': '0600000000', 'adresse': '1 rue', 'pays': 'France', 'password': pw}).json()
+    tag = uuid.uuid4().hex[:5]
+    lid = c.post('/api/order-sheets', headers=H, json={'name': f'Chemise popeline {tag}', 'color': 'Écru', 'of_number': f'00{tag}',
+                 'invoice_ref': f'FA-{tag}', 'workshop': f'Atelier Fès {tag}', 'client_account_id': reg['id']}).json()['id']
+    def found(q):
+        return {row['launch_id'] for row in c.get('/api/workspace/search', params={'q': q}).json()['launches']}
+    assert lid in found(reg['client_code'])                 # N° client (client_code du compte rattaché)
+    assert lid in found(f'00{tag}') and lid in found(f'fa-{tag.upper()}')
+    assert lid in found(f'atelier fes {tag}')                # accents et casse ignorés
+    assert lid in found(f'popeline {tag}')
+    tech = c.post('/api/admin/collaborators', headers=H, json={'name': 'Tech recherche', 'email': f'tr-{tag}@example.test'}).json()
+    t = TestClient(app)
+    t.post('/api/auth/login', headers=H, json={'email': f'tr-{tag}@example.test', 'password': tech['temporary_password']})
+    t.post('/api/account/password', headers=H, json={'current_password': tech['temporary_password'], 'new_password': pw})
+    report = t.get('/api/workspace/search', params={'q': f'00{tag}'}).json()
+    assert report['launches'] == [] and report['items'] == []   # aucune fuite sans affectation

@@ -81,7 +81,7 @@ def run(base, pw, out):
         chef.locator('.sidebar [data-ops-view="clients"]').click()
         row = chef.locator('tr', has_text='client.metier@example.test')
         row.locator('[data-ops-client]').click(); expect(row.locator('[data-ops-client]')).to_have_text('Suspendre')
-        client_code = row.inner_text().split('\n')[0]
+        client_code = next(c['client_code'] for c in chef.context.request.get('/api/admin/clients').json() if c['email'] == 'client.metier@example.test')
         client.goto('/espace-client#/connexion'); client.fill('#login-email', 'client.metier@example.test'); client.fill('#login-password', pw['client'])
         client.click('#login-form [type=submit]'); client.wait_for_url('**#/demandes*')
         client.goto(base + '/espace-client#/demandes/nouvelle'); client.wait_for_selector('#rq-project')
@@ -124,6 +124,16 @@ def run(base, pw, out):
         launch_id = chef.evaluate('state.detail.id')
         audit = req.get('/api/audit').json() if req.get('/api/audit').status == 200 else []
         checks.append('Création interne : 14 champs, seul le nom obligatoire, zéros initiaux conservés, 0 ≠ « Non renseigné » ; « Modifier la fiche » enregistre 2 changements')
+
+        # 3 bis. Recherche par N° client puis clic sur le résultat.
+        chef.locator('#global-search').click(); chef.wait_for_selector('#ops-search-form')
+        chef.fill('#q', client_code); chef.click('#ops-search-form [type=submit]')
+        result = chef.locator('[data-ops-launch-open]', has_text='').first
+        expect(chef.locator('.ops-search-launches')).to_contain_text('Costume cérémonie')
+        chef.screenshot(path=str(out / 'recherche-numero-client.png'))
+        chef.locator('.ops-search-launches [data-ops-launch-open]').first.click()
+        expect(chef.locator('.fx-sheet')).to_contain_text(client_code)
+        checks.append(f'Recherche par N° client ({client_code}) : commande trouvée, clic → Dossier Jaune ouvert')
 
         # 4. Technicien en lecture : fiche visible, pas d'édition.
         tech = req.post('/api/admin/collaborators', headers=H, data={'name': 'Youssef Amrani', 'email': 'tech.metier@example.test', 'job_title': 'Technicien'}).json()

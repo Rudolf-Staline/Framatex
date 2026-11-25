@@ -589,3 +589,4 @@ body.fx-pro :focus-visible { outline: 2px solid var(--p-cyan); outline-offset: 2
 .fx-pro .fx-sheet summary h2::after { content: ' ▾'; color: var(--p-muted); font-size: 12px; }
 .fx-pro .fx-sheet details:not([open]) summary h2::after { content: ' ▸'; }
 .fx-pro .fx-sheet details[open] summary { margin-bottom: 14px; }
+.fx-pro .ops-search-subtitle { margin: 18px 0 10px; font-size: 15px; font-weight: 700; color: var(--p-ink); }
