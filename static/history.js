@@ -66,7 +66,7 @@ operationsAudit = async function() {
     <form class="ops-filters" id="ops-audit-form">
       <div class="field"><label for="launch_id">Commande</label><select id="launch_id" name="launch_id"><option value="">Toutes les commandes accessibles</option>${launches.map(l => `<option value="${e(l.id)}">${e(l.order_ref || l.name)}</option>`).join('')}</select></div>
       <div class="field"><label for="actor_id">Auteur</label><select id="actor_id" name="actor_id"><option value="">Tous les auteurs</option>${users.map(u => `<option value="${e(u.id)}">${e(u.name)}</option>`).join('')}</select></div>
-      <div class="field"><label for="action">Action</label><select id="action" name="action"><option value="">Toutes les actions</option>${actions.map(([k, l]) => `<option value="${e(k)}">${e(l)}</option>`).join('')}</select></div>
+      <div class="field"><label for="action">Action</label><input id="action" name="action" list="hist-actions" autocomplete="off" placeholder="Toutes les actions"><datalist id="hist-actions">${actions.map(([k, l]) => `<option value="${e(k)}">${e(l)}</option>`).join('')}</datalist></div>
       ${opsField('document_id', 'Identifiant document')}${opsField('date_from', 'Depuis', 'date')}${opsField('date_to', 'Jusqu’au', 'date')}
       <button class="primary" type="submit">Filtrer</button></form><section class="ops-panel" id="ops-audit-results" aria-live="polite"></section>`, 'Historique et audit');
   const form = app.querySelector('#ops-audit-form'); let offset = 0, seq = 0;
@@ -98,7 +98,7 @@ const histBaseDocument = operationsDocument;
 operationsDocument = async function(id, versionId = null) {
   await histBaseDocument(id, versionId);
   const side = overlay.querySelector('.dv-side');
-  if (!side || side.querySelector('.hist-doc')) return;
+  if (!side || side.querySelector('.hist-doc') || !can('audit.read')) return;   // sans droit d'audit : aucune requête
   try {
     const report = await api(`/api/workspace/activity?document_id=${encodeURIComponent(id)}&limit=50`);
     side.insertAdjacentHTML('beforeend', `<section class="hist-doc"><h3>Historique du document</h3>${histRows(report.items, {compact: true})}</section>`);

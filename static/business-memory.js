@@ -176,7 +176,8 @@ openNewLaunch=function(){
  form.onsubmit=async event=>{
   if(!selected){return original(event)}
   event.preventDefault();try{
-   const created=await api('/api/launches',{method:'POST',body:JSON.stringify({name:val('l-name'),client_name:val('l-client')||null,order_ref:val('l-order')||null,orli_ref:val('l-orli')||null})});
+   // Fiche commande complète lorsqu'elle est disponible (order-sheet.js), sinon création historique.
+   const created=typeof sheetCreateValues==='function'?await api('/api/order-sheets',{method:'POST',body:JSON.stringify(sheetCreateValues())}):await api('/api/launches',{method:'POST',body:JSON.stringify({name:val('l-name'),client_name:val('l-client')||null,order_ref:val('l-order')||null,orli_ref:val('l-orli')||null})});
    await api(`/api/launches/${created.id}/partners`,{method:'POST',body:JSON.stringify({partner_id:selected.id})});closeModal();toast('Dossier créé et partenaire associé');await openLaunch(created.id,'jaune');
   }catch(error){showErr(error)}
  };

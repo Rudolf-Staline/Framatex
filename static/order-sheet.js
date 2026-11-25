@@ -5,21 +5,24 @@ const SHEET_GROUPS = [
   ['Commande', [['name', 'Nom de la commande / projet', 'text', 180, true], ['description', 'Description', 'textarea', 4000]]],
   ['Client', [['client_name', 'Client', 'text', 150], ['client_account_id', 'N° client', 'client'], ['client_order_ref', 'Référence de commande Client', 'text', 100]]],
   ['Production', [['workshop', 'Atelier', 'text', 150], ['article', 'Article', 'text', 180], ['order_ref', 'N° commande', 'text', 100],
-    ['color', 'Couleur', 'text', 80], ['of_number', 'N° OF', 'text', 60]]],
+    ['color', 'Couleur', 'text', 80], ['of_number', 'N° OF', 'text', 60], ['orli_ref', 'Référence ORLI', 'text', 100]]],
   ['Quantités', [['quantity', 'Quantité commandée', 'number'], ['quantity_launched', 'Quantité lancée', 'number'], ['quantity_delivered', 'Quantité livrée', 'number']]],
   ['Facturation et livraison', [['invoice_ref', 'Référence / N° facture', 'text', 100], ['desired_date', 'Date de livraison souhaitée', 'date']]],
 ];
 const SHEET_FIELDS = SHEET_GROUPS.flatMap(([, fields]) => fields);
+// Création : mêmes identifiants que l'ancien formulaire (#new-launch-form, #l-name, #l-client, #l-order, #l-orli).
+const SHEET_LEGACY_IDS = {name: 'l-name', client_name: 'l-client', order_ref: 'l-order', orli_ref: 'l-orli'};
+const sheetId = (key, legacy) => (legacy && SHEET_LEGACY_IDS[key]) || `sheet-${key}`;
 
 async function sheetClients() {
   if (!state.me?.admin) return null;
   try { return await api('/api/admin/clients'); } catch { return null; }
 }
 
-function sheetForm(values = {}, clients = null) {
+function sheetForm(values = {}, clients = null, legacy = false) {
   const input = ([key, label, type, max, required]) => {
     const value = values[key] ?? '';
-    const id = `sheet-${key}`;
+    const id = sheetId(key, legacy);
     let control;
     if (type === 'textarea') control = `<textarea id="${id}" maxlength="${max}" rows="3">${e(value)}</textarea>`;
     else if (type === 'client') {
@@ -35,10 +38,10 @@ function sheetForm(values = {}, clients = null) {
   return SHEET_GROUPS.map(([title, fields]) => `<fieldset class="sheet-group"><legend>${e(title)}</legend><div class="sheet-grid">${fields.map(input).join('')}</div></fieldset>`).join('');
 }
 
-function sheetRead(root, editable) {
+function sheetRead(root, editable, legacy = false) {
   const out = {};
   for (const [key, , type] of SHEET_FIELDS) {
-    const el = root.querySelector(`#sheet-${key}`);
+    const el = root.querySelector(`#${sheetId(key, legacy)}`);
     if (!el || el.disabled || (type === 'client' && !editable)) continue;
     const raw = el.value.trim();
     out[key] = type === 'number' ? (raw === '' ? null : Number(raw)) : (raw || null);
@@ -46,19 +49,26 @@ function sheetRead(root, editable) {
   return out;
 }
 
-openNewLaunch = async function() {
-  const clients = await sheetClients();
-  modal('Nouveau Dossier Jaune', `<form id="sheet-create-form" novalidate><p class="modal-desc">Seul le nom est obligatoire : les autres informations peuvent être complétées plus tard. Les quatre sous-dossiers sont créés automatiquement.</p>
-    <div id="sheet-error" role="alert"></div>${sheetForm({}, clients)}
+// Rendu synchrone (les modules qui complètent ce formulaire le trouvent aussitôt) ; la liste des
+// comptes Client est chargée ensuite pour le rattachement explicite du N° client.
+openNewLaunch = function() {
+  let clients = null;
+  modal('Nouveau Dossier Jaune', `<form id="new-launch-form" novalidate><p class="modal-desc">Seul le nom est obligatoire : les autres informations peuvent être complétées plus tard. Les quatre sous-dossiers sont créés automatiquement.</p>
+    <div id="sheet-error" role="alert"></div>${sheetForm({}, null, true)}
     <div class="modal-actions"><button class="secondary" type="button" id="cancel-modal">Annuler</button><button class="primary" type="submit">${icon('plus')} Créer le dossier</button></div></form>`, true);
   overlay.querySelector('.modal')?.classList.add('sheet-modal');
   overlay.querySelector('#cancel-modal').onclick = closeModal;
-  overlay.querySelector('#sheet-create-form').onsubmit = async event => {
+  sheetClients().then(list => {
+    const slot = overlay.querySelector('#sheet-client_account_id');
+    if (!list || !slot) return;
+    clients = list;
+    slot.outerHTML = `<select id="sheet-client_account_id"><option value="">Non rattaché</option>${list.map(c => `<option value="${e(c.id)}">${e(c.client_code)} · ${e(c.raison_sociale)}</option>`).join('')}</select>`;
+  });
+  overlay.querySelector('#new-launch-form').onsubmit = async event => {
     event.preventDefault();
     const button = event.target.querySelector('[type=submit]');
-    const values = sheetRead(overlay, Boolean(clients));
+    const values = sheetCreateValues();
     if (!values.name || values.name.length < 2) { overlay.querySelector('#sheet-error').innerHTML = '<div class="error">Indiquez le nom de la commande.</div>'; return; }
-    for (const key of Object.keys(values)) if (values[key] === null) delete values[key];
     button.disabled = true;
     try {
       const created = await api('/api/order-sheets', {method: 'POST', body: JSON.stringify(values)});
@@ -67,6 +77,11 @@ openNewLaunch = async function() {
     } catch (error) { button.disabled = false; overlay.querySelector('#sheet-error').innerHTML = `<div class="error">${e(error.message)}</div>`; }
   };
 };
+// Valeurs renseignées du formulaire de création (aussi utilisées par les modules qui le complètent).
+function sheetCreateValues() {
+  const editable = Boolean(overlay.querySelector('select#sheet-client_account_id'));
+  return Object.fromEntries(Object.entries(sheetRead(overlay, editable, true)).filter(([, value]) => value !== null));
+}
 
 async function sheetEdit(launchId) {
   const [sheet, clients] = await Promise.all([api(`/api/launches/${launchId}/sheet`), sheetClients()]);

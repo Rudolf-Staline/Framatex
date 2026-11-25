@@ -1,0 +1,182 @@
+[
+  {
+    "users": 10,
+    "requests": 110,
+    "wall_s": 2.02,
+    "rps": 54.5,
+    "errors": 0,
+    "sqlite_locked": 0,
+    "error_samples": [],
+    "operations": {
+      "connexion": {
+        "n": 10,
+        "median_ms": 199,
+        "p95_ms": 215,
+        "max_ms": 217,
+        "errors": 0
+      },
+      "création commande": {
+        "n": 10,
+        "median_ms": 194,
+        "p95_ms": 296,
+        "max_ms": 679,
+        "errors": 0
+      },
+      "ouverture commande": {
+        "n": 10,
+        "median_ms": 76,
+        "p95_ms": 90,
+        "max_ms": 221,
+        "errors": 0
+      },
+      "recherche": {
+        "n": 10,
+        "median_ms": 84,
+        "p95_ms": 115,
+        "max_ms": 198,
+        "errors": 0
+      },
+      "dépôt PDF": {
+        "n": 10,
+        "median_ms": 124,
+        "p95_ms": 255,
+        "max_ms": 269,
+        "errors": 0
+      },
+      "dépôt Excel": {
+        "n": 10,
+        "median_ms": 277,
+        "p95_ms": 348,
+        "max_ms": 392,
+        "errors": 0
+      },
+      "aperçu PDF (page)": {
+        "n": 10,
+        "median_ms": 204,
+        "p95_ms": 220,
+        "max_ms": 282,
+        "errors": 0
+      },
+      "aperçu Excel (feuille)": {
+        "n": 10,
+        "median_ms": 226,
+        "p95_ms": 260,
+        "max_ms": 310,
+        "errors": 0
+      },
+      "modification fiche": {
+        "n": 10,
+        "median_ms": 214,
+        "p95_ms": 372,
+        "max_ms": 586,
+        "errors": 0
+      },
+      "suppression": {
+        "n": 10,
+        "median_ms": 167,
+        "p95_ms": 257,
+        "max_ms": 490,
+        "errors": 0
+      },
+      "restauration": {
+        "n": 10,
+        "median_ms": 38,
+        "p95_ms": 108,
+        "max_ms": 133,
+        "errors": 0
+      }
+    }
+  },
+  {
+    "users": 20,
+    "requests": 220,
+    "wall_s": 4.73,
+    "rps": 46.5,
+    "errors": 0,
+    "sqlite_locked": 0,
+    "error_samples": [],
+    "operations": {
+      "connexion": {
+        "n": 20,
+        "median_ms": 292,
+        "p95_ms": 923,
+        "max_ms": 1002,
+        "errors": 0
+      },
+      "création commande": {
+        "n": 20,
+        "median_ms": 175,
+        "p95_ms": 429,
+        "max_ms": 604,
+        "errors": 0
+      },
+      "ouverture commande": {
+        "n": 20,
+        "median_ms": 226,
+        "p95_ms": 376,
+        "max_ms": 410,
+        "errors": 0
+      },
+      "recherche": {
+        "n": 20,
+        "median_ms": 665,
+        "p95_ms": 750,
+        "max_ms": 816,
+        "errors": 0
+      },
+      "dépôt PDF": {
+        "n": 20,
+        "median_ms": 471,
+        "p95_ms": 584,
+        "max_ms": 585,
+        "errors": 0
+      },
+      "dépôt Excel": {
+        "n": 20,
+        "median_ms": 603,
+        "p95_ms": 773,
+        "max_ms": 844,
+        "errors": 0
+      },
+      "aperçu PDF (page)": {
+        "n": 20,
+        "median_ms": 460,
+        "p95_ms": 512,
+        "max_ms": 513,
+        "errors": 0
+      },
+      "aperçu Excel (feuille)": {
+        "n": 20,
+        "median_ms": 511,
+        "p95_ms": 711,
+        "max_ms": 711,
+        "errors": 0
+      },
+      "modification fiche": {
+        "n": 20,
+        "median_ms": 422,
+        "p95_ms": 1149,
+        "max_ms": 1155,
+        "errors": 0
+      },
+      "suppression": {
+        "n": 20,
+        "median_ms": 188,
+        "p95_ms": 636,
+        "max_ms": 1251,
+        "errors": 0
+      },
+      "restauration": {
+        "n": 20,
+        "median_ms": 23,
+        "p95_ms": 295,
+        "max_ms": 365,
+        "errors": 0
+      }
+    }
+  },
+  {
+    "duplicate_launch_names": 0,
+    "launches": 30
+  }
+]

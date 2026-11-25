@@ -24,13 +24,11 @@ if DATABASE_URL.startswith("sqlite") and ":memory:" not in DATABASE_URL:
 
     @event.listens_for(engine, "connect")
     def _sqlite_pragmas(dbapi_connection, _record):
-        # Accès simultanés : WAL (les lectures ne bloquent plus l'écriture), attente de verrou bornée
-        # plutôt qu'une erreur immédiate, synchronisation adaptée au WAL. La sauvegarde utilise l'API
-        # backup de SQLite, compatible avec ce mode.
+        # Accès simultanés : une écriture concurrente attend la libération du verrou (15 s au plus)
+        # au lieu d'échouer aussitôt. Le mode WAL a été mesuré sans gain de débit et écarté : une copie
+        # brute de framat.db (sauvegarde manuelle, Windows) pourrait omettre les écritures récentes.
         cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA journal_mode=WAL")
         cursor.execute("PRAGMA busy_timeout=15000")
-        cursor.execute("PRAGMA synchronous=NORMAL")
         cursor.close()
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 

@@ -22,7 +22,7 @@ from .models import User
 
 router = APIRouter()
 
-LAUNCH_FIELDS = ("name", "order_ref", "client_name")
+LAUNCH_FIELDS = ("name", "order_ref", "client_name", "orli_ref")
 SHEET_FIELDS = ("description", "workshop", "article", "color", "quantity", "of_number", "quantity_launched",
                 "quantity_delivered", "invoice_ref", "desired_date", "client_order_ref", "client_account_id")
 LABELS = {"name": "Nom de la commande / projet", "description": "Description", "workshop": "Atelier",
@@ -30,13 +30,14 @@ LABELS = {"name": "Nom de la commande / projet", "description": "Description", "
           "quantity": "Quantité commandée", "of_number": "N° OF", "quantity_launched": "Quantité lancée",
           "quantity_delivered": "Quantité livrée", "invoice_ref": "Référence / N° facture",
           "client_account_id": "N° client", "desired_date": "Date de livraison souhaitée",
-          "client_order_ref": "Référence de commande Client"}
+          "client_order_ref": "Référence de commande Client", "orli_ref": "Référence ORLI"}
 
 
 class SheetIn(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=180)
     order_ref: str | None = Field(default=None, max_length=100)
     client_name: str | None = Field(default=None, max_length=150)
+    orli_ref: str | None = Field(default=None, max_length=100)
     description: str | None = Field(default=None, max_length=4000)
     workshop: str | None = Field(default=None, max_length=150)
     article: str | None = Field(default=None, max_length=180)
