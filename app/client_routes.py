@@ -14,7 +14,7 @@ import jwt
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -83,6 +83,19 @@ class OrderPayload(BaseModel):
     reference_client: str | None = Field(default=None, max_length=100)
     commentaire: str | None = Field(default=None, max_length=4000)
     status: Literal["draft", "submitted"] = "draft"
+
+
+class OrderEditPayload(BaseModel):
+    model_config = {"extra": "forbid"}
+    expected_updated_at: datetime
+    project_name: str | None = Field(default=None, max_length=180)
+    description: str | None = Field(default=None, max_length=4000)
+    color: str | None = Field(default=None, max_length=80)
+    article: str | None = Field(default=None, min_length=2, max_length=180)
+    quantite: int | None = Field(default=None, gt=0, le=10_000_000)
+    date_souhaitee: date | None = None
+    reference_client: str | None = Field(default=None, max_length=100)
+    commentaire: str | None = Field(default=None, max_length=4000)
 
 
 def client_token(client_id: str) -> str:
@@ -296,6 +309,48 @@ def own_order(db: Session, client: ClientAccount, order_id: str) -> ClientOrderR
 def get_order_request(order_id: str, client: ClientAccount = Depends(get_current_client),
                       db: Session = Depends(get_db)):
     return order_out(own_order(db, client, order_id), include_documents=True)
+
+
+@router.patch("/api/client/order-requests/{order_id}")
+def edit_order_request(order_id: str, payload: OrderEditPayload,
+                       client: ClientAccount = Depends(get_current_client), db: Session = Depends(get_db)):
+    """Clients may correct their own draft or submitted request before review."""
+    order = own_order(db, client, order_id)
+    if order.status not in {"draft", "submitted"}:
+        raise HTTPException(409, "Demande déjà prise en charge : contactez FRAMATEX pour toute modification.")
+    def utc(value):
+        return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+    if utc(payload.expected_updated_at) != utc(order.updated_at):
+        raise HTTPException(409, "Demande modifiée entre-temps : actualisez la page.")
+    values = payload.model_dump(exclude_unset=True, exclude={"expected_updated_at"})
+    changes = {}
+    for field, raw in values.items():
+        value = raw.strip() or None if isinstance(raw, str) else raw
+        if field in {"article", "quantite", "date_souhaitee"} and value is None:
+            raise HTTPException(422, "Article, quantité et date souhaitée sont obligatoires.")
+        if field == "article" and len(value) < 2:
+            raise HTTPException(422, "Indiquez un article valide.")
+        if value != getattr(order, field):
+            changes[field] = value
+    if not changes:
+        return order_out(order)
+    audit_changes = {k: {"before": getattr(order, k), "after": v} for k, v in changes.items()}
+    for item in audit_changes.values():
+        for key, value in item.items():
+            if isinstance(value, date):
+                item[key] = value.isoformat()
+    result = db.execute(update(ClientOrderRequest).where(
+        ClientOrderRequest.id == order.id, ClientOrderRequest.client_id == client.id,
+        ClientOrderRequest.status == order.status, ClientOrderRequest.updated_at == order.updated_at
+    ).values(**changes, updated_at=utcnow()), execution_options={"synchronize_session": False})
+    if result.rowcount != 1:
+        db.rollback()
+        raise HTTPException(409, "Demande modifiée entre-temps : actualisez la page.")
+    add_audit(db, client.id, "client.order_request.edit", "client_order_request", order.id,
+              {"changes": audit_changes, "request_number": order.request_number})
+    db.commit()
+    db.refresh(order)
+    return order_out(order)
 
 
 def verify_file(path: Path, extension: str):
