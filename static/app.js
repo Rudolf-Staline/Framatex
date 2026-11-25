@@ -30,7 +30,7 @@ function e(s){return String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function niceDate(s){if(!s)return '—';const d=new Date(s.endsWith('Z')?s:s+'Z');return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}
 function sizeText(n){return n>=1024*1024?`${(n/1024/1024).toFixed(1)} Mo`:`${Math.max(1,Math.ceil(n/1024))} Ko`}
 const app=document.querySelector('#app'), overlay=document.querySelector('#overlay-root');
-const state={me:null,view:'home',priorities:null,launches:[],dashboard:null,detail:null,completeness:null,completionProfiles:[],completenessPhases:[{code:'preparation',label:'Préparation'},{code:'approvisionnement',label:'Approvisionnement'},{code:'fabrication',label:'Fabrication'},{code:'expedition',label:'Expédition'},{code:'cloture',label:'Clôture'}],folder:'jaune',roles:[],users:[],audit:[],workflowReviews:[],workflowValues:[],workflowImpacts:[],workflowFields:[],workflowRules:[],qualityReport:null,excelInspections:[],specReport:null,mailReport:null,simGraph:null,simHistory:[],orliReconciliation:null,orliBatches:[],materials:null,approvalOverview:null,clientPublications:null,supplierRequests:null,approvalTemplates:[],approvalRoles:[],notifications:null,query:''};
+const state={me:null,view:'home',priorities:null,launches:[],dashboard:null,detail:null,completeness:null,completionProfiles:[],completenessPhases:[{code:'preparation',label:'Préparation'},{code:'approvisionnement',label:'Approvisionnement'},{code:'fabrication',label:'Fabrication'},{code:'expedition',label:'Expédition'},{code:'cloture',label:'Clôture'}],folder:'jaune',roles:[],users:[],audit:[],workflowReviews:[],workflowValues:[],workflowImpacts:[],workflowFields:[],workflowRules:[],qualityReport:null,excelInspections:[],specReport:null,mailReport:null,simGraph:null,simHistory:[],orliReconciliation:null,orliBatches:[],materials:null,approvalOverview:null,clientPublications:null,supplierRequests:null,approvalTemplates:[],approvalRoles:[],notifications:null,launchLoadWarnings:[],query:''};
 async function api(path,options={}){
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),options.body instanceof FormData?60000:8000);
@@ -102,7 +102,50 @@ async function home(){
 }
 
 async function launchList(){state.view='launches';state.launches=await api('/api/launches');mount(`<div class="page-heading"><div><div class="page-kicker">${icon('folder')} BIBLIOTHÈQUE DOCUMENTAIRE</div><h1 class="page-title">Dossiers jaunes<span class="brand-accent">.</span></h1><p class="page-lead">Chaque dossier correspond à un lancement de fabrication distinct, avec son identité et ses quatre rubriques.</p></div>${can('launch.create')?`<button class="primary" id="create-launch">${icon('plus')} Nouveau dossier</button>`:''}</div><div class="toolbar"><label class="searchbar">${icon('search')}<input id="launch-search" value="${e(state.query)}" placeholder="Rechercher par client, lancement, ORLI..." aria-label="Rechercher des dossiers" /></label><span class="muted small">${state.launches.length} dossier(s) au total</span></div><div class="panel" id="launches-table">${tableLaunches(state.launches)}</div>`,'Dossiers jaunes');bindLaunchRows();app.querySelector('#create-launch')?.addEventListener('click',openNewLaunch);app.querySelector('#launch-search').addEventListener('input',ev=>{state.query=ev.target.value;const term=state.query.toLowerCase();document.querySelector('#launches-table').innerHTML=tableLaunches(state.launches.filter(l=>[l.name,l.client_name,l.orli_ref,l.order_ref].join(' ').toLowerCase().includes(term)));bindLaunchRows()})}
-async function openLaunch(id,folder=state.folder,loadToken=null){const [detail,completeness,reviews,values,impacts,fields,quality,excels,specs,mails,simGraph,simHistory,orliReconciliation,materials,approvalOverview]=await Promise.all([api('/api/launches/'+encodeURIComponent(id)),api('/api/launches/'+encodeURIComponent(id)+'/completeness'),api('/api/launches/'+encodeURIComponent(id)+'/reviews'),api('/api/launches/'+encodeURIComponent(id)+'/values'),api('/api/launches/'+encodeURIComponent(id)+'/impacts'),api('/api/business-value-fields'),api('/api/launches/'+encodeURIComponent(id)+'/quality'),api('/api/launches/'+encodeURIComponent(id)+'/excel-inspections'),api('/api/launches/'+encodeURIComponent(id)+'/specifications'),can('document.read','rose')?api('/api/launches/'+encodeURIComponent(id)+'/emails'):Promise.resolve(null),api('/api/launches/'+encodeURIComponent(id)+'/dependency-graph'),can('document.read','jaune')?api('/api/launches/'+encodeURIComponent(id)+'/impact-simulations'):Promise.resolve([]),api('/api/launches/'+encodeURIComponent(id)+'/orli-reconciliation'),can('document.read','jaune')&&can('document.read','rose')?api('/api/launches/'+encodeURIComponent(id)+'/materials'):Promise.resolve(null),api('/api/launches/'+encodeURIComponent(id)+'/approval-overview')]);const [clientPublications,supplierRequests]=await Promise.all([api(`/api/launches/${encodeURIComponent(id)}/client-publications`),api(`/api/launches/${encodeURIComponent(id)}/supplier-requests`)]);if(loadToken && state.djLoadToken!==loadToken)return;state.clientPublications=clientPublications;state.supplierRequests=supplierRequests;state.approvalOverview=approvalOverview;state.materials=materials;state.orliReconciliation=orliReconciliation;state.simGraph=simGraph;state.simHistory=simHistory;state.mailReport=mails;state.specReport=specs;state.qualityReport=quality;state.excelInspections=excels;state.detail=detail;state.completeness=completeness;state.workflowReviews=reviews;state.workflowValues=values;state.workflowImpacts=impacts;state.workflowFields=fields;state.view='detail';state.folder=folder;renderDetail()}
+async function optionalLaunchRequest(label,promise,fallback,warnings){
+ try{return await promise}catch(error){
+  if(error.status===401)throw error;
+  warnings.push({label,message:error.message||String(error),status:error.status||null});
+  console.error(`Chargement secondaire impossible (${label})`,error);
+  return fallback;
+ }
+}
+async function openLaunch(id,folder=null,loadToken=null){
+ const enc=encodeURIComponent(id),warnings=[];
+ // Les habilitations peuvent changer pendant une session : les décisions d'UI
+ // doivent utiliser le même état courant que les contrôles serveur.
+ state.me=await api('/api/auth/me');
+ // Seules l'identité du lancement et sa complétude sont indispensables à son
+ // ouverture. Un module secondaire indisponible ne doit pas condamner l'écran.
+ const [detail,completeness]=await Promise.all([
+  api(`/api/launches/${enc}`),api(`/api/launches/${enc}/completeness`)
+ ]);
+ const optional=(label,path,fallback)=>optionalLaunchRequest(label,api(path),fallback,warnings);
+ const [reviews,values,impacts,fields,quality,excels,specs,mails,simGraph,simHistory,orliReconciliation,materials,approvalOverview,clientPublications,supplierRequests]=await Promise.all([
+  optional('revues documentaires',`/api/launches/${enc}/reviews`,[]),
+  optional('valeurs métier',`/api/launches/${enc}/values`,[]),
+  optional('impacts',`/api/launches/${enc}/impacts`,[]),
+  optional('champs métier','/api/business-value-fields',[]),
+  optional('qualité documentaire',`/api/launches/${enc}/quality`,null),
+  optional('contrôles Excel',`/api/launches/${enc}/excel-inspections`,[]),
+  optional('exigences client',`/api/launches/${enc}/specifications`,null),
+  can('document.read','rose')?optional('emails',`/api/launches/${enc}/emails`,null):Promise.resolve(null),
+  optional('graphe de dépendances',`/api/launches/${enc}/dependency-graph`,null),
+  can('document.read','jaune')?optional("simulations d'impact",`/api/launches/${enc}/impact-simulations`,[]):Promise.resolve([]),
+  optional('rapprochement ORLI',`/api/launches/${enc}/orli-reconciliation`,null),
+  can('document.read','jaune')&&can('document.read','rose')?optional('matières',`/api/launches/${enc}/materials`,null):Promise.resolve(null),
+  optional('circuits de validation',`/api/launches/${enc}/approval-overview`,null),
+  optional('publications client',`/api/launches/${enc}/client-publications`,null),
+  optional('demandes fournisseur',`/api/launches/${enc}/supplier-requests`,null)
+ ]);
+ if(loadToken&&state.djLoadToken!==loadToken)return;
+ const requested=detail.folders.find(item=>item.slug===folder&&item.can_read);
+ const selected=requested||detail.folders.find(item=>item.can_read);
+ if(!selected){const error=new Error('Aucun sous-dossier autorisé pour cette commande.');error.status=403;throw error}
+ Object.assign(state,{clientPublications,supplierRequests,approvalOverview,materials,orliReconciliation,simGraph,simHistory,mailReport:mails,specReport:specs,qualityReport:quality,excelInspections:excels,detail,completeness,workflowReviews:reviews,workflowValues:values,workflowImpacts:impacts,workflowFields:fields,launchLoadWarnings:warnings,view:'detail',folder:selected.slug});
+ renderDetail();
+ if(warnings.length)toast(`Commande ouverte · ${warnings.length} module(s) secondaire(s) indisponible(s)`);
+}
 function installDetailNavigation(){
  const content=app.querySelector('main.content');if(!content)return;
  const sections=[

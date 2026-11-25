@@ -72,17 +72,27 @@ state.dj = djInitialUi();
 // --------------------------------------------------------------------------- chargement
 async function djLoadExtras(id) {
   const enc = encodeURIComponent(id);
+  const warnings = [];
+  const optional = async (label, promise, fallback) => {
+    try { return await promise; }
+    catch (error) {
+      if (error.status === 401) throw error;
+      warnings.push({label, message: error.message || String(error), status: error.status || null});
+      console.error(`Chargement secondaire impossible (${label})`, error);
+      return fallback;
+    }
+  };
   const [summary, notes, activity, duplicates] = await Promise.all([
-    api(`/api/launches/${enc}/operations`),
-    can('document.read', 'jaune') ? api(`/api/launches/${enc}/experience-notes`).catch(() => []) : Promise.resolve([]),
-    can('audit.read') ? api(`/api/workspace/activity?launch_id=${enc}&limit=40`).catch(() => null) : Promise.resolve(null),
-    api(`/api/launches/${enc}/duplicates`).catch(() => []),
+    optional('synthèse opérationnelle', api(`/api/launches/${enc}/operations`), {}),
+    can('document.read', 'jaune') ? optional('mémoire métier', api(`/api/launches/${enc}/experience-notes`), []) : Promise.resolve([]),
+    can('audit.read') ? optional('activité récente', api(`/api/workspace/activity?launch_id=${enc}&limit=40`), null) : Promise.resolve(null),
+    optional('détection des doublons', api(`/api/launches/${enc}/duplicates`), []),
   ]);
   let request = null;
   if (summary.client_request && state.me?.admin) {
     request = await api(`/api/admin/client-order-requests/${encodeURIComponent(summary.client_request.id)}`).catch(() => null);
   }
-  return {operationsDetail: summary, djNotes: notes, djActivity: activity, djClientRequest: request, djDuplicates: duplicates};
+  return {operationsDetail: summary, djNotes: notes, djActivity: activity, djClientRequest: request, djDuplicates: duplicates, djLoadWarnings: warnings};
 }
 
 const djOriginalOpenLaunch = openLaunch;
@@ -93,12 +103,13 @@ openLaunch = async function(id, folder = null, target = null) {
   state.djSuspend = true;
   let extras;
   try {
-    [, extras] = await Promise.all([djOriginalOpenLaunch(id, folder || 'jaune', loadToken), djLoadExtras(id)]);
+    [, extras] = await Promise.all([djOriginalOpenLaunch(id, folder, loadToken), djLoadExtras(id)]);
   } finally {
     if (state.djLoadToken === loadToken) state.djSuspend = false;
   }
   if (state.djLoadToken !== loadToken) return;
   Object.assign(state, extras);
+  state.launchLoadWarnings = [...(state.launchLoadWarnings || []), ...(extras.djLoadWarnings || [])];
   if (!sameDossier) state.dj = djInitialUi();
   state.dj.folderView = Boolean(folder);
   if (!folder) state.dj.tab = 'documents';
@@ -206,7 +217,10 @@ function djHeader() {
     : `<div class="dj-progress dj-progress-empty"><span class="dj-label">Complétude</span><span>Aucune checklist associée pour l’instant.</span>
         ${c.can_change_context ? `<button class="secondary tiny" id="dj-apply-standard">Appliquer la checklist standard</button>` : ''}</div>`;
   const selected = state.dj.folderView && DJ_FOLDERS[state.folder];
-  return `<div class="page-heading dj-head">
+  const warning = state.launchLoadWarnings?.length
+    ? `<div class="error" role="status">Commande ouverte, mais ${state.launchLoadWarnings.length} module(s) secondaire(s) sont indisponibles. Les erreurs ont été conservées dans la console.</div>`
+    : '';
+  return `${warning}<div class="page-heading dj-head">
       <div class="dj-head-main">
         <nav class="dj-crumb" aria-label="Fil d’Ariane"><button class="link" id="back-launches">Commandes et lancements</button>
           <span aria-hidden="true">›</span>${selected ? `<button class="link" id="dj-return-order">${e(d.order_ref || d.name)}</button><span aria-hidden="true">›</span><span aria-current="page">${djFolderTitle(state.folder)}</span>` : `<span aria-current="page">${e(d.order_ref || d.name)}</span>`}</nav>

@@ -19,6 +19,13 @@ assert(access.includes("const actionsFor = key"));
 for(const capability of ['folder.access_label','f.can_download','f.can_write']) assert(app.includes(capability),capability);
 assert(dossier.includes("folder.access_label || 'Lecture seule'"));
 assert(dossier.includes("folder.access_label || 'Accès restreint'"));
+// L'ouverture d'une commande ne dépend plus de tous les modules secondaires et
+// ne force plus le jaune pour un technicien limité au bleu.
+assert(app.includes('optionalLaunchRequest'));
+assert(app.includes('detail.folders.find(item=>item.can_read)'));
+assert(app.includes("state.me=await api('/api/auth/me')"));
+assert(!dossier.includes("djOriginalOpenLaunch(id, folder || 'jaune'"));
+assert(dossier.includes('module(s) secondaire(s) sont indisponibles'));
 assert(dossierCss.includes('.dj-access-level'));
 for(const selector of ['.acc-level','.acc-matrix-guide','.acc-copy-option']) assert(css.includes(selector),selector);
 assert(css.includes('@media (max-width: 760px)'));
