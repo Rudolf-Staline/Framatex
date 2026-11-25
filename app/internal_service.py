@@ -200,11 +200,39 @@ def resolve_event(db, event):
     elif event.target_type == "document_version":
         version = db.get(DocumentVersion, event.target_id)
         doc = version.document if version else None
+    if not doc and isinstance(detail.get("version_id"), str):
+        # Partages Client et autres événements portant la version concernée dans leur détail.
+        version = db.get(DocumentVersion, detail["version_id"])
+        doc = version.document if version else None
     if doc:
         launch = doc.folder.launch
     if not launch and (detail.get("launch") or detail.get("launch_id")):
         launch = db.get(Launch, detail.get("launch") or detail.get("launch_id"))
     return launch, doc, version, detail
+
+
+def history_details(event, doc, version, detail):
+    """Champs lisibles d'un événement : version, fichier, avant/après, motif (None = non enregistré)."""
+    from .order_sheet import LABELS
+    number = version.number if version else detail.get("version") if isinstance(detail.get("version"), int) else None
+    if number is None and event.action == "document.upload":
+        number = 1                                    # un dépôt crée toujours la V1 du document
+    if not version and doc and number:
+        version = next((v for v in doc.versions if v.number == number), None)
+    changes = []
+    if isinstance(detail.get("changes"), dict):
+        changes = [{"field": key, "label": LABELS.get(key, key), "before": value.get("before"), "after": value.get("after")}
+                   for key, value in detail["changes"].items() if isinstance(value, dict)]
+    elif event.action.startswith("access.assignment") and ("before" in detail or "after" in detail):
+        changes = [{"field": "rights", "label": f"Droits · sous-dossier {detail.get('folder', '?')}",
+                    "before": detail.get("before"), "after": detail.get("after")}]
+    return {"doc_type": doc.doc_type if doc else None, "doc_deleted": bool(doc and doc.deleted_at),
+            "version_number": number, "version_deleted": bool(version and version.deleted_at),
+            "history_version_id": version.id if version else None,
+            "original_name": version.original_name if version else (
+                max(doc.versions, key=lambda v: v.number).original_name if doc and doc.versions else None),
+            "versions": detail.get("versions") if isinstance(detail.get("versions"), list) else None,
+            "changes": changes, "reason": detail.get("reason") or detail.get("note") or None}
 
 
 def activity(db, user, *, launch_id=None, document_id=None, actor_id=None, action_filter=None,
@@ -238,8 +266,12 @@ def activity(db, user, *, launch_id=None, document_id=None, actor_id=None, actio
                 continue
             if document_id and (not doc or doc.id != document_id):
                 continue
+        # Les changements d'habilitations ne sont détaillés qu'aux administrateurs.
+        if event.action.startswith("access.") and not is_admin(user):
+            continue
         actor = db.get(User, event.actor_id) if event.actor_id else None
-        output.append({"id": event.id, "action": event.action, "actor_id": event.actor_id,
+        extra = history_details(event, doc, version, detail)
+        output.append({**extra, "id": event.id, "action": event.action, "actor_id": event.actor_id,
                        "actor": actor.name if actor else "Compte client" if event.action.startswith("client.") else "Système",
                        "target_type": event.target_type, "target_id": event.target_id, "detail": detail,
                        "launch_id": launch.id if launch else None, "launch_name": launch.name if launch else None,

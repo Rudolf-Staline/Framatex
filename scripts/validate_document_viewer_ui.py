@@ -128,6 +128,39 @@ def run(base, pw, out):
         expect(page.locator('.dv-doc h1')).to_have_text('Fiche technique costume'); expect(page.locator('.dv-notice')).to_be_visible()
         page.screenshot(path=str(out / 'visionneuse-word.png'))
         checks.append('Word : titres et texte rendus localement, limite de fidélité signalée')
+        page.locator('#close-modal').click()
+
+        # Historique : avant/après, ouverture d'une version, document supprimé → corbeille, onglet commande.
+        assert req.patch(f'/api/launches/{lid}/sheet', headers=H, data={'color': 'Gris perle'}).status == 200
+        word_id = next(d['id'] for f in req.get(f'/api/launches/{lid}').json()['folders'] for d in f['documents'] if d['title'] == 'fiche.docx')
+        assert req.fetch(f'/api/documents/{word_id}', method='DELETE', headers={**H, 'Content-Type': 'application/json'},
+                         data='{"reason": "Doublon de la fiche PDF"}').status == 204
+        page.locator('.sidebar [data-view="audit"], .sidebar [data-ops-view="audit"]').first.click()
+        page.wait_for_selector('#ops-audit-form')
+        page.select_option('#launch_id', lid); page.click('#ops-audit-form [type=submit]')
+        sheet_row = page.locator('.hist-row', has_text='Fiche commande modifiée').first
+        sheet_row.locator('summary').click()
+        expect(sheet_row.locator('.hist-changes table')).to_contain_text('Couleur')
+        expect(sheet_row.locator('.hist-changes table')).to_contain_text('Gris perle')
+        deleted = page.locator('.hist-row', has_text='Suppression de document').first
+        expect(deleted).to_contain_text('Motif : Doublon de la fiche PDF')
+        page.screenshot(path=str(out / 'historique-global.png'))
+        upload_row = page.locator('.hist-row', has_text='Dépôt de document').filter(has_text='fiche-costume.pdf').first
+        upload_row.locator('[data-hist-doc]').click()
+        page.wait_for_selector('.dv-modal .dv-head'); expect(page.locator('.dv-head')).to_contain_text('Version 1')
+        expect(page.locator('.hist-doc')).to_contain_text('Nouvelle version')
+        checks.append('Historique global : avant/après de la fiche, motif de suppression ; « Ouvrir V1 » → visionneuse sur V1 ; historique du document')
+        page.locator('#close-modal').click()
+        page.locator('.sidebar [data-view="audit"], .sidebar [data-ops-view="audit"]').first.click()
+        page.wait_for_selector('#ops-audit-form'); page.select_option('#launch_id', lid); page.click('#ops-audit-form [type=submit]')
+        page.locator('.hist-row', has_text='Suppression de document').first.locator('[data-hist-trash]').click()
+        expect(page.locator('.ops-heading h1')).to_have_text('Corbeille documentaire')
+        checks.append('Document supprimé : pas de réouverture depuis l’historique, lien vers la corbeille (administrateur)')
+        page.locator('.sidebar [data-view="launches"]').click()
+        page.locator('#ops-launch-results').get_by_text('000512').first.click()
+        page.locator('#dj-tab-historique').click()
+        expect(page.locator('.hist-list').first).to_contain_text('Fiche commande modifiée')
+        checks.append('Historique de la commande (onglet Historique) : même présentation détaillée')
         assert not errors, errors
         checks.append('Aucune erreur JavaScript')
         browser.close()

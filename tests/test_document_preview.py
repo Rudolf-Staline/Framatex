@@ -74,3 +74,19 @@ def test_preview_formats_rights_and_deleted_versions():
     # Version supprimée : plus d'aperçu (la corbeille reste le seul accès).
     assert c.request('DELETE', f"/api/documents/{pdf['id']}", headers={**H, 'Content-Type': 'application/json'}, content=b'{}').status_code == 204
     assert c.get(f"/api/document-versions/{pdf['latest']['id']}/preview").status_code == 404
+
+
+def test_history_details_before_after_reason_and_version():
+    c = chef()
+    lid = c.post('/api/order-sheets', headers=H, json={'name': f'Historique {uuid.uuid4().hex[:5]}', 'color': 'Bleu'}).json()['id']
+    c.patch(f'/api/launches/{lid}/sheet', headers=H, json={'color': 'Vert', 'of_number': '007'})
+    doc = upload(c, lid, 'note.txt', b'v1')
+    c.post(f"/api/documents/{doc['id']}/versions", headers=H, files={'file': ('note.txt', b'v2', 'text/plain')})
+    c.request('DELETE', f"/api/documents/{doc['id']}", headers={**H, 'Content-Type': 'application/json'}, content=b'{"reason": "Erreur de classement"}')
+    items = c.get('/api/workspace/activity', params={'launch_id': lid}).json()['items']
+    sheet = next(i for i in items if i['action'] == 'launch.sheet.update')
+    assert {(x['field'], x['before'], x['after']) for x in sheet['changes']} == {('color', 'Bleu', 'Vert'), ('of_number', None, '007')}
+    deletion = next(i for i in items if i['action'] == 'document.delete')
+    assert deletion['reason'] == 'Erreur de classement' and deletion['doc_deleted'] is True
+    upload_event = next(i for i in items if i['action'] == 'document.upload')
+    assert upload_event['original_name'] == 'note.txt' and upload_event['version_number'] in (1, None)
