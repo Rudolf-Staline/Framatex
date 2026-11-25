@@ -929,3 +929,7 @@ app.include_router(access_admin_router)
 # Fiche commande complète (modèle métier FRAMATEX, 0016_order_sheet).
 from .order_sheet import router as order_sheet_router
 app.include_router(order_sheet_router)
+
+# Visionneuse documentaire : aperçus rendus côté serveur sous contrôle des droits.
+from .document_preview import router as document_preview_router
+app.include_router(document_preview_router)
