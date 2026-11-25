@@ -44,7 +44,7 @@ def test_disabled_and_wrong_secret(isolated, monkeypatch):
 
 def test_create_once_and_audit(isolated):
     c = TestClient(app)
-    bad = dict(PAYLOAD, password="short-secret")
+    bad = dict(PAYLOAD, password="too-short")
     result = c.post("/api/setup", headers=H, json=bad)
     assert result.status_code == 422 and bad["password"] not in result.text
     assert c.post("/api/setup", headers=H, json=PAYLOAD).status_code == 201
