@@ -22,13 +22,13 @@
   <section class="panel">
     <h2>Créer le premier administrateur</h2>
     <p>Renseignez les informations de votre compte et le secret d'installation configuré sur le serveur.</p>
-    <form id="setup-form">
+    <form id="setup-form" method="post" action="/api/setup">
       <label for="name">Nom complet</label>
-      <input id="name" name="name" autocomplete="name" required minlength="2" maxlength="120">
+      <input id="name" autocomplete="name" required minlength="2" maxlength="120">
       <label for="email">Adresse email</label>
-      <input id="email" name="email" type="email" autocomplete="username" required maxlength="254">
+      <input id="email" type="email" autocomplete="username" required maxlength="254">
       <label for="password">Mot de passe <small>12 caractères minimum</small></label>
-      <input id="password" name="password" type="password" autocomplete="new-password" required minlength="12" maxlength="256">
+      <input id="password" type="password" autocomplete="new-password" required minlength="12" maxlength="256">
       <label for="confirm">Confirmer le mot de passe</label>
       <input id="confirm" type="password" autocomplete="new-password" required>
       <label for="secret">Secret d'installation</label>
