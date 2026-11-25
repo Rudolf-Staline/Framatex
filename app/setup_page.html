@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Installation · FRAMATEX</title>
+<link rel="stylesheet" href="/assets/setup.css">
+<script src="/assets/setup.js" defer></script>
+</head>
+<body>
+<main class="shell">
+  <aside class="intro">
+    <p class="brand">FRAMATEX <span> / INSTALLATION</span></p>
+    <div>
+      <p class="step">01 — INITIALISATION</p>
+      <h1>Un dossier.<br>Un point de départ.</h1>
+      <p>Configurez le premier administrateur de votre nouvelle instance. Cette page se ferme après l'installation.</p>
+    </div>
+    <p class="foot">Espace privé · Installation unique</p>
+  </aside>
+  <section class="panel">
+    <h2>Créer le premier administrateur</h2>
+    <p>Renseignez les informations de votre compte et le secret d'installation configuré sur le serveur.</p>
+    <form id="setup-form" method="post" action="/api/setup">
+      <label for="name">Nom complet</label>
+      <input id="name" autocomplete="name" required minlength="2" maxlength="120">
+      <label for="email">Adresse email</label>
+      <input id="email" type="email" autocomplete="username" required maxlength="254">
+      <label for="password">Mot de passe <small>12 caractères minimum</small></label>
+      <input id="password" type="password" autocomplete="new-password" required minlength="12" maxlength="256">
+      <label for="confirm">Confirmer le mot de passe</label>
+      <input id="confirm" type="password" autocomplete="new-password" required>
+      <label for="secret">Secret d'installation</label>
+      <input id="secret" type="password" autocomplete="off" required minlength="32" spellcheck="false">
+      <p id="status" role="status" aria-live="polite"></p>
+      <button type="submit">Initialiser Framatex <span aria-hidden="true">→</span></button>
+    </form>
+    <a href="/espace-framatex">Retour à la connexion</a>
+  </section>
+</main>
+</body>
+</html>

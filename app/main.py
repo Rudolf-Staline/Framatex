@@ -91,7 +91,7 @@ app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 
 # Pages HTML servies hors /api : landing publique, espace FRAMATEX (application
 # interne existante) et point d'entrée provisoire de l'espace Client.
-HTML_PAGES = {"/", "/espace-framatex", "/espace-client"}
+HTML_PAGES = {"/", "/espace-framatex", "/espace-client", "/setup"}
 
 @app.middleware("http")
 async def request_header_guard(request: Request, call_next):
@@ -936,3 +936,7 @@ app.include_router(order_sheet_router)
 # Visionneuse documentaire : aperçus rendus côté serveur sous contrôle des droits.
 from .document_preview import router as document_preview_router
 app.include_router(document_preview_router)
+
+# First installation only; disabled unless explicitly configured.
+from .setup_routes import router as setup_router
+app.include_router(setup_router)
