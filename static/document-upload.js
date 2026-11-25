@@ -41,7 +41,7 @@ function stageDocument(url, folder, file, onProgress, onAnalysis) {
 
 async function documentUploadDialog(options) {
   const launch = state.detail;
-  const folders = launch.folders.filter(item => item.can_read && item.can_write);
+  const folders = launch.folders.filter(item => item.can_read && item.can_write && (!options.optional || item.slug === 'vert'));
   const start = folders.find(item => item.slug === (options.folder || state.folder)) || folders[0];
   if (!start) { toast('Vous ne pouvez pas déposer dans cette commande.'); return; }
   const [{mib}, catalog] = await Promise.all([api('/api/workspace/upload-limits'), api('/api/workspace/document-types')]);
@@ -51,7 +51,7 @@ async function documentUploadDialog(options) {
   const fixed = Boolean(options.ruleId || options.document);
   const initialType = options.document?.doc_type || options.type || '';
   const initialTitle = options.document?.title || options.title || '';
-  modal(options.document ? 'Déposer une nouvelle version' : 'Déposer des documents', `
+  modal(options.document ? 'Déposer une nouvelle version' : options.optional ? 'Ajouter un document facultatif · Vert' : 'Déposer des documents', `
     <form id="ops-upload-form" class="dj-upload" novalidate>
       <p class="du-context">${e(launch.order_ref || launch.name)} · ${djFolderTitle(start.slug)}${fixed ? ` · ${e(initialTitle || initialType)}` : ''}</p>
       <div class="du-drop" id="ops-upload-drop">
@@ -99,6 +99,7 @@ async function documentUploadDialog(options) {
       <span><strong>${e(item.file.name)}</strong><small>${sizeText(item.file.size)} · ${e(item.status)}</small></span></li>`).join('');
   }
   function setDestination(slug, kind, label) {
+    if (options.optional && slug !== 'vert') return;
     folder.value = slug;
     type.value = kind;
     title.value = label;
@@ -285,6 +286,10 @@ async function documentUploadDialog(options) {
     const input = get('#du-justification');
     const justification = input.closest('[hidden]') ? '' : input.value.trim();
     const rule = rules.find(item => item.folder === selectedFolder && item.document_type === selectedType);
+    if (options.optional && (selectedFolder !== 'vert' || rule && rule.required !== false)) {
+      error('Ce type est obligatoire ou appartient à un autre sous-dossier. Utilisez le dépôt normal ou indiquez un type facultatif.');
+      return;
+    }
     const existing = relationshipChoice === 'new_version'
       ? writable.find(item => item.id === related?.candidate_document_id)
       : get('#dj-separate')?.checked ? null : existingDocument();

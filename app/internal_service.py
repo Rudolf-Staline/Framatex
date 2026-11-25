@@ -226,11 +226,22 @@ def history_details(event, doc, version, detail):
     elif event.action.startswith("access.assignment") and ("before" in detail or "after" in detail):
         changes = [{"field": "rights", "label": f"Droits · sous-dossier {detail.get('folder', '?')}",
                     "before": detail.get("before"), "after": detail.get("after")}]
+    files = []
+    if doc:
+        if isinstance(detail.get("files"), list):
+            files = [{"number": item.get("number"), "original_name": item.get("original_name")}
+                     for item in detail["files"] if isinstance(item, dict)]
+        elif isinstance(detail.get("versions"), list):
+            # Historical deletion: resolve only the recorded version numbers, not today's latest file.
+            files = [{"number": v.number, "original_name": v.original_name} for v in doc.versions if v.number in detail["versions"]]
+        elif version:
+            files = [{"number": version.number, "original_name": version.original_name}]
     return {"doc_type": doc.doc_type if doc else None, "doc_deleted": bool(doc and doc.deleted_at),
+            "files": files,
             "version_number": number, "version_deleted": bool(version and version.deleted_at),
             "history_version_id": version.id if version else None,
             "original_name": version.original_name if version else (
-                max(doc.versions, key=lambda v: v.number).original_name if doc and doc.versions else None),
+                files[-1]["original_name"] if files else None),
             "versions": detail.get("versions") if isinstance(detail.get("versions"), list) else None,
             "changes": changes, "reason": detail.get("reason") or detail.get("note") or None}
 

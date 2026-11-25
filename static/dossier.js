@@ -352,15 +352,17 @@ function djDocumentsPanel() {
   const used = new Set(rows.flatMap(r => r.documents.slice(0, 1).map(x => x.id)));
   const others = (folder.documents || []).filter(doc => !used.has(doc.id));
   const configured = state.completeness?.configured;
-  const checklist = rows.length
+  const mandatoryRows = folder.slug === 'vert' ? rows.filter(r => r.required !== false) : rows;
+  const optionalRows = folder.slug === 'vert' ? rows.filter(r => r.required === false) : [];
+  const checklist = mandatoryRows.length
     ? `<div class="dj-table-wrap"><table class="dj-checklist"><caption class="sr-only">Checklist ${e(meta.name)}</caption>
         <colgroup><col class="dj-c-doc"><col class="dj-c-state"><col class="dj-c-ver"><col class="dj-c-date"><col class="dj-c-act"></colgroup>
         <thead><tr><th scope="col">Document</th><th scope="col">État</th><th scope="col">Dernière version</th><th scope="col">Date</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead>
-        <tbody>${rows.map(rule => djRow(rule, docs, folder, duplicates)).join('')}</tbody></table></div>`
+        <tbody>${mandatoryRows.map(rule => djRow(rule, docs, folder, duplicates)).join('')}</tbody></table></div>`
     : `<div class="dj-empty"><p>${configured ? 'Aucune pièce attendue dans ce sous-dossier pour ce profil.' : 'Ce dossier n’a pas encore de checklist documentaire.'}</p>
         ${!configured && state.completeness?.can_change_context ? '<button class="secondary tiny" id="dj-apply-standard-inline">Appliquer la checklist standard</button>' : ''}</div>`;
   const otherTable = others.length
-    ? `<section class="dj-others"><h3>Autres pièces du sous-dossier</h3><div class="dj-table-wrap"><table class="dj-checklist dj-other-table">
+    ? `<section class="dj-others"><h3>${folder.slug === 'vert' ? 'Autres documents déposés' : 'Autres pièces du sous-dossier'}</h3><div class="dj-table-wrap"><table class="dj-checklist dj-other-table">
         <colgroup><col class="dj-c-doc"><col class="dj-c-state"><col class="dj-c-ver"><col class="dj-c-date"><col class="dj-c-act"></colgroup>
         <thead><tr><th scope="col">Document</th><th scope="col">Type</th><th scope="col">Dernière version</th><th scope="col">Date</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead>
         <tbody>${others.map(doc => { const group = duplicates.get(doc.id);
@@ -368,6 +370,11 @@ function djDocumentsPanel() {
           <td data-label="Type">${group ? djStatePill('duplicate') : e(doc.doc_type)}</td><td data-label="Dernière version">V${doc.latest.number}</td><td data-label="Date">${niceDate(doc.latest.created_at)}</td>
           <td class="dj-action" data-label="Action"><span class="dj-action-group">${group ? `<button class="secondary tiny dj-dup-btn" data-dj-duplicate="${e(group.sha256)}">Examiner le doublon</button>` : `<button class="secondary tiny" data-history="${e(doc.id)}">Ouvrir</button>`}<button class="link" data-bm-passport="${e(doc.latest.id)}">Passeport numérique</button></span></td></tr>`; }).join('')}</tbody></table></div></section>`
     : '';
+  const optionalSection = folder.slug === 'vert' ? `<section class="dj-others" aria-labelledby="dj-green-optional-title">
+    <div class="dj-docs-head"><div><h3 id="dj-green-optional-title">Documents facultatifs</h3><p>Pièces exceptionnelles ou complémentaires, à ajouter selon les besoins. Leur absence ne pénalise pas la complétude.</p></div>
+      ${folder.can_write ? '<button type="button" class="secondary" id="dj-add-optional">+ Ajouter un document facultatif</button>' : ''}</div>
+    ${optionalRows.length ? `<div class="dj-table-wrap"><table class="dj-checklist"><caption class="sr-only">Documents facultatifs du sous-dossier vert</caption><thead><tr><th>Document</th><th>État</th><th>Dernière version</th><th>Date</th><th>Action</th></tr></thead><tbody>${optionalRows.map(rule => djRow(rule, docs, folder, duplicates)).join('')}</tbody></table></div>` : '<p class="dj-muted">Aucun type facultatif prédéfini dans ce profil. Vous pouvez ajouter un document et renseigner son type.</p>'}
+    ${otherTable || '<p class="dj-muted">Aucune autre pièce déposée.</p>'}</section>` : '';
   const expected = rows.filter(r => r.required !== false).length;
   const phase = rows.length ? ` · ${expected} pièce${expected > 1 ? 's' : ''} obligatoire${expected > 1 ? 's' : ''}${rows.length > expected ? `, ${rows.length - expected} facultative${rows.length - expected > 1 ? 's' : ''}` : ''}` : '';
   const stats = djFolderStats(folder.slug);
@@ -377,7 +384,7 @@ function djDocumentsPanel() {
         <progress aria-label="Complétude du sous-dossier" max="${stats.due || 1}" value="${stats.present}"></progress>
         <p>Checklist documentaire${phase}</p></div>
         ${folder.can_write ? `<div id="ops-folder-drop" class="dj-drop"><button type="button" class="primary" id="upload-doc">${icon('upload')} Déposer des documents</button></div>` : ''}</div>
-      ${checklist}${otherTable}</div>`;
+      ${checklist}${folder.slug === 'vert' ? optionalSection : otherTable}</div>`;
 }
 
 // --------------------------------------------------------------------------- modules annexes
@@ -526,6 +533,7 @@ function djBind() {
   app.querySelector('#dj-order-dashboard')?.addEventListener('click', () => orderDashboard(d.id).catch(showErr));
   app.querySelector('#edit-launch')?.addEventListener('click', openEditLaunch);
   app.querySelector('#ops-edit')?.addEventListener('click', () => operationsEditLaunch().catch(showErr));
+  app.querySelector('#dj-add-optional')?.addEventListener('click', () => dossierUpload({folder: 'vert', optional: true}).catch(showErr));
   app.querySelector('#upload-doc')?.addEventListener('click', () => dossierUpload({folder: state.folder}).catch(showErr));
   app.querySelector('#dj-edit-phase')?.addEventListener('click', editCompletenessContext);
   ['#dj-apply-standard', '#dj-apply-standard-inline', '#dj-apply-standard-controls'].forEach(id => app.querySelector(id)?.addEventListener('click', djApplyStandard));
