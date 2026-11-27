@@ -48,6 +48,39 @@ def _version(db: Session, user: User, version_id: str):
     return version, document, path
 
 
+@router.get("/api/document-versions/{version_id}/client-mail-context")
+def client_mail_context(version_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Prepare a human-authored email, without sending or attaching any document."""
+    import re
+    from .access import must_access
+    from .main import admin_only, must
+    from .client_models import ClientAccount
+    from .internal_models import LaunchOperations
+    admin_only(user)
+    version = db.get(DocumentVersion, version_id)
+    if not version or version.deleted_at is not None or version.document.deleted_at is not None:
+        raise HTTPException(404, "Version introuvable")
+    doc = version.document
+    launch = must_access(db, user, doc.folder.launch_id)
+    must(user, "document.read", doc.folder.slug)
+    ops = db.get(LaunchOperations, launch.id)
+    account = db.get(ClientAccount, ops.client_account_id) if ops and ops.client_account_id else None
+    if not account:
+        return {"available": False, "reason": "Aucun compte Client rattaché. Rattachez le compte dans la fiche commande."}
+    if account.status != "active":
+        return {"available": False, "reason": "Le compte Client rattaché n'est pas actif."}
+    address = account.email.strip()
+    if not re.fullmatch(r"[^\s@,;<>?&#%]+@[^\s@,;<>?&#%]+\.[^\s@,;<>?&#%]+", address):
+        return {"available": False, "reason": "Adresse électronique du client invalide."}
+    # Remove control characters from the subject; never expose document contents.
+    clean = lambda value: " ".join(str(value).split())
+    subject = f"FRAMATEX – Clarification : {clean(doc.title)} (V{version.number})"
+    if launch.order_ref:
+        subject += f" – commande {clean(launch.order_ref)}"
+    return {"available": True, "email": address, "client_name": account.raison_sociale,
+            "subject": subject[:250], "version_id": version.id}
+
+
 def _kind(version) -> str:
     return KINDS.get(Path(version.original_name).suffix.lower(), "other")
 

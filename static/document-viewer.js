@@ -23,6 +23,7 @@ operationsDocument = async function(id, versionId = null) {
   const side = layout.querySelector('.dv-side');
   while (body.firstChild) side.append(body.firstChild);
   body.append(layout);
+  if (state.me?.admin) dvClientMail(side, version);
   dvRender(layout.querySelector('.dv-viewer'), version).catch(error => {
     layout.querySelector('.dv-stage').innerHTML = `<div class="ops-empty">Aperçu indisponible : ${e(error.message)}</div>`;
   });
@@ -120,4 +121,45 @@ async function dvExcel(stage, tools, base, meta) {
   };
   stage.querySelectorAll('[data-dv-sheet]').forEach(b => b.onclick = () => select(b.dataset.dvSheet));
   if (sheet) select(sheet); else grid.innerHTML = '<div class="ops-empty">Classeur sans feuille lisible.</div>';
+}
+
+
+// Explicit human action: load the linked client and open a new draft in Outlook.
+// No document bytes, internal notes, attachments or authentication data are transmitted.
+function dvClientMail(side, version) {
+  const panel = document.createElement('section');
+  panel.className = 'ops-panel dv-client-mail';
+  panel.innerHTML = '<h3>Clarification client</h3><p class="workflow-meta">Rédigez vous-même un courrier au client concernant cette version.</p><button type="button" class="secondary tiny" data-dv-mail>Préparer un email Outlook</button><div data-dv-mail-result aria-live="polite"></div>';
+  side.prepend(panel);
+  const button = panel.querySelector('[data-dv-mail]');
+  const result = panel.querySelector('[data-dv-mail-result]');
+  button.onclick = async () => {
+    button.disabled = true;
+    result.textContent = 'Vérification du destinataire…';
+    try {
+      const context = await api('/api/document-versions/' + encodeURIComponent(version.id) + '/client-mail-context');
+      if (!context.available) { result.textContent = context.reason; return; }
+      result.replaceChildren();
+      const info = document.createElement('p');
+      info.className = 'workflow-meta';
+      info.textContent = 'Destinataire : ' + context.client_name + ' · ' + context.email;
+      const subject = document.createElement('p');
+      subject.className = 'workflow-meta'; subject.textContent = 'Objet : ' + context.subject;
+      const web = document.createElement('a');
+      const url = new URL('https://outlook.office.com/mail/deeplink/compose');
+      url.searchParams.set('to', context.email);
+      url.searchParams.set('subject', context.subject);
+      web.href = url.toString(); web.target = '_blank'; web.rel = 'noopener noreferrer';
+      web.className = 'secondary tiny'; web.textContent = 'Ouvrir Outlook Web';
+      const local = document.createElement('a');
+      local.href = 'mailto:' + encodeURIComponent(context.email).replace(/%40/g, '@') + '?subject=' + encodeURIComponent(context.subject);
+      local.className = 'secondary tiny'; local.textContent = 'Ouvrir la messagerie installée';
+      const notice = document.createElement('p');
+      notice.className = 'workflow-meta'; notice.textContent = 'Aucun message envoyé. Vérifiez le destinataire et rédigez le message dans votre messagerie. Aucun fichier n’est joint automatiquement.';
+      const actions = document.createElement('div'); actions.className = 'mail-actions';
+      actions.append(web, local); result.append(info, subject, actions, notice);
+    } catch (error) {
+      result.textContent = error.message || 'Impossible de préparer le courrier.';
+    } finally { button.disabled = false; }
+  };
 }
